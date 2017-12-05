@@ -1,0 +1,556 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>12.5. MongoDB Connector &mdash; Starburst Distribution of Presto 0.188-e.0.1 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Distribution of Presto 0.188-e.0.1 Documentation" href="../index.html"/>
+        <link rel="up" title="12. Community Supported Connectors" href="../community_connector.html"/>
+        <link rel="next" title="12.6. Redis Connector" href="redis.html"/>
+        <link rel="prev" title="12.4. Local File Connector" href="localfile.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.188-e.0.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">3. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">4. Running Presto sandbox in a Docker container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-cluster-manual.html">5. Presto Server Installation on a Cluster (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../server-installation-aws-emr-manual.html">6. Presto Server Installation on an AWS EMR (Presto Admin and RPMs)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">7. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../presto-admin/user-guide.html">8. Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">9. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">10. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">11. Starburst Supported Connectors</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../community_connector.html">12. Community Supported Connectors</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="accumulo.html">12.1. Accumulo Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka.html">12.2. Kafka Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka-tutorial.html">12.3. Kafka Connector Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="localfile.html">12.4. Local File Connector</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">12.5. MongoDB Connector</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-mongodb-clusters">Multiple MongoDB Clusters</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-properties">Configuration Properties</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-seeds"><code class="docutils literal"><span class="pre">mongodb.seeds</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-schema-collection"><code class="docutils literal"><span class="pre">mongodb.schema-collection</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-credentials"><code class="docutils literal"><span class="pre">mongodb.credentials</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-min-connections-per-host"><code class="docutils literal"><span class="pre">mongodb.min-connections-per-host</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-connections-per-host"><code class="docutils literal"><span class="pre">mongodb.connections-per-host</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-max-wait-time"><code class="docutils literal"><span class="pre">mongodb.max-wait-time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-connection-timeout"><code class="docutils literal"><span class="pre">mongodb.connection-timeout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-socket-timeout"><code class="docutils literal"><span class="pre">mongodb.socket-timeout</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-socket-keep-alive"><code class="docutils literal"><span class="pre">mongodb.socket-keep-alive</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-ssl-enabled"><code class="docutils literal"><span class="pre">mongodb.ssl.enabled</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-read-preference"><code class="docutils literal"><span class="pre">mongodb.read-preference</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-write-concern"><code class="docutils literal"><span class="pre">mongodb.write-concern</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-required-replica-set"><code class="docutils literal"><span class="pre">mongodb.required-replica-set</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mongodb-cursor-batch-size"><code class="docutils literal"><span class="pre">mongodb.cursor-batch-size</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#table-definition">Table Definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#objectid">ObjectId</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="redis.html">12.6. Redis Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redshift.html">12.7. Redshift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thrift.html">12.8. Thrift Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">13. Community Supported Functionality</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">15. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">18. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">19. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Starburst Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../community_connector.html">12. Community Supported Connectors</a> &raquo;</li>
+      
+    <li>12.5. MongoDB Connector</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/connector/mongodb.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="mongodb-connector">
+<h1>12.5. MongoDB Connector</h1>
+<p>This connector allows the use of MongoDB collections as tables in Presto.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">MongoDB 2.6+ is supported although it is highly recommend to use 3.0 or later.</p>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration</h2>
+<p>To configure the MongoDB connector, create a catalog properties file
+<code class="docutils literal"><span class="pre">~/.prestoadmin/catalog/mongodb.properties</span></code> with the following contents,
+replacing the properties as appropriate:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>connector.name=mongodb
+mongodb.seeds=host1,host:port
+</pre></div>
+</div>
+<div class="section" id="multiple-mongodb-clusters">
+<h3>Multiple MongoDB Clusters</h3>
+<p>You can have as many catalogs as you need, so if you have additional
+MongoDB clusters, simply add another properties file to <code class="docutils literal"><span class="pre">~/.prestoadmin/catalog</span></code>
+with a different name (making sure it ends in <code class="docutils literal"><span class="pre">.properties</span></code>). For
+example, if you name the property file <code class="docutils literal"><span class="pre">sales.properties</span></code>, Presto
+will create a catalog named <code class="docutils literal"><span class="pre">sales</span></code> using the configured connector.</p>
+</div>
+</div>
+<div class="section" id="configuration-properties">
+<h2>Configuration Properties</h2>
+<p>The following configuration properties are available:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="37%" />
+<col width="63%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.seeds</span></code></td>
+<td>List of all mongod servers</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.schema-collection</span></code></td>
+<td>A collection which contains schema information</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.credentials</span></code></td>
+<td>List of credentials</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.min-connections-per-host</span></code></td>
+<td>The minimum size of the connection pool per host</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.connections-per-host</span></code></td>
+<td>The maximum size of the connection pool per host</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.max-wait-time</span></code></td>
+<td>The maximum wait time</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.connection-timeout</span></code></td>
+<td>The socket connect timeout</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.socket-timeout</span></code></td>
+<td>The socket timeout</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.socket-keep-alive</span></code></td>
+<td>Whether keep-alive is enabled on each socket</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.ssl.enabled</span></code></td>
+<td>Use TLS/SSL for connections to mongod/mongos</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.read-preference</span></code></td>
+<td>The read preference</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.write-concern</span></code></td>
+<td>The write concern</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">mongodb.required-replica-set</span></code></td>
+<td>The required replica set name</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">mongodb.cursor-batch-size</span></code></td>
+<td>The number of elements to return in a batch</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="mongodb-seeds">
+<h3><code class="docutils literal"><span class="pre">mongodb.seeds</span></code></h3>
+<p>Comma-separated list of <code class="docutils literal"><span class="pre">hostname[:port]</span></code> all mongod servers in the same replica set or a list of mongos servers in the same sharded cluster. If port is not specified, port 27017 will be used.</p>
+<p>This property is required; there is no default and at least one seed must be defined.</p>
+</div>
+<div class="section" id="mongodb-schema-collection">
+<h3><code class="docutils literal"><span class="pre">mongodb.schema-collection</span></code></h3>
+<p>As the MongoDB is a document database, there&#8217;s no fixed schema information in the system. So a special collection in each MongoDB database should defines the schema of all tables. Please refer the <a class="reference internal" href="#table-definition-label"><span class="std std-ref">Table Definition</span></a> section for the details.</p>
+<p>At startup, this connector tries guessing fields&#8217; types, but it might not be correct for your collection. In that case, you need to modify it manually. <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> and <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span> <span class="pre">SELECT</span></code> will create an entry for you.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">_schema</span></code>.</p>
+</div>
+<div class="section" id="mongodb-credentials">
+<h3><code class="docutils literal"><span class="pre">mongodb.credentials</span></code></h3>
+<p>A comma separated list of <code class="docutils literal"><span class="pre">username:password&#64;collection</span></code> credentials</p>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="mongodb-min-connections-per-host">
+<h3><code class="docutils literal"><span class="pre">mongodb.min-connections-per-host</span></code></h3>
+<p>The minimum number of connections per host for this MongoClient instance. Those connections will be kept in a pool when idle, and the pool will ensure over time that it contains at least this minimum number.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">0</span></code>.</p>
+</div>
+<div class="section" id="mongodb-connections-per-host">
+<h3><code class="docutils literal"><span class="pre">mongodb.connections-per-host</span></code></h3>
+<p>The maximum number of connections allowed per host for this MongoClient instance. Those connections will be kept in a pool when idle. Once the pool is exhausted, any operation requiring a connection will block waiting for an available connection.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">100</span></code>.</p>
+</div>
+<div class="section" id="mongodb-max-wait-time">
+<h3><code class="docutils literal"><span class="pre">mongodb.max-wait-time</span></code></h3>
+<p>The maximum wait time in milliseconds that a thread may wait for a connection to become available.
+A value of <code class="docutils literal"><span class="pre">0</span></code> means that it will not wait. A negative value means to wait indefinitely for a connection to become available.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">120000</span></code>.</p>
+</div>
+<div class="section" id="mongodb-connection-timeout">
+<h3><code class="docutils literal"><span class="pre">mongodb.connection-timeout</span></code></h3>
+<p>The connection timeout in milliseconds. A value of <code class="docutils literal"><span class="pre">0</span></code> means no timeout. It is used solely when establishing a new connection.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">10000</span></code>.</p>
+</div>
+<div class="section" id="mongodb-socket-timeout">
+<h3><code class="docutils literal"><span class="pre">mongodb.socket-timeout</span></code></h3>
+<p>The socket timeout in milliseconds. It is used for I/O socket read and write operations.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">0</span></code> and means no timeout.</p>
+</div>
+<div class="section" id="mongodb-socket-keep-alive">
+<h3><code class="docutils literal"><span class="pre">mongodb.socket-keep-alive</span></code></h3>
+<p>This flag controls the socket keep alive feature that keeps a connection alive through firewalls.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">false</span></code>.</p>
+</div>
+<div class="section" id="mongodb-ssl-enabled">
+<h3><code class="docutils literal"><span class="pre">mongodb.ssl.enabled</span></code></h3>
+<p>This flag enables SSL connections to MongoDB servers.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">false</span></code>.</p>
+</div>
+<div class="section" id="mongodb-read-preference">
+<h3><code class="docutils literal"><span class="pre">mongodb.read-preference</span></code></h3>
+<p>The read preference to use for queries, map-reduce, aggregation, and count.
+The available values are <code class="docutils literal"><span class="pre">PRIMARY</span></code>, <code class="docutils literal"><span class="pre">PRIMARY_PREFERRED</span></code>, <code class="docutils literal"><span class="pre">SECONDARY</span></code>, <code class="docutils literal"><span class="pre">SECONDARY_PREFERRED</span></code> and <code class="docutils literal"><span class="pre">NEAREST</span></code>.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">PRIMARY</span></code>.</p>
+</div>
+<div class="section" id="mongodb-write-concern">
+<h3><code class="docutils literal"><span class="pre">mongodb.write-concern</span></code></h3>
+<p>The write concern to use. The available values are
+<code class="docutils literal"><span class="pre">ACKNOWLEDGED</span></code>, <code class="docutils literal"><span class="pre">FSYNC_SAFE</span></code>, <code class="docutils literal"><span class="pre">FSYNCED</span></code>, <code class="docutils literal"><span class="pre">JOURNAL_SAFEY</span></code>, <code class="docutils literal"><span class="pre">JOURNALED</span></code>, <code class="docutils literal"><span class="pre">MAJORITY</span></code>,
+<code class="docutils literal"><span class="pre">NORMAL</span></code>, <code class="docutils literal"><span class="pre">REPLICA_ACKNOWLEDGED</span></code>, <code class="docutils literal"><span class="pre">REPLICAS_SAFE</span></code> and <code class="docutils literal"><span class="pre">UNACKNOWLEDGED</span></code>.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">ACKNOWLEDGED</span></code>.</p>
+</div>
+<div class="section" id="mongodb-required-replica-set">
+<h3><code class="docutils literal"><span class="pre">mongodb.required-replica-set</span></code></h3>
+<p>The required replica set name. With this option set, the MongoClient instance will</p>
+<ol class="arabic simple">
+<li>Connect in replica set mode, and discover all members of the set based on the given servers</li>
+<li>Make sure that the set name reported by all members matches the required set name.</li>
+<li>Refuse to service any requests if any member of the seed list is not part of a replica set with the required name.</li>
+</ol>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="mongodb-cursor-batch-size">
+<h3><code class="docutils literal"><span class="pre">mongodb.cursor-batch-size</span></code></h3>
+<p>Limits the number of elements returned in one batch. A cursor typically fetches a batch of result objects and stores them locally.
+If batchSize is 0, Driver&#8217;s default will be used.
+If batchSize is positive, it represents the size of each batch of objects retrieved. It can be adjusted to optimize performance and limit data transfer.
+If batchSize is negative, it will limit of number objects returned, that fit within the max batch size limit (usually 4MB), and cursor will be closed. For example if batchSize is -10, then the server will return a maximum of 10 documents and as many as can fit in 4MB, then close the cursor.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Do not use a batch size of <code class="docutils literal"><span class="pre">1</span></code>.</p>
+</div>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">0</span></code>.</p>
+</div>
+</div>
+<div class="section" id="table-definition">
+<span id="table-definition-label"></span><h2>Table Definition</h2>
+<p>MongoDB maintains table definitions on the special collection where <code class="docutils literal"><span class="pre">mongodb.schema-collection</span></code> configuration value specifies.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">There&#8217;s no way for the plugin to detect a collection is deleted.
+You need to delete the entry by <code class="docutils literal"><span class="pre">db.getCollection(&quot;_schema&quot;).remove(</span> <span class="pre">{</span> <span class="pre">table:</span> <span class="pre">deleted_table_name</span> <span class="pre">})</span></code> in the Mongo Shell.
+Or drop a collection by running <code class="docutils literal"><span class="pre">DROP</span> <span class="pre">TABLE</span> <span class="pre">table_name</span></code> using Presto.</p>
+</div>
+<p>A schema collection consists of a MongoDB document for a table.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>{
+    &quot;table&quot;: ...,
+    &quot;fields&quot;: [
+          { &quot;name&quot; : ...,
+            &quot;type&quot; : &quot;varchar|bigint|boolean|double|date|array&lt;bigint&gt;|...&quot;,
+            &quot;hidden&quot; : false },
+            ...
+        ]
+    }
+}
+</pre></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="7%" />
+<col width="11%" />
+<col width="71%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Field</th>
+<th class="head">Required</th>
+<th class="head">Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">table</span></code></td>
+<td>required</td>
+<td>string</td>
+<td>Presto table name</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">fields</span></code></td>
+<td>required</td>
+<td>array</td>
+<td>A list of field definitions. Each field definition creates a new column in the Presto table.</td>
+</tr>
+</tbody>
+</table>
+<p>Each field definition:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>{
+    &quot;name&quot;: ...,
+    &quot;type&quot;: ...,
+    &quot;hidden&quot;: ...
+}
+</pre></div>
+</div>
+<table border="1" class="docutils">
+<colgroup>
+<col width="12%" />
+<col width="7%" />
+<col width="7%" />
+<col width="73%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Field</th>
+<th class="head">Required</th>
+<th class="head">Type</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">name</span></code></td>
+<td>required</td>
+<td>string</td>
+<td>Name of the column in the Presto table.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">type</span></code></td>
+<td>required</td>
+<td>string</td>
+<td>Presto type of the column.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hidden</span></code></td>
+<td>optional</td>
+<td>boolean</td>
+<td>Hides the column from <code class="docutils literal"><span class="pre">DESCRIBE</span> <span class="pre">&lt;table</span> <span class="pre">name&gt;</span></code> and <code class="docutils literal"><span class="pre">SELECT</span> <span class="pre">*</span></code>. Defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
+</tr>
+</tbody>
+</table>
+<p>There is no limit on field descriptions for either key or message.</p>
+</div>
+<div class="section" id="objectid">
+<h2>ObjectId</h2>
+<p>MongoDB collection has the special field <code class="docutils literal"><span class="pre">_id</span></code>. The connector tries to follow the same rules for this special field, so there will be hidden field <code class="docutils literal"><span class="pre">_id</span></code>.</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">orders</span> <span class="p">(</span>
+    <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+    <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="n">totalprice</span> <span class="n">double</span><span class="p">,</span>
+    <span class="n">orderdate</span> <span class="nb">date</span>
+<span class="p">);</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">orders</span> <span class="k">VALUES</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;bad&#39;</span><span class="p">,</span> <span class="mi">50</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span> <span class="k">current_date</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">orders</span> <span class="k">VALUES</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;good&#39;</span><span class="p">,</span> <span class="mi">100</span><span class="p">.</span><span class="mi">0</span><span class="p">,</span> <span class="k">current_date</span><span class="p">);</span>
+<span class="k">SELECT</span> <span class="n">_id</span><span class="p">,</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders3</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-none"><div class="highlight"><pre><span></span>                 _id                 | orderkey | orderstatus | totalprice | orderdate
+-------------------------------------+----------+-------------+------------+------------
+ 55 b1 51 63 38 64 d6 43 8c 61 a9 ce |        1 | bad         |       50.0 | 2015-07-23
+ 55 b1 51 67 38 64 d6 43 8c 61 a9 cf |        2 | good        |      100.0 | 2015-07-23
+(2 rows)
+</pre></div>
+</div>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">_id</span><span class="p">,</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders3</span> <span class="k">WHERE</span> <span class="n">_id</span> <span class="o">=</span> <span class="n">ObjectId</span><span class="p">(</span><span class="s1">&#39;55b151633864d6438c61a9ce&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-none"><div class="highlight"><pre><span></span>                 _id                 | orderkey | orderstatus | totalprice | orderdate
+-------------------------------------+----------+-------------+------------+------------
+ 55 b1 51 63 38 64 d6 43 8c 61 a9 ce |        1 | bad         |       50.0 | 2015-07-23
+(1 row)
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Unfortunately, there is no way to represent <code class="docutils literal"><span class="pre">_id</span></code> fields more fancy like <code class="docutils literal"><span class="pre">55b151633864d6438c61a9ce</span></code>.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="redis.html" class="btn btn-neutral float-right" title="12.6. Redis Connector" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="localfile.html" class="btn btn-neutral" title="12.4. Local File Connector" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.188-e.0.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
