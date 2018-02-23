@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>8.5. Built-in System Access Control &mdash; Teradata Distribution of Presto 0.189-t.0.4 Documentation</title>
+  <title>8.5. Built-in System Access Control &mdash; Teradata Distribution of Presto 0.189-t.0.6 Documentation</title>
   
 
   
@@ -33,7 +33,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="Teradata Distribution of Presto 0.189-t.0.4 Documentation" href="../index.html"/>
+    <link rel="top" title="Teradata Distribution of Presto 0.189-t.0.6 Documentation" href="../index.html"/>
         <link rel="up" title="8. Security" href="../security.html"/>
         <link rel="next" title="8.6. Secure Internal Communication" href="internal-communication.html"/>
         <link rel="prev" title="8.4. Java Keystores and Truststores" href="tls.html"/> 
@@ -65,7 +65,7 @@
             
             
               <div class="version">
-                0.189-t.0.4
+                0.189-t.0.6
               </div>
             
           
@@ -104,6 +104,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#read-only-system-access-control">Read Only System Access Control</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#file-based-system-access-control">File Based System Access Control</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#catalog-rules">Catalog Rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kerberos-principal-rule">Kerberos Principal Rule</a></li>
 </ul>
 </li>
 </ul>
@@ -232,26 +233,45 @@ contents:</p>
 security.config-file=etc/rules.json
 </pre></div>
 </div>
-<p>The config file consists of a list of access control rules in JSON format. The
+<p>The config file consists of access control rules in JSON format. The
 rules are matched in the order specified in the file. All
 regular expressions default to <code class="docutils literal"><span class="pre">.*</span></code> if not specified.</p>
-<p>This plugin currently only supports catalog access control rules. If you want
-to limit access on a system level in any other way, you must implement a custom
-SystemAccessControl plugin (see <a class="reference internal" href="../develop/system-access-control.html"><span class="doc">System Access Control</span></a>).</p>
+<p>This plugin currently supports catalog access control rules and a Kerberos principal
+rule. If you want to limit access on a system level in any other way,
+you must implement a custom SystemAccessControl plugin (see <a class="reference internal" href="../develop/system-access-control.html"><span class="doc">System Access Control</span></a>).</p>
 <div class="section" id="catalog-rules">
 <h3>Catalog Rules</h3>
-<p>These rules govern the catalogs particular users can access. The user is
+<p>This list of rules governs the catalogs particular users can access. The user is
 granted access to a catalog based on the first matching rule. If no rule
 matches, access is denied. Each rule is composed of the following fields:</p>
 <ul class="simple">
 <li><code class="docutils literal"><span class="pre">user</span></code> (optional): regex to match against user name.</li>
 <li><code class="docutils literal"><span class="pre">catalog</span></code> (optional): regex to match against catalog name.</li>
-<li><code class="docutils literal"><span class="pre">allowed</span></code> (required): boolean indicating whether a user has access to the catalog</li>
+<li><code class="docutils literal"><span class="pre">allowed</span></code> (required): boolean indicating whether a user has access to the catalog.</li>
 </ul>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
 <p class="last">By default, all users have access to the <code class="docutils literal"><span class="pre">system</span></code> catalog. You can
 override this behavior by adding a rule.</p>
+</div>
+</div>
+<div class="section" id="kerberos-principal-rule">
+<h3>Kerberos Principal Rule</h3>
+<p>This optional rule governs whether a given Kerberos principal can be used to set a given user.
+Thus, it is possible to ensure that principal <code class="docutils literal"><span class="pre">bob&#64;REALM</span></code> is only used by user <code class="docutils literal"><span class="pre">bob</span></code>.
+The rule is composed of a single field:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">exactMatch</span></code> (required): boolean indicating whether the user must exactly match the Kerberos
+principal with <code class="docutils literal"><span class="pre">&#64;REALM</span></code> trimmed off.</li>
+</ul>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If a principal has a host field specified (e.g. <code class="docutils literal"><span class="pre">presto/localhost&#64;REALM</span></code>), the Presto user
+must be <code class="docutils literal"><span class="pre">presto/localhost</span></code> if <code class="docutils literal"><span class="pre">exactMatch</span></code> is <code class="docutils literal"><span class="pre">true</span></code></p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If no <code class="docutils literal"><span class="pre">kerberosPrincipals</span></code> rule is specified, <code class="docutils literal"><span class="pre">exactMatch</span></code> defaults to <code class="docutils literal"><span class="pre">false</span></code>.</p>
 </div>
 <p>For example, if you want to allow only the user <code class="docutils literal"><span class="pre">admin</span></code> to access the
 <code class="docutils literal"><span class="pre">mysql</span></code> and the <code class="docutils literal"><span class="pre">system</span></code> catalog, allow all users to access the <code class="docutils literal"><span class="pre">hive</span></code>
@@ -271,7 +291,11 @@ catalog, and deny all other access, you can use the following rules:</p>
       <span class="nt">&quot;catalog&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">,</span>
       <span class="nt">&quot;allow&quot;</span><span class="p">:</span> <span class="kc">false</span>
     <span class="p">}</span>
-  <span class="p">]</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;kerberosPrincipals&quot;</span><span class="p">:</span>
+   <span class="p">{</span>
+      <span class="nt">&quot;exactMatch&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span>
+   <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -318,7 +342,7 @@ catalog, and deny all other access, you can use the following rules:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.189-t.0.4',
+            VERSION:'0.189-t.0.6',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
