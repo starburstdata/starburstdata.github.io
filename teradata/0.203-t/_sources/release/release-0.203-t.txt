@@ -1,0 +1,102 @@
+===============
+Release 0.203-t
+===============
+
+General Changes
+---------------
+
+* Introduce cost-based plan optimizations.
+* Replace ``distributed_join`` session property with ``join_distribution_type``.
+* Replace ``reorder_joins`` session property with ``join_reordering_strategy``.
+* Add support for ROLE management including CREATE ROLE, DROP ROLE, GRANT ROLE, REVOKE ROLE, SET ROLE,
+  SHOW CURRENT ROLES, SHOW ROLES and SHOW ROLE GRANTS commands.
+* Improve performance of correlated subqueries with non-equi correlated predicates when broadcast join is enabled
+* Improve stats calculation for outer joins and correlated subqueries
+* Track execution statistics of AddExchanges and PredicatePushdown optimizer rules.
+* Support prepared statements that are longer than 4K bytes.
+
+Hive Connector Changes
+----------------------
+
+* Implement ROLE management support.
+* Allow partitions without files for bucketed tables (via hive.empty-bucketed-partitions.enabled).
+* Allow multiple files per bucket for bucketed tables (via hive.multi-file-bucketing.enabled). There must be one or more files per bucket. File names must match the Hive naming convention.
+* Allow reading incompletely bucketed tables with missing files (via hive.empty-bucketed-partitions.enabled).
+* Switch Avro InstanceCache to use size-based expiration.
+* Add support for creating Avro Hive tables with schema set using the `avro_schema_url` table property.
+* Support for backward compatible Avro schema evolution.
+* Add support for HDFS wire encryption.
+* Respect the ``skip.footer.line.count`` Hive table property.
+
+Kafka Connector Changes
+-----------------------
+* Support for Avro formatted Kafka messages.
+* Support for backward compatible Avro schema evolution.
+* Extend validation of tables configuration. More misconfiguration errors are detected on Presto startup during connector initialization and reported to user.
+* Harden input checks in decoders. If message Kafka message cannot be converted to requested Presto type, exception will be thrown. Documentation was extended to be precise about allowed decoding rules.
+* Do not skip topic partitions for which leader is not present at query time. Report an error if such situation arises.
+
+SPI Changes
+-----------
+
+* Add list of projection columns to the SPI for ``ConnectorSplitManager``
+
+Security changes
+----------------
+
+* Secured internal cluster communication over HTTPS using Kerberos or LDAP authentication
+
+Data Types
+----------
+Release changes the semantics of the ``TIMESTAMP`` and ``TIME``
+types to align with the SQL standard. See the following sections for details.
+
+Note: This is still experimental work and subject to subsequent changes.
+The new semantics is disabled by default but can be enabled using ``deprecated.legacy-timestamp`` config property
+or ``legacy_timestamp`` session property.
+
+**TIMESTAMP semantic changes**
+
+Previously, the ``TIMESTAMP`` type described an instance in time in the Presto session's time zone.
+Now, Presto treats ``TIMESTAMP`` values as a set of the following fields representing wall time:
+
+ * ``YEAR OF ERA``
+ * ``MONTH OF YEAR``
+ * ``DAY OF MONTH``
+ * ``HOUR OF DAY``
+ * ``MINUTE OF HOUR``
+ * ``SECOND OF MINUTE`` - as decimal with precision 3
+
+For that reason, a ``TIMESTAMP`` value is not linked with the session time zone in any way until a time zone is needed explicitly,
+such as when casting to a ``TIMESTAMP WITH TIME ZONE`` or ``TIME WITH TIME ZONE``.
+In those cases, the time zone offset of the session time zone is applied, as specified in the SQL standard.
+
+For various compatibility reasons, when casting from date/time type without a time zone to one with a time zone, a fixed time zone
+is used as opposed to the named one that may be set for the session.
+
+eg. with ``-Duser.timezone="Asia/Kathmandu"`` on CLI
+
+ * Query: ``SELECT CAST(TIMESTAMP '2000-01-01 10:00' AS TIMESTAMP WITH TIME ZONE);``
+ * Previous result: ``2000-01-01 10:00:00.000 Asia/Kathmandu``
+ * Current result: ``2000-01-01 10:00:00.000 +05:45``
+
+**TIME semantic changes**
+
+The ``TIME`` type was changed similarly to the ``TIMESTAMP`` type.
+
+**TIME WITH TIME ZONE semantic changes**
+
+Due to compatibility requirements, having ``TIME WITH TIME ZONE`` completely aligned with the SQL standard was not possible yet.
+For that reason, when calculating the time zone offset for ``TIME WITH TIME ZONE``, the Teradata distribution of Presto uses
+the session's start date and time.
+
+This can be seen in queries using ``TIME WITH TIME ZONE`` in a time zone that has had time zone policy changes or uses DST.
+eg. With session start time on 1 March 2017
+
+ * Query: ``SELECT TIME '10:00:00 Asia/Kathmandu' AT TIME ZONE 'UTC'``
+ * Previous result: ``04:30:00.000 UTC``
+ * Current result: ``04:15:00.000 UTC``
+
+**Time-related bug fixes**
+
+* The ``current_time`` and ``localtime`` functions were fixed to return the correct value for non-UTC timezones.
