@@ -102,6 +102,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#general-properties">General Properties</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#join-distribution-type"><code class="docutils literal"><span class="pre">join-distribution-type</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#redistribute-writes"><code class="docutils literal"><span class="pre">redistribute-writes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#query-max-memory-per-node"><code class="docutils literal"><span class="pre">query.max-memory-per-node</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#query-max-total-memory-per-node"><code class="docutils literal"><span class="pre">query.max-total-memory-per-node</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memory-heap-headroom-per-node"><code class="docutils literal"><span class="pre">memory.heap-headroom-per-node</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#resources-reserved-system-memory"><code class="docutils literal"><span class="pre">resources.reserved-system-memory</span></code></a></li>
 </ul>
 </li>
@@ -277,6 +280,46 @@ redistributing all the data across the network. This can also be specified
 on a per-query basis using the <code class="docutils literal"><span class="pre">redistribute_writes</span></code> session property.</p>
 </div></blockquote>
 </div>
+<div class="section" id="query-max-memory-per-node">
+<h3><code class="docutils literal"><span class="pre">query.max-memory-per-node</span></code></h3>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Type:</strong> <code class="docutils literal"><span class="pre">data</span> <span class="pre">size</span></code></li>
+<li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">JVM</span> <span class="pre">max</span> <span class="pre">memory</span> <span class="pre">*</span> <span class="pre">0.1</span></code></li>
+</ul>
+<p>This is the max amount of user memory a query can use on a worker.
+User memory is allocated during execution for things that are directly
+attributable to or controllable by a user query. For example, memory used
+by the hash tables built during execution, memory used during sorting, etc.
+When a query hits this limit it will be killed by Presto.</p>
+</div></blockquote>
+</div>
+<div class="section" id="query-max-total-memory-per-node">
+<h3><code class="docutils literal"><span class="pre">query.max-total-memory-per-node</span></code></h3>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Type:</strong> <code class="docutils literal"><span class="pre">data</span> <span class="pre">size</span></code></li>
+<li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">JVM</span> <span class="pre">max</span> <span class="pre">memory</span> <span class="pre">*</span> <span class="pre">0.3</span></code></li>
+</ul>
+<p>This is the max amount of user and system memory a query can use on a worker.
+System memory is allocated during execution for things that are not directly
+attributable to or controllable by a user query. For example, memory allocated
+by the readers, writers, and network buffers, etc. The value of
+<code class="docutils literal"><span class="pre">query.max-total-memory-per-node</span></code> must be greater than
+<code class="docutils literal"><span class="pre">query.max-memory-per-node</span></code>.</p>
+</div></blockquote>
+</div>
+<div class="section" id="memory-heap-headroom-per-node">
+<h3><code class="docutils literal"><span class="pre">memory.heap-headroom-per-node</span></code></h3>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Type:</strong> <code class="docutils literal"><span class="pre">data</span> <span class="pre">size</span></code></li>
+<li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">JVM</span> <span class="pre">max</span> <span class="pre">memory</span> <span class="pre">*</span> <span class="pre">0.3</span></code></li>
+</ul>
+<p>This is the amount of memory set aside as headroom/buffer in the JVM heap
+for allocations that are not tracked by Presto.</p>
+</div></blockquote>
+</div>
 <div class="section" id="resources-reserved-system-memory">
 <h3><code class="docutils literal"><span class="pre">resources.reserved-system-memory</span></code></h3>
 <blockquote>
@@ -284,15 +327,19 @@ on a per-query basis using the <code class="docutils literal"><span class="pre">
 <li><strong>Type:</strong> <code class="docutils literal"><span class="pre">data</span> <span class="pre">size</span></code></li>
 <li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">JVM</span> <span class="pre">max</span> <span class="pre">memory</span> <span class="pre">*</span> <span class="pre">0.4</span></code></li>
 </ul>
-<p>The amount of JVM memory reserved, for accounting purposes, for things
-that are not directly attributable to or controllable by a user query.
-For example, output buffers, code caches, etc. This also accounts for
-memory that is not tracked by the memory tracking system.</p>
+<p>The amount of JVM memory reserved for system memory usage. System memory is
+allocated during execution for things that are not directly attributable to
+or controllable by a user query. For example, memory allocated by the readers,
+writers, and network buffers, etc. This also accounts for memory that is not
+tracked by the memory tracking system.</p>
 <p>The purpose of this property is to prevent the JVM from running out of
 memory (OOM). The default value is suitable for smaller JVM heap sizes or
 clusters with many concurrent queries. If running fewer queries with a
 large heap, a smaller value may work. Basically, set this value large
 enough that the JVM does not fail with <code class="docutils literal"><span class="pre">OutOfMemoryError</span></code>.</p>
+<p>Please note that this config property is only used when
+<code class="docutils literal"><span class="pre">deprecated.legacy-system-pool-enabled=true</span></code>, and it will be removed
+in the future.</p>
 </div></blockquote>
 </div>
 </div>

@@ -45,8 +45,61 @@ Dynamic auto scaling uses policies which you define in the in the "Scaling Polic
 
 Auto Scaling Activity
 ^^^^^^^^^^^^^^^^^^^^^
-All events in the Auto Scaling mechanism can be observed in the Activity History tab. This is very useful for debugging purposes. The current instances part of the ASG are listed in the "Instances" tab. The current behaviour is such that when Auto Scaling decides it needs to scale-in the cluster, it kills some number of Workers. This means that all currently running queries will fail. The Presto cluster itself is still healthy however and all new queries, submitted after the node termination, will run successfully. This limitation will be addressed in future versions, with the introduction of a graceful shutdown mechanism within the Starburst CloudFormation Stack.
+All events in the Auto Scaling mechanism can be observed in the Activity History tab. This is very useful for debugging purposes. The current instances part of the ASG are listed in the "Instances" tab. There you can observe which instances are currently being started-up or decommissioned.
 
 Manual
 ^^^^^^
-Auto Scaling can also be used for Starburst Presto clusters built manually using the Starburst AMIs. The workers need to be manually put into a single Auto Scaling Group, and configured as described above. 
+Auto Scaling can also be used for Starburst Presto clusters built manually using the Starburst AMIs and not using the Cloud Formation Stack. The workers need to be manually put into a single Auto Scaling Group, and configured as described above. Graceful shutdown of Presto Worker nodes, as described in the :ref:`graceful_shutdown`, will not work for manually setup AutoScaling groups.
+
+.. _graceful_shutdown:
+
+Graceful shutdown of Presto Workers
+-----------------------------------
+
+When a Cloud Formation Stack is created using the Starburst Cloud Formation template all the Presto Workers are automatically organized within an AWS AutoScaling Group, as described in other sections of this documentation.
+
+When AWS AutoScaling resizes the cluster it starts decommissioning Presto Workers. The Starburst Presto Cloud Formation Stack has features to make sure this process doesn’t disrupt the usage of the cluster, most importantly that no queries fail because of that.
+
+Without this feature if a node is forcefully shut down, all queries currently running will fail and will need to be restarted.
+
+How it works
+^^^^^^^^^^^^
+
+With graceful shutdown, when the AutoScalingGroup/Stack is modified to shrink the cluster (number of workers lowered, or the AutoScaling group is configured to do so automatically) then AWS AutoScaling will notify the Presto Worker nodes it intends to shut down and let them prepare for this.
+
+The Presto Worker enters a special state in which it (1) stops serving new requests, (2) continues processing the current query tasks that were scheduled on it and (3) shuts down after upon finishing that work. Next after a 2 minute quiet period the Presto Worker process automatically exits, and notifies the AutoScaling mechanism to proceed with the termination of its EC2 node.
+
+The maximum time a Presto Worker can postpone AWS AutoScaling termination of its node is 48hrs, this is a AWS limitation.
+
+AWS elements on the Stack
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Starburst Presto Cloud Formation Template creates a number of resources on the Stack:
+
+- an `AutoScaling Hook`_
+- an `SQS Queue`_ that this hook writes to
+- an `IAM Role`_ and an `InstanceProfile`_ wrapper to allow AutoScaling to write to SQS
+- an `IAM Role`_ to allow the Presto Worker nodes talk to SQS, AutoScaling and EC2 services. The role is fine grained to allow only the necessary actions. It’s discussed in a section below
+
+
+.. _AutoScaling Hook: https://docs.aws.amazon.com/autoscaling/ec2/userguide/lifecycle-hooks.html
+.. _SQS Queue: https://aws.amazon.com/documentation/sqs/
+.. _IAM Role: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
+.. _InstanceProfile: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html
+
+All the resources created on the Stack are explicit and the user can find them and view their settings/permissions. All resources will be terminated once the Stack is deleted.
+
+Starburst Presto Worker Role Permissions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**The Presto Worker role is created automatically by the Starburst Cloud Formation template on the Stack (and deleted when the Stack is deleted).**
+
+**When using Starburst Presto via our Cloud Formation template by default you do not need to provide anything, the template will create all necessary resources automatically.**
+
+If however you need to provide your own IAM Instance Profile for the Presto instances (``IamInstanceProfile`` field in the Stack creation form) please consult the :ref:`aws_security_prereq` section. Same applies when launching the AMI manually, make sure you choose a IAM Role that satisfies the requirements.
+
+
+Graceful shutdown limitations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Presto instances created manually from the AWS Marketplace AMIs and manually setup in a AutoScaling Group will not benefit from this mechanism. At least not without manual setup. They will be operating without graceful shutdown, so when AutoScaling kicks in, all queries that are currently running may fail. In that case, at boot time a warning log will be recorded in the graceful shutdown handler log saying it’s not running - this is intended behaviour.

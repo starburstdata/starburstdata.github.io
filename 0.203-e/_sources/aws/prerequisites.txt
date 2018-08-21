@@ -67,3 +67,64 @@ When using Starburst’s CloudFormation template for Presto, you can specify the
 Reference the following link for more information on `instance profiles`_. 
 
 .. _instance profiles: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html
+
+.. _aws_security_prereq:
+
+AWS Security Prerequisites
+--------------------------
+
+Below is the JSON for the IAM Role automatically created by the Starburst Cloud Formation template. The permissions below are a minimal subset of permissions to allow the Worker to fully utilize its potential, including graceful shutdown:
+
+.. code-block:: json
+
+  {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Action": [
+                  "autoscaling:CompleteLifecycleAction",
+                  "autoscaling:RecordLifecycleActionHeartbeat",
+                  "ec2:DescribeInstances",
+                  "elasticmapreduce:DescribeCluster",
+                  "elasticmapreduce:RunJobFlow",
+                  "glue:BatchCreatePartition",
+                  "glue:CreateDatabase",
+                  "glue:CreateTable",
+                  "glue:DeleteDatabase",
+                  "glue:DeletePartition",
+                  "glue:DeleteTable",
+                  "glue:GetDatabase",
+                  "glue:GetDatabases",
+                  "glue:GetPartition",
+                  "glue:GetPartitions",
+                  "glue:GetTable",
+                  "glue:GetTables",
+                  "glue:UpdateTable",
+                  "iam:PassRole",
+                  "s3:GetObject",
+                  "s3:ListBucket",
+                  "s3:PutObject",
+                  "sqs:ChangeMessageVisibility",
+                  "sqs:DeleteMessage",
+                  "sqs:GetQueueUrl",
+                  "sqs:ReceiveMessage"
+              ],
+              "Resource": [
+                  "*"
+              ],
+              "Effect": "Allow"
+          }
+      ]
+  }
+
+In the above:
+
+- *AutoScaling*, *EC2* and *SQS* permissions are needed for :ref:`graceful_shutdown` to work, when AutoScaling kicks in, or reshaping the cluster via the Stack modification.
+- *Glue* access is needed to leverage the Glue catalog (needed when using :doc:`/aws/glue`).
+- the *S3* permissions are needed for the Hive Connector to actually access (read/write) the data on S3
+- *EMR* and *IAM* permissions are necessary to run statistics gathering (needed to take advantage of the `Cost-Based Optimizer <https://www.starburstdata.com/technical-blog/presto-cost-based-optimizer-rocks-the-tpc-benchmarks/>`_, when using the :doc:`Hive Metastore</aws/glue>`)
+
+If a user wants to have a more precise control over the permissions, and for example limit S3 access of Presto to a specific bucket etc, then a custom IAM Instance Profile can be provided and passed to the Cloud Formation template during Stack creation (``IamInstanceProfile`` field in the Stack creation form). It will then be use instead and the aforementioned Role/Instance Profile will not be created.
+
+Caution should be taken though to make sure that all the other permissions regarding *AutoScaling*, *SQS*, *IAM*, *EC2*, *EMR* and *Glue* are given to this custom role, so that AWS AutoScaling and other features (related to those permissions) will work properly.
+
