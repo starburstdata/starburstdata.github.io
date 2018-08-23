@@ -110,11 +110,11 @@
 <li class="toctree-l4"><a class="reference internal" href="#manual">Manual</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#graceful-shutdown-of-presto-workers">Graceful shutdown of Presto Workers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#graceful-scaledown-of-presto-workers">Graceful Scaledown of Presto Workers</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#how-it-works">How it works</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#aws-elements-on-the-stack">AWS elements on the Stack</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#starburst-presto-worker-role-permissions">Starburst Presto Worker Role Permissions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#graceful-shutdown-limitations">Graceful shutdown limitations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#graceful-scaledown-limitations">Graceful Scaledown limitations</a></li>
 </ul>
 </li>
 </ul>
@@ -229,17 +229,17 @@
 </div>
 <div class="section" id="manual">
 <h3>Manual</h3>
-<p>Auto Scaling can also be used for Starburst Presto clusters built manually using the Starburst AMIs and not using the Cloud Formation Stack. The workers need to be manually put into a single Auto Scaling Group, and configured as described above. Graceful shutdown of Presto Worker nodes, as described in the <a class="reference internal" href="#graceful-shutdown"><span class="std std-ref">Graceful shutdown of Presto Workers</span></a>, will not work for manually setup AutoScaling groups.</p>
+<p>Auto Scaling can also be used for Starburst Presto clusters built manually using the Starburst AMIs and not using the Cloud Formation Stack. The workers need to be manually put into a single Auto Scaling Group, and configured as described above. Graceful Scaledown of Presto Worker nodes, as described in the <a class="reference internal" href="#graceful-scaledown"><span class="std std-ref">Graceful Scaledown of Presto Workers</span></a>, will not work for manually setup AutoScaling groups.</p>
 </div>
 </div>
-<div class="section" id="graceful-shutdown-of-presto-workers">
-<span id="graceful-shutdown"></span><h2>Graceful shutdown of Presto Workers</h2>
+<div class="section" id="graceful-scaledown-of-presto-workers">
+<span id="graceful-scaledown"></span><h2>Graceful Scaledown of Presto Workers</h2>
 <p>When a Cloud Formation Stack is created using the Starburst Cloud Formation template all the Presto Workers are automatically organized within an AWS AutoScaling Group, as described in other sections of this documentation.</p>
 <p>When AWS AutoScaling resizes the cluster it starts decommissioning Presto Workers. The Starburst Presto Cloud Formation Stack has features to make sure this process doesn’t disrupt the usage of the cluster, most importantly that no queries fail because of that.</p>
 <p>Without this feature if a node is forcefully shut down, all queries currently running will fail and will need to be restarted.</p>
 <div class="section" id="how-it-works">
 <h3>How it works</h3>
-<p>With graceful shutdown, when the AutoScalingGroup/Stack is modified to shrink the cluster (number of workers lowered, or the AutoScaling group is configured to do so automatically) then AWS AutoScaling will notify the Presto Worker nodes it intends to shut down and let them prepare for this.</p>
+<p>With graceful scaledown, when the AutoScalingGroup/Stack is modified to shrink the cluster (number of workers lowered, or the AutoScaling group is configured to do so automatically) then AWS AutoScaling will notify the Presto Worker nodes it intends to shut down and let them prepare for this.</p>
 <p>The Presto Worker enters a special state in which it (1) stops serving new requests, (2) continues processing the current query tasks that were scheduled on it and (3) shuts down after upon finishing that work. Next after a 2 minute quiet period the Presto Worker process automatically exits, and notifies the AutoScaling mechanism to proceed with the termination of its EC2 node.</p>
 <p>The maximum time a Presto Worker can postpone AWS AutoScaling termination of its node is 48hrs, this is a AWS limitation.</p>
 </div>
@@ -260,9 +260,9 @@
 <p><strong>When using Starburst Presto via our Cloud Formation template by default you do not need to provide anything, the template will create all necessary resources automatically.</strong></p>
 <p>If however you need to provide your own IAM Instance Profile for the Presto instances (<code class="docutils literal"><span class="pre">IamInstanceProfile</span></code> field in the Stack creation form) please consult the <a class="reference internal" href="prerequisites.html#aws-security-prereq"><span class="std std-ref">AWS Security Prerequisites</span></a> section. Same applies when launching the AMI manually, make sure you choose a IAM Role that satisfies the requirements.</p>
 </div>
-<div class="section" id="graceful-shutdown-limitations">
-<h3>Graceful shutdown limitations</h3>
-<p>Presto instances created manually from the AWS Marketplace AMIs and manually setup in a AutoScaling Group will not benefit from this mechanism. At least not without manual setup. They will be operating without graceful shutdown, so when AutoScaling kicks in, all queries that are currently running may fail. In that case, at boot time a warning log will be recorded in the graceful shutdown handler log saying it’s not running - this is intended behaviour.</p>
+<div class="section" id="graceful-scaledown-limitations">
+<h3>Graceful Scaledown limitations</h3>
+<p>Presto instances created manually from the AWS Marketplace AMIs and manually setup in a AutoScaling Group will not benefit from this mechanism. At least not without manual setup. They will be operating without graceful scaledown, so when AutoScaling kicks in, all queries that are currently running may fail. In that case, at boot time a warning log will be recorded in the graceful scaledown handler log saying it’s not running - this is intended behaviour.</p>
 </div>
 </div>
 </div>
