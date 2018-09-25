@@ -41,6 +41,10 @@ Property Value                                     Description
                                                    To alter these privileges, use the :doc:`/sql/grant` and
                                                    :doc:`/sql/revoke` commands.
                                                    See :ref:`hive-sql-standard-based-authorization` for details.
+
+``sentry``                                         Authorization checks are enforced using an external Apache Sentry
+                                                   service.
+                                                   See :ref:`hive-sentry-authorization` for details.
 ================================================== ============================================================
 
 .. _hive-sql-standard-based-authorization:
@@ -523,3 +527,90 @@ See below for an example.
       ]
     }
 
+.. _hive-sentry-authorization:
+
+Apache Sentry Based Authorization
+=================================
+
+When ``sentry`` security is enabled, Presto enforces the same SQL
+standard based authorization as Hive does when Sentry is enabled for Hive.
+
+Sentry authorization information can be accessed by querying the following tables:
+ * ``information_schema.roles`` - return information about all existing roles (equivalent of ``SHOW ROLES``)
+ * ``information_schema.applicable_roles`` - return roles that are granted to current user
+ * ``information_schema.enabled_roles`` - return a list of roles that currently user is using at the moment (equivalent of ``SHOW CURRENT USER``)
+ * ``information_schema.table_privileges`` - return all tables privileges granted to user according to currently enabled roles
+
+Presto does not support any modification of authorization policies in Sentry, this
+encloses commands like ``CREATE ROLE...``, ``GRANT...`` or ``REVOKE``.
+
+================================================== ============================================================
+Property Name                                      Description
+================================================== ============================================================
+``sentry.server``                                  The name of the server object in Sentry that Presto will use
+                                                   to find authorization rules.
+``sentry.admin-user``                              Admin user of Apache Sentry that has ``ALL`` access to
+                                                   server object.
+``sentry.rpc-addresses``                           Address on which sentry RPC is available.
+``sentry.rpc-port``                                Port at which Sentry is listening.
+``sentry.authentication-type``                     Authentication method that will be used when connecting to
+                                                   Sentry service.
+                                                   Possible values are ``NONE`` or ``KERBEROS``.
+``sentry.service-principal``                       Sentry service Kerberos principal that will be used to authenticate
+                                                   the Sentry service.
+                                                   This property is only used when ``sentry.authentication-type=NONE``.
+``sentry.client-principal``                        Sentry client Kerberos principal that will be used to authenticate
+                                                   the client when connecting to Sentry service.
+                                                   This property is only used when ``sentry.authentication-type=NONE``.
+``sentry.client-key-tab``                          Sentry client Kerberos keytab file location that will be used to
+                                                   authenticate the client when connecting to to Sentry service.
+                                                   This property is only used when ``sentry.authentication-type=NONE``.
+``sentry.cache-ttl``                               Period where information returned by Sentry will be
+                                                   cached in Presto. ``0ms`` disables the cache.
+``sentry.group-mapping``                           Defines the way how user group are determined.
+                                                   Possible values are:
+                                                   - ``HADOOP_DEFAULT`` user groups will be retrieved from
+                                                   hadoop client library. You may want to
+                                                   ````sentry.config.resources`` to modify this behaviour.
+                                                   - ``SYSTEM`` user groups will be retrieved from operating
+                                                   system that Presto is running on
+                                                   - ``LDAP`` user groups will be retrieved from LDAP.
+``sentry.ldap.url``                                Address of LDAP service when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.user``                               LDAP user name when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.password``                           LDAP user password when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.search-base``                        Configures the search base for the LDAP connection
+                                                   when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.user-search-filter``                 Additional filters to apply when when searching for users
+                                                   when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.group-search-filter``                Additional filters to apply when finding relevant groups
+                                                   when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.group-member-attribute``             LDAP attribute to use for determining group membership
+                                                   when ``sentry.group-mapping==LDAP``.
+``sentry.ldap.group-name-attribute``               LDAP attribute to use for identifying a group's name
+                                                   when ``sentry.group-mapping==LDAP``.
+``sentry.group-mapping.cache-ttl``                 Period where group mapping information will be
+                                                   cached in Presto. ``0ms`` disables the cache.
+``sentry.group-mapping.negative-cache-ttl``        Period where information about empty group will be
+                                                   cached in Presto. ``0ms`` disables the cache.
+``sentry.config.resources``                        Additional XML configuration files which will be read before
+                                                   applying Presto Sentry configuration. Useful for reusing
+                                                   existing ``sentry-site.xml`` configuration files.
+================================================== ============================================================
+
+HDFS wire encryption
+--------------------
+
+In a Kerberized Hadoop cluster with enabled HDFS wire encryption you can enable
+Presto to access HDFS by using below property.
+
+===================================== ==========================================
+Property Name                         Description
+===================================== ==========================================
+``hive.hdfs.wire-encryption.enabled`` Enables HDFS wire encryption.
+                                      Possible values are ``true`` or ``false``.
+===================================== ==========================================
+
+.. note::
+
+    Depending on Presto installation configuration, using wire encryption may
+    impact query execution performance.
