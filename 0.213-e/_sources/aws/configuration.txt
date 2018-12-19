@@ -1,0 +1,119 @@
+Configuring Presto
+==================
+
+Presto has an extensive set of configuration switches that allow it to be tuned for certain specific requirements. Default values are chosen for the best "out of the box" experience. However, if you need to fine-tune Presto behavior, you can do so when using Starburst’s CloudFormation template.
+
+Default Configuration
+---------------------
+
+The following configuration changes are applied automatically for you:
+
+* Java heap maximum memory (-Xmx) is set appropriately for the selected EC2 instance type
+* JVM's JIT caches are set to 512 MiB
+* Java is configured to use G1 garbage collector, this is the recommended garbage collector to use when running Presto
+* If HiveMetastoreURI parameter is provided, the ``hive`` catalog is configured with connector configuration left at its `defaults values <https://docs.starburstdata.com/latest/connector/hive.html>`_
+
+Additional (advanced) Configuration
+------------------------------------
+
+When using Starburst’s CloudFormation template, you remain in full control of the Presto cluster being run. Using the ``AdditionalConfigurationURI`` parameter with the CloudFormation template, you can change every configuration property of Presto. To do this, you need to create a configuration package and use it when launching Starburst’s CloudFormation template. 
+
+.. Note:: All configuration changes made to your Presto cluster should be performed via the CFT.
+
+Creating the Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The configuration package is a ZIP file with the structure shown below. All files are optional except for top-level etc/ directory entry.
+
+.. code-block:: none
+
+	etc/
+  		config.properties
+  		jvm.config
+  		catalog/
+     			hive.properties
+      			<catalog-name>.properties 
+
+**etc/config.properties**
+
+This file is optional. Please refer to `Properties Reference <https://docs.starburstdata.com/latest/admin/properties.html>`_ for documentation of properties that can be set here.
+
+**etc/jvm.config**
+
+This file is optional. Please refer to `Oracle's <https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html>`_ documentation of options that can be set here. Please refer to `Tuning Presto <https://docs.starburstdata.com/latest/admin/tuning.html>`_ for information about JVM options that are often useful when troubleshooting performance issues.
+Certain options, including ``-Xmx`` and garbage collection algorithm selection are set by default.
+
+**etc/catalog/hive.properties**
+
+This file is optional. If configuration package contains this file and the ``HiveMetastoreURI`` parameter is not provided when launching Starburst’s CloudFormation template, then the file must contain the following:
+
+.. code-block:: RST
+
+	connector.name=hive-hadoop2
+	hive.metastore.uri=thrift://example.net:9083
+
+Please refer to `Hive Connector <https://docs.starburstdata.com/latest/connector/hive.html>`_ and `Hive Security <https://docs.starburstdata.com/latest/connector/hive-security.html>`_ for documentation of options that can be set here.
+Please refer to :ref:`Auxiliary Files <aux-files-aws>` for instructions on how to configure properties that refer to additional files.
+
+**etc/catalog/<catalog-name>.properties**
+
+This file is optional. When such a file is placed in the configuration package, a catalog ``<catalog-name>`` will be created. The file must contain the following:
+
+.. code-block:: RST
+
+	connector.name=<connector-name>
+
+Where ``<connector-name>`` is the name of the connector you are going to use, please refer to the `Connector <https://docs.starburstdata.com/latest/connector.html>`_ documentation for a list of supported connectors and their documentation. If the chosen connector has some mandatory configuration parameters, they must be set in the ``<catalog-name>.properties`` file. There can be more than one such file in the ``etc/catalog/`` folder of the configuration package. This allows you to define multiple catalogs.
+
+Please refer to :ref:`Auxiliary Files <aux-files-aws>` for instructions on how to configure properties that refer to additional files.
+
+.. _aux-files-aws:
+
+**Auxiliary Files**
+
+If a configuration property in any of the configuration files accepts a path to an additional file (e.g., Hive's ``security.config-file``), add the file in the configuration package () and refer to it using a path that is *relative*, starting with the configuration package top-level directory.
+
+For example, if you are configuring Hive connector to use ``hive.security=file``, you also need to set ``security.config-file`` (see `Hive Security <https://docs.starburstdata.com/latest/connector/hive-security.html>`_ documentation for the meaning and structure of the file). To do so, add ``etc/catalog/hive-security.json`` in the configuration package and refer to ``etc/catalog/hive.properties`` using a relative path:
+
+.. code-block:: RST
+
+	...
+	hive.security=file
+	security.config-file=etc/catalog/hive-security.json
+
+Uploading the Configuration Package to S3
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For the configuration package ZIP to be used when launching  Starburst’s CloudFormation template, it must be uploaded to S3 first to a location of your choice. If the configuration package contains sensitive information (passwords, AWS access keys or Kerberos keytab files, etc.), please make sure to use an S3 location that is not publicly accessible.
+
+
+Using the Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When launching Starburst’s CloudFormation template, you can use the ``AdditionalConfigurationURI`` parameter to refer to the configuration package that should be applied on top of default configuration done by the template. The URI should be of the form ``s3://my_bucket/path/to/configuration/package.zip``.
+
+If you upload to a location that is not publicly accessible, you need to use ``IamInstanceProfile`` parameter when launching the cluster, and the selected Instance Profile must allow read access to the selected S3 location.
+
+Example Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can download an example configuration package from Starburst `here <https://s3.us-east-2.amazonaws.com/starburstdata/aws-marketplace/examples/cft/cloudformation-template-configuration/0.1/hive-allow-drop-table.zip>`_. To use it when launching Starburst’s CloudFormation template, use its S3-native address:
+
+.. code-block:: RST
+
+	s3://starburstdata/aws-marketplace/examples/cft/cloudformation-template-configuration/0.1/hive-allow-drop-table.zip
+
+Updating the Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The advanced configuration zip file name must be changed in order to update it successfully. We recommend including a version name within the file name to avoid any complications when updating your configurations. 
+
+Interactions Between Default and Advanced Configurations
+--------------------------------------------------------
+
+It is important to note that the “out of the box” default values are overridden only for the keys where an advanced configuration entry exits. If no advanced configuration is entered, the default value will remain. However, in the case of ``jvm.config`` , additional configuration entries are appended to the default configuration.
+
+
+
+
+
