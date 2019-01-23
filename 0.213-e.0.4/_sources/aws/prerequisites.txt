@@ -1,0 +1,292 @@
+Prerequisites
+=============
+
+.. _aws-ssh:
+
+SSH Keys
+--------
+Amazon EC2 uses public–key cryptography to encrypt and decrypt login information. Public–key cryptography uses a public key to encrypt a piece of data, such as a password, then the recipient uses the private key to decrypt the data. Together, the public and private keys are known as a key pair.
+
+To log into your instance where Presto is installed, you must: (1) create a key pair; (2) specify the name of the key pair when you launch the instance or invoke the CloudFormation template; and (3) provide the private key when you connect to the instance. This enables you to securely access your instance using the private key pair instead of a password.
+
+.. note:: Amazon EC2 stores only the public key and you are responsible for storing the private key. Take action to safeguard your keys, as anyone who possesses your private key can decrypt your login information.
+
+Reference the following link for more information on `ssh key pairs`_ and how to create your own.
+
+.. _ssh key pairs: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
+
+.. _aws-vpc:
+
+VPC & Subnets
+-------------
+Amazon Virtual Private Cloud (VPC) lets you provision a logically isolated section of the AWS Cloud where you can launch AWS resources in a virtual network that you define. You are given complete control over your virtual networking environment, including the selection of your IP address range, the creation of subnets, and network gateways.
+
+A VPC spans all the Availability Zones in the region. After creating a VPC, you can add one or more subnets in each Availability Zone. A subnet is a range of IP addresses in your VPC for which you can launch AWS resources. You can use public subnets for resources that must be connected to the internet, and private subnets for resources that won't be connected to the internet.
+
+When using Starburst’s CloudFormation template for Presto, you must specify which existing VPC and Subnets to deploy to.
+
+Reference the following link for more information on `VPCs and subnets`_ and how to create your own.
+
+.. _VPCs and subnets: https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Subnets.html
+
+.. _aws-security-groups:
+
+Security Groups
+---------------
+A security group acts as a virtual firewall that controls the traffic allowed to reach one or more of your EC2 instances. When you deploy an instance, you are responsible for associating it with one or more security groups. You add rules to each security group that allow traffic to or from its associated instances on specified ports. Furthermore, you can modify the rules for a security group at any time. Once modified, the new rules are automatically applied to all instances that are associated with the security group.
+
+It’s recommended that ports 8080 and 8088 are accessible in order to access the Presto Web UI, submit queries from outside the cluster, and access Apache Superset. Additionally, it’s recommended that port 22 is accessible for SSH access.
+
+Reference the following link for more information on creating and modifying `security groups`_.
+
+.. _security groups: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
+
+IAM Permissions
+---------------
+AWS Identity and Access Management (IAM) is a web service that helps you securely control access to your AWS resources. You use IAM
+to control who is authenticated and authorized to use resources. Principly, it helps you to define what a user or other entity is allowed to do in an account. Such authorizations are granted through policies that, when attached to an identity or AWS resource, define their permissions.
+
+There are various features under the IAM umbrella, spanning from granular permissions and shared account access to secure access to AWS resources for applications that run on Amazon EC2.
+
+Reference the following link for more information on `IAM`_ and its features.
+
+.. _IAM: https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html
+
+.. _aws-instance-profiles:
+
+Instance Profiles
+-----------------
+An instance profile is a container for an IAM role that you can use to pass role information to an EC2 instance when the instance starts. An IAM role is an IAM entity that defines a set of permissions for making AWS service requests.
+
+If you use the AWS Management Console to create a role for Amazon EC2, the console automatically creates an instance profile and gives it the same name as the role. When you then use the Amazon EC2 console to launch an instance with an IAM role, you can select a role to associate with the instance. In the console, the list that's displayed is actually a list of instance profile names.
+
+However, if you manage your roles from the AWS CLI or the AWS API, you create roles and instance profiles as separate actions. Because roles and instance profiles can have different names, you must know the names of your instance profiles as well as the names of roles they contain. That way you can choose the correct instance profile when you launch an EC2 instance.
+
+When using Starburst’s CloudFormation template for Presto, you can specify the instance profile to associate with the EC2 instances. For example, this may be useful to provide the EC2 instance the appropriate privileges to access data in S3.
+
+Reference the following link for more information on `instance profiles`_.
+
+.. _instance profiles: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html
+
+.. _aws_security_prereq:
+
+AWS Security Prerequisites
+--------------------------
+
+.. _aws_security_prereq_nodes:
+
+IAM Role Permissions for Presto Cluster Nodes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Below is the JSON for the IAM Role automatically created by the Starburst CloudFormation template. The Role is used by the Presto Cluster nodes that are created on the Stack.
+The permissions set below are a minimal subset of IAM Permissions to allow Starburst Presto to fully utilize its potential:
+
+.. code-block:: json
+
+  {
+      "Statement": [
+          {
+              "Action": [
+                  "autoscaling:CompleteLifecycleAction",
+                  "autoscaling:RecordLifecycleActionHeartbeat",
+                  "cloudformation:SignalResource",
+                  "cloudwatch:PutMetricData",
+                  "ec2:DescribeInstances",
+                  "glue:BatchCreatePartition",
+                  "glue:BatchGetPartition",
+                  "glue:CreateDatabase",
+                  "glue:CreateTable",
+                  "glue:DeleteDatabase",
+                  "glue:DeletePartition",
+                  "glue:DeleteTable",
+                  "glue:GetDatabase",
+                  "glue:GetDatabases",
+                  "glue:GetPartition",
+                  "glue:GetPartitions",
+                  "glue:GetTable",
+                  "glue:GetTables",
+                  "glue:UpdatePartition",
+                  "glue:UpdateTable",
+                  "logs:CreateLogGroup",
+                  "logs:CreateLogStream",
+                  "logs:DescribeLogGroups",
+                  "logs:DescribeLogStreams",
+                  "logs:PutLogEvents",
+                  "logs:PutRetentionPolicy",
+                  "s3:GetObject",
+                  "s3:ListBucket",
+                  "s3:PutObject",
+                  "sqs:ChangeMessageVisibility",
+                  "sqs:DeleteMessage",
+                  "sqs:GetQueueUrl",
+                  "sqs:ReceiveMessage"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                  "*"
+              ]
+          }
+      ],
+      "Version": "2012-10-17"
+  }
+
+In the above:
+
+- *AutoScaling*, *EC2* and *SQS* permissions are needed for :ref:`graceful_scaledown` to work, when AutoScaling kicks in, or reshaping the cluster via the Stack modification.
+- *CloudWatch Logs* permissions are needed to enable logging to AWS CloudWatch Logs
+- *CloudFormation* permission is needed to report startup progress back to CloudFormation
+- *CloudWatch* permissions are needed to run the Coordinator high availability features.
+- *Glue* access is needed to leverage the Glue catalog (needed when using :doc:`/aws/glue`).
+- *S3* permissions are needed for the Hive Connector to actually access (read/write) the data on S3
+
+If a user wants to have a more precise control over the permissions, and for example limit S3 access to a specific bucket etc,
+then a custom IAM Instance Profile can be provided and passed to the CloudFormation template during Stack creation (``IamInstanceProfile`` field in the Stack creation form).
+It will then be used instead and the aforementioned IAM Role and Instance Profile will not be created.
+
+Caution should be taken though to make sure that all the other permissions regarding *AutoScaling*, *SQS*, *EC2*, *CloudFormation*, *Cloud Watch* and *Glue* are given to this custom role,
+otherwise the Starburst Presto Cluster will either fail to start or will not function as documented.
+
+Additionally the Role needs to have a trust relationship to EC2 estabilished, so that EC2 can use this Role on the user's behalf. Below is a minimal trust relationship document:
+
+
+.. code-block:: json
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "ec2.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
+
+
+.. _aws_security_prereq_cft:
+
+IAM Role Permissions for CloudFormation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user who launches the Starburst CloudFormation template needs to have specific permissions to issue all necessary actions in AWS during Stack creation.
+In particular, before proceeding make sure your IAM User/Role has a policy with permissions to manage all of the following:
+
+.. code-block:: json
+
+  {
+      "Statement": [
+          {
+              "Action": [
+                  "apigateway:DELETE",
+                  "apigateway:GET",
+                  "apigateway:POST",
+                  "apigateway:PUT",
+                  "apigateway:UpdateRestApiPolicy",
+                  "autoscaling:CreateAutoScalingGroup",
+                  "autoscaling:CreateLaunchConfiguration",
+                  "autoscaling:DeleteAutoScalingGroup",
+                  "autoscaling:DeleteLaunchConfiguration",
+                  "autoscaling:DeleteLifecycleHook",
+                  "autoscaling:DescribeAutoScalingGroups",
+                  "autoscaling:DescribeAutoScalingInstances",
+                  "autoscaling:DescribeLaunchConfigurations",
+                  "autoscaling:DescribeScalingActivities",
+                  "autoscaling:PutLifecycleHook",
+                  "autoscaling:UpdateAutoScalingGroup",
+                  "cloudformation:CreateStack",
+                  "cloudformation:DeleteStack",
+                  "cloudformation:DescribeStackEvents",
+                  "cloudformation:DescribeStacks",
+                  "cloudwatch:DeleteAlarms",
+                  "cloudwatch:DeleteDashboards",
+                  "cloudwatch:DescribeAlarms",
+                  "cloudwatch:GetDashboard",
+                  "cloudwatch:ListDashboards",
+                  "cloudwatch:PutDashboard",
+                  "cloudwatch:PutMetricAlarm",
+                  "ec2:AuthorizeSecurityGroupEgress",
+                  "ec2:AuthorizeSecurityGroupIngress",
+                  "ec2:CreatePlacementGroup",
+                  "ec2:CreateSecurityGroup",
+                  "ec2:CreateTags",
+                  "ec2:CreateVpcEndpoint",
+                  "ec2:DeletePlacementGroup",
+                  "ec2:DeleteSecurityGroup",
+                  "ec2:DeleteVpcEndpoints",
+                  "ec2:DescribeInstances",
+                  "ec2:DescribeKeyPairs",
+                  "ec2:DescribePlacementGroups",
+                  "ec2:DescribeSecurityGroups",
+                  "ec2:DescribeSubnets",
+                  "ec2:DescribeVpcEndpoints",
+                  "ec2:DescribeVpcs",
+                  "ec2:RevokeSecurityGroupEgress",
+                  "ec2:RevokeSecurityGroupIngress",
+                  "ec2:RunInstances",
+                  "ec2:TerminateInstances",
+                  "events:DeleteRule",
+                  "events:DescribeRule",
+                  "events:PutRule",
+                  "events:PutTargets",
+                  "events:RemoveTargets",
+                  "iam:AddRoleToInstanceProfile",
+                  "iam:AttachRolePolicy",
+                  "iam:CreateInstanceProfile",
+                  "iam:CreateRole",
+                  "iam:DeleteInstanceProfile",
+                  "iam:DeleteRole",
+                  "iam:DeleteRolePolicy",
+                  "iam:DetachRolePolicy",
+                  "iam:GetInstanceProfile",
+                  "iam:GetRole",
+                  "iam:PassRole",
+                  "iam:PutRolePolicy",
+                  "iam:RemoveRoleFromInstanceProfile",
+                  "lambda:AddPermission",
+                  "lambda:CreateFunction",
+                  "lambda:DeleteFunction",
+                  "lambda:GetFunctionConfiguration",
+                  "lambda:InvokeFunction",
+                  "lambda:PutFunctionConcurrency",
+                  "lambda:RemovePermission",
+                  "route53:ChangeTagsForResource",
+                  "route53:CreateHostedZone",
+                  "route53:DeleteHostedZone",
+                  "route53:GetChange",
+                  "route53:ListQueryLoggingConfigs",
+                  "sqs:CreateQueue",
+                  "sqs:DeleteQueue",
+                  "sqs:GetQueueAttributes",
+                  "sqs:TagQueue"
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                  "*"
+              ]
+          }
+      ],
+      "Version": "2012-10-17"
+  }
+
+
+The Role needs to have a trust relationship to CloudFormation estabilished, so that CloudFormation can use this Role on the user's behalf. Below is a minimal trust relationship document:
+
+
+.. code-block:: json
+
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "",
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "cloudformation.amazonaws.com"
+        },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  }
