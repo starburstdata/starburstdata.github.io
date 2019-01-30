@@ -1,0 +1,550 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6.19. Geospatial Functions &#8212; Presto 0.208-x.0.12 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-x.0.12',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-x.0.12 Documentation" href="../index.html" />
+    <link rel="up" title="6. Functions and Operators" href="../functions.html" />
+    <link rel="next" title="6.20. Color Functions" href="color.html" />
+    <link rel="prev" title="6.18. URL Functions" href="url.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-x.0.12 Documentation</span></a></h1>
+    <h2 class="heading"><span>6.19. Geospatial Functions</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="url.html">6.18. URL Functions</a>
+    </span>
+    <span class="right">
+        <a href="color.html">6.20. Color Functions</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="geospatial-functions">
+<h1>6.19. Geospatial Functions</h1>
+<p>Presto Geospatial functions support the SQL/MM specification.
+They are compliant with the Open Geospatial Consortium’s (OGC) OpenGIS Specifications.
+As such, many Presto Geospatial functions require, or more accurately, assume that
+geometries that are operated on are both simple and valid. For example, it does not
+make sense to calculate the area of a polygon that has a hole defined outside of the
+polygon, or to construct a polygon from a non-simple boundary line.</p>
+<p>Presto Geospatial functions support the Well-Known Text (WKT) form of spatial objects:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">POINT</span> <span class="pre">(0</span> <span class="pre">0)</span></code></li>
+<li><code class="docutils literal"><span class="pre">LINESTRING</span> <span class="pre">(0</span> <span class="pre">0,</span> <span class="pre">1</span> <span class="pre">1,</span> <span class="pre">1</span> <span class="pre">2)</span></code></li>
+<li><code class="docutils literal"><span class="pre">POLYGON</span> <span class="pre">((0</span> <span class="pre">0,</span> <span class="pre">4</span> <span class="pre">0,</span> <span class="pre">4</span> <span class="pre">4,</span> <span class="pre">0</span> <span class="pre">4,</span> <span class="pre">0</span> <span class="pre">0),</span> <span class="pre">(1</span> <span class="pre">1,</span> <span class="pre">2</span> <span class="pre">1,</span> <span class="pre">2</span> <span class="pre">2,</span> <span class="pre">1</span> <span class="pre">2,</span> <span class="pre">1</span> <span class="pre">1))</span></code></li>
+<li><code class="docutils literal"><span class="pre">MULTIPOINT</span> <span class="pre">(0</span> <span class="pre">0,</span> <span class="pre">1</span> <span class="pre">2)</span></code></li>
+<li><code class="docutils literal"><span class="pre">MULTILINESTRING</span> <span class="pre">((0</span> <span class="pre">0,</span> <span class="pre">1</span> <span class="pre">1,</span> <span class="pre">1</span> <span class="pre">2),</span> <span class="pre">(2</span> <span class="pre">3,</span> <span class="pre">3</span> <span class="pre">2,</span> <span class="pre">5</span> <span class="pre">4))</span></code></li>
+<li><code class="docutils literal"><span class="pre">MULTIPOLYGON</span> <span class="pre">(((0</span> <span class="pre">0,</span> <span class="pre">4</span> <span class="pre">0,</span> <span class="pre">4</span> <span class="pre">4,</span> <span class="pre">0</span> <span class="pre">4,</span> <span class="pre">0</span> <span class="pre">0),</span> <span class="pre">(1</span> <span class="pre">1,</span> <span class="pre">2</span> <span class="pre">1,</span> <span class="pre">2</span> <span class="pre">2,</span> <span class="pre">1</span> <span class="pre">2,</span> <span class="pre">1</span> <span class="pre">1)),</span> <span class="pre">((-1</span> <span class="pre">-1,</span> <span class="pre">-1</span> <span class="pre">-2,</span> <span class="pre">-2</span> <span class="pre">-2,</span> <span class="pre">-2</span> <span class="pre">-1,</span> <span class="pre">-1</span> <span class="pre">-1)))</span></code></li>
+<li><code class="docutils literal"><span class="pre">GEOMETRYCOLLECTION</span> <span class="pre">(POINT(2</span> <span class="pre">3),</span> <span class="pre">LINESTRING</span> <span class="pre">(2</span> <span class="pre">3,</span> <span class="pre">3</span> <span class="pre">4))</span></code></li>
+</ul>
+<div class="section" id="constructors">
+<h2>Constructors</h2>
+<dl class="function">
+<dt id="ST_Point">
+<code class="descname">ST_Point</code><span class="sig-paren">(</span><em>double</em>, <em>double</em><span class="sig-paren">)</span> &rarr; Point</dt>
+<dd><p>Returns a geometry type point object with the given coordinate values.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_LineFromText">
+<code class="descname">ST_LineFromText</code><span class="sig-paren">(</span><em>varchar</em><span class="sig-paren">)</span> &rarr; LineString</dt>
+<dd><p>Returns a geometry type linestring object from WKT representation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Polygon">
+<code class="descname">ST_Polygon</code><span class="sig-paren">(</span><em>varchar</em><span class="sig-paren">)</span> &rarr; Polygon</dt>
+<dd><p>Returns a geometry type polygon object from WKT representation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_GeometryFromText">
+<code class="descname">ST_GeometryFromText</code><span class="sig-paren">(</span><em>varchar</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns a geometry type object from WKT representation.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_AsText">
+<code class="descname">ST_AsText</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Returns the WKT representation of the geometry. For empty geometries,
+<code class="docutils literal"><span class="pre">ST_AsText(ST_LineFromText('LINESTRING</span> <span class="pre">EMPTY'))</span></code> will produce <code class="docutils literal"><span class="pre">'MULTILINESTRING</span> <span class="pre">EMPTY'</span></code>
+and <code class="docutils literal"><span class="pre">ST_AsText(ST_Polygon('POLYGON</span> <span class="pre">EMPTY'))</span></code> will produce <code class="docutils literal"><span class="pre">'MULTIPOLYGON</span> <span class="pre">EMPTY'</span></code>.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="relationship-tests">
+<h2>Relationship Tests</h2>
+<dl class="function">
+<dt id="ST_Contains">
+<code class="descname">ST_Contains</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if and only if no points of the second geometry lie in the exterior
+of the first geometry, and at least one point of the interior of the first geometry
+lies in the interior of the second geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Crosses">
+<code class="descname">ST_Crosses</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the supplied geometries have some, but not all, interior points in common.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Disjoint">
+<code class="descname">ST_Disjoint</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the give geometries do not <em>spatially intersect</em> &#8211;
+if they do not share any space together.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Equals">
+<code class="descname">ST_Equals</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the given geometries represent the same geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Intersects">
+<code class="descname">ST_Intersects</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the given geometries spatially intersect in two dimensions
+(share any portion of space) and <code class="docutils literal"><span class="pre">false</span></code> if they don not (they are disjoint).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Overlaps">
+<code class="descname">ST_Overlaps</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the given geometries share space, are of the same dimension,
+but are not completely contained by each other.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Relate">
+<code class="descname">ST_Relate</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if first geometry is spatially related to second geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Touches">
+<code class="descname">ST_Touches</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the given geometries have at least one point in common,
+but their interiors do not intersect.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Within">
+<code class="descname">ST_Within</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if first geometry is completely inside second geometry.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="operations">
+<h2>Operations</h2>
+<dl class="function">
+<dt id="ST_Boundary">
+<code class="descname">ST_Boundary</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the closure of the combinatorial boundary of this geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Buffer">
+<code class="descname">ST_Buffer</code><span class="sig-paren">(</span><em>Geometry</em>, <em>distance</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the geometry that represents all points whose distance from the specified geometry
+is less than or equal to the specified distance.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Difference">
+<code class="descname">ST_Difference</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the geometry value that represents the point set difference of the given geometries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Envelope">
+<code class="descname">ST_Envelope</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the bounding rectangular polygon of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_EnvelopeAsPts">
+<code class="descname">ST_EnvelopeAsPts</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns an array of two points: the lower left and upper right corners of the bounding
+rectangular polygon of a geometry. Returns null if input geometry is empty.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_ExteriorRing">
+<code class="descname">ST_ExteriorRing</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns a line string representing the exterior ring of the input polygon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Intersection">
+<code class="descname">ST_Intersection</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the geometry value that represents the point set intersection of two geometries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_SymDifference">
+<code class="descname">ST_SymDifference</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the geometry value that represents the point set symmetric difference of two geometries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Union">
+<code class="descname">ST_Union</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns a geometry that represents the point set union of the input geometries.</p>
+<p>This function doesn&#8217;t support geometry collections.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="accessors">
+<h2>Accessors</h2>
+<dl class="function">
+<dt id="ST_Area">
+<code class="descname">ST_Area</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns the 2D Euclidean area of a geometry.</p>
+<p>For Point and LineString types, returns 0.0.
+For GeometryCollection types, returns the sum of the areas of the individual
+geometries.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Centroid">
+<code class="descname">ST_Centroid</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the point value that is the mathematical centroid of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_ConvexHull">
+<code class="descname">ST_ConvexHull</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the minimum convex geometry that encloses all input geometries.
+This function doesn&#8217;t support geometry collections.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_CoordDim">
+<code class="descname">ST_CoordDim</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; bigint</dt>
+<dd><p>Return the coordinate dimension of the geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Dimension">
+<code class="descname">ST_Dimension</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; bigint</dt>
+<dd><p>Returns the inherent dimension of this geometry object, which must be
+less than or equal to the coordinate dimension.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Distance">
+<code class="descname">ST_Distance</code><span class="sig-paren">(</span><em>Geometry</em>, <em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns the 2-dimensional cartesian minimum distance (based on spatial ref)
+between two geometries in projected units.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_GeometryN">
+<code class="descname">ST_GeometryN</code><span class="sig-paren">(</span><em>Geometry</em>, <em>index</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the geometry element at a given index (indices start at 1).
+If the geometry is a collection of geometries (e.g., GEOMETRYCOLLECTION or MULTI*),
+returns the geometry at a given index.
+If the given index is less than 1 or greater than the total number of elements in the collection,
+returns <code class="docutils literal"><span class="pre">NULL</span></code>.
+Use :func:<code class="docutils literal"><span class="pre">ST_NumGeometries</span></code> to find out the total number of elements.
+Singular geometries (e.g., POINT, LINESTRING, POLYGON), are treated as collections of one element.
+Empty geometries are treated as empty collections.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_InteriorRingN">
+<code class="descname">ST_InteriorRingN</code><span class="sig-paren">(</span><em>Geometry</em>, <em>index</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the interior ring element at the specified index (indices start at 1). If
+the given index is less than 1 or greater than the total number of interior rings
+in the input geometry, returns <code class="docutils literal"><span class="pre">NULL</span></code>. Throws an error if the input geometry is
+not a polygon.
+Use :func:<code class="docutils literal"><span class="pre">ST_NumInteriorRing</span></code> to find out the total number of elements.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_GeometryType">
+<code class="descname">ST_GeometryType</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Returns the type of the geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_IsClosed">
+<code class="descname">ST_IsClosed</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if the linestring&#8217;s start and end points are coincident.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_IsEmpty">
+<code class="descname">ST_IsEmpty</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if this Geometry is an empty geometrycollection, polygon, point etc.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_IsSimple">
+<code class="descname">ST_IsSimple</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if this Geometry has no anomalous geometric points, such as self intersection or self tangency.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_IsRing">
+<code class="descname">ST_IsRing</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if and only if the line is closed and simple.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_IsValid">
+<code class="descname">ST_IsValid</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Returns <code class="docutils literal"><span class="pre">true</span></code> if and only if the input geometry is well formed.
+Use <a class="reference internal" href="#geometry_invalid_reason" title="geometry_invalid_reason"><code class="xref py py-func docutils literal"><span class="pre">geometry_invalid_reason()</span></code></a> to determine why the geometry is not well formed.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Length">
+<code class="descname">ST_Length</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns the length of a linestring or multi-linestring using Euclidean measurement on a
+two dimensional plane (based on spatial ref) in projected units.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_PointN">
+<code class="descname">ST_PointN</code><span class="sig-paren">(</span><em>LineString</em>, <em>index</em><span class="sig-paren">)</span> &rarr; Point</dt>
+<dd><p>Returns the vertex of a linestring at a given index (indices start at 1).
+If the given index is less than 1 or greater than the total number of elements in the collection,
+returns <code class="docutils literal"><span class="pre">NULL</span></code>.
+Use :func:<code class="docutils literal"><span class="pre">ST_NumPoints</span></code> to find out the total number of elements.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_XMax">
+<code class="descname">ST_XMax</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns X maxima of a bounding box of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_YMax">
+<code class="descname">ST_YMax</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns Y maxima of a bounding box of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_XMin">
+<code class="descname">ST_XMin</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns X minima of a bounding box of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_YMin">
+<code class="descname">ST_YMin</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns Y minima of a bounding box of a geometry.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_StartPoint">
+<code class="descname">ST_StartPoint</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; point</dt>
+<dd><p>Returns the first point of a LineString geometry as a Point.
+This is a shortcut for ST_PointN(geometry, 1).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="simplify_geometry">
+<code class="descname">simplify_geometry</code><span class="sig-paren">(</span><em>Geometry</em>, <em>double</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns a &#8220;simplified&#8221; version of the input geometry using the Douglas-Peucker algorithm.
+Will avoid creating derived geometries (polygons in particular) that are invalid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_EndPoint">
+<code class="descname">ST_EndPoint</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; point</dt>
+<dd><p>Returns the last point of a LineString geometry as a Point.
+This is a shortcut for ST_PointN(geometry, ST_NumPoints(geometry)).</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_X">
+<code class="descname">ST_X</code><span class="sig-paren">(</span><em>Point</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Return the X coordinate of the point.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Y">
+<code class="descname">ST_Y</code><span class="sig-paren">(</span><em>Point</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Return the Y coordinate of the point.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_InteriorRings">
+<code class="descname">ST_InteriorRings</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns an array of all interior rings found in the input geometry, or an empty
+array if the polygon has no interior rings. Returns null if the input geometry
+is empty. Throws an error if the input geometry is not a polygon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_NumGeometries">
+<code class="descname">ST_NumGeometries</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; bigint</dt>
+<dd><p>Returns the number of geometries in the collection.
+If the geometry is a collection of geometries (e.g., GEOMETRYCOLLECTION or MULTI*),
+returns the number of geometries,
+for single geometries returns 1,
+for empty geometries returns 0.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_Geometries">
+<code class="descname">ST_Geometries</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns an array of geometries in the specified collection. Returns a one-element array
+if the input geometry is not a multi-geometry. Returns null if input geometry is empty.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_NumPoints">
+<code class="descname">ST_NumPoints</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; bigint</dt>
+<dd><p>Returns the number of points in a geometry. This is an extension to the SQL/MM
+<code class="docutils literal"><span class="pre">ST_NumPoints</span></code> function which only applies to point and linestring.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="ST_NumInteriorRing">
+<code class="descname">ST_NumInteriorRing</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; bigint</dt>
+<dd><p>Returns the cardinality of the collection of interior rings of a polygon.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="line_locate_point">
+<code class="descname">line_locate_point</code><span class="sig-paren">(</span><em>LineString</em>, <em>Point</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns a float between 0 and 1 representing the location of the closest point on
+the LineString to the given Point, as a fraction of total 2d line length.</p>
+<p>Returns <code class="docutils literal"><span class="pre">null</span></code> if a LineString or a Point is empty or <code class="docutils literal"><span class="pre">null</span></code>.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="geometry_invalid_reason">
+<code class="descname">geometry_invalid_reason</code><span class="sig-paren">(</span><em>Geometry</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Returns the reason for why the input geometry is not valid.
+Returns null if the input is valid.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="great_circle_distance">
+<code class="descname">great_circle_distance</code><span class="sig-paren">(</span><em>latitude1</em>, <em>longitude1</em>, <em>latitude2</em>, <em>longitude2</em><span class="sig-paren">)</span> &rarr; double</dt>
+<dd><p>Returns the great-circle distance between two points on Earth&#8217;s surface in kilometers.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="bing-tiles">
+<h2>Bing Tiles</h2>
+<p>These functions convert between geometries and
+<a class="reference external" href="https://msdn.microsoft.com/en-us/library/bb259689.aspx">Bing tiles</a>.</p>
+<dl class="function">
+<dt id="bing_tile">
+<code class="descname">bing_tile</code><span class="sig-paren">(</span><em>x</em>, <em>y</em>, <em>zoom_level</em><span class="sig-paren">)</span> &rarr; BingTile</dt>
+<dd><p>Creates a Bing tile object from XY coordinates and a zoom level.
+Zoom levels from 1 to 23 are supported.</p>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descname">bing_tile</code><span class="sig-paren">(</span><em>quadKey</em><span class="sig-paren">)</span> &rarr; BingTile</dt>
+<dd><p>Creates a Bing tile object from a quadkey.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tile_at">
+<code class="descname">bing_tile_at</code><span class="sig-paren">(</span><em>latitude</em>, <em>longitude</em>, <em>zoom_level</em><span class="sig-paren">)</span> &rarr; BingTile</dt>
+<dd><p>Returns a Bing tile at a given zoom level containing a point at a given latitude
+and longitude. Latitude must be within <code class="docutils literal"><span class="pre">[-85.05112878,</span> <span class="pre">85.05112878]</span></code> range.
+Longitude must be within <code class="docutils literal"><span class="pre">[-180,</span> <span class="pre">180]</span></code> range. Zoom levels from 1 to 23 are supported.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tiles_around">
+<code class="descname">bing_tiles_around</code><span class="sig-paren">(</span><em>latitude</em>, <em>longitude</em>, <em>zoom_level</em><span class="sig-paren">)</span> &rarr; array&lt;BingTile&gt;</dt>
+<dd><p>Returns a collection of Bing tiles that surround the point specified
+by the latitude and longitude arguments at a given zoom level.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tile_coordinates">
+<code class="descname">bing_tile_coordinates</code><span class="sig-paren">(</span><em>tile</em><span class="sig-paren">)</span> &rarr; row&lt;x, y&gt;</dt>
+<dd><p>Returns the XY coordinates of a given Bing tile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tile_polygon">
+<code class="descname">bing_tile_polygon</code><span class="sig-paren">(</span><em>tile</em><span class="sig-paren">)</span> &rarr; Geometry</dt>
+<dd><p>Returns the polygon representation of a given Bing tile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tile_quadkey">
+<code class="descname">bing_tile_quadkey</code><span class="sig-paren">(</span><em>tile</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Returns the quadkey of a given Bing tile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="bing_tile_zoom_level">
+<code class="descname">bing_tile_zoom_level</code><span class="sig-paren">(</span><em>tile</em><span class="sig-paren">)</span> &rarr; tinyint</dt>
+<dd><p>Returns the zoom level of a given Bing tile.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="geometry_to_bing_tiles">
+<code class="descname">geometry_to_bing_tiles</code><span class="sig-paren">(</span><em>geometry</em>, <em>zoom_level</em><span class="sig-paren">)</span> &rarr; array&lt;BingTile&gt;</dt>
+<dd><p>Returns the minimum set of Bing tiles that fully covers a given geometry at
+a given zoom level. Zoom levels from 1 to 23 are supported.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="url.html">6.18. URL Functions</a>
+    </span>
+    <span class="right">
+        <a href="color.html">6.20. Color Functions</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
