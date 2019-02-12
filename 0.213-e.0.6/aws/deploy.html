@@ -260,21 +260,6 @@ It is assumed these are preconfigured in your AWS account. See the below Prerequ
 <p>Choose a <strong>KeyName</strong> which is the name of an EC2 KeyPair to enable SSH access to the instance. See <a class="reference internal" href="prerequisites.html#aws-ssh"><span class="std std-ref">SSH Keys</span></a> for more detail.</p>
 <p>Specify the  <strong>WorkersCount</strong> to specify the number of Presto worker nodes for the cluster. Presto worker nodes are added to an AWS AutoScaling Group. See <a class="reference internal" href="autoscale.html"><span class="doc">Auto Scaling a Running Presto Cluster</span></a> for more detail.</p>
 <p>Specify the <strong>HACoordinatorsCount</strong> for Presto coordinator high availability. This number represents 1 active coordinator plus the number of optional hot standby coordinators. For example, if you specify 3, then there is 1 active coordinator and 2 standby coordinators if the active one fails. See <a class="reference internal" href="high-availability.html"><span class="doc">Presto Coordinator High Availability</span></a> for more detail.</p>
-<p>Specify the <strong>CoordinatorDNSName</strong> for Presto coordinator URL. Default value is <code class="docutils literal"><span class="pre">presto-coordinator</span></code>.
-DNS name of the Coordinator record within the AWS Hosted Zone (see HostedZoneDNSName parameter).
-The Coordinator URL will have the form: <code class="docutils literal"><span class="pre">http://&lt;CoordinatorDNSName&gt;.&lt;HostedZoneDNSName&gt;:8080</span></code>.
-Value should be provided without the dot, eg: <code class="docutils literal"><span class="pre">my-presto-coordinator</span></code>.</p>
-<p>Specify the <strong>UserHostedZoneDNSName</strong> for Presto coordinator URL. This property is optional, defaults to this Stack&#8217;s name.
-The DNS name of the AWS Hosted Zone to use when creating Coordinator DNS record.
-If not provided, then Hosted Zone with the DNS domain name same as the Stack name will be used.
-The given Hosted Zone must be resolvable/reachable within the user provided VPC and Subnet.
-The Coordinator URL will then have the form: <code class="docutils literal"><span class="pre">http://&lt;CoordinatorDNSName&gt;.&lt;HostedZoneDNSName&gt;:8080</span></code>.
-Value should be provided without the leading dot. Examples:
-Private Hosted Zone: <code class="docutils literal"><span class="pre">my-zone</span></code>,
-Public Hosted Zone: <code class="docutils literal"><span class="pre">my-zone.com</span></code>.</p>
-<p>Indicate whether the <strong>HostedZoneExists</strong>. Does the Hosted Zone specified by the <strong>UserHostedZoneDNSName</strong> parameter exist.
-If &#8220;no&#8221; (default), then CloudFormation will create a Hosted Zone.
-If &#8220;yes&#8221;, then CloudFormation assumes the HostedZone exists in the given VPC.</p>
 <a class="reference internal image-reference" href="../_images/presto_cft_ec2.png"><img alt="../_images/presto_cft_ec2.png" src="../_images/presto_cft_ec2.png" style="width: 1966.0px; height: 944.0px;" /></a>
 </li>
 <li><p class="first"><strong>Presto Configuration:</strong></p>
@@ -431,31 +416,37 @@ to Presto nodes (Optional)</td>
 (apart from coordinator) to instantiate</td>
 <td>10</td>
 </tr>
-<tr class="row-odd"><td>LaunchSuperset</td>
+<tr class="row-odd"><td>HACoordinatorsCount</td>
+<td>Number of Presto coordinator nodes to
+instantiate. If more then one, then Presto
+Coordinator will offer HA capabilities.</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>LaunchSuperset</td>
 <td>When enabled, Superset will be started on
 a an EC2 instance</td>
 <td>yes</td>
 </tr>
-<tr class="row-even"><td>AllowExternalAccessOnHttp</td>
+<tr class="row-odd"><td>AllowExternalAccessOnHttp</td>
 <td>When enabled and instances are assigned
 public IP, Presto endpoints will be
 available over HTTP without authorization.</td>
 <td>no</td>
 </tr>
-<tr class="row-odd"><td>MetastoreType</td>
+<tr class="row-even"><td>MetastoreType</td>
 <td>Determines what metastore will be used for
 Hive connector. Defaults to <code class="docutils literal"><span class="pre">None</span></code>,
 which means that no Hive connector will be
 provisioned.</td>
 <td>AWS Glue Data Catalog</td>
 </tr>
-<tr class="row-even"><td>ExternalMetastoreHost</td>
+<tr class="row-odd"><td>ExternalMetastoreHost</td>
 <td>When external Metastore is used (see
 <code class="docutils literal"><span class="pre">MetastoreType</span></code> parameter), this will
 point the host of the Metastore.</td>
 <td>metastore.yourcompany.com</td>
 </tr>
-<tr class="row-odd"><td>ExternalMetastorePort</td>
+<tr class="row-even"><td>ExternalMetastorePort</td>
 <td><p class="first">When external Metastore is used (see
 <code class="docutils literal"><span class="pre">MetastoreType</span></code> parameter), this will
 point the Metastore service port number.</p>
@@ -480,7 +471,7 @@ be used:</p>
 </td>
 <td>9083</td>
 </tr>
-<tr class="row-even"><td>ExternalRdbmsMetastoreUserName</td>
+<tr class="row-odd"><td>ExternalRdbmsMetastoreUserName</td>
 <td><p class="first">When external Metastore is used (see
 <code class="docutils literal"><span class="pre">MetastoreType</span></code> parameter), this will
 determine the JDBC connection user name.</p>
@@ -494,7 +485,7 @@ be used:</p>
 </td>
 <td>database_user_name</td>
 </tr>
-<tr class="row-odd"><td>ExternalRdbmsMetastorePassword</td>
+<tr class="row-even"><td>ExternalRdbmsMetastorePassword</td>
 <td><p class="first">When external Metastore is used (see
 <code class="docutils literal"><span class="pre">MetastoreType</span></code> parameter), this will
 determine the JDBC connection password</p>
@@ -508,7 +499,7 @@ be used:</p>
 </td>
 <td><a class="reference external" href="mailto:jdbc_user_p&#37;&#52;&#48;55vv0rd">jdbc_user_p<span>&#64;</span>55vv0rd</a></td>
 </tr>
-<tr class="row-even"><td>ExternalRdbmsMetastoreDatabaseName</td>
+<tr class="row-odd"><td>ExternalRdbmsMetastoreDatabaseName</td>
 <td><p class="first">When external Metastore is used (see
 <code class="docutils literal"><span class="pre">MetastoreType</span></code> parameter), this will
 determine the JDBC connection password</p>
@@ -522,42 +513,42 @@ be used:</p>
 </td>
 <td>hivemetastore</td>
 </tr>
-<tr class="row-odd"><td>AdditionalCoordinatorConfigurationURI</td>
+<tr class="row-even"><td>AdditionalCoordinatorConfigurationURI</td>
 <td>URI of S3 zip file with additional Presto
 for the Presto Coordinator (Optional)</td>
 <td>s3://my_bucket/presto-additional-
 coordinator-configuration-1.0.zip</td>
 </tr>
-<tr class="row-even"><td>AdditionalWorkersConfigurationURI</td>
+<tr class="row-odd"><td>AdditionalWorkersConfigurationURI</td>
 <td>URI of S3 zip file with additional Presto
 for the Presto Workers (Optional)</td>
 <td>s3://my_bucket/presto-additional-
 workers-configuration-1.0.zip</td>
 </tr>
-<tr class="row-odd"><td>BootstrapScriptURI</td>
+<tr class="row-even"><td>BootstrapScriptURI</td>
 <td>URI of bash script on S3 to execute after.
 for the Presto Workers (Optional)
 Presto configuration.</td>
 <td>s3://my_bucket/presto-bootstrap-1.0.sh</td>
 </tr>
-<tr class="row-even"><td>S3Endpoint</td>
+<tr class="row-odd"><td>S3Endpoint</td>
 <td>URI to AWS S3-compatible endpoint
 (Optional)</td>
 <td><a class="reference external" href="https://mybucket.s3-us-west-2.amaz">https://mybucket.s3-us-west-2.amaz</a>
 onaws.com</td>
 </tr>
-<tr class="row-odd"><td>S3AccessKey</td>
+<tr class="row-even"><td>S3AccessKey</td>
 <td>Access key to AWS S3-compatible storage
 (Optional)</td>
 <td>AKIAIOSFODNN7EXAMPLE</td>
 </tr>
-<tr class="row-even"><td>S3SecretKey</td>
+<tr class="row-odd"><td>S3SecretKey</td>
 <td>Access secret to AWS S3-compatible storage
 (Optional)</td>
 <td>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAM
 PLEKEY</td>
 </tr>
-<tr class="row-odd"><td>EnableCloudWatchMetrics</td>
+<tr class="row-even"><td>EnableCloudWatchMetrics</td>
 <td>Enable integration with CloudWatch metrics.
 When enabled, OS and Presto metrics will be
 reported for each cluster node.

@@ -805,17 +805,22 @@ The following is a sample of Ranger SSL configuration file.
     </configuration>
 
 Controling access to User Defined Functions with Ranger
--------------------------------------------------------
+------------------------------------------------------- 
+Ranger System Access Control is used to enforce User Defined Function (UDF) policies set by Ranger.
+A UDF in Presto is deployed as a plugin (:doc:`/develop/functions`) and stored in the Presto global
+namespace. This global namespace is managed at the System Access Control 
+(see :doc:`/develop/system-access-control`) level. This is independent of the Ranger Connector 
+Access Control used to enforce all other Ranger policies at the catalog level.
 
-Access to functions in Presto is controlled at the System Access Control level (see :doc:`/develop/system-access-control`).
-Also notice that UDF in Presto is provided with Plugins (see :doc:`/develop/functions`) and so
-functions are stored in the same global namespace. The global namespace is not related to any
-connector, while in the Ranger resource hierarchy all User Defined Functions policies are stored within a database (schema) namespace.
-To overcome this Presto is using ``$presto`` Ranger database name, that way all Presto functions are under ``$presto`` database
-in Ranger resource hierarchy.
+The Ranger resource hierarchy for all UDF policies need to have an associated database (or schema)
+namespace when creating the policy. Because the global namespace is independent of any connector
+namespace, this poses a slight challenge to control access to UDFs using Ranger. To overcome this
+you must specify ``$presto`` as the database name in Ranger. This will keep all Presto
+functions are under the ``$presto`` database in Ranger resource hierarchy.
 
-In order to configure Ranger access control for User Defined Functions please provide ``etc/access-control.properties``
-with configuration like below:
+To configure Ranger System Access Control for User Defined Functions, you need to add the following
+to the System Access Control property file. Here is an example ``etc/access-control.properties``
+below:
 
 .. code-block:: none
 
@@ -828,14 +833,15 @@ with configuration like below:
     ranger.kerberos-keytab=/etc/presto/conf/presto-server.keytab
     ranger.plugin-policy-ssl-config-file=/etc/hive/conf/ranger-policymgr-ssl.xml
 
-All Ranger properties that allowed in ``hive.properties`` are allowed here, however properties
-related to row filtering or column masking are not effective.
+All Ranger properties that are allowed in ``hive.properties`` are allowed here. However Ranger
+properties related to row filtering or column masking are ignored. This additional configuration is
+needed because the Ranger System Access Control uses an independent Ranger client from the Ranger
+Connector Access Control.
 
-Notice that Ranger System Access Control is independent from Ranger Connector Access Control. There could be only one System
-Access Control defined for Presto cluster, while Connector Access Control can be defined per each
-Presto catalog. That way user have a control to choose which Ranger service is used to control
-access to User Defined Functions. This is especially important when there are several Hive catalogs
-with Ranger Access Control defined in Presto.
+Recall that in Presto only one System Access Control can be defined, while Connector Access
+Control can be defined per each Presto catalog. In the scenario where there are multiple Hive
+connectors and multiple Ranger services, only one of those Ranger services can be used to managed
+the UDF policies.
 
 Limitations
 -----------

@@ -1043,14 +1043,19 @@ ranger.plugin-policy-ssl-config-file=/etc/hive/conf/ranger-policymgr-ssl.xml
 </div>
 <div class="section" id="controling-access-to-user-defined-functions-with-ranger">
 <h3>Controling access to User Defined Functions with Ranger</h3>
-<p>Access to functions in Presto is controlled at the System Access Control level (see <a class="reference internal" href="../develop/system-access-control.html"><span class="doc">System Access Control</span></a>).
-Also notice that UDF in Presto is provided with Plugins (see <a class="reference internal" href="../develop/functions.html"><span class="doc">Functions</span></a>) and so
-functions are stored in the same global namespace. The global namespace is not related to any
-connector, while in the Ranger resource hierarchy all User Defined Functions policies are stored within a database (schema) namespace.
-To overcome this Presto is using <code class="docutils literal"><span class="pre">$presto</span></code> Ranger database name, that way all Presto functions are under <code class="docutils literal"><span class="pre">$presto</span></code> database
-in Ranger resource hierarchy.</p>
-<p>In order to configure Ranger access control for User Defined Functions please provide <code class="docutils literal"><span class="pre">etc/access-control.properties</span></code>
-with configuration like below:</p>
+<p>Ranger System Access Control is used to enforce User Defined Function (UDF) policies set by Ranger.
+A UDF in Presto is deployed as a plugin (<a class="reference internal" href="../develop/functions.html"><span class="doc">Functions</span></a>) and stored in the Presto global
+namespace. This global namespace is managed at the System Access Control
+(see <a class="reference internal" href="../develop/system-access-control.html"><span class="doc">System Access Control</span></a>) level. This is independent of the Ranger Connector
+Access Control used to enforce all other Ranger policies at the catalog level.</p>
+<p>The Ranger resource hierarchy for all UDF policies need to have an associated database (or schema)
+namespace when creating the policy. Because the global namespace is independent of any connector
+namespace, this poses a slight challenge to control access to UDFs using Ranger. To overcome this
+you must specify <code class="docutils literal"><span class="pre">$presto</span></code> as the database name in Ranger. This will keep all Presto
+functions are under the <code class="docutils literal"><span class="pre">$presto</span></code> database in Ranger resource hierarchy.</p>
+<p>To configure Ranger System Access Control for User Defined Functions, you need to add the following
+to the System Access Control property file. Here is an example <code class="docutils literal"><span class="pre">etc/access-control.properties</span></code>
+below:</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>access-control.name=hive-ranger-udf
 ranger.policy-rest-url=https://ranger-host:6182
 ranger.service-name=hive
@@ -1061,13 +1066,14 @@ ranger.kerberos-keytab=/etc/presto/conf/presto-server.keytab
 ranger.plugin-policy-ssl-config-file=/etc/hive/conf/ranger-policymgr-ssl.xml
 </pre></div>
 </div>
-<p>All Ranger properties that allowed in <code class="docutils literal"><span class="pre">hive.properties</span></code> are allowed here, however properties
-related to row filtering or column masking are not effective.</p>
-<p>Notice that Ranger System Access Control is independent from Ranger Connector Access Control. There could be only one System
-Access Control defined for Presto cluster, while Connector Access Control can be defined per each
-Presto catalog. That way user have a control to choose which Ranger service is used to control
-access to User Defined Functions. This is especially important when there are several Hive catalogs
-with Ranger Access Control defined in Presto.</p>
+<p>All Ranger properties that are allowed in <code class="docutils literal"><span class="pre">hive.properties</span></code> are allowed here. However Ranger
+properties related to row filtering or column masking are ignored. This additional configuration is
+needed because the Ranger System Access Control uses an independent Ranger client from the Ranger
+Connector Access Control.</p>
+<p>Recall that in Presto only one System Access Control can be defined, while Connector Access
+Control can be defined per each Presto catalog. In the scenario where there are multiple Hive
+connectors and multiple Ranger services, only one of those Ranger services can be used to managed
+the UDF policies.</p>
 </div>
 <div class="section" id="limitations">
 <h3>Limitations</h3>
