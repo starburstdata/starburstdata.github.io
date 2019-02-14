@@ -1,0 +1,232 @@
+==================
+BigQuery Connector
+==================
+
+The Google BigQuery connector allows querying tables in the
+BigQuery service. This can be used to join data between different systems like
+BigQuery and Hive, or between different BigQuery instances.
+
+Installation and configuration
+==============================
+
+The Google BigQuery connector plugin is distributed as part of Starburst Presto, 
+but still requires installing the external Google BigQuery JDBC driver.
+
+Prerequisites
+-------------
+
+Installation and configuration methods require the following artifacts:
+
+* BigQuery JDBC driver, may be obtained from Google `https://cloud.google.com/bigquery/partners/simba-drivers <https://cloud.google.com/bigquery/partners/simba-drivers>`_
+* A Google service account to connect to BigQuery (can be created at `https://console.cloud.google.com/iam-admin/serviceaccounts <https://console.cloud.google.com/iam-admin/serviceaccounts>`_) which has the following roles:
+
+    * BigQuery Data Editor
+    * BigQuery Job User
+
+* A JSON private key file linked to the service account
+
+Using a dedicated script
+------------------------
+
+Starburst Presto RPM includes a special ``install.sh`` script to help install the BigQuery JDBC driver and configure the connector.
+This script is installed in ``/usr/lib/presto/lib/plugin/bigquery`` and can be used and modified to fit a custom environment.
+Out of the box, the script follows a typical Presto layout and eases the process of installing and configuring the connector on the Presto cluster.
+The install script accepts a single optional parameter, the name of the default BigQuery dataset, which is used when a query doesn't specify a dataset.
+
+The install script assumes it finds the following files in the directory where it is run:
+
+* BigQuery JDBC driver, downloaded from Google and extracted from the archive (``GoogleBigQueryJDBC42.jar``)
+* BigQuery service account private key JSON file (``service_account_private_key.json``)
+
+The script generates connection details to connect to BigQuery, in form of the standard Presto connector configuration (``bigquery.properties``).
+The script follows the standard directory layout of a Presto installation and makes the following assumptions:
+
+* The node from which the script is run has password-less ssh login to all other Presto nodes.
+* The user has ``sudo`` capabilities.
+* Presto is running and available at ``localhost:8080``.
+* Presto plugin directory is ``/usr/lib/presto/lib/plugin``, plugin is installed under the name ``bigquery``.
+* Presto catalog directory is ``/etc/presto/catalog``.
+* There will be one BigQuery catalog (instance of the Presto BigQuery Connector), available under the name ``bigquery``.
+* Presto was installed as a service via ``rpm`` (needed for ``service presto restart``).
+* ``presto-cli`` is in the user's PATH.
+
+The script does its work in the following sequence, for each node (including the node that it's running on):
+
+1. Send the files over ``ssh`` placing them in the ``/tmp`` directory.
+2. Configure the connector.
+3. Cleanup the files from ``/tmp``.
+4. Restart Presto.
+
+The script works out of the box for a standard Presto installation layout, but you are free to modify the script to fit your particular cluster environment and Presto setup.
+
+Manual JDBC Driver Installation
+-------------------------------
+
+To install the BigQuery Database connector manually, you will
+need an installation of the Starburst Distribution of Presto, the BigQuery JDBC Driver
+(``GoogleBigQueryJDBC42.jar``) and a JSON private key (``service_account_private_key.json``) for connecting to BigQuery.
+
+1. Create a new directory named ``bigquery`` in Presto's plugin directory (i.e. `/usr/lib/presto/lib/plugin``).
+2. Add the BigQuery JDBC Driver JAR and the JSON private key to the new directory.
+3. Perform the above steps on every Presto cluster node.
+4. Restart Presto on every node via ``service presto restart``.
+
+
+Manual Connector Configuration (Using Presto-Admin)
+---------------------------------------------------
+
+Connection details to connect to the BigQuery DB are required, in form of a standard Presto connector configuration (eg. ``bigquery.properties`` for a Presto catalog named ``bigquery``).
+This file should contain the following contents, replacing the connection properties as appropriate for your setup:
+
+.. code-block:: none
+
+    connector.name=bigquery
+    connection-url=jdbc:bigquery://https://www.googleapis.com/bigquery/v2:443;ProjectId=PROJECT_ID;OAuthType=0;OAuthServiceAcctEmail=SERVICE_ACCOUNT_EMAIL;OAuthPvtKeyPath=SERVICE_ACCOUNT_PRIVATE_KEY_PATH;Timeout=600;DefaultDataset=DEFAULT_DATA_SET;
+
+A detailed description of all BigQuery JDBC connection parameters can be found in `Simba BigQuery JDBC documentation <https://www.simba.com/products/BigQuery/doc/JDBC_InstallGuide/content/jdbc/options>`_
+
+Create the catalog properties file in ``~/.prestoadmin/catalog`` and refer to :ref:`catalog-add` for adding a catalog using ``presto-admin``.
+
+
+Multiple BigQuery Databases
+---------------------------
+
+If you want to connect to multiple BigQuery Databases, configure another instance
+of the BigQuery plugin as a separate catalog.
+
+To add another BigQuery catalog, simply add another properties file to
+``~/.prestoadmin/catalog`` with a different name (making sure it ends in
+``.properties``). For example, if you name the property file
+``sales.properties``, Presto will create a catalog named ``sales``.
+
+
+Querying BigQuery Databases
+===========================
+
+The BigQuery Database connector provides a schema for each BigQuery Database project and dataset.
+Assuming the BigQuery project name is ``bigquery``, you can see the available schemas by running
+``SHOW SCHEMAS``::
+
+    SHOW SCHEMAS FROM bigquery;
+
+If you have an BigQuery Database dataset named ``web``, you can view the tables it contains
+by running ``SHOW TABLES``::
+
+    SHOW TABLES FROM bigquery.web;
+
+You can see a list of the columns in the ``clicks`` table in ``web``'s schema
+using either of the following::
+
+    DESCRIBE bigquery.web.clicks;
+    SHOW COLUMNS FROM bigquery.web.clicks;
+
+Finally, you can access the ``clicks`` table in ``web``'s schema::
+
+    SELECT * FROM bigquery.web.clicks;
+
+Your privileges in these schemas are those of the user configured in the
+connection properties file. If the user does not have access to these tables,
+you will not be able to access them.
+
+
+Mapping Data Types Between Presto and BigQuery
+==============================================
+
+Presto and BigQuery have their own type system. And while they try to adhere to the SQL standard there are some differences that require a conversion. And sometimes a conversion is not possible.
+
+
+BigQuery-to-Presto type mapping
+-------------------------------
+
+Presto supports selecting the following BigQuery Database types. The table shows
+the mappings from BigQuery to Presto data types.
+
+.. table::
+   :class: colwidths-auto
+
+   +-------------------------+------------------------------+----------------------------------------------+
+   | BigQuery Database type  | Presto type                  | Notes                                        |
+   +=========================+==============================+==============================================+
+   | ``NUMERIC``             | ``DECIMAL(38, 9)``           |                                              |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``FLOAT64``             | ``DOUBLE``                   |                                              |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``INT64``               | ``BIGINT``                   |                                              |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``BOOL``                | ``BOOLEAN``                  |                                              |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``STRING``              | ``VARCHAR``                  | See :ref:`bigquery string mapping`.          |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``BYTES``               | ``VARBINARY``                |                                              |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``ARRAY``               |                              | See :ref:`bigquery unmapped values`.         |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``STRUCT``              | ``VARCHAR``                  | See :ref:`bigquery unmapped values`.         |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``GEOGRAPHY``           | ``VARCHAR``                  | See :ref:`bigquery unmapped values`.         |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``TIME``                | ``TIME``                     | See :ref:`bigquery datetime mapping`.        |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``DATE``                | ``DATE``                     | See :ref:`bigquery datetime mapping`.        |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``DATETIME``            | ``TIMESTAMP``                | See :ref:`bigquery datetime mapping`.        |
+   +-------------------------+------------------------------+----------------------------------------------+
+   | ``TIMESTAMP``           | ``TIMESTAMP WITH TIME ZONE`` | See :ref:`bigquery datetime mapping`.        |
+   +-------------------------+------------------------------+----------------------------------------------+
+
+.. _bigquery datetime mapping:
+
+Mapping datetime types
+----------------------
+
+Selecting a BigQuery temporal value with fractional second precision greater than 3
+will truncate (not round) the fractional seconds to three digits.
+
+All BigQuery ``TIMESTAMP`` values are stored in UTC time zone. When Presto reads these values from BigQuery, all selected BigQuery ``TIMESTAMP`` values are mapped onto a Presto ``TIMESTAMP WITH TIME ZONE`` in UTC time zone.
+
+Because JDBC API returns ``TIME`` and ``DATETIME`` values in the JVM time zone,
+some values stored in BigQuery may not be representable by JDBC due to daylight
+savings time and other gaps in the JVM time zone.
+For this reason, we recommend setting the JVM time zone to UTC.
+
+.. _bigquery string mapping:
+
+Mapping string types
+-----------------------
+
+Selecting BigQuery ``STRING`` will return Presto ``VARCHAR`` type.
+
+While BigQuery ``STRING`` doesn't have a explicit storage limit,
+the BigQuery JDBC driver imposes a limit (65535 characters by default) while transferring data.
+This limit can be increased by adding a ``StringColumnLength`` parameter
+to the JDBC URL, for details see `Simba BigQuery JDBC StringColumnLength documentation <https://www.simba.com/products/BigQuery/doc/JDBC_InstallGuide/content/jdbc/options/stringcolumnlength.htm>`_.
+
+.. _bigquery unmapped values:
+
+Unmapped BigQuery types
+-----------------------
+
+Some BigQuery types (``GEOGRAPHY`` and ``STRUCT`` also known as ``RECORD``) don't have an equivalent in Presto
+and are only accessible as ``VARCHAR`` types. These can be parsed in Presto by the user.
+
+Other BigQuery types (``ARRAY``, also known as repeated values) have limitations in the BigQuery JDBC driver. Therefore Presto is unable to support such a type.
+
+Unsupported Features
+--------------------
+
+Adding and modifying data through this connector is not supported. This limitation is because of 
+BigQuery and BigQuery JDBC driver semantics.
+
+
+The following SQL statements are not yet supported:
+
+* :doc:`/sql/alter-table`
+* :doc:`/sql/insert`
+* :doc:`/sql/create-table`
+* :doc:`/sql/create-table-as`
+* :doc:`/sql/delete`
+* :doc:`/sql/grant`
+* :doc:`/sql/revoke`
+* :doc:`/sql/show-grants`
+* :doc:`/sql/show-roles`
+* :doc:`/sql/show-role-grants`
