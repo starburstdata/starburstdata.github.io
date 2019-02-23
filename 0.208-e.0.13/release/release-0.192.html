@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>12.18. Release 0.192 &#8212; Presto 0.208-e.0.13 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.13',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.13 Documentation" href="../index.html" />
+    <link rel="up" title="12. Release Notes" href="../release.html" />
+    <link rel="next" title="12.19. Release 0.191" href="release-0.191.html" />
+    <link rel="prev" title="12.17. Release 0.193" href="release-0.193.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.13 Documentation</span></a></h1>
+    <h2 class="heading"><span>12.18. Release 0.192</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.193.html">12.17. Release 0.193</a>
+    </span>
+    <span class="right">
+        <a href="release-0.191.html">12.19. Release 0.191</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="release-0-192">
+<h1>12.18. Release 0.192</h1>
+<div class="section" id="general-changes">
+<h2>General Changes</h2>
+<ul class="simple">
+<li>Fix performance regression in split scheduling introduced in 0.191. If a query
+scans a non-trivial number of splits (~1M splits in an hour), the coordinator
+CPU utilization can be very high, leading to elevated communication failures.</li>
+<li>Fix correctness issue in the <a class="reference internal" href="../functions/geospatial.html#geometry_to_bing_tiles" title="geometry_to_bing_tiles"><code class="xref py py-func docutils literal"><span class="pre">geometry_to_bing_tiles()</span></code></a> function that causes
+it to return irrelevant tiles when bottom or right side of the bounding box of the
+geometry is aligned with the tile border.</li>
+<li>Fix handling of invalid WKT (well-known text) input in geospatial functions.</li>
+<li>Fix an issue that can cause long-running queries to hang when writer scaling is enabled.</li>
+<li>Fix cast from <code class="docutils literal"><span class="pre">REAL</span></code> or <code class="docutils literal"><span class="pre">DOUBLE</span></code> to <code class="docutils literal"><span class="pre">DECIMAL</span></code> to conform to the SQL standard.
+For example, previously <code class="docutils literal"><span class="pre">cast</span> <span class="pre">(double</span> <span class="pre">'100000000000000000000000000000000'</span> <span class="pre">as</span> <span class="pre">decimal(38))</span></code>
+would return <code class="docutils literal"><span class="pre">100000000000000005366162204393472</span></code>. Now it returns <code class="docutils literal"><span class="pre">100000000000000000000000000000000</span></code>.</li>
+<li>Fix bug in validation of resource groups that prevented use of the <code class="docutils literal"><span class="pre">WEIGHTED_FAIR</span></code> policy.</li>
+<li>Fail queries properly when the coordinator fails to fetch data from workers.
+Previously, it would return an HTTP 500 error to the client.</li>
+<li>Improve memory tracking for queries involving <code class="docutils literal"><span class="pre">DISTINCT</span></code> or <a class="reference internal" href="../functions/window.html#row_number" title="row_number"><code class="xref py py-func docutils literal"><span class="pre">row_number()</span></code></a> that could cause
+over-committing memory resources for short time periods.</li>
+<li>Improve performance for queries involving <code class="docutils literal"><span class="pre">grouping()</span></code>.</li>
+<li>Improve buffer utilization calculation for writer scaling.</li>
+<li>Remove tracking of per-driver peak memory reservation.</li>
+<li>Add <code class="docutils literal"><span class="pre">resource-groups.max-refresh-interval</span></code> config option to limit the maximum acceptable
+staleness of resource group configuration.</li>
+<li>Remove <code class="docutils literal"><span class="pre">dictionary-processing-joins-enabled</span></code> configuration option and <code class="docutils literal"><span class="pre">dictionary_processing_join</span></code>
+session property.</li>
+</ul>
+</div>
+<div class="section" id="web-ui-changes">
+<h2>Web UI Changes</h2>
+<ul class="simple">
+<li>Fix incorrect reporting of input size and positions in live plan view.</li>
+</ul>
+</div>
+<div class="section" id="cli-changes">
+<h2>CLI Changes</h2>
+<ul class="simple">
+<li>Fix update of prompt after <code class="docutils literal"><span class="pre">USE</span></code> statement.</li>
+<li>Fix correctness issue when rendering arrays of Bing tiles that causes
+the first entry to be repeated multiple times.</li>
+</ul>
+</div>
+<div class="section" id="hive-changes">
+<h2>Hive Changes</h2>
+<ul class="simple">
+<li>Fix reading partitioned table statistics from newer Hive metastores.</li>
+<li>Do not treat file system errors as corruptions for ORC.</li>
+<li>Prevent reads from tables or partitions with <code class="docutils literal"><span class="pre">object_not_readable</span></code> attribute set.</li>
+<li>Add support for validating ORC files after they have been written. This behavior can
+be turned on via the <code class="docutils literal"><span class="pre">hive.orc.writer.validate</span></code> configuration property.</li>
+<li>Expose ORC writer statistics via JMX.</li>
+<li>Add configuration options to control ORC writer min/max rows per stripe and row group,
+maximum stripe size, and memory limit for dictionaries.</li>
+<li>Allow reading empty ORC files.</li>
+<li>Handle ViewFs when checking file system cache expiration.</li>
+<li>Improve error reporting when the target table of an insert query is dropped.</li>
+<li>Remove retry when creating Hive record reader. This can help queries fail faster.</li>
+</ul>
+</div>
+<div class="section" id="mysql-changes">
+<h2>MySQL Changes</h2>
+<ul class="simple">
+<li>Remove support for <code class="docutils literal"><span class="pre">TIME</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code> and <code class="docutils literal"><span class="pre">TIMESTAMP</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code>
+types due to MySQL types not being able to store timezone information.</li>
+<li>Add support for <code class="docutils literal"><span class="pre">REAL</span></code> type, which maps to MySQL&#8217;s <code class="docutils literal"><span class="pre">FLOAT</span></code> type.</li>
+</ul>
+</div>
+<div class="section" id="postgresql-changes">
+<h2>PostgreSQL Changes</h2>
+<ul class="simple">
+<li>Add support for <code class="docutils literal"><span class="pre">VARBINARY</span></code> type, which maps to PostgreSQL&#8217;s <code class="docutils literal"><span class="pre">BYTEA</span></code> type.</li>
+</ul>
+</div>
+<div class="section" id="mongodb-changes">
+<h2>MongoDB Changes</h2>
+<ul class="simple">
+<li>Fix support for pushing down inequality operators for string types.</li>
+<li>Add support for reading documents as <code class="docutils literal"><span class="pre">MAP</span></code> values.</li>
+<li>Add support for MongoDB&#8217;s <code class="docutils literal"><span class="pre">Decimal128</span></code> type.</li>
+<li>Treat document and array of documents as <code class="docutils literal"><span class="pre">JSON</span></code> instead of <code class="docutils literal"><span class="pre">VARCHAR</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="jmx-changes">
+<h2>JMX Changes</h2>
+<ul class="simple">
+<li>Allow nulls in history table values.</li>
+</ul>
+</div>
+<div class="section" id="spi-changes">
+<h2>SPI Changes</h2>
+<ul class="simple">
+<li>Remove <code class="docutils literal"><span class="pre">SliceArrayBlock</span></code> class.</li>
+<li>Add <code class="docutils literal"><span class="pre">offset</span></code> and <code class="docutils literal"><span class="pre">length</span></code> parameters to <code class="docutils literal"><span class="pre">Block.getPositions()</span></code>.</li>
+</ul>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.193.html">12.17. Release 0.193</a>
+    </span>
+    <span class="right">
+        <a href="release-0.191.html">12.19. Release 0.191</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
