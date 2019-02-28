@@ -1,0 +1,179 @@
+Overview of Presto on AWS
+=========================
+
+General Description
+-------------------
+Available on `AWS Marketplace <https://aws.amazon.com/marketplace/pp/B07DKV5659/ref=_ptnr_starburst_docs>`_, Presto on AWS integrates the reliable, scalable, and cost-effective cloud computing services provided by Amazon with the power of the fastest growing distributed query engine within the industry. Through the use of Starburst’s CloudFormation template and Presto AMI, Presto on AWS enables the user to run analytic queries across distinct data sources of varying sizes via Presto clusters. Within a single query, you can access multiple data stores, allowing for the analysis of data across your entire organization. In minutes the user is able to provision from small to large clusters of compute instances and leverage the power of Presto’s parallelism. At its core, Presto is architected to bring your organization faster query processing and thus greater efficiencies and cost-effectiveness. Simply create your cluster and begin querying to witness how Presto can impact your organization’s Big Data query functionality and bottom line.
+
+`Try Presto on AWS Marketplace! <https://aws.amazon.com/marketplace/pp/B07DKV5659>`_
+
+Releases & Software
+-------------------
+
+Presto 0.203-e
+^^^^^^^^^^^^^^
+Starburst Presto on AWS Marketplace is based on version 203e. 203e includes many additional features and patches to the prestodb/presto version 0.203. Notably, Presto 203e, includes the state of the art cost based optimizer for fast query results.
+
+For more information on Presto `203e`_, refer to our documentation.
+
+.. _203e: http://docs.starburstdata.com/latest/release/release-0.203-e.html
+
+Apache Superset
+^^^^^^^^^^^^^^^
+Packaged alongside Presto is the business intelligence tool Apache Superset. Superset is a data exploration and visualization web application that enables users to process data in a variety of ways including writing SQL queries, creating new tables, creating a visualization (slice), adding that visualization to one or many dashboards and downloading a CSV. Superset’s SQL Lab IDE provides the user ways to both query and visualize data. You can explore and preview tables in Presto and effortlessly compose SQL queries to access data. From here, you can export a CSV file or immediately visualize your data in the Superset "Explore" view.
+
+For more information on Apache Superset, please refer to our dedicated section: :doc:`/aws/superset/`.
+
+Presto Admin
+^^^^^^^^^^^^
+Please refrain from using the Presto Admin tool to make updates or configurations to Presto on AWS. All configurations and changes should be performed via the CloudFormation Template (CFT).
+
+
+Deployment Options
+------------------
+Under Presto on AWS, the user can deploy both single node AMIs and multi-node clusters via CFTs.
+
+Single Node AMI
+^^^^^^^^^^^^^^^
+An Amazon Machine Image (AMI) provides the information required to launch an instance or a virtual server in the Cloud. Starburst makes
+launching instances easy with our custom Presto AMI. Simply choose your preferred instance type, specify configuration details and other instance specifications, and you are ready to launch. Deploying a single instance from our Presto AMI allows one to easily experience the power of Presto without expending resources on installation or configuration.
+
+
+CloudFormation Template
+^^^^^^^^^^^^^^^^^^^^^^^^
+AWS CloudFormation is a service that we leverage to help set up AWS resources for a Presto cluster so that you can spend less time
+managing said resources and more time focusing on your applications that run in AWS. Employing our template helps to describe all the AWS resources that you need, such as Amazon EC2 compute instances, and AWS CloudFormation then takes care of provisioning and configuring those resources for you.
+Starburst’s CloudFormation template for Presto offers quick provisioning of Presto clusters with configurable specifications to fit your application’s needs. The provided Starburst CloudFormation template provisions a Presto cluster by launching multiple instances of the aforementioned Presto AMI. Moreover, the CloudFormation template automatically configures Presto or allows for one to customize their Presto cluster configurations easily.
+
+Supported Instances and Regions
+-------------------------------
+
+Available Regions
+^^^^^^^^^^^^^^^^^
+Starburst offers the following regions for Presto on AWS.
+
+
++--------------------------+--------------------------+
+|       Region Code        |       Region Name        |
++==========================+==========================+
+| us-east-1                | US East (N. Virginia)    |
++--------------------------+--------------------------+
+| us-east-2                | US East (Ohio)           |
++--------------------------+--------------------------+
+| us-west-1                | US West (N. California)  |
++--------------------------+--------------------------+
+| us-west-2                | US West (Oregon)         |
++--------------------------+--------------------------+
+| ca-central-1             | Canada (Central)         |
++--------------------------+--------------------------+
+| eu-central-1             | EU (Frankfurt)           |
++--------------------------+--------------------------+
+| eu-west-1                | EU (Ireland)             |
++--------------------------+--------------------------+
+| eu-west-2                | EU (London)              |
++--------------------------+--------------------------+
+| eu-west-3                | EU (Paris)               |
++--------------------------+--------------------------+
+| ap-northeast-1           | Asia Pacific (Tokyo)     |
++--------------------------+--------------------------+
+| ap-northeast-2           | Asia Pacific (Seoul)     |
++--------------------------+--------------------------+
+| ap-southeast-1           | Asia Pacific (Singapore) |
++--------------------------+--------------------------+
+| ap-southeast-2           | Asia Pacific (Sydney)    |
++--------------------------+--------------------------+
+| ap-south-1               | Asia Pacific (Mumbai)    |
++--------------------------+--------------------------+
+| sa-east-1                | South America (São Paulo)|
++--------------------------+--------------------------+
+
+.. _aws_recommended_types:
+
+Recommended Instance Types
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Reference the following information to help choose your optimal instance type for your specific compute, memory, and storage needs.
+
+**1. Choose CPU/Memory Ratio**
+
+Generally, you should favor clusters with a higher CPU/memory ratio, as Presto is usually bound by CPU. However, machines with larger memory (e.g., r4.8xlarge, r4.16xlarge) are favorable if one or more of the following cases hold true.
+
+    * Queries are failing because of exceeding node memory limits
+    * There is high query concurrency and queries are executing in the reserved memory pool
+    * A large number of nodes with lower memory and a higher number of CPUs is required because maximum query memory is very high
+    * Query skewness issues
+    * Presto is not bounded by CPU (e.g., S3)
+
+**2. Align with Offered Instance Types**
+
++-----------------+------------+------------------+--------------------------------------------------------+
+| Instance Family |  Category  | CPU/Memory Ratio |                      Use Case                          |
++=================+============+==================+========================================================+
+| c5              | Compute    | High             | * Low to medium concurrency                            |
+|                 |            |                  | * Lower memory-intensive queries without much skewness |
++-----------------+------------+------------------+--------------------------------------------------------+
+| m5              | General    | Moderate         | * Average queries and workloads                        |
+|                 |            |                  | * Medium concurrency                                   |
++-----------------+------------+------------------+--------------------------------------------------------+
+| r4              | Memory     | Low              | * Higher memory intensive queries                      |
+|                 |            |                  | * High concurrency                                     |
+|                 |            |                  | * When not bounded by CPU                              |
++-----------------+------------+------------------+--------------------------------------------------------+
+
+.. Note::  For cost-efficiency use the smallest cluster possible that allows for queries to pass (e.g., because of memory requirements). However, if your cluster is bound by some resource (e.g., CPU) choose nodes with the highest ratio between that resource and other resources (e.g., for CPU bound queries choose nodes with highest CPU/memory ratio).
+
+Presto Cloud Architecture
+-------------------------
+
+General Components and Descriptions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Presto is a distributed system that runs on one or more machines to form a cluster. When using Starburst’s CloudFormation template for Presto, a typical installation will include one Presto Coordinator and a number of Presto Workers, alongside various other complex components. Below is a breakdown of such components.
+
+The following terms describe each component of the Presto cloud architecture in more detail:
+
+**Command Line Interface Client**
+
+The command line interface is used to send an SQL query to the Presto Coordinator. This client is installed on the same machine as the Presto Coordinator by default. But, it can also be installed and used on a different machine that has access to the Presto Coordinator.
+
+**Presto Coordinator**
+
+Provisioned on an EC2 instance and is responsible for parsing the SQL queries as well as analyzing, planning, and scheduling their execution.
+
+**Presto Workers and Auto Scaling Group**
+	
+Provisioned on EC2 instances that comprise the remainder of the cluster and are responsible for executing the SQL queries, such as aggregating data, and delivering the result to the client.
+
+Such worker nodes belong to an Auto Scaling group for the purpose of instance scaling and management. An Auto Scaling group starts by launching enough EC2 instances to meet its desired capacity and continues to maintain said capacity by scaling up or down as needed.
+
+**Placement Group**
+	
+Your EC2 instances are contained within placement groups. When creating a Presto cluster, instances are launched in a placement group, which determines how they are placed on the underlying hardware. This allows for low-latency network between the Presto nodes.
+
+**Security Group**
+	
+Your EC2 instances are also contained within one or more security groups -- a virtual firewall that controls the traffic for one or more instances. When you create your Presto cluster, you associate with it one or more security groups. This includes the specification and addition of rules to each security group that allow traffic to or from its associated instances.
+
+**VPC Subnet**
+	
+Your cluster will be launched within your virtual private cloud subnet; a subset of the overarching virtual network dedicated to a specific availability zone -- isolated from failures in other zones.
+
+**VPC**
+	
+Your VPC subnet is contained within a larger network entity known as the virtual private cloud. The VPC is a virtual network dedicated to your AWS account and is logically isolated from other virtual networks in the AWS Cloud. As mentioned above it is broken down into availability zones or regions.
+
+Diagram
+^^^^^^^
+The illustration below depicts the above components of a Presto cluster
+in the AWS infrastructure.
+
+.. image:: /_static/aws/aws_architecture.png
+	:scale: 100%
+
+Presto Support Options
+----------------------
+At Starburst we pride ourselves on being *the* Presto experts. Need support for your organization’s production and development environments for Presto? We have got you covered with 24x7 support as part of our Enterprise Subscription.
+
+Contact us for more information about our `support offerings`_ and explore our other `services`_ on our website.
+
+.. _support offerings: https://www.starburstdata.com/our-offerings/
+
+.. _services: https://www.starburstdata.com/our-offerings/consulting-training/
