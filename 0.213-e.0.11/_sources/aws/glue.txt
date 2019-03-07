@@ -1,0 +1,65 @@
+AWS Glue Support
+================
+
+AWS Glue is a supported metadata catalog for Presto. It is intended to be used as a alternative to the Hive Metastore with the Presto Hive plugin to work with your S3 data.
+
+AWS Glue with Starburst Presto AMI
+----------------------------------
+
+When you deploy a Starburst Presto AMI from the AWS Marketplace, you need to configure the Hive connector to use Glue. The minimal setup is to do the following on all Presto nodes:
+
+1. create a ``/etc/presto/catalogs/glue.properties`` file with at least the contents below::
+
+    connector.name=hive-hadoop2
+    hive.metastore = glue
+
+You should add all other Hive Connector specific properties for your use case. See :doc:`/connector/hive` and :doc:`/connector/hive-security` for more details.
+
+2. restart Presto with::
+
+    sudo service presto restart
+
+AWS Glue with Starburst Presto CloudFormation Template
+------------------------------------------------------
+
+When using the Starburst CloudFormation template in AWS, you can leverage Glue by simply choosing ``AWS Glue Data
+Catalog`` in ``MetastoreType`` field of the Stack creation form (``Presto Configuration`` section)
+
+
+Starburst Presto with AWS Glue usage
+------------------------------------
+
+When configured as above, the Glue catalog will be available as the ``hive`` connector from within Presto CLI or any other Presto connection.
+As usual remember to specify the location of the data on S3. Either for the entire schema or on the table level. For example to create a schema ``foo`` in Glue, with the S3 base directory (root folder for per table subdirectories) pointing to the root of ``my-bucket`` S3 bucket, you would write::
+
+    CREATE SCHEMA hive.foo
+    WITH (location = 's3://my-bucket/')
+
+You can also create and edit the schema and tables directly from AWS Glue. In AWS Glue terminology the schema is called “database”.
+
+Starburst Presto with AWS Glue prerequisites
+--------------------------------------------
+
+Both the AMI and CloudFormation approach mentioned above require the Presto instances to have permissions to access both S3 and Glue AWS services.
+
+**When using Starburst Presto via our CloudFormation template by default you do not need to provide anything, the template will create all necessary resources automatically.**
+
+If however you need to provide your own IAM Instance Profile for the Presto instances (``IamInstanceProfile`` field in the Stack creation form) please consult the :ref:`aws_security_prereq_nodes` section.
+Same applies when launching the AMI manually, make sure you choose an IAM Role that satisfies the requirements.
+
+Table and column statistics support
+-----------------------------------
+
+With `hive.metastore.glue.column-statistics-enabled` set to `true` (default) table and column statistics will be collected for Glue tables and partitions.
+Such statistics are stored in JSON format as Glue table and partition parameters. See also :doc:`/sql/analyze`.
+
+
+Known limitations of AWS Glue support
+-------------------------------------
+
+There are a couple Presto features that are not yet supported with the Glue catalog:
+
+* When column is renamed its statistics are not preserved. Therefore the table needs to be reanalyzed.
+* Renaming tables from within AWS Glue is not supported.
+* Partition values containing quotes and apostrophes are not supported (for example, ``PARTITION (owner="Doe's"``).
+* Using :ref:`Hive authorization<hive-security-auth>` is not supported.
