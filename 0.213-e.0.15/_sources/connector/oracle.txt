@@ -1,0 +1,319 @@
+================
+Oracle Connector
+================
+
+The Oracle Database connector allows querying and creating tables in an external
+Oracle database. This can be used to join data between different systems like
+Oracle and Hive, or between different Oracle Database instances.
+
+This plugin is not installed by default. If you would like to learn more about
+getting and using the Presto with Oracle Database, please contact
+hello@starburstdata.com.
+
+
+Installation and configuration
+==============================
+
+Prerequisites
+-------------
+
+Any of the below installation and configuration methods require the following artifacts:
+
+* Oracle's JDBC driver, may be obtained from Oracle's `https://www.oracle.com/technetwork/database/application-development/jdbc/downloads/index.htm <https://www.oracle.com/technetwork/database/application-development/jdbc/downloads/index.html>`_
+* Oracle Database connector bundle, obtained from Starburst
+* Connection details to connect to the Oracle DB, in form of a regular Presto connector config (eg. ``oracle.properties`` for a Presto catalog named ``oracle``). File should contain the following contents, replacing the connection properties as appropriate for your setup:
+
+.. code-block:: none
+
+    connector.name=oracle
+    connection-url=jdbc:oracle:thin:@HOST:PORT:SID
+    connection-user=USERNAME
+    connection-password=PASSWORD
+
+
+Using a dedicated script
+------------------------
+
+When obtaining the Oracle Database connector from Starburst, you receive a special ``install.sh`` script
+that can be used, and modified to fit the custom environment. Out of the box the script follows a typical
+Presto layout and eases the process of installing the plugin and configuring the connector throughout the cluster.
+
+The script assumes it finds the following files in the directory where it is run:
+
+* Oracle JDBC driver, downloaded from Oracle (``ojdbc8.jar``).
+* Oracle Database connector bundle, obtained from Starburst (e.g. ``presto-oracle-0.3.zip``).
+* Connection details to connect to the Oracle DB, in form of a regular Presto connector config (``oracle.properties``).
+
+The script follows the standard directory layout of a Presto installation and makes the following assumptions:
+
+* The node from which the script is run has password-less ssh login to all other Presto nodes.
+* The user has ``sudo`` capabilities.
+* Presto is running and available at ``localhost:8080``.
+* Presto plugin directory is ``/usr/lib/presto/lib/plugin``, plugin is installed under the name ``oracle``.
+* Presto catalog directory is ``/etc/presto/catalog``.
+* There will be one Oracle catalog (instance of the Presto Oracle Connector), available under the name ``oracle``.
+
+The script does its work in the following sequence, for each node (including the node that it's running on):
+
+1. Send the files over ``ssh`` placing them in the ``/tmp`` directory.
+2. Install the plugin, configure the connector.
+3. Cleanup the files from ``/tmp``.
+4. Restart Presto.
+
+The script works out of the box for a typical Presto installation, but feel free to modify the script to fit your particular cluster environment and Presto setup.
+
+Manual Plugin Installation
+--------------------------
+
+To install the Oracle Database connector manually, use the following directions. You will
+need an installation of the Starburst Distribution of Presto, the Oracle
+Database plugin (``presto-oracle.zip``), and an Oracle JDBC Driver
+(``ojdbc8.jar``).
+
+1. Create a new directory named ``oracle`` in Presto's plugin directory.
+2. Unzip the plugin's files into the new directory.
+3. Add the Oracle JDBC Driver JAR to the new directory.
+4. Perform the above steps on every Presto cluster node.
+5. Restart Presto on every node.
+
+
+Manual Connector Configuration (Using Presto-Admin)
+---------------------------------------------------
+
+Create the catalog properties file in ``~/.prestoadmin/catalog`` and refer to :ref:`catalog-add` for adding a catalog using ``presto-admin``.
+
+
+Multiple Oracle Databases
+-------------------------
+
+If you want to connect to multiple Oracle Databases, configure another instance
+of the Oracle plugin as a separate catalog.
+
+To add another Oracle catalog, simply add another properties file to
+``~/.prestoadmin/catalog`` with a different name (making sure it ends in
+``.properties``). For example, if you name the property file
+``sales.properties``, Presto will create a catalog named ``sales``.
+
+
+Querying Oracle Databases
+=========================
+
+The Oracle Database connector provides a schema for each Oracle Database user's
+schema. Assuming the catalog name is ``oracle``, you can see the available schemas by running
+``SHOW SCHEMAS``::
+
+    SHOW SCHEMAS FROM oracle;
+
+If you have an Oracle Database user named ``web``, you can view the tables they
+own by running ``SHOW TABLES``::
+
+    SHOW TABLES FROM oracle.web;
+
+You can see a list of the columns in the ``clicks`` table in ``web``'s schema
+using either of the following::
+
+    DESCRIBE oracle.web.clicks;
+    SHOW COLUMNS FROM oracle.web.clicks;
+
+Finally, you can access the ``clicks`` table in ``web``'s schema::
+
+    SELECT * FROM oracle.web.clicks;
+
+Your privileges in these schemas are those of the user configured in the
+connection properties file. If the user does not have access to these tables,
+you will not be able to access them.
+
+
+Mapping Data Types Between Presto and Oracle
+============================================
+
+Because Presto and Oracle each support types that the other does not, the following
+type mapping tables apply.
+
+
+Oracle-to-Presto type mapping
+-----------------------------
+
+Presto supports selecting the following Oracle Database types. The table shows
+the mappings from Oracle to Presto data types.
+
+.. table::
+   :class: colwidths-auto
+
+   +------------------------+----------------------+-------------------------+
+   |Oracle Database type    |Presto type           |Notes                    |
+   +========================+======================+=========================+
+   |``NUMBER(p, s)``        |``DECIMAL(p, s)``     |See :ref:`number         |
+   |                        |                      |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+   |``FLOAT[(p)]``          |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BINARY_FLOAT``        |``REAL``              |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BINARY_DOUBLE``       |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``VARCHAR2(n CHAR)``    |``VARCHAR(n)``        |                         |
+   +------------------------+----------------------+-------------------------+
+   |``VARCHAR2(n BYTE)``    |``VARCHAR(n)``        |                         |
+   +------------------------+----------------------+-------------------------+
+   |``NVARCHAR2(n)``        |``VARCHAR(n)``        |                         |
+   +------------------------+----------------------+-------------------------+
+   |``CHAR(n)``             |``CHAR(n)``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``NCHAR(n)``            |``CHAR(n)``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``CLOB``                |``VARCHAR``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``NCLOB``               |``VARCHAR``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``RAW(n)``              |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BLOB``                |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DATE``                |``TIMESTAMP``         |See :ref:`datetime       |
+   |                        |                      |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+   |``TIMESTAMP(p)``        |``TIMESTAMP``         |See :ref:`datetime       |
+   |                        |                      |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+   |``TIMESTAMP(p) WITH TIME|``TIMESTAMP WITH TIME |See :ref:`datetime       |
+   |ZONE``                  |ZONE``                |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+
+Any Oracle type not listed in this table may not be selected using the Oracle
+Database connector and won't be visible to the user. 
+
+
+Presto-to-Oracle type mapping
+-----------------------------
+
+Presto supports creating tables with the following types into an Oracle Database. The table
+shows the mappings from Presto to Oracle data types.
+
+.. table::
+   :class: colwidths-auto
+
+   +----------------------+------------------------+-------------------------+
+   |Presto type           |Oracle Database type    |Notes                    |
+   +======================+========================+=========================+
+   |``TINYINT``           |``NUMBER(3)``           |                         |
+   +----------------------+------------------------+-------------------------+
+   |``SMALLINT``          |``NUMBER(5)``           |                         |
+   +----------------------+------------------------+-------------------------+
+   |``INTEGER``           |``NUMBER(10)``          |                         |
+   +----------------------+------------------------+-------------------------+
+   |``BIGINT``            |``NUMBER(19)``          |                         |
+   +----------------------+------------------------+-------------------------+
+   |``DECIMAL(p, s)``     |``NUMBER(p, s)``        |                         |
+   +----------------------+------------------------+-------------------------+
+   |``REAL``              |``BINARY_FLOAT``        |                         |
+   +----------------------+------------------------+-------------------------+
+   |``DOUBLE``            |``BINARY_DOUBLE``       |                         |
+   +----------------------+------------------------+-------------------------+
+   |``VARCHAR``           |``NCLOB``               |                         |
+   +----------------------+------------------------+-------------------------+
+   |``VARCHAR(n)``        |``VARCHAR2(n CHAR)`` or |See :ref:`character      |
+   |                      |``NCLOB``               |mapping`.                |
+   +----------------------+------------------------+-------------------------+
+   |``CHAR(n)``           |``CHAR(n CHAR)`` or     |See :ref:`character      |
+   |                      |``NCLOB``               |mapping`.                |
+   +----------------------+------------------------+-------------------------+
+   |``VARBINARY``         |``BLOB``                |                         |
+   +----------------------+------------------------+-------------------------+
+   |``DATE``              |``DATE``                |See :ref:`datetime       |
+   |                      |                        |mapping`.                |
+   +----------------------+------------------------+-------------------------+
+   |``TIMESTAMP``         |``TIMESTAMP(3)``        |See :ref:`datetime       |
+   |                      |                        |mapping`.                |
+   +----------------------+------------------------+-------------------------+
+   |``TIMESTAMP WITH TIME |``TIMESTAMP(3) WITH TIME|See :ref:`datetime       |
+   |ZONE``                |ZONE``                  |mapping`.                |
+   +----------------------+------------------------+-------------------------+
+
+Any Presto type not listed in this table may not be written using the Oracle
+Database connector.
+
+
+.. _number mapping:
+
+Mapping numeric types
+---------------------
+
+An Oracle ``NUMBER(p, s)`` will be mapped to Presto's ``DECIMAL(p, s)`` except
+under these conditions:
+
+  - No precision is specified for the column (e.g. ``NUMBER`` or
+    ``NUMBER(*)``).
+  - Scale (``s``) is greater than precision.
+  - Precision (``p``) is greater than 38.
+  - Scale is negative and the difference between ``p`` and ``s`` is greater than
+    38.
+
+Columns that meet any of these conditions will be ignored.
+
+If ``s`` is negative, ``NUMBER(p, s)`` will be mapped to ``DECIMAL(p + s, 0)``.
+
+
+.. _datetime mapping:
+
+Mapping datetime types
+----------------------
+
+Selecting a timestamp with fractional second precision (``p``) greater than 3
+will truncate (not round) the fractional seconds to three digits.
+
+Oracle ``DATE`` values may store hours, minutes, and seconds, so they are mapped
+to ``TIMESTAMP`` in Presto.
+
+.. warning:: Because of differences in date and time libraries used by Presto and 
+             the Oracle JDBC driver, attempting to insert or select a datetime value 
+             earlier than ``1582-10-15`` will result in an incorrect date being inserted.
+
+.. _character mapping:
+
+Mapping character types
+-----------------------
+
+Presto's ``VARCHAR(n)`` maps to ``VARCHAR2(n CHAR)`` if ``n`` is no greater than
+4000. A larger or unbounded ``VARCHAR`` maps to ``NCLOB``.
+
+Presto's ``CHAR(n)`` maps to ``CHAR(n CHAR)`` if ``n`` is no greater than 2000.
+A larger ``CHAR`` maps to ``NCLOB``.
+
+Using ``CREATE TABLE AS`` to create an ``NCLOB`` column from a ``CHAR`` value
+will remove the trailing spaces from the initial values for the column.
+Inserting ``CHAR`` values into existing ``NCLOB`` columns will keep the trailing
+spaces. For example::
+
+    presto> CREATE TABLE vals AS SELECT CAST('A' as CHAR(2001)) col;
+    presto> INSERT INTO vals (col) VALUES (CAST('BB' as CHAR(2001)));
+    presto> SELECT LENGTH(col) FROM vals;
+    2001
+    1
+
+.. note:: This behaviors above may be subject
+          to change in a future version.
+.. note:: Attempting to write a
+          ``CHAR`` that does not fit in the column's actual size will fail.
+          This is also true for the equivalent ``VARCHAR`` types.
+
+
+Oracle Database Connector Limitations
+=====================================
+
+Presto supports connecting to Oracle Database 12c.
+
+
+Unsupported statements
+----------------------
+
+The following SQL statements are not yet supported:
+
+* :doc:`/sql/delete`
+* :doc:`/sql/alter-table`
+* :doc:`/sql/create-table` (:doc:`/sql/create-table-as` is supported)
+* :doc:`/sql/grant`
+* :doc:`/sql/revoke`
+* :doc:`/sql/show-grants`
+* :doc:`/sql/show-roles`
+* :doc:`/sql/show-role-grants`
