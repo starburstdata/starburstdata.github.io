@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>6.10. Regular Expression Functions &#8212; Presto 0.208-e.0.14 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.14',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.14 Documentation" href="../index.html" />
+    <link rel="up" title="6. Functions and Operators" href="../functions.html" />
+    <link rel="next" title="6.11. Binary Functions and Operators" href="binary.html" />
+    <link rel="prev" title="6.9. String Functions and Operators" href="string.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.14 Documentation</span></a></h1>
+    <h2 class="heading"><span>6.10. Regular Expression Functions</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="string.html">6.9. String Functions and Operators</a>
+    </span>
+    <span class="right">
+        <a href="binary.html">6.11. Binary Functions and Operators</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="regular-expression-functions">
+<h1>6.10. Regular Expression Functions</h1>
+<p>All of the regular expression functions use the <a class="reference external" href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html">Java pattern</a> syntax,
+with a few notable exceptions:</p>
+<ul class="simple">
+<li>When using multi-line mode (enabled via the <code class="docutils literal"><span class="pre">(?m)</span></code> flag),
+only <code class="docutils literal"><span class="pre">\n</span></code> is recognized as a line terminator. Additionally,
+the <code class="docutils literal"><span class="pre">(?d)</span></code> flag is not supported and must not be used.</li>
+<li>Case-insensitive matching (enabled via the <code class="docutils literal"><span class="pre">(?i)</span></code> flag) is always
+performed in a Unicode-aware manner. However, context-sensitive and
+local-sensitive matching is not supported. Additionally, the
+<code class="docutils literal"><span class="pre">(?u)</span></code> flag is not supported and must not be used.</li>
+<li>Surrogate pairs are not supported. For example, <code class="docutils literal"><span class="pre">\uD800\uDC00</span></code> is
+not treated as <code class="docutils literal"><span class="pre">U+10000</span></code> and must be specified as <code class="docutils literal"><span class="pre">\x{10000}</span></code>.</li>
+<li>Boundaries (<code class="docutils literal"><span class="pre">\b</span></code>) are incorrectly handled for a non-spacing mark
+without a base character.</li>
+<li><code class="docutils literal"><span class="pre">\Q</span></code> and <code class="docutils literal"><span class="pre">\E</span></code> are not supported in character classes
+(such as <code class="docutils literal"><span class="pre">[A-Z123]</span></code>) and are instead treated as literals.</li>
+<li>Unicode character classes (<code class="docutils literal"><span class="pre">\p{prop}</span></code>) are supported with
+the following differences:<ul>
+<li>All underscores in names must be removed. For example, use
+<code class="docutils literal"><span class="pre">OldItalic</span></code> instead of <code class="docutils literal"><span class="pre">Old_Italic</span></code>.</li>
+<li>Scripts must be specified directly, without the
+<code class="docutils literal"><span class="pre">Is</span></code>, <code class="docutils literal"><span class="pre">script=</span></code> or <code class="docutils literal"><span class="pre">sc=</span></code> prefixes.
+Example: <code class="docutils literal"><span class="pre">\p{Hiragana}</span></code></li>
+<li>Blocks must be specified with the <code class="docutils literal"><span class="pre">In</span></code> prefix.
+The <code class="docutils literal"><span class="pre">block=</span></code> and <code class="docutils literal"><span class="pre">blk=</span></code> prefixes are not supported.
+Example: <code class="docutils literal"><span class="pre">\p{Mongolian}</span></code></li>
+<li>Categories must be specified directly, without the <code class="docutils literal"><span class="pre">Is</span></code>,
+<code class="docutils literal"><span class="pre">general_category=</span></code> or <code class="docutils literal"><span class="pre">gc=</span></code> prefixes.
+Example: <code class="docutils literal"><span class="pre">\p{L}</span></code></li>
+<li>Binary properties must be specified directly, without the <code class="docutils literal"><span class="pre">Is</span></code>.
+Example: <code class="docutils literal"><span class="pre">\p{NoncharacterCodePoint}</span></code></li>
+</ul>
+</li>
+</ul>
+<dl class="function">
+<dt id="regexp_extract_all">
+<code class="descname">regexp_extract_all</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em><span class="sig-paren">)</span> &rarr; array&lt;varchar&gt;</dt>
+<dd><p>Returns the substring(s) matched by the regular expression <code class="docutils literal"><span class="pre">pattern</span></code>
+in <code class="docutils literal"><span class="pre">string</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_extract_all</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;\d+&#39;</span><span class="p">);</span> <span class="c1">-- [1, 2, 14]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descname">regexp_extract_all</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em>, <em>group</em><span class="sig-paren">)</span> &rarr; array&lt;varchar&gt;</dt>
+<dd><p>Finds all occurrences of the regular expression <code class="docutils literal"><span class="pre">pattern</span></code> in <code class="docutils literal"><span class="pre">string</span></code>
+and returns the <a class="reference external" href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#gnumber">capturing group number</a> <code class="docutils literal"><span class="pre">group</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_extract_all</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;(\d+)([a-z]+)&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">-- [&#39;a&#39;, &#39;b&#39;, &#39;m&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="regexp_extract">
+<code class="descname">regexp_extract</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Returns the first substring matched by the regular expression <code class="docutils literal"><span class="pre">pattern</span></code>
+in <code class="docutils literal"><span class="pre">string</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_extract</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;\d+&#39;</span><span class="p">);</span> <span class="c1">-- 1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descname">regexp_extract</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em>, <em>group</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Finds the first occurrence of the regular expression <code class="docutils literal"><span class="pre">pattern</span></code> in
+<code class="docutils literal"><span class="pre">string</span></code> and returns the <a class="reference external" href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#gnumber">capturing group number</a> <code class="docutils literal"><span class="pre">group</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_extract</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;(\d+)([a-z]+)&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">-- &#39;a&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="regexp_like">
+<code class="descname">regexp_like</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em><span class="sig-paren">)</span> &rarr; boolean</dt>
+<dd><p>Evaluates the regular expression <code class="docutils literal"><span class="pre">pattern</span></code> and determines if it is
+contained within <code class="docutils literal"><span class="pre">string</span></code>.</p>
+<p>This function is similar to the <code class="docutils literal"><span class="pre">LIKE</span></code> operator, expect that the
+pattern only needs to be contained within <code class="docutils literal"><span class="pre">string</span></code>, rather than
+needing to match all of <code class="docutils literal"><span class="pre">string</span></code>. In other words, this performs a
+<em>contains</em> operation rather than a <em>match</em> operation. You can match
+the entire string by anchoring the pattern using <code class="docutils literal"><span class="pre">^</span></code> and <code class="docutils literal"><span class="pre">$</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_like</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;\d+b&#39;</span><span class="p">);</span> <span class="c1">-- true</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="regexp_replace">
+<code class="descname">regexp_replace</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Removes every instance of the substring matched by the regular expression
+<code class="docutils literal"><span class="pre">pattern</span></code> from <code class="docutils literal"><span class="pre">string</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_replace</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;\d+[ab] &#39;</span><span class="p">);</span> <span class="c1">-- &#39;14m&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descname">regexp_replace</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em>, <em>replacement</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Replaces every instance of the substring matched by the regular expression
+<code class="docutils literal"><span class="pre">pattern</span></code> in <code class="docutils literal"><span class="pre">string</span></code> with <code class="docutils literal"><span class="pre">replacement</span></code>. <a class="reference external" href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#cg">Capturing groups</a> can be
+referenced in <code class="docutils literal"><span class="pre">replacement</span></code> using <code class="docutils literal"><span class="pre">$g</span></code> for a numbered group or
+<code class="docutils literal"><span class="pre">${name}</span></code> for a named group. A dollar sign (<code class="docutils literal"><span class="pre">$</span></code>) may be included in the
+replacement by escaping it with a backslash (<code class="docutils literal"><span class="pre">\$</span></code>):</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_replace</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;(\d+)([ab]) &#39;</span><span class="p">,</span> <span class="s1">&#39;3c$2 &#39;</span><span class="p">);</span> <span class="c1">-- &#39;3ca 3cb 14m&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt>
+<code class="descname">regexp_replace</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em>, <em>function</em><span class="sig-paren">)</span> &rarr; varchar</dt>
+<dd><p>Replaces every instance of the substring matched by the regular expression
+<code class="docutils literal"><span class="pre">pattern</span></code> in <code class="docutils literal"><span class="pre">string</span></code> using <code class="docutils literal"><span class="pre">function</span></code>. The <a class="reference internal" href="lambda.html"><span class="doc">lambda expression</span></a>
+<code class="docutils literal"><span class="pre">function</span></code> is invoked for each match with the <a class="reference external" href="http://docs.oracle.com/javase/8/docs/api/java/util/regex/Pattern.html#cg">capturing groups</a> passed as an
+array. Capturing group numbers start at one; there is no group for the entire match
+(if you need this, surround the entire expression with parenthesis).</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_replace</span><span class="p">(</span><span class="s1">&#39;new york&#39;</span><span class="p">,</span> <span class="s1">&#39;(\w)(\w*)&#39;</span><span class="p">,</span> <span class="n">x</span> <span class="o">-&gt;</span> <span class="k">upper</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">||</span> <span class="k">lower</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]));</span> <span class="c1">--&#39;New York&#39;</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="regexp_split">
+<code class="descname">regexp_split</code><span class="sig-paren">(</span><em>string</em>, <em>pattern</em><span class="sig-paren">)</span> &rarr; array&lt;varchar&gt;</dt>
+<dd><p>Splits <code class="docutils literal"><span class="pre">string</span></code> using the regular expression <code class="docutils literal"><span class="pre">pattern</span></code> and returns an
+array. Trailing empty strings are preserved:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regexp_split</span><span class="p">(</span><span class="s1">&#39;1a 2b 14m&#39;</span><span class="p">,</span> <span class="s1">&#39;\s*[a-z]+\s*&#39;</span><span class="p">);</span> <span class="c1">-- [1, 2, 14, ]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="string.html">6.9. String Functions and Operators</a>
+    </span>
+    <span class="right">
+        <a href="binary.html">6.11. Binary Functions and Operators</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

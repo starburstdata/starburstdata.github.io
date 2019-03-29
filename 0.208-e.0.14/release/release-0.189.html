@@ -1,0 +1,165 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>12.21. Release 0.189 &#8212; Presto 0.208-e.0.14 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.14',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.14 Documentation" href="../index.html" />
+    <link rel="up" title="12. Release Notes" href="../release.html" />
+    <link rel="next" title="12.22. Release 0.188" href="release-0.188.html" />
+    <link rel="prev" title="12.20. Release 0.190" href="release-0.190.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.14 Documentation</span></a></h1>
+    <h2 class="heading"><span>12.21. Release 0.189</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.190.html">12.20. Release 0.190</a>
+    </span>
+    <span class="right">
+        <a href="release-0.188.html">12.22. Release 0.188</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="release-0-189">
+<h1>12.21. Release 0.189</h1>
+<div class="section" id="general-changes">
+<h2>General Changes</h2>
+<ul class="simple">
+<li>Fix query failure while logging the query plan.</li>
+<li>Fix a bug that causes clients to hang when executing <code class="docutils literal"><span class="pre">LIMIT</span></code> queries when
+<code class="docutils literal"><span class="pre">optimizer.force-single-node-output</span></code> is disabled.</li>
+<li>Fix a bug in the <a class="reference internal" href="../functions/geospatial.html#bing_tile_at" title="bing_tile_at"><code class="xref py py-func docutils literal"><span class="pre">bing_tile_at()</span></code></a> and <a class="reference internal" href="../functions/geospatial.html#bing_tile_polygon" title="bing_tile_polygon"><code class="xref py py-func docutils literal"><span class="pre">bing_tile_polygon()</span></code></a> functions
+where incorrect results were produced for points close to tile edges.</li>
+<li>Fix variable resolution when lambda argument has the same name as a table column.</li>
+<li>Improve error message when running <code class="docutils literal"><span class="pre">SHOW</span> <span class="pre">TABLES</span></code> on a catalog that does not exist.</li>
+<li>Improve performance for queries with highly selective filters.</li>
+<li>Execute <a class="reference internal" href="../sql/use.html"><span class="doc">USE</span></a> on the server rather than in the CLI, allowing it
+to be supported by any client. This requires clients to add support for
+the protocol changes (otherwise the statement will be silently ignored).</li>
+<li>Allow casting <code class="docutils literal"><span class="pre">JSON</span></code> to <code class="docutils literal"><span class="pre">ROW</span></code> even if the <code class="docutils literal"><span class="pre">JSON</span></code> does not contain every
+field in the <code class="docutils literal"><span class="pre">ROW</span></code>.</li>
+<li>Add support for dereferencing row fields in lambda expressions.</li>
+</ul>
+</div>
+<div class="section" id="security-changes">
+<h2>Security Changes</h2>
+<ul class="simple">
+<li>Support configuring multiple authentication types, which allows supporting
+clients that have different authentication requirements or gracefully
+migrating between authentication types without needing to update all clients
+at once. Specify multiple values for <code class="docutils literal"><span class="pre">http-server.authentication.type</span></code>,
+separated with commas.</li>
+<li>Add support for TLS client certificates as an authentication mechanism by
+specifying <code class="docutils literal"><span class="pre">CERTIFICATE</span></code> for <code class="docutils literal"><span class="pre">http-server.authentication.type</span></code>.
+The distinguished name from the validated certificate will be provided as a
+<code class="docutils literal"><span class="pre">javax.security.auth.x500.X500Principal</span></code>. The certificate authority (CA)
+used to sign client certificates will be need to be added to the HTTP server
+KeyStore (should technically be a TrustStore but separating them out is not
+yet supported).</li>
+<li>Skip sending final leg of SPNEGO authentication when using Kerberos.</li>
+</ul>
+</div>
+<div class="section" id="jdbc-driver-changes">
+<h2>JDBC Driver Changes</h2>
+<ul class="simple">
+<li>Per the JDBC specification, close the <code class="docutils literal"><span class="pre">ResultSet</span></code> when <code class="docutils literal"><span class="pre">Statement</span></code> is closed.</li>
+<li>Add support for TLS client certificate authentication by configuring the
+<code class="docutils literal"><span class="pre">SSLKeyStorePath</span></code> and <code class="docutils literal"><span class="pre">SSLKeyStorePassword</span></code> parameters.</li>
+<li>Add support for transactions using SQL statements or the standard JDBC mechanism.</li>
+<li>Allow executing the <code class="docutils literal"><span class="pre">USE</span></code> statement. Note that this is primarily useful when
+running arbitrary SQL on behalf of users. For programmatic use, continuing
+to use <code class="docutils literal"><span class="pre">setCatalog()</span></code> and <code class="docutils literal"><span class="pre">setSchema()</span></code> on <code class="docutils literal"><span class="pre">Connection</span></code> is recommended.</li>
+<li>Allow executing <code class="docutils literal"><span class="pre">SET</span> <span class="pre">SESSION</span></code> and <code class="docutils literal"><span class="pre">RESET</span> <span class="pre">SESSION</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="resource-group-changes">
+<h2>Resource Group Changes</h2>
+<ul class="simple">
+<li>Add <code class="docutils literal"><span class="pre">WEIGHTED_FAIR</span></code> resource group scheduling policy.</li>
+</ul>
+</div>
+<div class="section" id="hive-changes">
+<h2>Hive Changes</h2>
+<ul class="simple">
+<li>Do not require setting <code class="docutils literal"><span class="pre">hive.metastore.uri</span></code> when using the file metastore.</li>
+<li>Reduce memory usage when reading string columns from ORC or DWRF files.</li>
+</ul>
+</div>
+<div class="section" id="mysql-postgresql-redshift-and-sql-server-changes">
+<h2>MySQL, PostgreSQL, Redshift, and SQL Server Changes</h2>
+<ul class="simple">
+<li>Change mapping for columns with <code class="docutils literal"><span class="pre">DECIMAL(p,s)</span></code> data type from Presto <code class="docutils literal"><span class="pre">DOUBLE</span></code>
+type to the corresponding Presto <code class="docutils literal"><span class="pre">DECIMAL</span></code> type.</li>
+</ul>
+</div>
+<div class="section" id="kafka-changes">
+<h2>Kafka Changes</h2>
+<ul class="simple">
+<li>Fix documentation for raw decoder.</li>
+</ul>
+</div>
+<div class="section" id="thrift-connector-changes">
+<h2>Thrift Connector Changes</h2>
+<ul class="simple">
+<li>Add support for index joins.</li>
+</ul>
+</div>
+<div class="section" id="spi-changes">
+<h2>SPI Changes</h2>
+<ul class="simple">
+<li>Deprecate <code class="docutils literal"><span class="pre">SliceArrayBlock</span></code>.</li>
+<li>Add <code class="docutils literal"><span class="pre">SessionPropertyConfigurationManager</span></code> plugin to enable overriding default
+session properties dynamically.</li>
+</ul>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.190.html">12.20. Release 0.190</a>
+    </span>
+    <span class="right">
+        <a href="release-0.188.html">12.22. Release 0.188</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
