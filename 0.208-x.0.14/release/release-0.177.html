@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>12.33. Release 0.177 &#8212; Presto 0.208-x.0.14 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-x.0.14',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-x.0.14 Documentation" href="../index.html" />
+    <link rel="up" title="12. Release Notes" href="../release.html" />
+    <link rel="next" title="12.34. Release 0.176" href="release-0.176.html" />
+    <link rel="prev" title="12.32. Release 0.178" href="release-0.178.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-x.0.14 Documentation</span></a></h1>
+    <h2 class="heading"><span>12.33. Release 0.177</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.178.html">12.32. Release 0.178</a>
+    </span>
+    <span class="right">
+        <a href="release-0.176.html">12.34. Release 0.176</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="release-0-177">
+<h1>12.33. Release 0.177</h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Query may incorrectly produce <code class="docutils literal"><span class="pre">NULL</span></code> when no row qualifies for the aggregation
+if the <code class="docutils literal"><span class="pre">optimize_mixed_distinct_aggregations</span></code> session property or
+the <code class="docutils literal"><span class="pre">optimizer.optimize-mixed-distinct-aggregations</span></code> config option is enabled.
+This optimization was introduced in Presto version 0.156.</p>
+</div>
+<div class="section" id="general-changes">
+<h2>General Changes</h2>
+<ul class="simple">
+<li>Fix correctness issue when performing range comparisons over columns of type <code class="docutils literal"><span class="pre">CHAR</span></code>.</li>
+<li>Fix correctness issue due to mishandling of nulls and non-deterministic expressions in
+inequality joins unless <code class="docutils literal"><span class="pre">fast_inequality_join</span></code> is disabled.</li>
+<li>Fix excessive GC overhead caused by lambda expressions. There are still known GC issues
+with captured lambda expressions. This will be fixed in a future release.</li>
+<li>Check for duplicate columns in <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> before asking the connector to create
+the table. This improves the error message for most connectors and will prevent errors
+for connectors that do not perform validation internally.</li>
+<li>Add support for null values on the left-hand side of a semijoin (i.e., <code class="docutils literal"><span class="pre">IN</span></code> predicate
+with subqueries).</li>
+<li>Add <code class="docutils literal"><span class="pre">SHOW</span> <span class="pre">STATS</span></code> to display table and query statistics.</li>
+<li>Improve implicit coercion support for functions involving lambda. Specifically, this makes
+it easier to use the <a class="reference internal" href="../functions/array.html#reduce" title="reduce"><code class="xref py py-func docutils literal"><span class="pre">reduce()</span></code></a> function.</li>
+<li>Improve plans for queries involving <code class="docutils literal"><span class="pre">ORDER</span> <span class="pre">BY</span></code> and <code class="docutils literal"><span class="pre">LIMIT</span></code> by avoiding unnecessary
+data exchanges.</li>
+<li>Improve performance of queries containing window functions with identical <code class="docutils literal"><span class="pre">PARTITION</span> <span class="pre">BY</span></code>
+and <code class="docutils literal"><span class="pre">ORDER</span> <span class="pre">BY</span></code> clauses.</li>
+<li>Improve performance of certain queries involving <code class="docutils literal"><span class="pre">OUTER</span> <span class="pre">JOIN</span></code> and aggregations, or
+containing certain forms of correlated subqueries. This optimization is experimental
+and can be turned on via the <code class="docutils literal"><span class="pre">push_aggregation_through_join</span></code> session property or the
+<code class="docutils literal"><span class="pre">optimizer.push-aggregation-through-join</span></code> config option.</li>
+<li>Improve performance of certain queries involving joins and aggregations.  This optimization
+is experimental and can be turned on via the <code class="docutils literal"><span class="pre">push_partial_aggregation_through_join</span></code>
+session property.</li>
+<li>Improve error message when a lambda expression has a different number of arguments than expected.</li>
+<li>Improve error message when certain invalid <code class="docutils literal"><span class="pre">GROUP</span> <span class="pre">BY</span></code> expressions containing lambda expressions.</li>
+</ul>
+</div>
+<div class="section" id="hive-changes">
+<h2>Hive Changes</h2>
+<ul class="simple">
+<li>Fix handling of trailing spaces for the <code class="docutils literal"><span class="pre">CHAR</span></code> type when reading RCFile.</li>
+<li>Allow inserts into tables that have more partitions than the partitions-per-scan limit.</li>
+<li>Add support for exposing Hive table statistics to the engine. This option is experimental and
+can be turned on via the <code class="docutils literal"><span class="pre">statistics_enabled</span></code> session property.</li>
+<li>Ensure file name is always present for error messages about corrupt ORC files.</li>
+</ul>
+</div>
+<div class="section" id="cassandra-changes">
+<h2>Cassandra Changes</h2>
+<ul class="simple">
+<li>Remove caching of metadata in the Cassandra connector. Metadata caching makes Presto violate
+the consistency defined by the Cassandra cluster. It&#8217;s also unnecessary because the Cassandra
+driver internally caches metadata. The <code class="docutils literal"><span class="pre">cassandra.max-schema-refresh-threads</span></code>,
+<code class="docutils literal"><span class="pre">cassandra.schema-cache-ttl</span></code> and <code class="docutils literal"><span class="pre">cassandra.schema-refresh-interval</span></code> config options have
+been removed.</li>
+<li>Fix intermittent issue in the connection retry mechanism.</li>
+</ul>
+</div>
+<div class="section" id="web-ui-changes">
+<h2>Web UI Changes</h2>
+<ul class="simple">
+<li>Change cluster HUD realtime statistics to be aggregated across all running queries.</li>
+<li>Change parallelism statistic on cluster HUD to be averaged per-worker.</li>
+<li>Fix bug that always showed indeterminate progress bar in query list view.</li>
+<li>Change running drivers statistic to exclude blocked drivers.</li>
+<li>Change unit of CPU and scheduled time rate sparklines to seconds on query details page.</li>
+<li>Change query details page refresh interval to three seconds.</li>
+<li>Add uptime and connected status indicators to every page.</li>
+</ul>
+</div>
+<div class="section" id="cli-changes">
+<h2>CLI Changes</h2>
+<ul class="simple">
+<li>Add support for preprocessing commands.  When the <code class="docutils literal"><span class="pre">PRESTO_PREPROCESSOR</span></code> environment
+variable is set, all commands are piped through the specified program before being sent to
+the Presto server.</li>
+</ul>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="release-0.178.html">12.32. Release 0.178</a>
+    </span>
+    <span class="right">
+        <a href="release-0.176.html">12.34. Release 0.176</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

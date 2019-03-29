@@ -1,0 +1,138 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.4. Java Keystores and Truststores &#8212; Presto 0.208-x.0.14 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-x.0.14',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-x.0.14 Documentation" href="../index.html" />
+    <link rel="up" title="3. Security" href="../security.html" />
+    <link rel="next" title="3.5. Built-in System Access Control" href="built-in-system-access-control.html" />
+    <link rel="prev" title="3.3. LDAP Authentication" href="ldap.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-x.0.14 Documentation</span></a></h1>
+    <h2 class="heading"><span>3.4. Java Keystores and Truststores</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="ldap.html">3.3. LDAP Authentication</a>
+    </span>
+    <span class="right">
+        <a href="built-in-system-access-control.html">3.5. Built-in System Access Control</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="java-keystores-and-truststores">
+<h1>3.4. Java Keystores and Truststores</h1>
+<div class="section" id="java-keystore-file-for-tls">
+<span id="server-java-keystore"></span><h2>Java Keystore File for TLS</h2>
+<p>Access to the Presto coordinator must be through HTTPS when using Kerberos
+and LDAP authentication. The Presto coordinator uses a <a class="reference internal" href="#server-java-keystore"><span class="std std-ref">Java Keystore</span></a> file for its TLS configuration. These keys are
+generated using <strong class="command">keytool</strong> and stored in a Java Keystore file for the
+Presto coordinator.</p>
+<p>The alias in the <strong class="command">keytool</strong> command line should match the principal that the
+Presto coordinator will use.</p>
+<p>You&#8217;ll be prompted for the first and last name. Use the Common Name that will
+be used in the certificate. In this case, it should be the unqualified hostname
+of the Presto coordinator. In the following example, you can see this in the prompt
+that confirms the information is correct:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>keytool -genkeypair -alias presto -keyalg RSA -keystore keystore.jks
+Enter keystore password:
+Re-enter new password:
+What is your first and last name?
+  [Unknown]:  presto-coordinator
+What is the name of your organizational unit?
+  [Unknown]:
+What is the name of your organization?
+  [Unknown]:
+What is the name of your City or Locality?
+  [Unknown]:
+What is the name of your State or Province?
+  [Unknown]:
+What is the two-letter country code for this unit?
+  [Unknown]:
+Is CN=eiger, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
+  [no]:  yes
+
+Enter key password for &lt;presto&gt;
+        (RETURN if same as keystore password):
+</pre></div>
+</div>
+</div>
+<div class="section" id="java-truststore-file-for-tls">
+<span id="cli-java-truststore"></span><h2>Java Truststore File for TLS</h2>
+<p>Truststore files contain certificates of trusted TLS/SSL servers, or of
+Certificate Authorities trusted to identify servers. For securing access
+to the Presto coordinator through HTTPS the clients can configure truststores.
+For the Presto CLI to trust the Presto coordinator, the coordinator&#8217;s certificate
+must be imported to the CLI&#8217;s truststore.</p>
+<p>You can either import the certificate to the default Java truststore, or to a
+custom truststore. You should be careful if you choose to use the default
+one, since you may need to remove the certificates of CAs you do not deem trustworthy.</p>
+<p>You can use <strong class="command">keytool</strong> to import the certificate to the truststore.
+In the example, we are going to import <code class="docutils literal"><span class="pre">presto_certificate.cer</span></code> to a custom
+truststore <code class="docutils literal"><span class="pre">presto_trust.jks</span></code>, and you will get a prompt asking if the certificate
+can be trusted or not.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ keytool -import -v -trustcacerts -alias presto_trust -file presto_certificate.cer -keystore presto_trust.jks -keypass &lt;truststore_pass&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="troubleshooting">
+<h2>Troubleshooting</h2>
+<div class="section" id="java-keystore-file-verification">
+<span id="troubleshooting-keystore"></span><h3>Java Keystore File Verification</h3>
+<p>Verify the password for a keystore file and view its contents using <a class="reference external" href="http://docs.oracle.com/javase/8/docs/technotes/tools/windows/keytool.html">keytool</a>.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>$ keytool -list -v -k /etc/presto/presto.jks
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="ldap.html">3.3. LDAP Authentication</a>
+    </span>
+    <span class="right">
+        <a href="built-in-system-access-control.html">3.5. Built-in System Access Control</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
