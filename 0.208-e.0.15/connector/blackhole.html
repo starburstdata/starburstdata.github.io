@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>5.2. Black Hole Connector &#8212; Presto 0.208-e.0.15 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.15',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.15 Documentation" href="../index.html" />
+    <link rel="up" title="5. Connectors" href="../connector.html" />
+    <link rel="next" title="5.3. Cassandra Connector" href="cassandra.html" />
+    <link rel="prev" title="5.1. Accumulo Connector" href="accumulo.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.15 Documentation</span></a></h1>
+    <h2 class="heading"><span>5.2. Black Hole Connector</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="accumulo.html">5.1. Accumulo Connector</a>
+    </span>
+    <span class="right">
+        <a href="cassandra.html">5.3. Cassandra Connector</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="black-hole-connector">
+<h1>5.2. Black Hole Connector</h1>
+<p>Primarily Black Hole connector is designed for high performance testing of
+other components. It works like the <code class="docutils literal"><span class="pre">/dev/null</span></code> device on Unix-like
+operating systems for data writing and like <code class="docutils literal"><span class="pre">/dev/null</span></code> or <code class="docutils literal"><span class="pre">/dev/zero</span></code>
+for data reading. However, it also has some other features that allow testing Presto
+in a more controlled manner. Metadata for any tables created via this connector
+is kept in memory on the coordinator and discarded when Presto restarts.
+Created tables are by default always empty, and any data written to them
+will be ignored and data reads will return no rows.</p>
+<p>During table creation, a desired rows number can be specified.
+In such case, writes will behave in the same way, but reads will
+always return specified number of some constant rows.
+You shouldn&#8217;t rely on the content of such rows.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This connector will not work properly with multiple coordinators,
+since each coordinator will have a different metadata.</p>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration</h2>
+<p>To configure the Black Hole connector, create a catalog properties file
+<code class="docutils literal"><span class="pre">etc/catalog/blackhole.properties</span></code> with the following contents:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>connector.name=blackhole
+</pre></div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples</h2>
+<p>Create a table using the blackhole connector:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span> <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Insert data into a table in the blackhole connector:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Select from the blackhole connector:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The above query will always return zero.</p>
+<p>Create a table with constant number of rows (500 * 1000 * 2000):</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span> <span class="p">(</span>
+  <span class="n">nationkey</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="n">name</span> <span class="nb">varchar</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">split_count</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
+  <span class="n">pages_per_split</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+  <span class="n">rows_per_page</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Now query it:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">FROM</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The above query will return 1,000,000,000.</p>
+<p>Length of variable length columns can be controled using <code class="docutils literal"><span class="pre">field_length</span></code>
+table property (default value is equal to 16):</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">nation</span> <span class="p">(</span>
+  <span class="n">nationkey</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="n">name</span> <span class="nb">varchar</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">split_count</span> <span class="o">=</span> <span class="mi">500</span><span class="p">,</span>
+  <span class="n">pages_per_split</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+  <span class="n">rows_per_page</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
+  <span class="n">field_length</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>The consuming and producing rate can be slowed down
+using the <code class="docutils literal"><span class="pre">page_processing_delay</span></code> table property.
+Setting this property to <code class="docutils literal"><span class="pre">5s</span></code> will lead to a 5 second
+delay before consuming or producing a new page:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">blackhole</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">delay</span> <span class="p">(</span>
+  <span class="n">dummy</span> <span class="nb">bigint</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">split_count</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="n">pages_per_split</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="n">rows_per_page</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="n">page_processing_delay</span> <span class="o">=</span> <span class="s1">&#39;5s&#39;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="accumulo.html">5.1. Accumulo Connector</a>
+    </span>
+    <span class="right">
+        <a href="cassandra.html">5.3. Cassandra Connector</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
