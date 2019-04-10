@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>11.1. SPI Overview &#8212; Presto 0.208-e.0.16 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.16',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.16 Documentation" href="../index.html" />
+    <link rel="up" title="11. Developer Guide" href="../develop.html" />
+    <link rel="next" title="11.2. Connectors" href="connectors.html" />
+    <link rel="prev" title="11. Developer Guide" href="../develop.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.16 Documentation</span></a></h1>
+    <h2 class="heading"><span>11.1. SPI Overview</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="../develop.html">11. Developer Guide</a>
+    </span>
+    <span class="right">
+        <a href="connectors.html">11.2. Connectors</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="spi-overview">
+<h1>11.1. SPI Overview</h1>
+<p>When you implement a new Presto plugin, you implement interfaces and
+override methods defined by the SPI.</p>
+<p>Plugins can provide additional <a class="reference internal" href="connectors.html"><span class="doc">Connectors</span></a>, <a class="reference internal" href="types.html"><span class="doc">Types</span></a>,
+<a class="reference internal" href="functions.html"><span class="doc">Functions</span></a> and <a class="reference internal" href="system-access-control.html"><span class="doc">System Access Control</span></a>.
+In particular, connectors are the source of all data for queries in
+Presto: they back each catalog available to Presto.</p>
+<div class="section" id="code">
+<h2>Code</h2>
+<p>The SPI source can be found in the <code class="docutils literal"><span class="pre">presto-spi</span></code> directory in the
+root of the Presto source tree.</p>
+</div>
+<div class="section" id="plugin-metadata">
+<h2>Plugin Metadata</h2>
+<p>Each plugin identifies an entry point: an implementation of the
+<code class="docutils literal"><span class="pre">Plugin</span></code> interface. This class name is provided to Presto via
+the standard Java <code class="docutils literal"><span class="pre">ServiceLoader</span></code> interface: the classpath contains
+a resource file named <code class="docutils literal"><span class="pre">com.facebook.presto.spi.Plugin</span></code> in the
+<code class="docutils literal"><span class="pre">META-INF/services</span></code> directory. The content of this file is a
+single line listing the name of the plugin class:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>com.facebook.presto.example.ExamplePlugin
+</pre></div>
+</div>
+<p>For a built-in plugin that is included in the Presto source code,
+this resource file is created whenever the <code class="docutils literal"><span class="pre">pom.xml</span></code> file of a plugin
+contains the following line:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>&lt;packaging&gt;presto-plugin&lt;/packaging&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="plugin">
+<h2>Plugin</h2>
+<p>The <code class="docutils literal"><span class="pre">Plugin</span></code> interface is a good starting place for developers looking
+to understand the Presto SPI. It contains access methods to retrieve
+various classes that a Plugin can provide. For example, the <code class="docutils literal"><span class="pre">getConnectorFactories()</span></code>
+method is a top-level function that Presto calls to retrieve a <code class="docutils literal"><span class="pre">ConnectorFactory</span></code> when Presto
+is ready to create an instance of a connector to back a catalog. There are similar
+methods for <code class="docutils literal"><span class="pre">Type</span></code>, <code class="docutils literal"><span class="pre">ParametricType</span></code>, <code class="docutils literal"><span class="pre">Function</span></code>, <code class="docutils literal"><span class="pre">SystemAccessControl</span></code>, and
+<code class="docutils literal"><span class="pre">EventListenerFactory</span></code> objects.</p>
+</div>
+<div class="section" id="building-plugins-via-maven">
+<h2>Building Plugins via Maven</h2>
+<p>Plugins depend on the SPI from Presto:</p>
+<div class="highlight-xml"><div class="highlight"><pre><span></span><span class="nt">&lt;dependency&gt;</span>
+    <span class="nt">&lt;groupId&gt;</span>com.facebook.presto<span class="nt">&lt;/groupId&gt;</span>
+    <span class="nt">&lt;artifactId&gt;</span>presto-spi<span class="nt">&lt;/artifactId&gt;</span>
+    <span class="nt">&lt;scope&gt;</span>provided<span class="nt">&lt;/scope&gt;</span>
+<span class="nt">&lt;/dependency&gt;</span>
+</pre></div>
+</div>
+<p>The plugin uses the Maven <code class="docutils literal"><span class="pre">provided</span></code> scope because Presto provides
+the classes from the SPI at runtime and thus the plugin should not
+include them in the plugin assembly.</p>
+<p>There are a few other dependencies that are provided by Presto,
+including Slice and Jackson annotations. In particular, Jackson is
+used for serializing connector handles and thus plugins must use the
+annotations version provided by Presto.</p>
+<p>All other dependencies are based on what the plugin needs for its
+own implementation. Plugins are loaded in a separate class loader
+to provide isolation and to allow plugins to use a different version
+of a library that Presto uses internally.</p>
+<p>For an example <code class="docutils literal"><span class="pre">pom.xml</span></code> file, see the example HTTP connector in the
+<code class="docutils literal"><span class="pre">presto-example-http</span></code> directory in the root of the Presto source tree.</p>
+</div>
+<div class="section" id="deploying-a-custom-plugin">
+<h2>Deploying a Custom Plugin</h2>
+<p>In order to add a custom plugin to a Presto installation, create a directory
+for that plugin in the Presto plugin directory and add all the necessary jars
+for the plugin to that directory. For example, for a plugin called
+<code class="docutils literal"><span class="pre">my-functions</span></code>, you would create a directory <code class="docutils literal"><span class="pre">my-functions</span></code> in the Presto
+plugin directory and add the relevant jars to that directory.</p>
+<p>By default, the plugin directory is the <code class="docutils literal"><span class="pre">plugin</span></code> directory relative to the
+directory in which Presto is installed, but it is configurable using the
+configuration variable <code class="docutils literal"><span class="pre">catalog.config-dir</span></code>. In order for Presto to pick up
+the new plugin, you must restart Presto.</p>
+<p>Plugins must be installed on all nodes in the Presto cluster (coordinator and workers).</p>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="../develop.html">11. Developer Guide</a>
+    </span>
+    <span class="right">
+        <a href="connectors.html">11.2. Connectors</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
