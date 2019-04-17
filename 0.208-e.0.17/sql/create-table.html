@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>8.7. CREATE TABLE &#8212; Presto 0.208-e.0.17 Documentation</title>
+    
+    <link rel="stylesheet" href="../_static/presto.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.208-e.0.17',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Presto 0.208-e.0.17 Documentation" href="../index.html" />
+    <link rel="up" title="8. SQL Statement Syntax" href="../sql.html" />
+    <link rel="next" title="8.8. CREATE TABLE AS" href="create-table-as.html" />
+    <link rel="prev" title="8.6. CREATE SCHEMA" href="create-schema.html" /> 
+  </head>
+  <body role="document">
+<div class="header">
+    <h1 class="heading"><a href="../index.html">
+        <span>Presto 0.208-e.0.17 Documentation</span></a></h1>
+    <h2 class="heading"><span>8.7. CREATE TABLE</span></h2>
+</div>
+<div class="topnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="create-schema.html">8.6. CREATE SCHEMA</a>
+    </span>
+    <span class="right">
+        <a href="create-table-as.html">8.8. CREATE TABLE AS</a> &raquo;
+    </span>
+</p>
+
+</div>
+<div class="content">
+    
+  <div class="section" id="create-table">
+<h1>8.7. CREATE TABLE</h1>
+<div class="section" id="synopsis">
+<h2>Synopsis</h2>
+<div class="highlight-none"><div class="highlight"><pre><span></span>CREATE TABLE [ IF NOT EXISTS ]
+table_name (
+  { column_name data_type [ COMMENT comment ] [ WITH ( property_name = expression [, ...] ) ]
+  | LIKE existing_table_name [ { INCLUDING | EXCLUDING } PROPERTIES ] }
+  [, ...]
+)
+[ COMMENT table_comment ]
+[ WITH ( property_name = expression [, ...] ) ]
+</pre></div>
+</div>
+</div>
+<div class="section" id="description">
+<h2>Description</h2>
+<p>Create a new, empty table with the specified columns.
+Use <a class="reference internal" href="create-table-as.html"><span class="doc">CREATE TABLE AS</span></a> to create a table with data.</p>
+<p>The optional <code class="docutils literal"><span class="pre">IF</span> <span class="pre">NOT</span> <span class="pre">EXISTS</span></code> clause causes the error to be
+suppressed if the table already exists.</p>
+<p>The optional <code class="docutils literal"><span class="pre">WITH</span></code> clause can be used to set properties
+on the newly created table or on single columns.  To list all available table
+properties, run the following query:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">table_properties</span>
+</pre></div>
+</div>
+<p>To list all available column properties, run the following query:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">column_properties</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal"><span class="pre">LIKE</span></code> clause can be used to include all the column definitions from
+an existing table in the new table. Multiple <code class="docutils literal"><span class="pre">LIKE</span></code> clauses may be
+specified, which allows copying the columns from multiple tables.</p>
+<p>If <code class="docutils literal"><span class="pre">INCLUDING</span> <span class="pre">PROPERTIES</span></code> is specified, all of the table properties are
+copied to the new table. If the <code class="docutils literal"><span class="pre">WITH</span></code> clause specifies the same property
+name as one of the copied properties, the value from the <code class="docutils literal"><span class="pre">WITH</span></code> clause
+will be used. The default behavior is <code class="docutils literal"><span class="pre">EXCLUDING</span> <span class="pre">PROPERTIES</span></code>. The
+<code class="docutils literal"><span class="pre">INCLUDING</span> <span class="pre">PROPERTIES</span></code> option maybe specified for at most one table.</p>
+</div>
+<div class="section" id="examples">
+<h2>Examples</h2>
+<p>Create a new table <code class="docutils literal"><span class="pre">orders</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">orders</span> <span class="p">(</span>
+  <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">,</span>
+  <span class="n">totalprice</span> <span class="n">double</span><span class="p">,</span>
+  <span class="n">orderdate</span> <span class="nb">date</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;ORC&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create the table <code class="docutils literal"><span class="pre">orders</span></code> if it does not already exist, adding a table comment
+and a column comment:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="k">IF</span> <span class="k">NOT</span> <span class="k">EXISTS</span> <span class="n">orders</span> <span class="p">(</span>
+  <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">,</span>
+  <span class="n">totalprice</span> <span class="n">double</span> <span class="k">COMMENT</span> <span class="s1">&#39;Price in cents.&#39;</span><span class="p">,</span>
+  <span class="n">orderdate</span> <span class="nb">date</span>
+<span class="p">)</span>
+<span class="k">COMMENT</span> <span class="s1">&#39;A table to keep track of orders.&#39;</span>
+</pre></div>
+</div>
+<p>Create the table <code class="docutils literal"><span class="pre">bigger_orders</span></code> using the columns from <code class="docutils literal"><span class="pre">orders</span></code>
+plus additional columns at the start and end:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">bigger_orders</span> <span class="p">(</span>
+  <span class="n">another_orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="k">LIKE</span> <span class="n">orders</span><span class="p">,</span>
+  <span class="n">another_orderdate</span> <span class="nb">date</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="see-also">
+<h2>See Also</h2>
+<p><a class="reference internal" href="alter-table.html"><span class="doc">ALTER TABLE</span></a>, <a class="reference internal" href="drop-table.html"><span class="doc">DROP TABLE</span></a>, <a class="reference internal" href="create-table-as.html"><span class="doc">CREATE TABLE AS</span></a>, <a class="reference internal" href="show-create-table.html"><span class="doc">SHOW CREATE TABLE</span></a></p>
+</div>
+</div>
+
+
+</div>
+<div class="bottomnav">
+    
+<p class="nav">
+    <span class="left">
+        &laquo; <a href="create-schema.html">8.6. CREATE SCHEMA</a>
+    </span>
+    <span class="right">
+        <a href="create-table-as.html">8.8. CREATE TABLE AS</a> &raquo;
+    </span>
+</p>
+
+</div>
+
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
