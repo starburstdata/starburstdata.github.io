@@ -1,0 +1,93 @@
+Customizing The Presto Docker Images
+====================================
+
+.. _k8s_custom_bootstrap:
+
+Custom Bootstrap Script
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Starburst Kubernetes integration allows adding a bootstrap script to the Presto Kubernetes pods.
+This additional bootstrap script support is available to allow user defined actions to be performed on the Presto nodes
+(coordinators and workers) upon node startup. The script is executed after Presto configuration setup, but before starting the Presto server.
+
+The custom bootstrap script is added via the ``additionalBootstrapScriptVolume`` property in :code:`spec` section of Presto Kubernetes resource YAML
+(see :doc:`presto_resource`). This property should be a YAML fragment which defines a volume. Any volume type can be used, see the list of `Kubernetes Volumes <https://kubernetes.io/docs/concepts/storage/volumes/>`_
+The volume is required to have a ``bootstrap.sh`` file, additional files are allowed in that volume. This volume will be mounted in all the Presto pods.
+If ``bootstrap.sh`` script exists, prior to Presto server startup, this script will be executed with the node role as parameter (string literal ``worker`` or ``coordinator``).
+
+For example, the ``additionalBootstrapScriptVolume`` could be specified as a ConfigMap volume by configuring the Presto Kubernetes resource like this:
+
+.. code-block:: yaml
+
+    additionalBootstrapScriptVolume:
+      configMap:
+        name: my-bootstrap-script
+
+
+This assumes the ConfigMap already exists. It could be as simple as creating this Kubernetes resource:
+
+
+.. code-block:: yaml
+
+    kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: my-bootstrap-script
+      namespace: <my-namespace>
+    data:
+      bootstrap.sh: |-
+        echo "Hello World." > /tmp/hello.txt
+
+For more information on ConfigMap refer to `Kubernetes ConfigMap documentation <https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/>`_
+
+Note: The custom bootstrap script volume, can be *any volume type supported by Kubernetes*, the ConfigMap mentioned above is just an example use case.
+
+.. _k8s_custom_image:
+
+Building custom Presto Docker images
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The :ref:`k8s_custom_bootstrap` script mechanism, is a lighter,
+built-in way to customize the default Presto pod,
+without the need to build a separate custom Presto Docker image,
+it should suffice for most extension needs.
+
+However if you need to do more extensive changes to the underlying node,
+it is possible to build custom Presto Docker images
+used by Presto cluster. This allows you to
+to extend Presto with additional features, which
+are not supported by default, or otherwise modify the Presto nodes.
+
+In order to build custom Presto Docker images you must create
+a Docker image that is based on the Starburst Presto Kubernetes
+Docker image, e.g
+
+.. code-block:: text
+
+  FROM starburstdata/presto:302-e.7.k8s-0.3
+  LABEL maintainer="..."
+
+  # Your custom Docker image steps
+
+You might also want to modify :code:`/usr/local/bin/entrypoint.sh`
+script which is responsible for autoconfiguring and launching
+Presto. Your custom steps should be executed after Presto
+is autoconfigured by :code:`presto-autoconfigure` program,
+in addition to (or instead of) the additional bootstrap script handling.
+
+Once you have built your custom Presto Docker image, you can
+use it within Presto cluster by specifying :code:`image` section
+of Presto Kubernetes resource, e.g
+
+.. code-block:: yaml
+
+    apiVersion: starburstdata.com/v1
+    kind: Presto
+    metadata:
+      name: presto-cluster-name
+    spec:
+      image:
+        name: custom-presto-image
+        pullPolicy: IfNotPresent
+        tag: 0.1
+      ...
