@@ -1,0 +1,531 @@
+Presto Kubernetes resource
+==========================
+
+Presto Kubernetes resources constitute particular Presto clusters.
+Each such a resource represents a single Presto cluster.
+A Presto Kubernetes resource YAML allows specifying various
+properties related to the Presto server, Presto connectors and Kubernetes.
+Properties are defined in the :code:`spec` section of Presto Kubernetes resource YAML.
+The following snippet shows the structure of a Presto Kubernetes Resource YAML
+including all available properties (with defaults). When defining your particular
+Presto cluster resource you need to specify *only* the properties with non-default values.
+
+.. code-block:: yaml
+
+    apiVersion: starburstdata.com/v1
+    kind: Presto
+    metadata:
+      name: presto-cluster-name
+    spec:
+      nameOverride: ""
+      environment: ""
+      additionalJvmConfigProperties: ""
+      additionalCatalogs: {}
+      additionalEtcPrestoTextFiles: {}
+      additionalEtcPrestoBinaryFiles: {}
+      licenseSecretName: ""
+      imageNamePrefix: ""
+      additionalBootstrapScriptVolume: {}
+
+      service:
+        type: ClusterIP
+        name: ""
+        additionalSpecProperties: {}
+
+      image:
+        name: starburstdata/presto
+        pullPolicy: IfNotPresent
+        tag: 312-e.1.k8s-0.5
+
+      memory:
+        nodeMemoryHeadroom: 2Gi
+        xmxToTotalMemoryRatio: 0.9
+        heapHeadroomPerNodeRatio: 0.3
+        queryMaxMemory: 1Pi
+        queryMaxTotalMemoryPerNodePoolFraction: 0.333
+
+      coordinator:
+        cpuLimit: ""
+        cpuRequest: 16
+        memoryAllocation: 60Gi
+        nodeSelector: {}
+        affinity: {}
+        additionalProperties: ""
+
+      worker:
+        count: 2
+        autoscaling:
+          enabled: false
+          minReplicas: 1
+          maxReplicas: 100
+          targetCPUUtilizationPercentage: 80
+        deploymentTerminationGracePeriodSeconds: 7200 # 2 hours
+        cpuLimit: ""
+        cpuRequest: 16
+        memoryAllocation: 100Gi
+        nodeSelector: {}
+        affinity: {}
+        additionalProperties: ""
+
+      readinessProbe:
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        timeoutSeconds: 15
+
+      livenessProbe:
+        initialDelaySeconds: 300
+        periodSeconds: 300
+        failureThreshold: 1
+        timeoutSeconds: 15
+
+      hive:
+        metastoreUri: ""
+        mySql:
+          jdbcUrl: ""
+          username: ""
+          password: ""
+        postgreSql:
+          jdbcUrl: ""
+          username: ""
+          password: ""
+        awsSecretName: ""
+        googleServiceAccountKeySecretName: ""
+        additionalProperties: ""
+        internalPostgreSql:
+          enabled: false
+          image:
+            name: postgres
+            pullPolicy: IfNotPresent
+            tag: 9.6.10
+          storage:
+            className: ""
+            size: 1Gi
+            claimSelector: {}
+          memory: 8Gi
+          cpu: 2
+          nodeSelector: {}
+          affinity: {}
+        internalMetastore:
+          s3Endpoint: ""
+          image:
+            name: starburstdata/hive-metastore
+            pullPolicy: IfNotPresent
+            tag: k8s-0.3
+          memory: 8Gi
+          cpu: 2
+          nodeSelector: {}
+          affinity: {}
+
+General properties
+------------------
+
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| Property name                           | Example                                      | Description                            |
++=========================================+==============================================+========================================+
+| nameOverride                            | :code:`nameOverride: presto-cluster`         | Presto Operator by default assigns     |
+|                                         |                                              | a unique name to various               |
+|                                         |                                              | Kubernetes resources (e.g. Services).  |
+|                                         |                                              | The name                               |
+|                                         |                                              | consists of the cluster name and a     |
+|                                         |                                              | unique suffix. Use this                |
+|                                         |                                              | property to assign a static            |
+|                                         |                                              | name instead.                          |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| environment                             | :code:`environment: production`              | The name of the Presto cluster         |
+|                                         |                                              | environment.                           |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| licenseSecretName                       | :code:`licenseSecretName: license_secret`    | Name of a Kubernetes Secret that       |
+|                                         |                                              | contains a Presto license file.        |
+|                                         |                                              | The license file within the secret     |
+|                                         |                                              | should be named :code:`signed.license`.|
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| imageNamePrefix                         | :code:`imageNamePrefix: gcr.io/project-name/`| Specifies prefix of Docker image names |
+|                                         |                                              | used by the Presto cluster. This       |
+|                                         |                                              | property enables using a private Docker|
+|                                         |                                              | registry.                              |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| image                                   | .. code-block:: yaml                         | Image section allows you to specify    |
+|                                         |                                              | a custom Docker image to be used by    |
+|                                         |     image:                                   | Presto cluster.                        |
+|                                         |       name: starburstdata/presto-customized  |                                        |
+|                                         |       pullPolicy: IfNotPresent               |                                        |
+|                                         |       tag: 312-e.7.k8s-0.5                   |                                        |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| readinessProbe                          | .. code-block:: yaml                         | Properties of Presto Coordinator       |
+|                                         |                                              | and Worker readiness probes.           |
+|                                         |     readinessProbe:                          | For more information on readiness      |
+|                                         |       initialDelaySeconds: 5                 | probes, refer to `Kubernetes probes`_. |
+|                                         |       periodSeconds: 5                       |                                        |
+|                                         |       timeoutSeconds: 15                     |                                        |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| livenessProbe                           | .. code-block:: yaml                         | Properties of Presto Coordinator       |
+|                                         |                                              | and Worker liveness probes.            |
+|                                         |     livenessProbe:                           | For more information on liveness       |
+|                                         |       initialDelaySeconds: 300               | probes, refer to `Kubernetes probes`_. |
+|                                         |       periodSeconds: 300                     |                                        |
+|                                         |       failureThreshold: 1                    |                                        |
+|                                         |       timeoutSeconds: 15                     |                                        |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+| additionalBootstrapScriptVolume         | .. code-block:: yaml                         | Property of Presto Coordinator         |
+|                                         |                                              | and Worker pod. Allows adding a custom |
+|                                         |     additionalBootstrapScriptVolume:         | bootstrap script to customize the      |
+|                                         |       configMap:                             | Presto pods. Executed prior to staring |
+|                                         |         name: my-bootstrap-script            | Presto on the pod. Refer to            |
+|                                         |                                              | :ref:`k8s_custom_bootstrap`            |
++-----------------------------------------+----------------------------------------------+----------------------------------------+
+
+.. _Kubernetes probes: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+
+.. _service:
+
+Service properties
+------------------
+
+Access to Presto Coordinator is possible via the Kubernetes Service.
+By default the service is only accessible within the Kubernetes cluster
+at :code:`http://presto-coordinator-service-CLUSTER_NAME_UUID.NAMESPACE.svc.cluster.local:8080`,
+where :code:`NAMESPACE` is the Kubernetes namespace where the given Presto cluster
+is deployed and :code:`CLUSTER_NAME_UUID` is the unique service name.
+
+Use :code:`service.name` Presto resource parameter to make
+the service name more predictable. For example setting
+:code:`service.name=test-cluster` will cause the Presto Coordinator service
+address to be :code:`http://presto-coordinator-service-test-cluster.NAMESPACE.svc.cluster.local:8080`.
+
+You can also change type of the Presto Coordinator Service. For more information on Kubernetes
+Service types, refer to `Kubernetes Services types <https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types>`_.
+
+You can add additional parameters to *spec* section of Service by using
+:code:`service.additionalSpecProperties` Presto resource parameter, e.g.
+
+.. code-block:: yaml
+
+    service:
+      additionalSpecProperties:
+        loadBalancerIP: 78.11.24.19
+      type: LoadBalancer
+
+Presto Coordinator properties
+-----------------------------
+
++---------------------------------+----------------------------------------------+----------------------------------------+
+| Property name                   | Example                                      | Description                            |
++=================================+==============================================+========================================+
+| coordinator.cpuRequest          | .. code-block:: yaml                         | Specifies the Presto Coordinator pod's |
+|                                 |                                              | CPU limit and request.                 |
+| coordinator.cpuLimit            |     coordinator:                             |                                        |
+|                                 |       cpuRequest: 6                          |                                        |
+|                                 |       cpuLimit: 32                           |                                        |
++---------------------------------+----------------------------------------------+----------------------------------------+
+| coordinator.memoryAllocation    | .. code-block:: yaml                         | Specifies Presto Coordinator pod's     |
+|                                 |                                              | memory usage (both request and limit). |
+|                                 |     coordinator:                             | If empty Presto Coordinator pod will   |
+|                                 |       memoryAllocation: 60Gi                 | utilize entire memory available on the |
+|                                 |                                              | node.                                  |
++---------------------------------+----------------------------------------------+----------------------------------------+
+| coordinator.additionalProperties| .. code-block:: yaml                         | Specifies additional                   |
+|                                 |                                              | :code:`config.properties` properties.  |
+|                                 |     coordinator:                             |                                        |
+|                                 |       additionalProperties: |                |                                        |
+|                                 |         resource-groups.config-file=filename |                                        |
++---------------------------------+----------------------------------------------+----------------------------------------+
+| coordinator.nodeSelector        | .. code-block:: yaml                         | Specifies Presto Coordinator pod's node|
+|                                 |                                              | selector and affinity.                 |
+| coordinator.affinity            |     coordinator:                             |                                        |
+|                                 |       nodeSelector:                          |                                        |
+|                                 |         role: presto                         |                                        |
+|                                 |       affinity:                              |                                        |
+|                                 |         podAffinity:                         |                                        |
+|                                 |           ...                                |                                        |
++---------------------------------+----------------------------------------------+----------------------------------------+
+
+Presto Worker properties
+------------------------
+
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| Property name                                  | Example                                             | Description                            |
++================================================+=====================================================+========================================+
+| worker.count                                   | .. code-block:: yaml                                | Number of Presto worker pods.          |
+|                                                |                                                     |                                        |
+|                                                |     worker:                                         |                                        |
+|                                                |       count: 3                                      |                                        |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.autoscaling                             | .. code-block:: yaml                                | Configuration of Presto Workers        |
+|                                                |                                                     | autoscaling.                           |
+|                                                |     worker:                                         |                                        |
+|                                                |       autoscaling:                                  |                                        |
+|                                                |         enabled: true                               |                                        |
+|                                                |         minReplicas: 1                              |                                        |
+|                                                |         maxReplicas: 100                            |                                        |
+|                                                |         targetCPUUtilizationPercentage: 80          |                                        |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.deploymentTerminationGracePeriodSeconds | .. code-block:: yaml                                | Specifies termination grace period     |
+|                                                |                                                     | for Presto Workers pods. Presto Worker |
+|                                                |     worker:                                         | pods won't be terminated until queries |
+|                                                |       deploymentTerminationGracePeriodSeconds: 7200 | running on the pod are finished or     |
+|                                                |                                                     | grace period passes.                   |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.cpuRequest                              | .. code-block:: yaml                                | Specifies Presto Worker pod            |
+|                                                |                                                     | CPU limit and request.                 |
+| worker.cpuLimit                                |     coordinator:                                    |                                        |
+|                                                |       cpuRequest: 6                                 |                                        |
+|                                                |       cpuLimit: 32                                  |                                        |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.memoryAllocation                        | .. code-block:: yaml                                | Specifies Presto Worker pod memory     |
+|                                                |                                                     | usage (both request and limit).        |
+|                                                |     worker:                                         | If empty Presto Worker pod will        |
+|                                                |       memoryAllocation: 100Gi                       | utilize entire memory available on the |
+|                                                |                                                     | node.                                  |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.additionalProperties                    | .. code-block:: yaml                                | Specifies additional                   |
+|                                                |                                                     | :code:`config.properties` properties.  |
+|                                                |     worker:                                         |                                        |
+|                                                |       additionalProperties: |                       |                                        |
+|                                                |         resource-groups.config-file=filename        |                                        |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+| worker.nodeSelector                            | .. code-block:: yaml                                | Specifies Presto Worker pod's node     |
+|                                                |                                                     | selector and affinity.                 |
+| worker.affinity                                |     worker:                                         |                                        |
+|                                                |       nodeSelector:                                 |                                        |
+|                                                |         role: presto                                |                                        |
+|                                                |       affinity:                                     |                                        |
+|                                                |         podAffinity:                                |                                        |
+|                                                |           ...                                       |                                        |
++------------------------------------------------+-----------------------------------------------------+----------------------------------------+
+
+General memory properties
+-------------------------
+
+:code:`memory` section specifies general Presto memory configuration
+
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+| Property name                                     | Example                                            | Description                            |
++===================================================+====================================================+========================================+
+| memory.nodeMemoryHeadroom                         | .. code-block:: yaml                               | Memory headroom that Presto should     |
+|                                                   |                                                    | leave on a node when Presto pods       |
+|                                                   |     memory:                                        | are configured to use entire node      |
+|                                                   |       nodeMemoryHeadroom: 2Gi                      | memory (empty :code:`memoryAllocation` |
+|                                                   |                                                    | configuration property).               |
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+| memory.xmxToTotalMemoryRatio                      | .. code-block:: yaml                               | Ratio between Presto JVM heap size     |
+|                                                   |                                                    | and memory available for a Presto pod. |
+|                                                   |     memory:                                        |                                        |
+|                                                   |       xmxToTotalMemoryRatio: 0.9                   |                                        |
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+| memory.heapHeadroomPerNodeRatio                   | .. code-block:: yaml                               | Ratio between                          |
+|                                                   |                                                    | :code:`memory.heap-headroom-per-node`  |
+|                                                   |     memory:                                        | Presto configuration property and      |
+|                                                   |       heapHeadroomPerNodeRatio: 0.3                | Presto JVM heap size.                  |
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+| memory.queryMaxMemory                             | .. code-block:: yaml                               | Value of the :code:`query.max-memory`  |
+|                                                   |                                                    | Presto configuration property.         |
+|                                                   |     memory:                                        |                                        |
+|                                                   |       queryMaxMemory: 1Pi                          |                                        |
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+| memory.queryMaxTotalMemoryPerNodePoolFraction     | .. code-block:: yaml                               | Value the                              |
+|                                                   |                                                    | :code:`query.max-total-memory-per-node`|
+|                                                   |     memory:                                        | Presto configuration property expressed|
+|                                                   |       queryMaxTotalMemoryPerNodePoolFraction: 0.333| as fraction of Presto JVM heap size.   |
++---------------------------------------------------+----------------------------------------------------+----------------------------------------+
+
+Hive connector properties
+-------------------------
+
+Starburst Presto on Kubernetes provides automatic configuration of the Hive connector.
+Such a connector allows you to either access an external Metastore or use built-in
+internal Presto cluster Metastore as well.
+
+External Metastore
+^^^^^^^^^^^^^^^^^^
+
+You can configure Presto to use an external Hive Metastore by setting the
+:code:`hive.metastoreUri` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    metastoreUri: thrift://hive-metastore:9083
+
+Internal Metastore
+^^^^^^^^^^^^^^^^^^
+
+You can configure Presto to use an internal Hive Metastore by setting the
+:code:`hive.mySql` or :code:`hive.postgreSql` properties, e.g
+
+.. code-block:: yaml
+
+  hive:
+    mySql:
+      jdbcUrl: jdbc:mysql://mysql-server/metastore-database
+      username: hive
+      password: hivePassword
+
+or
+
+.. code-block:: yaml
+
+  hive:
+    mySql:
+      postgreSql: jdbc:postgresql://postgresql-server/metastore-database
+      username: hive
+      password: hivePassword
+
+In such a case, an additional Hive Metastore pod will be
+created which will store data in the provided PostgreSQL
+or MySQL database.
+
+You can also make the internal Metastore to use an internal
+ephemeral PostgreSQL database. This can be enabled by setting the
+:code:`hive.internalPostgreSql.enabled` to :code:`true`, e.g
+
+.. code-block:: yaml
+
+  hive:
+    internalPostgreSql:
+      enabled: true
+
+In this case, an additional PostgreSQL pod will be created
+along with the Hive Metastore pod. This Hive Metastore will use
+the internal ephemeral PostgreSQL as a relational database.
+
+**Note:** Using the internal ephemeral PostgreSQL is not recommended for
+production. Data stored within the internal PostgreSQL will be
+lost when the Presto cluster is terminated.
+
+**Note:** You cannot use external and internal Metastore at the same time.
+You also cannot use external and internal relational database
+for Metastore at the same time.
+
+Using internal Metastore with custom S3 endpoints
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It possible to configure an internal Metastore with S3 like
+data sources. You can specify a custom S3 endpoint via the
+:code:`hive.internalMetastore.s3Endpoint` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    internalMetastore:
+      s3Endpoint: http://my-custom-s3-endpoint
+
+.. _aws_key:
+
+Using AWS credentials
+^^^^^^^^^^^^^^^^^^^^^
+
+You can provide AWS credentials for the Presto cluster as
+a Kubernetes secret. The secret name can be configured
+using the :code:`hive.awsSecretName` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    awsSecretName: aws-secret-name
+
+Such secret should contain two files:
+
+ * AWS_ACCESS_KEY_ID
+ * AWS_SECRET_ACCESS_KEY
+
+which contain corresponding AWS credentials.
+
+.. _google_key:
+
+Using Google Service Account key
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can provide a Google Service Account Key for the Presto Cluster
+as a Kubernetes secret. The secret name can be configured
+using the :code:`hive.googleServiceAccountKeySecretName` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    googleServiceAccountKeySecretName: google-service-account-key-secret-name
+
+Such secret should contain single file:
+
+ * key.json
+
+which contains Google Service Account Key in JSON format.
+
+Specifying additional Hive connector properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to specify additional Hive connector properties
+via the :code:`hive.additionalProperties` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    additionalProperties: |
+      hive.allow-drop-table=true
+
+Customizing internal Hive Metastore pod
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It possible to customize internal Hive Metastore pod's Docker
+image via the :code:`hive.internalMetastore.image` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    internalMetastore:
+      image:
+        name: customized-internal-hive-metastore
+        tag: 0.1
+        pullPolicy: IfNotPresent
+
+It is possible to change the resources required by Hive Metastore's pod
+via:
+
+ * :code:`hive.internalMetastore.cpu`
+ * :code:`hive.internalMetastore.memory`
+ * :code:`hive.internalMetastore.nodeSelector`
+ * :code:`hive.internalMetastore.affinity`
+
+properties.
+
+.. _internal_postgresql:
+
+Customizing internal PostgreSQL Docker pod
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to customize the internal PostgreSQL pod's Docker
+image via the :code:`hive.internalPostgreSql.image` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    internalPostgreSql:
+      image:
+        name: customized-internal-postgresql
+        tag: 0.1
+        pullPolicy: IfNotPresent
+
+It is possible to change the resources required by PostgreSQL's pod
+via:
+
+ * :code:`hive.internalPostgreSql.cpu`
+ * :code:`hive.internalPostgreSql.memory`
+ * :code:`hive.internalPostgreSql.nodeSelector`
+ * :code:`hive.internalPostgreSql.affinity`
+
+properties.
+
+It is possible to specify the storage used by PostgreSQL's pod via:
+the :code:`hive.internalPostgreSql.storage` property, e.g
+
+.. code-block:: yaml
+
+  hive:
+    internalPostgreSql:
+      storage:
+        className: db-class
+        size: 20Gi
+        claimSelector:
+          matchLabels:
+            release: "stable"
+          matchExpressions:
+            - {key: environment, operator: In, values: [dev]}
