@@ -1,0 +1,1219 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>13.8. Hive Security Configuration &mdash; Starburst Distribution of Presto 312-e.8 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Distribution of Presto 312-e.8 Documentation" href="../index.html"/>
+        <link rel="up" title="13. Connectors" href="../connector.html"/>
+        <link rel="next" title="13.9. Hive MapR Connector" href="hive-mapr.html"/>
+        <link rel="prev" title="13.7. Hive Connector GCS Tutorial" href="hive-gcs-tutorial.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                312-e.8
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. License and System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">3. Running Presto in a Docker container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">4. Presto on Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../azure.html">5. Presto on Microsoft Azure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Presto 312e on Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation-rpm.html">7. Presto RPM Installation using Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/deployment.html">8. Presto Tarball Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">9. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">10. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">11. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">12. Query Optimizer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../connector.html">13. Connectors</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="accumulo.html">13.1. Accumulo Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blackhole.html">13.2. Black Hole Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bigquery.html">13.3. BigQuery Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cassandra.html">13.4. Cassandra Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="elasticsearch.html">13.5. Elasticsearch Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive.html">13.6. Hive Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-gcs-tutorial.html">13.7. Hive Connector GCS Tutorial</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">13.8. Hive Security Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#authorization">Authorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sql-standard-based-authorization">SQL Standard Based Authorization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kerberos-support">Kerberos Support</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hive-metastore-thrift-service-authentication">Hive Metastore Thrift Service Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hdfs-authentication">HDFS Authentication</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#end-user-impersonation">End User Impersonation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#impersonation-accessing-hdfs">Impersonation Accessing HDFS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#impersonation-accessing-the-hive-metastore">Impersonation Accessing the Hive Metastore</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#impersonation-in-hadoop">Impersonation in Hadoop</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-information-about-keytab-files">Additional Information About Keytab Files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#file-based-authorization">File Based Authorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#schema-rules">Schema Rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#table-rules">Table Rules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#session-property-rules">Session Property Rules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apache-sentry-based-authorization">Apache Sentry Based Authorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sample-configuration">Sample Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#apache-ranger-based-authorization">Apache Ranger Based Authorization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#column-masking">Column masking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3">Sample Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-ranger-audit">Configuring Ranger Audit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#controlling-access-to-user-defined-functions-with-ranger">Controlling access to User Defined Functions with Ranger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#hdfs-wire-encryption">HDFS wire encryption</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hive-mapr.html">13.9. Hive MapR Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmx.html">13.10. JMX Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka.html">13.11. Kafka Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka-tutorial.html">13.12. Kafka Connector Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kudu.html">13.13. Kudu Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="localfile.html">13.14. Local File Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="memory.html">13.15. Memory Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mongodb.html">13.16. MongoDB Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mysql.html">13.17. MySQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="oracle.html">13.18. Oracle Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="phoenix.html">13.19. Phoenix Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postgresql.html">13.20. PostgreSQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redis.html">13.21. Redis Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redshift.html">13.22. Redshift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sqlserver.html">13.23. SQL Server Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generic-jdbc.html">13.24. Generic JDBC Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">13.25. System Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="teradata.html">13.26. Teradata Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thrift.html">13.27. Thrift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpcds.html">13.28. TPCDS Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpch.html">13.29. TPCH Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">15. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">18. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">19. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">20. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Starburst Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../connector.html">13. Connectors</a> &raquo;</li>
+      
+    <li>13.8. Hive Security Configuration</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/connector/hive-security.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="hive-security-configuration">
+<h1>13.8. Hive Security Configuration</h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#authorization" id="id4">Authorization</a></li>
+<li><a class="reference internal" href="#authentication" id="id5">Authentication</a></li>
+<li><a class="reference internal" href="#kerberos-support" id="id6">Kerberos Support</a></li>
+<li><a class="reference internal" href="#end-user-impersonation" id="id7">End User Impersonation</a></li>
+<li><a class="reference internal" href="#additional-information-about-keytab-files" id="id8">Additional Information About Keytab Files</a></li>
+<li><a class="reference internal" href="#file-based-authorization" id="id9">File Based Authorization</a></li>
+<li><a class="reference internal" href="#apache-sentry-based-authorization" id="id10">Apache Sentry Based Authorization</a></li>
+<li><a class="reference internal" href="#apache-ranger-based-authorization" id="id11">Apache Ranger Based Authorization</a></li>
+<li><a class="reference internal" href="#hdfs-wire-encryption" id="id12">HDFS wire encryption</a></li>
+</ul>
+</div>
+<div class="section" id="authorization">
+<span id="hive-security-auth"></span><h2>Authorization</h2>
+<p>You can enable authorization checks for the <a class="reference internal" href="hive.html"><span class="doc">Hive Connector</span></a> by setting
+the <code class="docutils literal"><span class="pre">hive.security</span></code> property in the Hive catalog properties file. This
+property must be one of the following values:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="43%" />
+<col width="57%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Value</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">legacy</span></code> (default value)</td>
+<td>Few authorization checks are enforced, thus allowing most
+operations. The config properties <code class="docutils literal"><span class="pre">hive.allow-drop-table</span></code>,
+<code class="docutils literal"><span class="pre">hive.allow-rename-table</span></code>, <code class="docutils literal"><span class="pre">hive.allow-add-column</span></code>,
+<code class="docutils literal"><span class="pre">hive.allow-drop-column</span></code> and
+<code class="docutils literal"><span class="pre">hive.allow-rename-column</span></code> are used.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">read-only</span></code></td>
+<td>Operations that read data or metadata, such as <code class="docutils literal"><span class="pre">SELECT</span></code>,
+are permitted, but none of the operations that write data or
+metadata, such as <code class="docutils literal"><span class="pre">CREATE</span></code>, <code class="docutils literal"><span class="pre">INSERT</span></code> or <code class="docutils literal"><span class="pre">DELETE</span></code>, are
+allowed.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">file</span></code></td>
+<td>Authorization checks are enforced using a config file specified
+by the Hive configuration property <code class="docutils literal"><span class="pre">security.config-file</span></code>.
+See <a class="reference internal" href="#hive-file-based-authorization"><span class="std std-ref">File Based Authorization</span></a> for details.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sql-standard</span></code></td>
+<td>Users are permitted to perform the operations as long as
+they have the required privileges as per the SQL standard.
+In this mode, Presto enforces the authorization checks for
+queries based on the privileges defined in Hive metastore.
+To alter these privileges, use the <a class="reference internal" href="../sql/grant.html"><span class="doc">GRANT</span></a> and
+<a class="reference internal" href="../sql/revoke.html"><span class="doc">REVOKE</span></a> commands.
+See <a class="reference internal" href="#hive-sql-standard-based-authorization"><span class="std std-ref">SQL Standard Based Authorization</span></a> for details.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry</span></code></td>
+<td>Authorization checks are enforced using an external Apache Sentry
+service.
+See <a class="reference internal" href="#hive-sentry-authorization"><span class="std std-ref">Apache Sentry Based Authorization</span></a> for details.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger</span></code></td>
+<td>Authorization checks are enforced using an external Apache Ranger
+service.
+See <a class="reference internal" href="#hive-ranger-authorization"><span class="std std-ref">Apache Ranger Based Authorization</span></a> for details.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="sql-standard-based-authorization">
+<span id="hive-sql-standard-based-authorization"></span><h3>SQL Standard Based Authorization</h3>
+<p>When <code class="docutils literal"><span class="pre">sql-standard</span></code> security is enabled, Presto enforces the same SQL
+standard based authorization as Hive does.</p>
+<p>Since Presto’s <code class="docutils literal"><span class="pre">ROLE</span></code> syntax support matches the SQL standard, and
+Hive does not exactly follow the SQL standard, there are the following
+limitations and differences:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">ROLE</span> <span class="pre">role</span> <span class="pre">WITH</span> <span class="pre">ADMIN</span></code> is not supported.</li>
+<li>The <code class="docutils literal"><span class="pre">admin</span></code> role must be enabled to execute <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">ROLE</span></code> or <code class="docutils literal"><span class="pre">DROP</span> <span class="pre">ROLE</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">GRANT</span> <span class="pre">role</span> <span class="pre">TO</span> <span class="pre">user</span> <span class="pre">GRANTED</span> <span class="pre">BY</span> <span class="pre">someone</span></code> is not supported.</li>
+<li><code class="docutils literal"><span class="pre">REVOKE</span> <span class="pre">role</span> <span class="pre">FROM</span> <span class="pre">user</span> <span class="pre">GRANTED</span> <span class="pre">BY</span> <span class="pre">someone</span></code> is not supported.</li>
+<li>By default, all a user’s roles except <code class="docutils literal"><span class="pre">admin</span></code> are enabled in a new user session.</li>
+<li>One particular role can be selected by executing <code class="docutils literal"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">role</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">ALL</span></code> enables all of a user’s roles except <code class="docutils literal"><span class="pre">admin</span></code>.</li>
+<li>The <code class="docutils literal"><span class="pre">admin</span></code> role must be enabled explicitly by executing <code class="docutils literal"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">admin</span></code>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="authentication">
+<h2>Authentication</h2>
+<p>The default security configuration of the <a class="reference internal" href="hive.html"><span class="doc">Hive Connector</span></a> does not use
+authentication when connecting to a Hadoop cluster. All queries are executed as
+the user who runs the Presto process, regardless of which user submits the
+query.</p>
+<p>The Hive connector provides additional security options to support Hadoop
+clusters that have been configured to use <a class="reference internal" href="#hive-security-kerberos-support"><span class="std std-ref">Kerberos</span></a>.</p>
+<p>When accessing <abbr title="Hadoop Distributed File System">HDFS</abbr>, Presto can
+<a class="reference internal" href="#hive-security-impersonation"><span class="std std-ref">impersonate</span></a> the end user who is running the
+query. This can be used with HDFS permissions and <abbr title="Access Control Lists">ACLs</abbr> to provide additional security for data.</p>
+<div class="admonition warning" id="hive-security-kerberos-support">
+<p class="first admonition-title">Warning</p>
+<p>Access to the Presto coordinator should be secured using Kerberos when using
+Kerberos authentication to Hadoop services. Failure to secure access to the
+Presto coordinator could result in unauthorized access to sensitive data on
+the Hadoop cluster.</p>
+<p class="last">See <a class="reference internal" href="../security/server.html"><span class="doc">Coordinator Kerberos Authentication</span></a> and <a class="reference internal" href="../security/cli.html"><span class="doc">CLI Kerberos Authentication</span></a>
+for information on setting up Kerberos authentication.</p>
+</div>
+</div>
+<div class="section" id="kerberos-support">
+<h2>Kerberos Support</h2>
+<p>In order to use the Hive connector with a Hadoop cluster that uses <code class="docutils literal"><span class="pre">kerberos</span></code>
+authentication, you will need to configure the connector to work with two
+services on the Hadoop cluster:</p>
+<ul class="simple">
+<li>The Hive metastore Thrift service</li>
+<li>The Hadoop Distributed File System (HDFS)</li>
+</ul>
+<p>Access to these services by the Hive connector is configured in the properties
+file that contains the general Hive connector configuration.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p>If your <code class="docutils literal"><span class="pre">krb5.conf</span></code> location is different from <code class="docutils literal"><span class="pre">/etc/krb5.conf</span></code> you
+must set it explicitly using the <code class="docutils literal"><span class="pre">java.security.krb5.conf</span></code> JVM property
+in <code class="docutils literal"><span class="pre">jvm.config</span></code> file.</p>
+<p class="last">Example: <code class="docutils literal"><span class="pre">-Djava.security.krb5.conf=/example/path/krb5.conf</span></code>.</p>
+</div>
+<div class="section" id="hive-metastore-thrift-service-authentication">
+<span id="hive-metastore-authentication"></span><h3>Hive Metastore Thrift Service Authentication</h3>
+<p>In a Kerberized Hadoop cluster, Presto connects to the Hive metastore Thrift
+service using <abbr title="Simple Authentication and Security Layer">SASL</abbr> and
+authenticates using Kerberos. Kerberos authentication for the metastore is
+configured in the connector’s properties file using the following properties:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.authentication.type</span></code></td>
+<td>Hive metastore authentication type.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.service.principal</span></code></td>
+<td>The Kerberos principal of the Hive metastore service.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code></td>
+<td>The Kerberos principal that Presto will use when connecting
+to the Hive metastore service.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.client.keytab</span></code></td>
+<td>Hive metastore client keytab location.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.impersonation-enabled</span></code></td>
+<td>Enable Metastore end user impersonation.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="hive-metastore-authentication-type">
+<h4><code class="docutils literal"><span class="pre">hive.metastore.authentication.type</span></code></h4>
+<p>One of <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>. When using the default value of <code class="docutils literal"><span class="pre">NONE</span></code>,
+Kerberos authentication is disabled and no other properties need to be
+configured.</p>
+<p>When set to <code class="docutils literal"><span class="pre">KERBEROS</span></code> the Hive connector will connect to the Hive metastore
+Thrift service using SASL and authenticate using Kerberos.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">NONE</span></code>.</p>
+</div>
+<div class="section" id="hive-metastore-service-principal">
+<h4><code class="docutils literal"><span class="pre">hive.metastore.service.principal</span></code></h4>
+<p>The Kerberos principal of the Hive metastore service. The Presto coordinator
+will use this to authenticate the Hive metastore.</p>
+<p>The <code class="docutils literal"><span class="pre">_HOST</span></code> placeholder can be used in this property value. When connecting
+to the Hive metastore, the Hive connector will substitute in the hostname of
+the <strong>metastore</strong> server it is connecting to. This is useful if the metastore
+runs on multiple hosts.</p>
+<p>Example: <code class="docutils literal"><span class="pre">hive/hive-server-host&#64;EXAMPLE.COM</span></code> or <code class="docutils literal"><span class="pre">hive/_HOST&#64;EXAMPLE.COM</span></code>.</p>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="hive-metastore-client-principal">
+<h4><code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code></h4>
+<p>The Kerberos principal that Presto will use when connecting to the Hive
+metastore.</p>
+<p>The <code class="docutils literal"><span class="pre">_HOST</span></code> placeholder can be used in this property value. When connecting
+to the Hive metastore, the Hive connector will substitute in the hostname of
+the <strong>worker</strong> node Presto is running on. This is useful if each worker node
+has its own Kerberos principal.</p>
+<p>Example: <code class="docutils literal"><span class="pre">presto/presto-server-node&#64;EXAMPLE.COM</span></code> or
+<code class="docutils literal"><span class="pre">presto/_HOST&#64;EXAMPLE.COM</span></code>.</p>
+<p>This property is optional; no default value.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>Unless <code class="docutils literal"><span class="pre">hive.metastore.impersonation-enabled</span></code> is set,
+the principal specified by <code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code> must have
+sufficient privileges to remove files and directories within the
+<code class="docutils literal"><span class="pre">hive/warehouse</span></code> directory. If the principal does not, only the metadata
+will be removed, and the data will continue to consume disk space.</p>
+<p class="last">This occurs because the Hive metastore is responsible for deleting the
+internal table data. When the metastore is configured to use Kerberos
+authentication, all of the HDFS operations performed by the metastore are
+impersonated. Errors deleting data are silently ignored.</p>
+</div>
+</div>
+<div class="section" id="hive-metastore-client-keytab">
+<h4><code class="docutils literal"><span class="pre">hive.metastore.client.keytab</span></code></h4>
+<p>The path to the keytab file that contains a key for the principal specified by
+<code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code>. This file must be readable by the
+operating system user running Presto.</p>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="hive-metastore-impersonation-enabled">
+<h4><code class="docutils literal"><span class="pre">hive.metastore.impersonation-enabled</span></code></h4>
+<p>Enable end-user impersonation when communicating with Hive Metastore.</p>
+<p>The section <a class="reference internal" href="#hive-security-impersonation"><span class="std std-ref">End User Impersonation</span></a> gives an
+in-depth explanation of impersonation.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">false</span></code>.</p>
+</div>
+<div class="section" id="example-configuration-with-none-authentication">
+<h4>Example configuration with <code class="docutils literal"><span class="pre">NONE</span></code> authentication</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.metastore.authentication.type=NONE
+</pre></div>
+</div>
+<p>The default authentication type for the Hive metastore is <code class="docutils literal"><span class="pre">NONE</span></code>. When the
+authentication type is <code class="docutils literal"><span class="pre">NONE</span></code>, Presto connects to an unsecured Hive
+metastore. Kerberos is not used.</p>
+</div>
+<div class="section" id="example-configuration-with-kerberos-authentication">
+<h4>Example configuration with <code class="docutils literal"><span class="pre">KERBEROS</span></code> authentication</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.metastore.authentication.type=KERBEROS
+hive.metastore.service.principal=hive/hive-metastore-host.example.com@EXAMPLE.COM
+hive.metastore.client.principal=presto@EXAMPLE.COM
+hive.metastore.client.keytab=/etc/presto/hive.keytab
+</pre></div>
+</div>
+<p>When the authentication type for the Hive metastore Thrift service is
+<code class="docutils literal"><span class="pre">KERBEROS</span></code>, Presto will connect as the Kerberos principal specified by the
+property <code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code>. Presto will authenticate this
+principal using the keytab specified by the <code class="docutils literal"><span class="pre">hive.metastore.client.keytab</span></code>
+property, and will verify that the identity of the metastore matches
+<code class="docutils literal"><span class="pre">hive.metastore.service.principal</span></code>.</p>
+<p>Keytab files must be distributed to every node in the cluster that runs Presto.</p>
+<p><a class="reference internal" href="#hive-security-additional-keytab"><span class="std std-ref">Additional Information About Keytab Files.</span></a></p>
+</div>
+</div>
+<div class="section" id="hdfs-authentication">
+<h3>HDFS Authentication</h3>
+<p>In a Kerberized Hadoop cluster, Presto authenticates to HDFS using Kerberos.
+Kerberos authentication for HDFS is configured in the connector’s properties
+file using the following properties:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.authentication.type</span></code></td>
+<td>HDFS authentication type.
+Possible values are <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.hdfs.impersonation.enabled</span></code></td>
+<td>Enable HDFS end-user impersonation.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code></td>
+<td>The Kerberos principal that Presto will use when connecting
+to HDFS.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.hdfs.presto.keytab</span></code></td>
+<td>HDFS client keytab location.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.wire-encryption.enabled</span></code></td>
+<td>Enable HDFS wire encryption.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="hive-hdfs-authentication-type">
+<h4><code class="docutils literal"><span class="pre">hive.hdfs.authentication.type</span></code></h4>
+<p>One of <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>. When using the default value of <code class="docutils literal"><span class="pre">NONE</span></code>,
+Kerberos authentication is disabled and no other properties need to be
+configured.</p>
+<p>When set to <code class="docutils literal"><span class="pre">KERBEROS</span></code>, the Hive connector authenticates to HDFS using
+Kerberos.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">NONE</span></code>.</p>
+</div>
+<div class="section" id="hive-hdfs-impersonation-enabled">
+<h4><code class="docutils literal"><span class="pre">hive.hdfs.impersonation.enabled</span></code></h4>
+<p>Enable end-user HDFS impersonation.</p>
+<p>The section <a class="reference internal" href="#hive-security-impersonation"><span class="std std-ref">End User Impersonation</span></a> gives an
+in-depth explanation of HDFS impersonation.</p>
+<p>This property is optional; the default is <code class="docutils literal"><span class="pre">false</span></code>.</p>
+</div>
+<div class="section" id="hive-hdfs-presto-principal">
+<h4><code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code></h4>
+<p>The Kerberos principal that Presto will use when connecting to HDFS.</p>
+<p>The <code class="docutils literal"><span class="pre">_HOST</span></code> placeholder can be used in this property value. When connecting
+to HDFS, the Hive connector will substitute in the hostname of the <strong>worker</strong>
+node Presto is running on. This is useful if each worker node has its own
+Kerberos principal.</p>
+<p>Example: <code class="docutils literal"><span class="pre">presto-hdfs-superuser/presto-server-node&#64;EXAMPLE.COM</span></code> or
+<code class="docutils literal"><span class="pre">presto-hdfs-superuser/_HOST&#64;EXAMPLE.COM</span></code>.</p>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="hive-hdfs-presto-keytab">
+<h4><code class="docutils literal"><span class="pre">hive.hdfs.presto.keytab</span></code></h4>
+<p>The path to the keytab file that contains a key for the principal specified by
+<code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code>. This file must be readable by the operating
+system user running Presto.</p>
+<p>This property is optional; no default value.</p>
+</div>
+<div class="section" id="hive-hdfs-wire-encryption-enabled">
+<h4><code class="docutils literal"><span class="pre">hive.hdfs.wire-encryption.enabled</span></code></h4>
+<p>In a Kerberized Hadoop cluster that uses HDFS wire encryption, this should be
+set to <code class="docutils literal"><span class="pre">true</span></code> to enable Presto to access HDFS. Note that using wire encryption
+may impact query execution performance.</p>
+</div>
+<div class="section" id="hive-security-simple">
+<span id="id1"></span><h4>Example configuration with <code class="docutils literal"><span class="pre">NONE</span></code> authentication</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.hdfs.authentication.type=NONE
+</pre></div>
+</div>
+<p>The default authentication type for HDFS is <code class="docutils literal"><span class="pre">NONE</span></code>. When the authentication
+type is <code class="docutils literal"><span class="pre">NONE</span></code>, Presto connects to HDFS using Hadoop’s simple authentication
+mechanism. Kerberos is not used.</p>
+</div>
+<div class="section" id="hive-security-kerberos">
+<span id="id2"></span><h4>Example configuration with <code class="docutils literal"><span class="pre">KERBEROS</span></code> authentication</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.hdfs.authentication.type=KERBEROS
+hive.hdfs.presto.principal=hdfs@EXAMPLE.COM
+hive.hdfs.presto.keytab=/etc/presto/hdfs.keytab
+</pre></div>
+</div>
+<p>When the authentication type is <code class="docutils literal"><span class="pre">KERBEROS</span></code>, Presto accesses HDFS as the
+principal specified by the <code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code> property. Presto will
+authenticate this principal using the keytab specified by the
+<code class="docutils literal"><span class="pre">hive.hdfs.presto.keytab</span></code> keytab.</p>
+<p>Keytab files must be distributed to every node in the cluster that runs Presto.</p>
+<p><a class="reference internal" href="#hive-security-additional-keytab"><span class="std std-ref">Additional Information About Keytab Files.</span></a></p>
+</div>
+</div>
+</div>
+<div class="section" id="end-user-impersonation">
+<span id="hive-security-impersonation"></span><h2>End User Impersonation</h2>
+<div class="section" id="impersonation-accessing-hdfs">
+<h3>Impersonation Accessing HDFS</h3>
+<p>Presto can impersonate the end user who is running a query. In the case of a
+user running a query from the command line interface, the end user is the
+username associated with the Presto CLI process or argument to the optional
+<code class="docutils literal"><span class="pre">--user</span></code> option. Impersonating the end user can provide additional security
+when accessing HDFS if HDFS permissions or ACLs are used.</p>
+<p>HDFS Permissions and ACLs are explained in the <a class="reference external" href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/HdfsPermissionsGuide.html">HDFS Permissions Guide</a>.</p>
+<div class="section" id="none-authentication-with-hdfs-impersonation">
+<span id="hive-security-simple-impersonation"></span><h4><code class="docutils literal"><span class="pre">NONE</span></code> authentication with HDFS impersonation</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.hdfs.authentication.type=NONE
+hive.hdfs.impersonation.enabled=true
+</pre></div>
+</div>
+<p>When using <code class="docutils literal"><span class="pre">NONE</span></code> authentication with impersonation, Presto impersonates
+the user who is running the query when accessing HDFS. The user Presto is
+running as must be allowed to impersonate this user, as discussed in the
+section <a class="reference internal" href="#configuring-hadoop-impersonation"><span class="std std-ref">Impersonation in Hadoop</span></a>. Kerberos is not used.</p>
+</div>
+<div class="section" id="kerberos-authentication-with-hdfs-impersonation">
+<span id="hive-security-kerberos-impersonation"></span><h4><code class="docutils literal"><span class="pre">KERBEROS</span></code> Authentication With HDFS Impersonation</h4>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.hdfs.authentication.type=KERBEROS
+hive.hdfs.impersonation.enabled=true
+hive.hdfs.presto.principal=presto@EXAMPLE.COM
+hive.hdfs.presto.keytab=/etc/presto/hdfs.keytab
+</pre></div>
+</div>
+<p>When using <code class="docutils literal"><span class="pre">KERBEROS</span></code> authentication with impersonation, Presto impersonates
+the user who is running the query when accessing HDFS. The principal
+specified by the <code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code> property must be allowed to
+impersonate this user, as discussed in the section
+<a class="reference internal" href="#configuring-hadoop-impersonation"><span class="std std-ref">Impersonation in Hadoop</span></a>. Presto authenticates
+<code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code> using the keytab specified by
+<code class="docutils literal"><span class="pre">hive.hdfs.presto.keytab</span></code>.</p>
+<p>Keytab files must be distributed to every node in the cluster that runs Presto.</p>
+<p><a class="reference internal" href="#hive-security-additional-keytab"><span class="std std-ref">Additional Information About Keytab Files.</span></a></p>
+</div>
+</div>
+<div class="section" id="impersonation-accessing-the-hive-metastore">
+<h3>Impersonation Accessing the Hive Metastore</h3>
+<p>Presto supports impersonating the end user when accessing the Hive metastore only when
+using <a class="reference internal" href="#hive-security-impersonation"><span class="std std-ref">Metastore with Kerberos authentication enabled</span></a>.</p>
+<p>Impersonation needs to be enabled with</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.metastore.impersonation-enabled=true
+hive.metastore.authentication.type=KERBEROS
+</pre></div>
+</div>
+<p>When using <code class="docutils literal"><span class="pre">KERBEROS</span></code> Metastore authentication with impersonation, Presto impersonates
+the user who is running the query when accessing Metastore on certain queries. The principal
+specified by the <code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code> property must be allowed to
+impersonate this user, as discussed in the section <a class="reference internal" href="#configuring-hadoop-impersonation"><span class="std std-ref">Impersonation in Hadoop</span></a>.</p>
+<p>The impersonation is applied when:</p>
+<ul class="simple">
+<li>modifying (creating or deleting) a database (schema)</li>
+<li>getting information about a single table</li>
+<li>modifying a table</li>
+</ul>
+<p>Impersonation is not applied when for the following operations. In case of the following operations,
+Presto is fully responsible for doing all relevant security checks.</p>
+<ul class="simple">
+<li>listing databases (schemas)</li>
+<li>listing tables</li>
+<li>listing roles, grants</li>
+<li>changing roles, grants</li>
+</ul>
+</div>
+<div class="section" id="impersonation-in-hadoop">
+<span id="configuring-hadoop-impersonation"></span><h3>Impersonation in Hadoop</h3>
+<p>In order to use impersonation, the Hadoop cluster must be
+configured to allow the user or principal that Presto is running as to
+impersonate the users who log in to Presto. Impersonation in Hadoop is
+configured in the file <code class="file docutils literal"><span class="pre">core-site.xml</span></code>. A complete description of the
+configuration options can be found in the <a class="reference external" href="https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html#Configurations">Hadoop documentation</a>.</p>
+</div>
+</div>
+<div class="section" id="additional-information-about-keytab-files">
+<span id="hive-security-additional-keytab"></span><h2>Additional Information About Keytab Files</h2>
+<p>Keytab files contain encryption keys that are used to authenticate principals
+to the Kerberos <abbr title="Key Distribution Center">KDC</abbr>. These encryption keys
+must be stored securely; you should take the same precautions to protect them
+that you would to protect ssh private keys.</p>
+<p>In particular, access to keytab files should be limited to the accounts that
+actually need to use them to authenticate. In practice, this is the user that
+the Presto process runs as. The ownership and permissions on keytab files
+should be set to prevent other users from reading or modifying the files.</p>
+<p>Keytab files need to be distributed to every node running Presto. Under common
+deployment situations, the Hive connector configuration will be the same on all
+nodes. This means that the keytab needs to be in the same location on every
+node.</p>
+<p>You should ensure that the keytab files have the correct permissions on every
+node after distributing them.</p>
+</div>
+<div class="section" id="file-based-authorization">
+<span id="hive-file-based-authorization"></span><h2>File Based Authorization</h2>
+<p>The config file is specified using JSON and is composed of three sections,
+each of which is a list of rules that are matched in the order specified
+in the config file. The user is granted the privileges from the first
+matching rule. All regexes default to <code class="docutils literal"><span class="pre">.*</span></code> if not specified.</p>
+<div class="section" id="schema-rules">
+<h3>Schema Rules</h3>
+<p>These rules govern who is considered an owner of a schema.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">user</span></code> (optional): regex to match against user name.</li>
+<li><code class="docutils literal"><span class="pre">schema</span></code> (optional): regex to match against schema name.</li>
+<li><code class="docutils literal"><span class="pre">owner</span></code> (required): boolean indicating ownership.</li>
+</ul>
+</div>
+<div class="section" id="table-rules">
+<h3>Table Rules</h3>
+<p>These rules govern the privileges granted on specific tables.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">user</span></code> (optional): regex to match against user name.</li>
+<li><code class="docutils literal"><span class="pre">schema</span></code> (optional): regex to match against schema name.</li>
+<li><code class="docutils literal"><span class="pre">table</span></code> (optional): regex to match against table name.</li>
+<li><code class="docutils literal"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal"><span class="pre">SELECT</span></code>, <code class="docutils literal"><span class="pre">INSERT</span></code>,
+<code class="docutils literal"><span class="pre">DELETE</span></code>, <code class="docutils literal"><span class="pre">OWNERSHIP</span></code>, <code class="docutils literal"><span class="pre">GRANT_SELECT</span></code>.</li>
+</ul>
+</div>
+<div class="section" id="session-property-rules">
+<h3>Session Property Rules</h3>
+<p>These rules govern who may set session properties.</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">user</span></code> (optional): regex to match against user name.</li>
+<li><code class="docutils literal"><span class="pre">property</span></code> (optional): regex to match against session property name.</li>
+<li><code class="docutils literal"><span class="pre">allowed</span></code> (required): boolean indicating whether this session property may be set.</li>
+</ul>
+<p>See below for an example.</p>
+<div class="highlight-json"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;schemas&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;schema&quot;</span><span class="p">:</span> <span class="s2">&quot;.*&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;owner&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;guest&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;owner&quot;</span><span class="p">:</span> <span class="kc">false</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;schema&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;owner&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;tables&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;privileges&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span> <span class="s2">&quot;INSERT&quot;</span><span class="p">,</span> <span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="s2">&quot;OWNERSHIP&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;banned_user&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;privileges&quot;</span><span class="p">:</span> <span class="p">[]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;schema&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;table&quot;</span><span class="p">:</span> <span class="s2">&quot;.*&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;privileges&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SELECT&quot;</span><span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;sessionProperties&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;force_local_scheduling&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;allow&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;property&quot;</span><span class="p">:</span> <span class="s2">&quot;max_split_size&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;allow&quot;</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="apache-sentry-based-authorization">
+<span id="hive-sentry-authorization"></span><h2>Apache Sentry Based Authorization</h2>
+<p>When <code class="docutils literal"><span class="pre">sentry</span></code> security is enabled, Presto enforces the same SQL
+standard based authorization as Hive does when Sentry is enabled for Hive.</p>
+<dl class="docutils">
+<dt>Sentry authorization information can be accessed by querying the following tables:</dt>
+<dd><ul class="first last simple">
+<li><code class="docutils literal"><span class="pre">information_schema.roles</span></code> - return information about all existing roles (equivalent of <code class="docutils literal"><span class="pre">SHOW</span> <span class="pre">ROLES</span></code>)</li>
+<li><code class="docutils literal"><span class="pre">information_schema.applicable_roles</span></code> - return roles that are granted to current user</li>
+<li><code class="docutils literal"><span class="pre">information_schema.enabled_roles</span></code> - return a list of roles that currently user is using at the moment (equivalent of <code class="docutils literal"><span class="pre">SHOW</span> <span class="pre">CURRENT</span> <span class="pre">USER</span></code>)</li>
+<li><code class="docutils literal"><span class="pre">information_schema.table_privileges</span></code> - return all tables privileges granted to user according to currently enabled roles</li>
+</ul>
+</dd>
+</dl>
+<p>Presto does not support any modification of authorization policies in Sentry.</p>
+<p>See <a class="reference internal" href="../security/sentry.html"><span class="doc">Presto with Apache Sentry</span></a> for additional information.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="39%" />
+<col width="61%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.server</span></code></td>
+<td>The name of the server object in Sentry that Presto will use
+to find authorization rules.
+This should be set to value of <code class="docutils literal"><span class="pre">hive.sentry.server</span></code>
+from Hive’s configuration XML files.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.admin-user</span></code></td>
+<td>Admin user of Apache Sentry that has <code class="docutils literal"><span class="pre">ALL</span></code> access to
+server object. It is a user that belongs to any group that are
+mentioned in <code class="docutils literal"><span class="pre">sentry.service.admin.group</span></code> property in <code class="docutils literal"><span class="pre">sentry-site.xml</span></code>
+Sentry service configuration file.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.rpc-addresses</span></code></td>
+<td>Address on which sentry RPC is available.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.rpc-port</span></code></td>
+<td>Port at which Sentry is listening.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.authentication-type</span></code></td>
+<td>Authentication method that will be used when connecting to
+Sentry service.
+Possible values are <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.service-principal</span></code></td>
+<td>Sentry service Kerberos principal that will be used to authenticate
+the Sentry service.
+This property is only used when <code class="docutils literal"><span class="pre">sentry.authentication-type=KERBEROS</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.client-principal</span></code></td>
+<td>Sentry client Kerberos principal that will be used to authenticate
+the client when connecting to Sentry service.
+The primary part of this principal (user) should be
+included in <code class="docutils literal"><span class="pre">sentry.service.allow.connect</span></code> property in <code class="docutils literal"><span class="pre">sentry-site.xml</span></code>
+Sentry service configuration file.
+This property is only used when <code class="docutils literal"><span class="pre">sentry.authentication-type=KERBEROS</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.client-key-tab</span></code></td>
+<td>Sentry client Kerberos keytab file location that will be used to
+authenticate the client when connecting to to Sentry service.
+This property is only used when <code class="docutils literal"><span class="pre">sentry.authentication-type=KERBEROS</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.cache-ttl</span></code></td>
+<td>Period where information returned by Sentry will be
+cached in Presto. <code class="docutils literal"><span class="pre">0ms</span></code> disables the cache. By default it is set to <code class="docutils literal"><span class="pre">1m</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.group-mapping</span></code></td>
+<td>Defines the way how user group are determined.
+Possible values are:
+- <code class="docutils literal"><span class="pre">HADOOP_DEFAULT</span></code> user groups will be retrieved from
+hadoop client library. You may want to use
+<code class="docutils literal"><span class="pre">sentry.config.resources</span></code> to customize this behaviour.
+- <code class="docutils literal"><span class="pre">SYSTEM</span></code> user groups will be retrieved from operating
+system that Presto is running on
+- <code class="docutils literal"><span class="pre">LDAP</span></code> user groups will be retrieved from LDAP.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.ldap.url</span></code></td>
+<td>Address of LDAP service when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.ldap.user</span></code></td>
+<td>LDAP user name when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.ldap.password</span></code></td>
+<td>LDAP user password when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.ldap.search-base</span></code></td>
+<td>Configures the search base for the LDAP connection
+when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.ldap.user-search-filter</span></code></td>
+<td>Additional filters to apply when when searching for users
+when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.ldap.group-search-filter</span></code></td>
+<td>Additional filters to apply when finding relevant groups
+when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.ldap.group-member-attribute</span></code></td>
+<td>LDAP attribute to use for determining group membership
+when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.ldap.group-name-attribute</span></code></td>
+<td>LDAP attribute to use for identifying a group’s name
+when <code class="docutils literal"><span class="pre">sentry.group-mapping==LDAP</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.group-mapping.cache-ttl</span></code></td>
+<td>Period where group mapping information will be
+cached in Presto. <code class="docutils literal"><span class="pre">0ms</span></code> disables the cache.
+By default it is set to <code class="docutils literal"><span class="pre">1min</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">sentry.group-mapping.negative-cache-ttl</span></code></td>
+<td>Period where information about empty group will be
+cached in Presto. <code class="docutils literal"><span class="pre">0ms</span></code> disables the cache.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">sentry.config.resources</span></code></td>
+<td>Additional XML configuration files which will be read before
+applying Presto Sentry configuration. Useful for reusing
+existing <code class="docutils literal"><span class="pre">sentry-site.xml</span></code> configuration files.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="sample-configuration">
+<h3>Sample Configuration</h3>
+<p>The following is a sample of a Hive Connector configuration file that is configure to use Apache Sentry for authorization.
+It utilizes Kerberos for authentication and LDAP for group mapping.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>connector.name=hive-hadoop2
+hive.metastore.uri=thrift://hive-metastore-node:9083
+
+hive.metastore.authentication.type=KERBEROS
+hive.metastore.service.principal=hive/hive-metastore-node@EXAMPLE.COM
+hive.metastore.client.principal=hive/presto-server-node@EXAMPLE.COM
+hive.metastore.client.keytab=/etc/hive/conf/hive.keytab
+
+hive.hdfs.authentication.type=KERBEROS
+hive.hdfs.impersonation.enabled=false
+hive.hdfs.presto.principal=hdfs/presto-server-node@EXAMPLE.COM
+hive.hdfs.presto.keytab=/etc/hadoop/conf/hdfs.keytab
+
+hive.security=sentry
+
+sentry.server=sentryserver
+sentry.admin-user=hive
+sentry.rpc-addresses=sentry-host-address
+sentry.rpc-port=8038
+
+sentry.authentication-type=KERBEROS
+
+sentry.service-principal=sentry/sentry-node@EXAMPLE.COM
+sentry.client-principal=presto-server/presto-server-node@EXAMPLE.COM
+sentry.client-key-tab=/etc/presto/conf/presto-server.keytab
+
+sentry.group-mapping=LDAP
+sentry.ldap.url=ldaps://ldapserver/
+sentry.ldap.user=cn=admin,dc=presto,dc=example,dc=com
+sentry.ldap.password=secret1234
+sentry.ldap.search-base=dc=presto,dc=example,dc=com
+sentry.ldap.user-search-filter=(&amp;(objectClass=inetOrgPerson)(uid={0}))
+sentry.ldap.group-search-filter=(objectClass=groupOfNames)
+sentry.ldap.group-member-attribute=member
+sentry.ldap.group-name-attribute=cn
+
+sentry.group-mapping.cache-ttl=10s
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="apache-ranger-based-authorization">
+<span id="hive-ranger-authorization"></span><h2>Apache Ranger Based Authorization</h2>
+<p>When <code class="docutils literal"><span class="pre">ranger</span></code> security is enabled, Presto enforces the same SQL
+standard based authorization as Hive does when Ranger is enabled for Hive.</p>
+<p>See <a class="reference internal" href="../security/ranger.html"><span class="doc">Presto with Apache Ranger</span></a> for additional information.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="39%" />
+<col width="61%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.policy-rest-url</span></code></td>
+<td>Address URL of Ranger service.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.service-name</span></code></td>
+<td>Ranger Presto plugin service name.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.authentication-type</span></code></td>
+<td>Authentication method that will be used when connecting to
+Ranger service.
+Possible values are:
+- <code class="docutils literal"><span class="pre">BASIC</span></code> - HTTP basic authentication
+- <code class="docutils literal"><span class="pre">KERBEROS</span></code> - Kerberos authentication
+Notice that <code class="docutils literal"><span class="pre">ranger.authentication-type=KERBEROS</span></code> requires
+<code class="docutils literal"><span class="pre">https</span></code> protocol to be used for <code class="docutils literal"><span class="pre">ranger.policy-rest-url</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.presto-plugin-username</span></code></td>
+<td>Ranger Presto plugin user name. This property is used when
+<code class="docutils literal"><span class="pre">ranger.authentication-type=BASIC</span></code> is set.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.presto-plugin-password</span></code></td>
+<td>Ranger Presto plugin user password. This property is used when
+<code class="docutils literal"><span class="pre">ranger.authentication-type=BASIC</span></code> is set.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.kerberos-principal</span></code></td>
+<td>Ranger client Kerberos principal. This property is used when
+<code class="docutils literal"><span class="pre">ranger.authentication-type=KERBEROS</span></code> is set.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.kerberos-keytab</span></code></td>
+<td>Ranger client Kerberos keytab file location. This property is used when
+<code class="docutils literal"><span class="pre">ranger.authentication-type=KERBEROS</span></code> is set.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.plugin-policy-ssl-config-file</span></code></td>
+<td>Path to Ranger SSL configuration file. This file is required when
+<code class="docutils literal"><span class="pre">https</span></code> protocol is used for <code class="docutils literal"><span class="pre">ranger.policy-rest-url</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.policy-refresh-interval</span></code></td>
+<td>Interval determining how often authorization polices will
+be refreshed. The highest latency after which changes in
+Ranger authorization policies will be visible in Presto. By default it is set to <code class="docutils literal"><span class="pre">30s</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.policy-connection-timeout</span></code></td>
+<td>Ranger service connection timeout. By default it is set to <code class="docutils literal"><span class="pre">30s</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.policy-read-timeout</span></code></td>
+<td>Ranger service read timeout. By default it is set to <code class="docutils literal"><span class="pre">30s</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.cache-ttl</span></code></td>
+<td>Period where group mapping information will be cached in Presto. <code class="docutils literal"><span class="pre">0ms</span></code> disables the cache.
+By default it is set to <code class="docutils literal"><span class="pre">30s</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.enable-row-filtering</span></code></td>
+<td>To enable row filtering please set this flag to <code class="docutils literal"><span class="pre">true</span></code>. Note that there are semantic
+differences between Presto SQL and Hive QL.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.wild-card-resource-matching-for-row-filtering</span></code></td>
+<td>To enable resource wild card matching for row filtering please set this flag to <code class="docutils literal"><span class="pre">true</span></code>.
+When two policies are matching single resource, the one without wildcards will be used.
+When multiple wildcard policies match, it is undetermined which one will be used.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ranger.wild-card-resource-matching-for-column-masking</span></code></td>
+<td>To enable resource wild card matching for column masking please set this flag to <code class="docutils literal"><span class="pre">true</span></code>.
+When two policies are matching single resource, the one without wildcards will be used.
+When multiple wildcard policies match, it is undetermined which one will be used.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">ranger.config-resources</span></code></td>
+<td>Additional XML configuration files which will be read before applying Presto Ranger
+configuration. Useful for reusing existing Hive Ranger configuration with things like
+Ranger Audit configuration.</td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="column-masking">
+<h3>Column masking</h3>
+<p>Presto Hive Rannger integration supports most of the column masking methods that are supported in Hive with Ranger.
+Presto does not distinguish upper case, lower case and digital characters when masking.
+<code class="docutils literal"><span class="pre">x</span></code> is used for all mentioned character types.</p>
+</div>
+<div class="section" id="id3">
+<h3>Sample Configuration</h3>
+<p>The following is a sample of a Hive Connector configuration file that is configured to use Apache Ranger for
+authorization. It utilizes Kerberos for authentication.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>connector.name=hive-hadoop2
+hive.metastore.uri=thrift://hive-metastore-node:9083
+
+hive.metastore.authentication.type=KERBEROS
+hive.metastore.service.principal=hive/hive-metastore-node@EXAMPLE.COM
+hive.metastore.client.principal=hive/presto-server-node@EXAMPLE.COM
+hive.metastore.client.keytab=/etc/hive/conf/hive.keytab
+
+hive.hdfs.authentication.type=KERBEROS
+hive.hdfs.impersonation.enabled=false
+hive.hdfs.presto.principal=hdfs/presto-server-node@EXAMPLE.COM
+hive.hdfs.presto.keytab=/etc/hadoop/conf/hdfs.keytab
+
+hive.security=ranger
+
+ranger.policy-rest-url=https://ranger-host:6182
+ranger.service-name=hive
+
+ranger.authentication-type=KERBEROS
+ranger.kerberos-principal=presto-server/presto-server-node@EXAMPLE.COM
+ranger.kerberos-keytab=/etc/presto/conf/presto-server.keytab
+ranger.plugin-policy-ssl-config-file=/etc/hive/conf/ranger-policymgr-ssl.xml
+</pre></div>
+</div>
+<p>The following is a sample of Ranger SSL configuration file.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>&lt;configuration&gt;
+    &lt;!--  The following properties are used for 2-way SSL client server validation --&gt;
+    &lt;property&gt;
+        &lt;name&gt;xasecure.policymgr.clientssl.keystore&lt;/name&gt;
+        &lt;value&gt;/etc/hive/conf/ranger-plugin-keystore.jks&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property&gt;
+        &lt;name&gt;xasecure.policymgr.clientssl.truststore&lt;/name&gt;
+        &lt;value&gt;/etc/hive/conf/ranger-plugin-truststore.jks&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property&gt;
+        &lt;name&gt;xasecure.policymgr.clientssl.keystore.credential.file&lt;/name&gt;
+        &lt;value&gt;jceks://file/etc/ranger/hivedev/cred.jceks&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property&gt;
+        &lt;name&gt;xasecure.policymgr.clientssl.truststore.credential.file&lt;/name&gt;
+        &lt;value&gt;jceks://file/etc/ranger/hivedev/cred.jceks&lt;/value&gt;
+    &lt;/property&gt;
+&lt;/configuration&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="configuring-ranger-audit">
+<h3>Configuring Ranger Audit</h3>
+<p>To configure Ranger Audit the following has to be added to the <code class="docutils literal"><span class="pre">hive.properties</span></code>,
+where <code class="docutils literal"><span class="pre">/etc/hive/conf/ranger-hive-audit.xml</span></code> is the actual configuration of the Ranger Audit.</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>ranger.config-resources=/etc/hive/conf/ranger-hive-audit.xml
+</pre></div>
+</div>
+</div>
+<div class="section" id="controlling-access-to-user-defined-functions-with-ranger">
+<h3>Controlling access to User Defined Functions with Ranger</h3>
+<p>Ranger System Access Control is used to enforce User Defined Function (UDF) policies set by Ranger.
+A UDF in Presto is deployed as a plugin (<a class="reference internal" href="../develop/functions.html"><span class="doc">Functions</span></a>) and stored in the Presto global
+namespace. This global namespace is managed at the System Access Control
+(see <a class="reference internal" href="../develop/system-access-control.html"><span class="doc">System Access Control</span></a>) level. This is independent of the Ranger Connector
+Access Control used to enforce all other Ranger policies at the catalog level.</p>
+<p>The Ranger resource hierarchy for all UDF policies need to have an associated database (or schema)
+namespace when creating the policy. Because the global namespace is independent of any connector
+namespace, this poses a slight challenge to control access to UDFs using Ranger. To overcome this
+you must specify <code class="docutils literal"><span class="pre">$presto</span></code> as the database name in Ranger. This will keep all Presto
+functions are under the <code class="docutils literal"><span class="pre">$presto</span></code> database in Ranger resource hierarchy.</p>
+<p>To configure Ranger System Access Control for User Defined Functions, you need to add the following
+to the System Access Control property file. Here is an example <code class="docutils literal"><span class="pre">etc/access-control.properties</span></code>
+below:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>access-control.name=ranger-system-access-control
+ranger.policy-rest-url=https://ranger-host:6182
+ranger.service-name=hive
+
+ranger.authentication-type=KERBEROS
+ranger.kerberos-principal=presto-server/presto-server-node@EXAMPLE.COM
+ranger.kerberos-keytab=/etc/presto/conf/presto-server.keytab
+ranger.plugin-policy-ssl-config-file=/etc/hive/conf/ranger-policymgr-ssl.xml
+</pre></div>
+</div>
+<p>All Ranger properties that are allowed in <code class="docutils literal"><span class="pre">hive.properties</span></code> are allowed here. However Ranger
+properties related to row filtering or column masking are ignored. This additional configuration is
+needed because the Ranger System Access Control uses an independent Ranger client from the Ranger
+Connector Access Control.</p>
+<p>Recall that in Presto only one System Access Control can be defined, while Connector Access
+Control can be defined per each Presto catalog. In the scenario where there are multiple Hive
+connectors and multiple Ranger services, only one of those Ranger services can be used to managed
+the UDF policies.</p>
+</div>
+<div class="section" id="limitations">
+<h3>Limitations</h3>
+<dl class="docutils">
+<dt>Ranger authorization in Presto has following limitations:</dt>
+<dd><ul class="first last simple">
+<li>authorization information cannot be accessed by querying the following tables like:
+<code class="docutils literal"><span class="pre">information_schema.roles</span></code>, <code class="docutils literal"><span class="pre">information_schema.applicable_roles</span></code>,
+<code class="docutils literal"><span class="pre">information_schema.enabled_roles</span></code>, <code class="docutils literal"><span class="pre">information_schema.table_privileges</span></code></li>
+<li>Presto does not support any modification of authorization policies in Sentry, this
+encloses commands like <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">ROLE...</span></code>, <code class="docutils literal"><span class="pre">GRANT...</span></code> or <code class="docutils literal"><span class="pre">REVOKE</span></code>.</li>
+<li>Presto does not support <code class="docutils literal"><span class="pre">SET</span> <span class="pre">ROLE...</span></code> for Ranger authorization, by default all user applicable roles are enabled.</li>
+<li>In case of usage of unsupported column masking <code class="docutils literal"><span class="pre">MASK_NULL</span></code> will be used.</li>
+</ul>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="hdfs-wire-encryption">
+<h2>HDFS wire encryption</h2>
+<p>In a Kerberized Hadoop cluster with enabled HDFS wire encryption you can enable
+Presto to access HDFS by using below property.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="47%" />
+<col width="53%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.wire-encryption.enabled</span></code></td>
+<td>Enables HDFS wire encryption.
+Possible values are <code class="docutils literal"><span class="pre">true</span></code> or <code class="docutils literal"><span class="pre">false</span></code>.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Depending on Presto installation configuration, using wire encryption may
+impact query execution performance.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="hive-mapr.html" class="btn btn-neutral float-right" title="13.9. Hive MapR Connector" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="hive-gcs-tutorial.html" class="btn btn-neutral" title="13.7. Hive Connector GCS Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'312-e.8',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
