@@ -1,0 +1,81 @@
+Available Configuration Sources
+===============================
+
+Keystore Configuration Source
+-------------------------------
+
+Keystore Configuration Source connects to a locally kept keystore and retrieves them to be injected into the configuration files (see :ref:`configuration-sources-injection`).
+To enable it, you need to provide all required properties in ``etc/configuration-source.properties`` (see :ref:`configuration-sources-pre-configuration`).
+
+.. code-block:: properties
+
+    keystore.enabled=true
+    keystore.file-path=etc/catalog/keystore.pfx
+    keystore.password=P@55w0rd
+
+Properties description:
+
+* ``keystore.enabled``:
+    Enables or disables the keystore configuration source. Possible values (true, false)
+
+* ``keystore.file-path``:
+    Path to the keystore. The supported extensions are: ``*.pfx``, ``*.p12`` and ``*.jceks``.
+
+* ``keystore.password``:
+    Password to the keystore. In case of ``jceks`` keystores, **keys** needs to be encrypted by the **keystore password**.
+
+Enabling Keystore Configuration Source
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In order to enable keystore as a Configuration Source in Presto you must first create it and fill it with data.
+Let's follow the path of doing so for the ``connection-password`` required by mysql connector (see: :doc:`/connector/mysql`).
+
+Creating keystore
+""""""""""""""""""
+
+Mysql connector is configured during the catalog configuration so you should expect that proper properties file will already be
+residing in ``etc/catalog`` directory. Let's assume that it's named ``etc/catalog/mysql.properties``. Inside it there should be
+a property named ``connection-password``. In order to load its value from a keystore, you need to inject it explicitly there,
+by using the ``${ENV:ALIAS}`` notation (see :ref:`configuration-sources-injection`). Let's assume that for the sake
+of this example, we will name the ALIAS ``mysql_connection_password``. Knowing that we can start putting the secure keys into the keystore.
+To do so you can use ``keytool`` tool.
+
+.. code-block:: none
+
+    keytool -genseckey -alias mysql_connection_password -keyalg PBE -keystore presto-keystore.pfx -storetype PKCS12
+
+When executing this command, yo will be asked first for the keystore password (if it's a new keystore, you will be asked to repeat it)
+and then to provide the key that you want to encrypt - so the actual mysql ``connection-password``. When creating jceks keystores,
+you would be asked to provide another password for the ``catalog.mysql.connection-password``.
+Keystore Configuration Source can work with jceks only when the same password as for the keystore is used in such scenario.
+
+In order to check that the keystore has been created and that the key under proper alias has been added to it, you can execute simple command such as:
+
+.. code-block:: none
+
+    keytool -list -keystore presto-keystore.pfx -storetype PKCS12
+
+Output of such command should be similar to this:
+
+.. code-block:: none
+
+    Keystore type: PKCS12
+    Keystore provider: SunJSSE
+
+    Your keystore contains 1 entry
+
+    mysql_connection_password, Oct 10, 2019, SecretKeyEntry,
+
+Configuring configuration-source.properties
+""""""""""""""""""""""""""""""""""""""""""""
+
+Having keystore configured, now it's time to enable it as a Configuration Source in Presto.
+In ``etc/configuration-source.properties`` (see :ref:`configuration-sources-pre-configuration`) you need to add all ``keystore`` properties
+
+.. code-block:: properties
+
+    keystore.enabled=true
+    keystore.file-path=/path/to/presto-keystore.pfx
+    keystore.password=password_used_in_presto-keystore.pfx_creation
+
+That's it. After the last step, each time when Presto will be restarted it will load the ``connection-password`` from the keystore.

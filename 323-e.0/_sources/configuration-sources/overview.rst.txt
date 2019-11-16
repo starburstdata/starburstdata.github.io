@@ -1,0 +1,41 @@
+Configuration Sources
+==============================
+Keeping all configuration in a form of static files can be very limiting. Most of the time configuration will be changed due to one of the following reasons:
+
+* Performance tuning (cache adjustment, thread pools management).
+
+* Features management (adding new catalogs, ways of authorization).
+
+* Secrets management (providing passwords, secrets and so on).
+
+Each of the reason requires different process to be efficient. Performance tuning is best handled when the operator can do frequent changes in order to
+conduct many experiments and choose best settings for the job. Features are changed less frequently, but needs to propagate through the cluster
+and it's best if the feature can be enabled in once place only. When it comes to managing secrets, it is a common requirement that this part of,
+configuration can be viewed and maintained by only a handful of people, making it encrypted for all the other configuration maintainers. This way the confidentiality of the data
+can be protected.
+
+Configuration Source is a way to allow for keeping configuration in different places and formats than simple static local properties files and to compose
+such sources together. This in turn enables creation of different processes to maintain the configuration, that can operate separately.
+
+Right now its primary use is to allow storing secrets in an encrypted way, for example in PKCS12 keystores or in a cloud native keystores.
+
+.. _configuration-sources-pre-configuration:
+
+Pre-configuration
+------------------
+Before you will be able to use additional Configuration Sources, they need to be enabled first. This is done through creating
+a ``configuration-source.properties`` file in ``etc`` folder. Each of the configuration sources has its own set of unique properties that
+are required for it to be enabled. By default application will not load any Configuration Source, so when there is no
+``configuration-source.properties`` available (or when the file is empty), Presto will start normally, taking all its configuration
+from proper properties only. The default path of pre-configuration point to ``etc/configuration-source.properties`` and can be changed by
+providing java system property ``-Dpreconfig=/path/to/pre-configuration.properties``.
+
+.. _configuration-sources-injection:
+
+Injecting properties from configured sources
+---------------------------------------------
+Let's say that you want to store in an external source ``connection-password`` from ``mysql.properties``. For that purpose we support a way
+of injecting values from external sources into your configuration. It is achieved by setting its value to ``${ENV:VALUE_ALIAS}`` where VALUE_ALIAS
+is something that one of your configuration sources needs to provide. In case of connection-password it might be practical to call it like
+``${ENV:MYSQL_CONNECTION_PASSWORD}``. Note however that Presto is not enforcing any policy in regards of ``${ENV:}`` names, as long as they are unique.
+

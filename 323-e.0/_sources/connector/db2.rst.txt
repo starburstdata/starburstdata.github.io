@@ -1,0 +1,232 @@
+=================
+IBM DB2 Connector
+=================
+
+The IBM DB2 connector allows querying and creating tables in an external
+DB2 database. This can be used to join data between different systems like
+DB2 and Hive, or between different DB2 Database instances.
+
+Presto DB2 Connector supports DB2 11.5.
+
+.. note::
+ This connector is bundled in Presto Enterprise and requires a license from Starburst.
+ For more information about Presto Enterprise and DB2 connector or to obtain a free trial, please contact hello@starburstdata.com.
+
+Installation and Configuration
+==============================
+
+Prerequisites
+-------------
+
+Any of the below installation and configuration methods require the following artifacts:
+
+* DB2's JDBC driver, may be obtained from IBM's
+  `db2-jdbc-driver-versions-and-downloads <https://www.ibm.com/support/pages/db2-jdbc-driver-versions-and-downloads>`_
+* Connection details to connect to the DB2, in form of a regular Presto connector config
+  (e.g. ``db2.properties`` for a Presto catalog named ``db2``).
+  File should contain the following contents, replacing the connection properties as appropriate for your setup:
+
+.. code-block:: none
+
+    connector.name=db2
+    connection-url=jdbc:db2://HOST:PORT/DATABASE
+    connection-user=USERNAME
+    connection-password=PASSWORD
+
+Please refer to `DB2 JDBC Driver Documentation <https://www.ibm.com/support/knowledgecenter/en/SSCRJT_5.0.0/com.ibm.swg.im.infosphere.biginsights.admin.doc/doc/bsql_jdbc.html>`_
+for more information about format and parameters of the JDBC URL supported by the DB2 JDBC Driver.
+
+Plugin Configuration
+--------------------
+
+To install the DB2 Database connector manually, use the following directions. You will
+need an installation of the Starburst Distribution of Presto and a DB2 JDBC Driver
+file (``db2jcc-db2jcc4.jar``).
+
+1. Add the DB2 JDBC Driver JAR files to the Presto ``plugin/db2`` directory.
+2. Add Presto DB2 catalog properties file (eg. ``db2.properties`` for a Presto catalog named ``db2``).
+3. Perform the above steps on every Presto cluster node.
+4. Restart Presto on every node.
+
+Querying DB2 Databases
+======================
+
+The DB2 connector provides a schema for each DB2 database's.
+Assuming the catalog name is ``db2``, you can see the available schemas by running
+``SHOW SCHEMAS``::
+
+    SHOW SCHEMAS FROM db2;
+
+If you have an DB2 database named ``web``, you can view the tables they
+own by running ``SHOW TABLES``::
+
+    SHOW TABLES FROM db2.web;
+
+You can see a list of the columns in the ``clicks`` table in ``web``'s schema
+using either of the following::
+
+    DESCRIBE db2.web.clicks;
+    SHOW COLUMNS FROM db2.web.clicks;
+
+Finally, you can access the ``clicks`` table in ``web``'s schema::
+
+    SELECT * FROM db2.web.clicks;
+
+Your privileges in these schemas are those of the user configured in the
+connection properties file. If the user does not have access to these tables,
+you will not be able to access them.
+
+Mapping Data Types Between Presto and DB2
+=========================================
+
+Because Presto and DB2 each support types that the other does not, the following
+type mapping tables apply.
+
+DB2-to-Presto Type Mapping
+--------------------------
+
+Presto supports selecting the following DB2 Database types. The table shows
+the mappings from DB2 to Presto data types.
+
+.. table::
+   :class: colwidths-auto
+
+   +------------------------+----------------------+-------------------------+
+   |DB2 Database type       |Presto type           |Notes                    |
+   +========================+======================+=========================+
+   |``NUMERIC``             |``DECIMAL(p, s)``     |                         |
+   |                        |                      |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DECIMAL(p,s)``        |``DECIMAL(p, s)``     |                         |
+   |                        |                      |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DECFLOAT(p)``         |``DECIMAL(p, s)``     |                         |
+   |                        |                      |                         |
+   +------------------------+----------------------+-------------------------+
+   |``FLOAT[(p)]``          |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``REAL``                |``REAL``              |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DOUBLE``              |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DOUBLE PRECISION``    |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``TINYINT``             |``SMALLINT``          |                         |
+   +------------------------+----------------------+-------------------------+
+   |``SMALLINT``            |``SMALLINT``          |                         |
+   +------------------------+----------------------+-------------------------+
+   |``INT``                 |``INT``               |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BIGINT``              |``BIGINT``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DOUBLE PRECISION``    |``DOUBLE``            |                         |
+   +------------------------+----------------------+-------------------------+
+   |``VARCHAR(n CHAR)``     |``VARCHAR(n)``        |                         |
+   +------------------------+----------------------+-------------------------+
+   |``CHAR VARYING(n)``     |``VARCHAR(n)``        |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BINARY(n)``           |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BINARY VARYING``      |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``VARBINARY(n)``        |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``CHAR(n)``             |``CHAR(n)``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``CLOB``                |``VARCHAR``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``BLOB``                |``VARBINARY``         |                         |
+   +------------------------+----------------------+-------------------------+
+   |``ROWID``               |``VARCHAR``           |                         |
+   +------------------------+----------------------+-------------------------+
+   |``DATE``                |``DATE``              |See :ref:`datetime       |
+   |                        |                      |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+   |``TIMESTAMP(p)``        |``TIMESTAMP``         |See :ref:`datetime       |
+   |                        |                      |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+   |``TIMESTAMP(p) WITH TIME|``TIMESTAMP WITH TIME |See :ref:`datetime       |
+   |ZONE``                  |ZONE``                |mapping`.                |
+   +------------------------+----------------------+-------------------------+
+
+.. _db2 datetime mapping:
+
+Mapping datetime types
+----------------------
+
+Selecting a DB2 temporal value with fractional second precision greater than 3
+will truncate (not round) the fractional seconds to three digits.
+
+All DB2 ``TIMESTAMP`` values are stored in UTC time zone. When Presto reads these values from DB2 ``TIMESTAMP`` values are mapped onto a Presto ``TIMESTAMP WITH TIME ZONE`` in UTC time zone.
+
+Because JDBC API returns ``TIME`` and ``DATETIME`` values in the JVM time zone,
+some values stored in DB2 may not be representable by JDBC due to daylight
+savings time and other gaps in the JVM time zone.
+For this reason, we recommend setting the JVM time zone to UTC.
+
+User Impersonation
+==================
+
+DB2 connector supports user impersonation. Please see  :doc:`/security/impersonation` for more details.
+
+User impersonation can be turned with:
+
+.. code-block:: none
+
+    db2.impersonation-enabled=true
+
+User impersonation in DB2 connector is based on ``SET SESSION_USER``.
+For more details please visit: `www.ibm.com/support/knowledgecenter <https://www.ibm.com/support/knowledgecenter/en/SSCRJT_6.0.0/com.ibm.swg.im.bigsql.commsql.doc/doc/r0011139.html>`_.
+
+.. note::  Running ``SET SESSION_USER`` in DB2 requires the user to have a ``SETSESSIONUSER`` privilege.
+
+
+Table Statistics
+================
+
+DB2 connector supports table and column statistics. The statistics are
+collected by DB2 Database and retrieved by the connector. To collect
+statistics for a table, execute the following statements in DB2 Database.
+
+.. code-block:: none
+
+    CALL SYSPROC.ADMIN_CMD('RUNSTATS ON TABLE table_name');
+
+The table statistics can be viewed in Presto using :doc:`/sql/show-stats`
+and are used for :doc:`/optimizer/cost-based-optimizations`.
+
+
+Table Statistics Configuration Properties
+-----------------------------------------
+
+================================================== ============================================================ ==================================
+Property Name                                      Description                                                  Default
+================================================== ============================================================ ==================================
+``statistics.enabled``                             Enables table and column statistics.                         ``true``
+
+``statistics.cache-ttl``                           Duration for which table and column statistics are cached.   ``0s``
+
+``statistics.cache-missing``                       Cache the fact that table statistics were not available.     ``false``
+
+================================================== ============================================================ ==================================
+
+
+DB2 Database Connector Limitations
+==================================
+
+
+Unsupported Statements
+----------------------
+
+The following SQL statements are not yet supported:
+
+* :doc:`/sql/delete`
+* :doc:`/sql/create-view`
+* :doc:`/sql/drop-view`
+* :doc:`/sql/create-schema`
+* :doc:`/sql/alter-schema`
+* :doc:`/sql/grant`
+* :doc:`/sql/revoke`
+* :doc:`/sql/show-grants`
+* :doc:`/sql/show-roles`
+* :doc:`/sql/show-role-grants`

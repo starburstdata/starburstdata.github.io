@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>4.9. Querying AWS S3 &mdash; Starburst Distribution of Presto 323-e.0 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Distribution of Presto 323-e.0 Documentation" href="../index.html"/>
+        <link rel="up" title="4. Presto on Amazon Web Services" href="../aws.html"/>
+        <link rel="next" title="4.10. AWS Glue Support" href="glue.html"/>
+        <link rel="prev" title="4.8. Querying Presto" href="query.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                323-e.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. License and System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">3. Running Presto in a Docker container</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../aws.html">4. Presto on Amazon Web Services</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html">4.1. Getting Started: A Quick Guide to Presto on AWS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="overview.html">4.2. Overview of Presto on AWS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="prerequisites.html">4.3. Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deploy.html">4.4. Deploying Presto</a></li>
+<li class="toctree-l2"><a class="reference internal" href="configuration.html">4.5. Configuring Presto</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metastore.html">4.6. Configuring Hive Metastore</a></li>
+<li class="toctree-l2"><a class="reference internal" href="access.html">4.7. Accessing the Presto Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="query.html">4.8. Querying Presto</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">4.9. Querying AWS S3</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#preliminary-steps">Preliminary Steps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ensure-access-to-s3">Ensure Access to S3</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hive-connector">Hive Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-s3-data-from-presto-for-the-first-time">Accessing S3 Data From Presto for the First Time</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-data-already-mapped-in-the-hive-metastore">Accessing Data Already Mapped in the Hive Metastore</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-data-not-yet-mapped-in-the-hive-metastore">Accessing Data Not Yet Mapped in the Hive Metastore</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#statistics">Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#collecting-statistics">Collecting Statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-s3-data-with-presto">Writing S3 Data with Presto</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-export-schema">Create Export Schema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-data-to-s3">Export Data to S3</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="glue.html">4.10. AWS Glue Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="superset.html">4.11. Using Apache Superset</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manualscale.html">4.12. Manual Scaling a Running Presto Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autoscale.html">4.13. Auto Scaling a Running Presto Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="high-availability.html">4.14. Presto Coordinator High Availability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logs.html">4.15. Integration with CloudWatch Logs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html">4.16. Integration with CloudWatch metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">4.17. Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="uninstall.html">4.18. Uninstalling Presto</a></li>
+<li class="toctree-l2"><a class="reference internal" href="resources.html">4.19. Related Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../azure.html">5. Presto on Microsoft Azure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Presto 312e on Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation-rpm.html">7. Presto RPM Installation using Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/deployment.html">8. Presto Tarball Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../configuration-sources.html">9. Configuration Sources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">10. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">11. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">12. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">13. Query Optimizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">14. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">15. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">16. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">17. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">18. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">19. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">20. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">21. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Starburst Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../aws.html">4. Presto on Amazon Web Services</a> &raquo;</li>
+      
+    <li>4.9. Querying AWS S3</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/aws/s3.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="querying-aws-s3">
+<h1>4.9. Querying AWS S3</h1>
+<div class="section" id="preliminary-steps">
+<h2>Preliminary Steps</h2>
+<div class="section" id="ensure-access-to-s3">
+<h3>Ensure Access to S3</h3>
+<p>Before you start querying the data on S3, you need to make sure the Presto cluster is allowed to query the data. If your S3 data is publicly available, you do not need to do anything. However, typically the data is not publicly available, and you need to grant the Presto cluster access to the data. For this, you need to create an instance profile and select it when creating a cluster. You can then validate the selected instance profile is sufficient for Presto to read S3 data by opening an SSH connection to the Presto coordinator and issuing the following commands. For more information on creating Instance profiles, refer to the <a class="reference internal" href="deploy.html"><span class="doc">Deploying Presto</span></a> section.</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span># aws s3 ls s3://your-bucket/path/to/dataset/
+# aws s3 cp s3://your-bucket/path/to/dataset/data-file - &gt; /dev/null
+</pre></div>
+</div>
+</div>
+<div class="section" id="hive-connector">
+<span id="aws-s3-hive-connector"></span><h3>Hive Connector</h3>
+<p>Another requirement is that you have enabled and configured a Hive connector in Presto. The Hive Metastore should also have an instance profile granting access to S3.</p>
+<p><strong>Configuring Hive Connector</strong></p>
+<p>If you have not yet done so, you need to configure a Hive connector in Presto. The connector uses a Hive Metastore for data discovery and is not limited to data residing on HDFS. Metastore should be viewed as a database of metadata about your data. You can use an existing Hive Metastore or start a new one.</p>
+<blockquote>
+<div><blockquote>
+<div><ul class="simple">
+<li><strong>Existing Hive Metastore:</strong></li>
+</ul>
+</div></blockquote>
+<p>To use an existing Hive Metastore instance with a Presto cluster, you need to set the <strong>MetastoreType</strong> parameter
+to <code class="docutils literal"><span class="pre">External</span> <span class="pre">Hive</span> <span class="pre">Metastore</span> <span class="pre">Service</span></code> and <strong>ExternalMetastoreHost</strong> to IP address of your Hive Metastore Service (please see
+<a class="reference internal" href="metastore.html"><span class="doc">Configuring Hive Metastore</span></a> section). If the Metastore uses authentication, please refer to the Configurations section of
+this documentation along with the following <a class="reference external" href="https://docs.starburstdata.com/latest/connector/hive-security.html">link</a>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><strong>New Hive Metastore:</strong></li>
+</ul>
+<blockquote>
+<div>You can create a new metastore for Presto via a CloudFormation template. See <a class="reference internal" href="metastore.html"><span class="doc">Configuring Hive Metastore</span></a>.</div></blockquote>
+</div></blockquote>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="accessing-s3-data-from-presto-for-the-first-time">
+<h2>Accessing S3 Data From Presto for the First Time</h2>
+<div class="section" id="accessing-data-already-mapped-in-the-hive-metastore">
+<h3>Accessing Data Already Mapped in the Hive Metastore</h3>
+<p>If you chose an existing Hive Metastore instance when configuring the Hive connector, the chances are that your S3 data is already mapped to SQL tables in the Metastore. In that case, you should be able to query it.</p>
+</div>
+<div class="section" id="accessing-data-not-yet-mapped-in-the-hive-metastore">
+<h3>Accessing Data Not Yet Mapped in the Hive Metastore</h3>
+<p>To access S3 data that is not yet mapped in the Hive Metastore you need to provide the schema of the data, the file format, and the data location. For example, if you have ORC or Parquet files in an S3 bucket, <code class="docutils literal"><span class="pre">my_bucket</span></code>, you will need to execute a command similar to the following.</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; -- select schema in which the table will be defined, must already exist
+presto&gt; USE hive.default;
+USE
+
+presto&gt; -- create table
+presto&gt; CREATE TABLE orders (
+     -&gt;     orderkey bigint,
+     -&gt;     custkey bigint,
+     -&gt;     orderstatus varchar(1),
+     -&gt;     totalprice double,
+     -&gt;     orderdate date,
+     -&gt;     orderpriority varchar(15),
+     -&gt;     clerk varchar(15),
+     -&gt;     shippriority integer,
+     -&gt;     comment varchar(79)
+     -&gt; ) WITH (
+     -&gt;     external_location = &#39;s3://my_bucket/path/to/folder&#39;,
+     -&gt;     format = &#39;ORC&#39; -- or &#39;PARQUET&#39;
+     -&gt; );
+CREATE TABLE
+</pre></div>
+</div>
+<p>Now you should be able to query the newly mapped table:</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; SELECT * FROM orders;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="statistics">
+<h2>Statistics</h2>
+<p>It’s very easy to query data stored on S3, as all you need to do is define the mapping between the S3 data and SQL tables. However, if your queries are complex and include joining large data sets, you may run into performance issues. This is because Presto does not know the statistical properties of the data and the such properties are a basis for the Presto Cost-Based Optimizer’s decisions.</p>
+<div class="section" id="collecting-statistics">
+<h3>Collecting Statistics</h3>
+<p>To gather table statistics for tables in Hive connector, you will need to execute the following command:</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; ANALYZE orders;
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="writing-s3-data-with-presto">
+<h2>Writing S3 Data with Presto</h2>
+<div class="section" id="prerequisites">
+<h3>Prerequisites</h3>
+<p>Before you attempt to write data to S3, make sure you have configured everything necessary to read data from S3.</p>
+</div>
+<div class="section" id="create-export-schema">
+<h3>Create Export Schema</h3>
+<p>If Hive Metastore contains schema(s) mapped to S3 locations, you can use them to export data to S3. If you don’t want to use existing schemas (or there are no appropriate schemas in the Hive Metastore), you need to create a new one.</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; CREATE SCHEMA hive.s3_export WITH (location = &#39;s3://my_bucket/some/path&#39;);
+</pre></div>
+</div>
+</div>
+<div class="section" id="export-data-to-s3">
+<h3>Export Data to S3</h3>
+<p>Once you have a schema pointing to a location where you want to export the data, you can issue the export using a <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> statement and select your desired file format.</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; CREATE TABLE hive.s3_export.my_table
+WITH (format = &#39;ORC&#39;)
+AS &lt;source query&gt;;
+</pre></div>
+</div>
+<p>The data will be written to one or more files within the <code class="docutils literal"><span class="pre">s3://my_bucket/some/path/my_table</span></code> namespace. The number of files depends on the size of the data being exported and possible parallelization of the source of the data.</p>
+<p>Example:</p>
+<div class="highlight-RST"><div class="highlight"><pre><span></span>presto&gt; CREATE TABLE hive.s3_export.orders_export
+WITH (format = &#39;ORC&#39;)
+AS SELECT * FROM tpch.sf1.orders;
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="glue.html" class="btn btn-neutral float-right" title="4.10. AWS Glue Support" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="query.html" class="btn btn-neutral" title="4.8. Querying Presto" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'323-e.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
