@@ -108,7 +108,18 @@
 <li class="toctree-l1"><a class="reference internal" href="../versions.html">19. Older Versions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../develop.html">20. Developer Guide</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../release.html">21. Release Notes</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">21.1. Release 323-e</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">21.1. Release 323-e</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-changes">General Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security-changes">Security Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-connector-changes">Hive Connector Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sqlserver-connector-changes">SQLServer Connector Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#postgresql-connector-changes">PostgreSQL Connector Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mysql-connector-changes">MySQL Connector Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#redshift-connector-changes">Redshift Connector Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jdbc-based-connectors-changes">JDBC based Connectors Changes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#elasticsearch-connector-changes">Elasticsearch Connector Changes</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="release-312-e.html">21.2. Release 312-e</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release-302-e.html">21.3. Release 302-e</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release-0.213-e.html">21.4. Release 0.213-e</a></li>
@@ -376,6 +387,115 @@
             
   <div class="section" id="release-323-e">
 <h1>21.1. Release 323-e</h1>
+<div class="section" id="general-changes">
+<h2>General Changes</h2>
+<ul class="simple">
+<li>Display actual statistics in <code class="docutils literal"><span class="pre">EXPLAIN</span> <span class="pre">ANALYZE</span> <span class="pre">VERBOSE</span></code>.</li>
+<li>Reduce number of metadata queries during planning.
+This change disables stats collection for non-EXPLAIN queries. If you
+want to have access to such stats in query completed event listener, you
+need to re-enable stats by collection using <code class="docutils literal"><span class="pre">collect-plan-statistics-for-all-queries</span></code>
+property.</li>
+<li>Add <a class="reference internal" href="../connector/hive-mapr.html"><span class="doc">Hive MapR Connector</span></a> (requires license).</li>
+<li>Support prepared statements that are longer than 4K bytes.</li>
+<li>Add Oracle compatibility functions</li>
+<li>Add support for column statistics in Glue.</li>
+<li>Add support for Glue API proxy.</li>
+<li>Enable Cost-Based Optimizer (CBO) by default.</li>
+<li>Add <a class="reference internal" href="../connector/generic-jdbc.html"><span class="doc">Generic JDBC Connector</span></a>.</li>
+<li>Add <a class="reference internal" href="../connector/db2.html"><span class="doc">IBM DB2 Connector</span></a> (requires license).</li>
+<li>Add <a class="reference internal" href="../connector/snowflake.html"><span class="doc">Snowflake Connector</span></a> (requires license).</li>
+<li>Add <a class="reference internal" href="../connector/bigquery.html"><span class="doc">BigQuery Connector</span></a> (requires license).</li>
+<li>Add <a class="reference internal" href="../connector/teradata.html"><span class="doc">Teradata Connector</span></a> (requires license).</li>
+<li>Allow specifying a subset of columns in ANALYZE</li>
+<li>Procedure for dropping statistics</li>
+<li>Allow setting client tags via session properties</li>
+<li>Fix CorrelatedJoin decorrelation</li>
+<li>Various fixes related to quoting names that may conflict with SQL keywords</li>
+</ul>
+</div>
+<div class="section" id="security-changes">
+<h2>Security Changes</h2>
+<ul class="simple">
+<li>Add security audit log collection.</li>
+<li>Add <code class="docutils literal"><span class="pre">ldap.bind-dn</span></code> and <code class="docutils literal"><span class="pre">ldap.bind-password</span></code> LDAP properties to allow LDAP authentication access LDAP server using service account.</li>
+<li>Allow to pass securely pass secrets to Presto configuration using Java keystore files.</li>
+</ul>
+</div>
+<div class="section" id="hive-connector-changes">
+<h2>Hive Connector Changes</h2>
+<ul class="simple">
+<li>Add support for Parquet files with compatible decimal precision.</li>
+<li>Fix query failure when reading Parquet files that contain character data without statistics.</li>
+<li>Fix incorrect behavior of <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> when Hive metastore is configured
+with <code class="docutils literal"><span class="pre">metastore.create.as.acid</span></code> set to <code class="docutils literal"><span class="pre">true</span></code>.</li>
+<li>Add support for HDP 3.1, including reading transactional tables.</li>
+<li>Use information derivable from Parquet statistics for <code class="docutils literal"><span class="pre">varchar</span></code> data type for files written by old Parquet version.</li>
+<li>Add <code class="docutils literal"><span class="pre">hive.s3.positioned-reads.enabled</span></code> configuration property allowing disabling positioned reads optimization.
+Consider disabling the optimization when working with small Parquet files.</li>
+<li>Allow specifying column lists to analyze in <code class="docutils literal"><span class="pre">ANALYZE</span></code>.</li>
+<li>Add procedure <code class="docutils literal"><span class="pre">drop_stats</span></code> for removing statistics for a table or a specified set of partitions.</li>
+<li>Support overwriting unpartitioned tables for insert queries when using AWS Glue.</li>
+<li>Allow to ignore partitions that do not have matching data directory with <code class="docutils literal"><span class="pre">hive.ignore-absent-partitions=true</span></code> connector configuration property.</li>
+<li>Add support for Azure Data Lake Storage gen 2 (ABFS).</li>
+<li>Enable Hive views execution using a config toggle.</li>
+<li>Fix parametric column types support for Hive views.</li>
+<li>Improve hive query execution when view was created with tables without schema specified.</li>
+<li>Support Apache Ranger authorization (requires licence).</li>
+<li>Support Apache Sentry authorization (requires licence).</li>
+<li>Rename hive.parquet.xxx config options to parquet.xxx</li>
+<li>Fix Parquet Predicate Pushdown on Dictionaries</li>
+<li>Stop Parquet Dictionary Reads Eagerly in Predicate Pushdown</li>
+<li>Coalesce small reads for Parquet</li>
+</ul>
+</div>
+<div class="section" id="sqlserver-connector-changes">
+<h2>SQLServer Connector Changes</h2>
+<ul class="simple">
+<li>Support user impersonation.</li>
+<li>Support retrieving table and column statistics. The statistics can be inspected with <a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a> and are taken into account in
+<a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">Cost based optimizations</span></a>.</li>
+<li>Fix incorrect insertion of data when the target table has an unsupported type.</li>
+</ul>
+</div>
+<div class="section" id="postgresql-connector-changes">
+<h2>PostgreSQL Connector Changes</h2>
+<ul class="simple">
+<li>Support user impersonation.</li>
+<li>Support retrieving table and column statistics. The statistics can be inspected with <a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a> and are taken into account in
+<a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">Cost based optimizations</span></a>.</li>
+<li>Fix incorrect insertion of data when the target table has an unsupported type.</li>
+</ul>
+</div>
+<div class="section" id="mysql-connector-changes">
+<h2>MySQL Connector Changes</h2>
+<ul class="simple">
+<li>Support retrieving table and column statistics. The statistics can be inspected with <a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a> and are taken into account in
+<a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">Cost based optimizations</span></a>.</li>
+<li>Fix incorrect insertion of data when the target table has an unsupported type.</li>
+</ul>
+</div>
+<div class="section" id="redshift-connector-changes">
+<h2>Redshift Connector Changes</h2>
+<ul class="simple">
+<li>Fix incorrect insertion of data when the target table has an unsupported type.</li>
+</ul>
+</div>
+<div class="section" id="jdbc-based-connectors-changes">
+<h2>JDBC based Connectors Changes</h2>
+<ul class="simple">
+<li>Add metadata cache that is configured with <code class="docutils literal"><span class="pre">metadata.cache-ttl</span></code> and <code class="docutils literal"><span class="pre">metadata.cache-missing</span></code>.
+By default caching is disabled (equivalent to <code class="docutils literal"><span class="pre">metadata.cache-ttl=0s</span></code> and <code class="docutils literal"><span class="pre">metadata.cache-missing=false</span></code>).</li>
+<li>Collect JMX metrics about metadata information collection and connection usage.</li>
+</ul>
+</div>
+<div class="section" id="elasticsearch-connector-changes">
+<h2>Elasticsearch Connector Changes</h2>
+<ul class="simple">
+<li>Add support for datetimes exposed as numbers in Elasticsearch</li>
+<li>Handle mixed-case columns in Elasticsearch</li>
+</ul>
+</div>
 </div>
 
 
