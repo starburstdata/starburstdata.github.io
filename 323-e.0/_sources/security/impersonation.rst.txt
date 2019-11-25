@@ -2,51 +2,59 @@
 User Impersonation
 ==================
 
-Presto has to be authenticated when accessing external service through the connector.
-Typically it requires passing authentication credentials which contain information on behalf what user
-Presto is going to connect. Such credentials are stored in connector properties file.
-Any Presto user that access service through the Presto assesses it
-as the user configured in connector properties. This approach has following downsides:
-* no authorization policies built-in into this external service are able to recognize the actual user,
-causing that any user that authenticates to Presto has the same permissions.
-* it is difficult to do an audit of access of the external service as every Presto user is seen as
-the same local user in the external service.
+Presto has to be authenticated when accessing an external service through the
+connector. Typically it requires passing authentication credentials, which
+contain information on behalf of what user Presto connects. Such credentials are
+stored in connector properties file.
+
+Any Presto user accesses the external service as the user configured in the
+connector properties. This approach has the following downsides:
+
+* No authorization policies, built-in into this external service, are able to
+  recognize the actual Presto user. As a result any user, who authenticates to
+  Presto and accesse the data with Presto, has the same permissions and is
+  tracked as the same service user.
+* It is difficult to perform an audit of access of the external service, since
+  every Presto user is seen as the same local user in the external service.
 
 One way of solving this is to impersonate the Presto user as the local user in the external service.
-With this approach Presto authenticates in the external service using credentials stored in connector properties
-file, but once it connects it informs the external service that any further action in given session should be performed on behalf of
-current Presto user. That way Presto user ``alice`` becomes a local user ``alice`` in the external service. This requires 
-the user that connects to the external service (the one which is configured in connector properties file) to be
-trusted in this system i.e. has to be allowed to impersonate other users.
+With this approach Presto authenticates in the external service using credentials stored in the connector properties
+file. Once it connects, it informs the external service that any further action in a given session should be performed on behalf of
+current Presto user. That way a Presto user ``alice`` becomes a local user ``alice`` in the external service. This requires 
+the user that connects to the external service, which is configured in connector properties file, to be
+trusted in this system and to be allowed to impersonate other users.
 
-When impersonating Presto users in the external service, Presto itself also should require authentication and proper
+When impersonating Presto users in the external service, Presto itself also requires authentication and proper
 access control configuration to ensure that users with valid credentials can be authenticated in the external service.
 
-Notice that external service is required to support impersonation mechanism and actual details are
+Note that the external service is required to support the impersonation mechanism, and actual details are
 different depending on the service.
 
-Currently connectors that supports user impersonation and Presto user to local user translation are:
+Currently connectors that support user impersonation and Presto user to local user translation are:
+
 * :doc:`/connector/oracle`
 * :doc:`/connector/postgresql`
 * :doc:`/connector/sqlserver`
 * :doc:`/connector/teradata`
 
-Notice that :doc:`/connector/hive` also supports user impersonation when connecting to Hive Metastore or HDFS. 
-However, Hive Connector does not support Presto user to local user translation.
+Notice that the :doc:`/connector/hive` also supports user impersonation when connecting to Hive Metastore or HDFS. 
+However, the Hive connector does not support Presto user to local user translation.
 
 Presto User to Local User Translation
 =====================================
 
-The same actual user could be represented differently among services. For example Presto user ``alice_in_presto`` could be represented
-in the external service as ``alice_in_external_service``. In such situation, before we could impersonate Presto user ``alice_in_presto``
-in the external service we would need to first translate that user into ``alice_in_external_service``. This can be done by adding to
-configuration user name translations file with ``auth-to-local.config-file`` in the connector properties file, like below:
+The same actual user could be represented differently among services. For
+example, a Presto user ``alice_in_presto`` can be represented in the external
+service as ``alice_in_external_service``. This requires a translation that
+details the mapping to use. You can specify the path to the translations file
+with ``auth-to-local.config-file`` in the connector properties file:
 
 .. code-block:: none
 
    auth-to-local.config-file=etc/auth-to-local-rules.json
 
-The config file is specified in JSON format. It contains the rules defining how Presto user will be represented in the external service.
+The config file is specified in JSON format. It contains the rules defining how
+Presto user is represented in the external service.
 
 Refresh
 -------
@@ -64,7 +72,7 @@ User Translation Rules
 ----------------------
 
 These rules control the Presto user name translation to the external service local user name.
-The result local user is calculated by the first matching rule read from top to
+The local user is calculated by the first matching rule read from top to
 bottom. If no rule matches, an error is raised. Each rule is composed of the
 following fields:
 
