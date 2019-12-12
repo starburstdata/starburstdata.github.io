@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>14.10. Hive Connector GCS Tutorial &mdash; Starburst Distribution of Presto 323-e.2 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Distribution of Presto 323-e.2 Documentation" href="../index.html"/>
+        <link rel="up" title="14. Connectors" href="../connector.html"/>
+        <link rel="next" title="14.11. Hive Security Configuration" href="hive-security.html"/>
+        <link rel="prev" title="14.9. Hive Connector" href="hive.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                323-e.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mission-control.html">3. Mission Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">4. Running Presto in a Docker container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Presto on Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../azure.html">6. Presto on Microsoft Azure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Presto on Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation-rpm.html">8. Presto RPM Installation using Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/deployment.html">9. Presto Tarball Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">10. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">11. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">12. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">13. Query Optimizer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../connector.html">14. Connectors</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="accumulo.html">14.1. Accumulo Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="alluxio.html">14.2. Alluxio Data Orchestrator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blackhole.html">14.3. Black Hole Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bigquery.html">14.4. BigQuery Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cassandra.html">14.5. Cassandra Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="db2.html">14.6. IBM DB2 Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="elasticsearch.html">14.7. Elasticsearch Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="googlesheets.html">14.8. Google Sheets Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive.html">14.9. Hive Connector</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">14.10. Hive Connector GCS Tutorial</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#preliminary-steps">Preliminary Steps</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ensure-access-to-gcs">Ensure Access to GCS</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hive-connector-configuration">Hive Connector configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hive-metastore-configuration">Hive Metastore configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#accessing-gcs-data-from-presto-for-the-first-time">Accessing GCS Data From Presto for the First Time</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-data-already-mapped-in-the-hive-metastore">Accessing Data Already Mapped in the Hive metastore</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-data-not-yet-mapped-in-the-hive-metastore">Accessing Data Not Yet Mapped in the Hive metastore</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-gcs-data-with-presto">Writing GCS Data with Presto</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-export-schema">Create Export Schema</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#export-data-to-gcs">Export Data to GCS</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hive-security.html">14.11. Hive Security Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-mapr.html">14.12. Hive MapR Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmx.html">14.13. JMX Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka.html">14.14. Kafka Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka-tutorial.html">14.15. Kafka Connector Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kinesis.html">14.16. Kinesis Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kudu.html">14.17. Kudu Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="localfile.html">14.18. Local File Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="memory.html">14.19. Memory Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mongodb.html">14.20. MongoDB Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mysql.html">14.21. MySQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="oracle.html">14.22. Oracle Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="phoenix.html">14.23. Phoenix Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postgresql.html">14.24. PostgreSQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redis.html">14.25. Redis Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redshift.html">14.26. Redshift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="snowflake.html">14.27. Snowflake Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sqlserver.html">14.28. SQL Server Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generic-jdbc.html">14.29. Generic JDBC Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">14.30. System Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="teradata.html">14.31. Teradata Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="teradata-parallel-direct.html">14.32. Teradata Parallel Direct Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thrift.html">14.33. Thrift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpcds.html">14.34. TPCDS Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpch.html">14.35. TPCH Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">15. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">16. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">17. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">18. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">19. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">20. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">21. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Starburst Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../connector.html">14. Connectors</a> &raquo;</li>
+      
+    <li>14.10. Hive Connector GCS Tutorial</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/connector/hive-gcs-tutorial.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="hive-connector-gcs-tutorial">
+<h1>14.10. Hive Connector GCS Tutorial</h1>
+<div class="section" id="preliminary-steps">
+<h2>Preliminary Steps</h2>
+<div class="section" id="ensure-access-to-gcs">
+<h3>Ensure Access to GCS</h3>
+<p>Access to Cloud Storage data is possible thanks to
+<a class="reference external" href="https://cloud.google.com/dataproc/docs/concepts/connectors/cloud-storage">Hadoop Cloud Storage connector</a>.</p>
+<p>If your data is publicly available, you do not need to do anything here.
+However, in most cases data is not publicly available, and the Presto cluster needs to have access to it.
+This is typically achieved by creating a service account which has permissions to access your data.
+You can do this on the
+<a class="reference external" href="https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts">service accounts page in GCP</a>.
+Once you create a service account, create a key for it and download the key in JSON format.</p>
+</div>
+<div class="section" id="hive-connector-configuration">
+<h3>Hive Connector configuration</h3>
+<p>Another requirement is that you have enabled and configured a Hive connector in Presto.
+The connector uses Hive metastore for data discovery and is not limited to data residing on HDFS.</p>
+<p><strong>Configuring Hive Connector</strong></p>
+<ul>
+<li><p class="first">URL to Hive metastore:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">New Hive metastore on GCP:</p>
+<blockquote>
+<div><p>If your Presto nodes are provisioned by GCP, your Hive metastore should also be on GCP
+to minimize latency and costs. The simplest way to create a new Hive metastore on GCP
+is to create a small Cloud DataProc cluster (1 master, 0 workers), accessible from
+your Presto cluster. Follow the steps for existing Hive metastore after finishing this step.</p>
+</div></blockquote>
+</li>
+<li><p class="first">Existing Hive metastore:</p>
+<blockquote>
+<div><p>To use an existing Hive metastore with a Presto cluster, you need to set the
+<code class="docutils literal"><span class="pre">hive.metastore.uri</span></code> property in your Hive catalog properties file to
+<code class="docutils literal"><span class="pre">thrift://${METASTORE_ADDRESS}:${METASTORE_THRIFT_PORT}</span></code>.
+If the metastore uses authentication, please refer to <a class="reference internal" href="hive-security.html"><span class="doc">Hive Security Configuration</span></a>.</p>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">GCS access:</p>
+<blockquote>
+<div><p>Here are example values for all GCS configuration properties which can be set in Hive
+catalog properties file:</p>
+<div class="highlight-properties"><div class="highlight"><pre><span></span><span class="c"># JSON key file used to access Google Cloud Storage</span>
+<span class="na">hive.gcs.json-key-file-path</span><span class="o">=</span><span class="s">/path/to/gcs_keyfile.json</span>
+
+<span class="c"># Use client-provided OAuth token to access Google Cloud Storage</span>
+<span class="na">hive.gcs.use-access-token</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="hive-metastore-configuration">
+<h3>Hive Metastore configuration</h3>
+<p>If your Hive metastore uses StorageBasedAuthorization it will also need to access GCS
+to perform POSIX permission checks.
+Configuring GCS access for Hive is outside the scope of this tutorial, but there
+are some excellent guides online:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://cloud.google.com/dataproc/docs/concepts/connectors/install-storage-connector">Google: Installing the Cloud Storage connector</a></li>
+<li><a class="reference external" href="https://docs.hortonworks.com/HDPDocuments/HDP3/HDP-3.1.0/bk_cloud-data-access/content/gcp-get-started.html">HortonWorks: Working with Google Cloud Storage</a></li>
+<li><a class="reference external" href="https://www.cloudera.com/documentation/enterprise/latest/topics/admin_gcs_config.html">Cloudera: Configuring Google Cloud Storage Connectivity</a></li>
+</ul>
+<p>GCS access is typically configured in <code class="docutils literal"><span class="pre">core-site.xml</span></code>, to be used by all components using Apache Hadoop.</p>
+<p>GCS connector for Hadoop provides an implementation of a Hadoop FileSystem.
+Unfortunately GCS IAM permissions don’t map to POSIX permissions required by Hadoop FileSystem,
+so the GCS connector presents fake POSIX file permissions.</p>
+<p>When Hive metastore accesses GCS, it will by default see fake POSIX permissions equal to <code class="docutils literal"><span class="pre">0700</span></code>.
+If Presto and Hive metastore are running as different user accounts, this will cause Hive metastore
+to deny Presto data access.
+There are two possible solutions to this problem:</p>
+<ul class="simple">
+<li>Run Presto service and Hive service as the same user.</li>
+<li>Make sure Hive GCS configuration includes a <code class="docutils literal"><span class="pre">fs.gs.reported.permissions</span></code> property
+with a value of <code class="docutils literal"><span class="pre">777</span></code>.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="accessing-gcs-data-from-presto-for-the-first-time">
+<h2>Accessing GCS Data From Presto for the First Time</h2>
+<div class="section" id="accessing-data-already-mapped-in-the-hive-metastore">
+<h3>Accessing Data Already Mapped in the Hive metastore</h3>
+<p>If you migrate to Presto from Hive, chances are that your GCS data is already mapped to
+SQL tables in the metastore.
+In that case, you should be able to query it.</p>
+</div>
+<div class="section" id="accessing-data-not-yet-mapped-in-the-hive-metastore">
+<h3>Accessing Data Not Yet Mapped in the Hive metastore</h3>
+<p>To access GCS data that is not yet mapped in the Hive metastore you need to provide the
+schema of the data, the file format, and the data location.
+For example, if you have ORC or Parquet files in an GCS bucket <code class="docutils literal"><span class="pre">my_bucket</span></code>, you will
+need to execute a query:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="c1">-- select schema in which the table will be defined, must already exist</span>
+<span class="n">USE</span> <span class="n">hive</span><span class="p">.</span><span class="k">default</span><span class="p">;</span>
+
+<span class="c1">-- create table</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">orders</span> <span class="p">(</span>
+     <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+     <span class="n">custkey</span> <span class="nb">bigint</span><span class="p">,</span>
+     <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+     <span class="n">totalprice</span> <span class="n">double</span><span class="p">,</span>
+     <span class="n">orderdate</span> <span class="nb">date</span><span class="p">,</span>
+     <span class="n">orderpriority</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+     <span class="n">clerk</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+     <span class="n">shippriority</span> <span class="nb">integer</span><span class="p">,</span>
+     <span class="k">comment</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">79</span><span class="p">)</span>
+<span class="p">)</span> <span class="k">WITH</span> <span class="p">(</span>
+     <span class="n">external_location</span> <span class="o">=</span> <span class="s1">&#39;gs://my_bucket/path/to/folder&#39;</span><span class="p">,</span>
+     <span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;ORC&#39;</span> <span class="c1">-- or &#39;PARQUET&#39;</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>Now you should be able to query the newly mapped table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="writing-gcs-data-with-presto">
+<h2>Writing GCS Data with Presto</h2>
+<div class="section" id="prerequisites">
+<h3>Prerequisites</h3>
+<p>Before you attempt to write data to GCS, make sure you have configured everything
+necessary to read data from GCS.</p>
+</div>
+<div class="section" id="create-export-schema">
+<h3>Create Export Schema</h3>
+<p>If Hive metastore contains schema(s) mapped to GCS locations, you can use them to
+export data to GCS.
+If you don’t want to use existing schemas (or there are no appropriate schemas in
+the Hive metastore), you need to create a new one:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">hive</span><span class="p">.</span><span class="n">gcs_export</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">&#39;gs://my_bucket/some/path&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="export-data-to-gcs">
+<h3>Export Data to GCS</h3>
+<p>Once you have a schema pointing to a location where you want to export the data, you can issue
+the export using a <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> statement and select your desired file format. The data
+will be written to one or more files within the <code class="docutils literal"><span class="pre">gs://my_bucket/some/path/my_table</span></code> namespace.
+Example:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">gcs_export</span><span class="p">.</span><span class="n">orders_export</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;ORC&#39;</span><span class="p">)</span>
+<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="hive-security.html" class="btn btn-neutral float-right" title="14.11. Hive Security Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="hive.html" class="btn btn-neutral" title="14.9. Hive Connector" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'323-e.2',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+====================
+PostgreSQL Connector
+====================
+
+The PostgreSQL connector allows querying and creating tables in an
+external PostgreSQL database. This can be used to join data between
+different systems like PostgreSQL and Hive, or between two different
+PostgreSQL instances.
+
+Configuration
+-------------
+
+To configure the PostgreSQL connector, create a catalog properties file
+in ``etc/catalog`` named, for example, ``postgresql.properties``, to
+mount the PostgreSQL connector as the ``postgresql`` catalog.
+Create the file with the following contents, replacing the
+connection properties as appropriate for your setup:
+
+.. code-block:: none
+
+    connector.name=postgresql
+    connection-url=jdbc:postgresql://example.net:5432/database
+    connection-user=root
+    connection-password=secret
+
+Multiple PostgreSQL Databases or Servers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The PostgreSQL connector can only access a single database within
+a PostgreSQL server. Thus, if you have multiple PostgreSQL databases,
+or want to connect to multiple PostgreSQL servers, you must configure
+multiple instances of the PostgreSQL connector.
+
+To add another catalog, simply add another properties file to ``etc/catalog``
+with a different name (making sure it ends in ``.properties``). For example,
+if you name the property file ``sales.properties``, Presto will create a
+catalog named ``sales`` using the configured connector.
+
+Kerberos Authentication
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The PostgreSQL connector supports Kerberos-based authentication with the
+following configuration:
+
+.. code-block:: none
+
+    postgresql.authentication.type=KERBEROS
+    kerberos.client.principal=example@example.com
+    kerberos.client.keytab=etc/kerberos/example.keytab
+
+With this configuration the user ``example@example.com``, defined in the
+principal property, is used to connect to the database, and the related Kerberos
+service ticket is located in the ``example.keytab`` file.
+
+Kerberos Credential Passthrough
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The PostgreSQL connector can be configured to pass through Kerberos credentials,
+received by the Presto server, to the PostgreSQL database.
+
+Configure Kerberos and the Presto server, following the instructions in
+:doc:`/security/credential-passthrough`.
+
+Configure the PostgreSQL connector to pass through the credentials from the
+server to the database:
+
+.. code-block:: properties
+
+    postgresql.authentication.type=PASS_THROUGH
+
+Now any database access via Presto is subject to the data access restrictions
+and permissions of the user supplied via Kerberos.
+
+Querying PostgreSQL
+-------------------
+
+The PostgreSQL connector provides a schema for every PostgreSQL schema.
+You can see the available PostgreSQL schemas by running ``SHOW SCHEMAS``::
+
+    SHOW SCHEMAS FROM postgresql;
+
+If you have a PostgreSQL schema named ``web``, you can view the tables
+in this schema by running ``SHOW TABLES``::
+
+    SHOW TABLES FROM postgresql.web;
+
+You can see a list of the columns in the ``clicks`` table in the ``web`` database
+using either of the following::
+
+    DESCRIBE postgresql.web.clicks;
+    SHOW COLUMNS FROM postgresql.web.clicks;
+
+Finally, you can access the ``clicks`` table in the ``web`` schema::
+
+    SELECT * FROM postgresql.web.clicks;
+
+If you used a different name for your catalog properties file, use
+that catalog name instead of ``postgresql`` in the above examples.
+
+User Impersonation
+------------------
+
+PostgreSQL connector supports user impersonation. Please see  :doc:`/security/impersonation` for more details.
+
+User impersonation can be turned with:
+
+.. code-block:: none
+
+    postgresql.impersonation.enabled=true
+
+User impersonation in PostgreSQL connector is based on ``SET ROLE``.
+For more details please visit: `www.postgresql.org/docs <https://www.postgresql.org/docs/11/sql-set-role.html>`_.
+
+
+Table Statistics
+----------------
+
+PostgreSQL connector supports table and column statistics. The statistics are
+collected by PostgreSQL Database and retrieved by the connector. To collect
+statistics for a table, execute the following statement in PostgreSQL Database.
+
+.. code-block:: none
+
+    ANALYZE table_schema.table_name;
+
+Please refer to PostgreSQL documentation for additional ``ANALYZE`` options.
+
+The table and column statistics can be viewed in Presto using :doc:`/sql/show-stats`
+and are used for :doc:`/optimizer/cost-based-optimizations`.
+
+Table Statistics Configuration Properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+================================================== ============================================================ ==================================
+Property Name                                      Description                                                  Default
+================================================== ============================================================ ==================================
+``statistics.enabled``                             Enables table and column statistics.                         ``true``
+
+``statistics.cache-ttl``                           Duration for which table and column statistics are cached.   ``0s``
+
+``statistics.cache-missing``                       Cache the fact that table statistics were not available.     ``false``
+
+================================================== ============================================================ ==================================
+
+
+PostgreSQL Connector Limitations
+--------------------------------
+
+The following SQL statements are not yet supported:
+
+* :doc:`/sql/delete`
+* :doc:`/sql/grant`
+* :doc:`/sql/revoke`
+* :doc:`/sql/show-grants`
+* :doc:`/sql/show-roles`
+* :doc:`/sql/show-role-grants`
