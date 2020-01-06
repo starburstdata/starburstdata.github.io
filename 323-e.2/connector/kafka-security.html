@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>14.30. Generic JDBC Connector &mdash; Starburst Distribution of Presto 323-e.2 Documentation</title>
+  <title>14.16. Kafka Security Configuration &mdash; Starburst Distribution of Presto 323-e.2 Documentation</title>
   
 
   
@@ -35,8 +35,8 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Distribution of Presto 323-e.2 Documentation" href="../index.html"/>
         <link rel="up" title="14. Connectors" href="../connector.html"/>
-        <link rel="next" title="14.31. System Connector" href="system.html"/>
-        <link rel="prev" title="14.29. SQL Server Connector" href="sqlserver.html"/> 
+        <link rel="next" title="14.17. Kinesis Connector" href="kinesis.html"/>
+        <link rel="prev" title="14.15. Kafka Connector Tutorial" href="kafka-tutorial.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -116,7 +116,15 @@
 <li class="toctree-l2"><a class="reference internal" href="jmx.html">14.13. JMX Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kafka.html">14.14. Kafka Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kafka-tutorial.html">14.15. Kafka Connector Tutorial</a></li>
-<li class="toctree-l2"><a class="reference internal" href="kafka-security.html">14.16. Kafka Security Configuration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">14.16. Kafka Security Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#security">Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ssl">SSL</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kerberos-sasl">Kerberos (SASL)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kerberos-sasl-with-ssl">Kerberos (SASL) with SSL</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="kinesis.html">14.17. Kinesis Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="kudu.html">14.18. Kudu Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="localfile.html">14.19. Local File Connector</a></li>
@@ -130,20 +138,7 @@
 <li class="toctree-l2"><a class="reference internal" href="redshift.html">14.27. Redshift Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="snowflake.html">14.28. Snowflake Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sqlserver.html">14.29. SQL Server Connector</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">14.30. Generic JDBC Connector</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#installation-and-configuration">Installation and configuration</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#multiple-external-databases">Multiple External Databases</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#jdbc-compatibility">JDBC Compatibility</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#user-impersonation">User Impersonation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#data-types">Data types</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#statements">Statements</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="generic-jdbc.html">14.30. Generic JDBC Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="system.html">14.31. System Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="teradata.html">14.32. Teradata Connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="teradata-parallel-direct.html">14.33. Teradata Parallel Direct Connector</a></li>
@@ -191,11 +186,11 @@
       
         <li><a href="../connector.html">14. Connectors</a> &raquo;</li>
       
-    <li>14.30. Generic JDBC Connector</li>
+    <li>14.16. Kafka Security Configuration</li>
     <li class="wy-breadcrumbs-aside">
       
         
-          <a href="../_sources/connector/generic-jdbc.rst.txt" rel="nofollow"> View page source</a>
+          <a href="../_sources/connector/kafka-security.rst.txt" rel="nofollow"> View page source</a>
         
       
     </li>
@@ -205,104 +200,174 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="generic-jdbc-connector">
-<h1>14.30. Generic JDBC Connector</h1>
-<p>The Generic JDBC connector allows querying and creating tables in an external
-database that Presto does not have a dedicated connector for. This can be used
-for proof-of-concept deployments of federation use-cases, enabling joining
-multiple data sources. For production deployments a dedicated supported connector
-should be used.</p>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">Due to its generic nature, this connector may or may not work with
-a particular database or deployment scenario.
-In particular, you should expect the connector to handle at most only
-a subset of data types available in the external database.</p>
+  <div class="section" id="kafka-security-configuration">
+<h1>14.16. Kafka Security Configuration</h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#security" id="id1">Security</a></li>
+</ul>
 </div>
-<div class="section" id="installation-and-configuration">
-<h2>Installation and configuration</h2>
-<p>The Generic JDBC connector requires a JDBC 4.2 driver dedicated for the external database.
-No JDBC drivers are shipped with the connector. The installation steps assume you have
-the external database already running and that you have the appropriate JDBC driver jar.</p>
-<ol class="arabic simple">
-<li>Locate <code class="docutils literal notranslate"><span class="pre">generic-jdbc</span></code> directory under Presto’s plugin directory.
-When Presto is installed from RPM, this is <code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/lib/plugin/generic-jdbc</span></code>.</li>
-<li>Add the appropriate JDBC driver jar file to the <code class="docutils literal notranslate"><span class="pre">generic-jdbc</span></code> directory.</li>
-<li>Locate <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> directory containing configuration for Presto catalogs.
-When Presto is installed from RPM, this is <code class="docutils literal notranslate"><span class="pre">/etc/presto/catalog</span></code>.</li>
-<li>Create <code class="docutils literal notranslate"><span class="pre">some_catalog.properties</span></code> file in the catalogs configuration directory (replace
-<code class="docutils literal notranslate"><span class="pre">some_catalog</span></code> with your database name or some other descriptive name of the catalog)
-with the following contents:</li>
-</ol>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>connector.name=generic-jdbc
-
-# the name of the Driver class. E.g. for Postgres this would be org.postgresql.Driver
-generic-jdbc.driver-class=FULLY_QUALIFIED_NAME_OF_THE_DRIVER_CLASS
-
-# JDBC connection URL. E.g. for Postgres this could be jdbc:postgresql://example.net:5432/database?defaultRowFetchSize=10000
-connection-url=JDBC_CONNECTION_URL_AS_APPROPRIATE_FOR_THE_EXTERNAL_DATABASE_DRIVER
-
-# connection credentials
-connection-user=USERNAME
-connection-password=PASSWORD
-
-# additional configuration
-case-insensitive-name-matching=true
+<div class="section" id="security">
+<h2>Security</h2>
+<p>The default security configuration of the <a class="reference internal" href="kafka.html"><span class="doc">Kafka Connector</span></a> does not use
+authentication or encryption when connecting to a Kafka service.</p>
+<div class="section" id="ssl">
+<h3>SSL</h3>
+<p>With SSL authentication, the Kafka server authenticates the Presto Kafka connector, also called “2-way authentication”.
+To use SSL add the following configuration to your kafka.properties file.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SSL
 </pre></div>
 </div>
-<ol class="arabic simple" start="5">
-<li>Perform the above steps on every Presto cluster node.</li>
-<li>Restart Presto on every node.</li>
-</ol>
-<div class="section" id="multiple-external-databases">
-<h3>Multiple External Databases</h3>
-<p>If you want to connect to multiple external databases using the Generic JDBC connector, follow these
-steps:</p>
-<ol class="arabic simple">
-<li>Add appropriate JDBC driver jars to the <code class="docutils literal notranslate"><span class="pre">generic-jdbc</span></code> directory under Presto’s plugin directory
-for all database servers you are going to connect to.
-If two external databases use the same driver jar, you do not need to add the driver jar twice.</li>
-<li>Define additional catalogs in Presto catalogs configuration directory, by creating
-<code class="docutils literal notranslate"><span class="pre">some_additional_catalog.properties</span></code> file (replacing <code class="docutils literal notranslate"><span class="pre">some_additional_catalog</span></code> with some
-descriptive name of the catalog).</li>
-</ol>
-</div>
-</div>
-<div class="section" id="jdbc-compatibility">
-<h2>JDBC Compatibility</h2>
-<p>Generic JDBC Connector provides best-effort compatibility with older JDBC drivers,
-including drivers implementing version 3 of JDBC specification (JDBC 3).</p>
-<p>The best-effort compatibility can be turned on with:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>generic-jdbc.experimental.jdbc-version-compatibility.enabled=true
+<p>The following configuration properties have to be also set:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="39%" />
+<col width="61%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.location</span></code></td>
+<td>Location of the SSL truststore file.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.password</span></code></td>
+<td>Password to the truststore file.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.location</span></code></td>
+<td>Location of the SSL keystore file.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.password</span></code></td>
+<td>Password to the keystore file.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.key.password</span></code></td>
+<td>Password of the private key stored in the keystore file.</td>
+</tr>
+</tbody>
+</table>
+<p>Example configuration with <code class="docutils literal notranslate"><span class="pre">SSL</span></code> security protocol:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
+...
+kafka.security-protocol=SSL
+kafka.ssl.truststore.location=/etc/secrets/kafka.broker.truststore.jks
+kafka.ssl.truststore.password=truststore_passwrod
+kafka.ssl.keystore.location=/etc/secrets/kafka.broker.keystore.jks
+kafka.ssl.keystore.password=keystore_password
+kafka.ssl.key.password=private_key_password
 </pre></div>
 </div>
 </div>
-<div class="section" id="user-impersonation">
-<h2>User Impersonation</h2>
-<p>Generic JDBC Connector supports user impersonation. Please see  <a class="reference internal" href="../security/impersonation.html"><span class="doc">User Impersonation</span></a> for more details.</p>
-<p>User impersonation can be turned with:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>generic-jdbc.impersonation-enabled=true
+<div class="section" id="kerberos-sasl">
+<h3>Kerberos (SASL)</h3>
+<p>With SASL authentication, the Kafka server authenticates the Presto Kafka connector using the Kerberos service.
+This configuration is using non encrypted (non-encrypted) protocol.
+To use Kerberos (SASL) protocol add the following configuration to your kafka.properties file.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_PLAINTEXT
 </pre></div>
 </div>
-<p>User impersonation in Generic JDBC connector is based on <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span></code>.</p>
+<p>The following configuration properties have to be also set:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="62%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.principal</span></code></td>
+<td>Kafka Kerboros client principal.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.keytab</span></code></td>
+<td>Kafka Kerberos client keytab location.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.config</span></code></td>
+<td>Kerberos service file location. Typically <code class="docutils literal notranslate"><span class="pre">/etc/krb5.conf</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.service-name</span></code></td>
+<td>The Kerberos principal name of Kafka service.</td>
+</tr>
+</tbody>
+</table>
+<p>Example configuration with <code class="docutils literal notranslate"><span class="pre">SASL</span></code> security protocol:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
+...
+kafka.security-protocol=SASL_PLAINTEXT
+kafka.kerberos.client.principal=kafka/broker1.your.org@YOUR.ORG
+kafka.kerberos.client.keytab=/etc/secrets/kafka_client.keytab
+kafka.kerberos.config=/etc/krb5.conf
+kafka.kerberos.service-name=kafka
+</pre></div>
 </div>
-<div class="section" id="limitations">
-<h2>Limitations</h2>
-<div class="section" id="data-types">
-<h3>Data types</h3>
-<p>Support for data types depends on the data types in the external database and how the data types are
-reported by the JDBC driver of the external database. Actual support may vary from database to database.
-The Generic JDBC connector will hide columns which data type it considered unsupported. In the extreme
-case, this may mean that no columns are visible, if all data types being used are unsupported.</p>
-<p>If you want to query data with unsupported types, you can define a view in your external database,
-converting unsupported data types to supported ones (converting to <code class="docutils literal notranslate"><span class="pre">varchar</span></code> is usually a good choice).
-Then you should query this view from Presto, instead of the underlying table.</p>
 </div>
-<div class="section" id="statements">
-<h3>Statements</h3>
-<p>Some statements are not supported because they are not supported by all Presto JDBC-based connectors.
-Other statements are supported on a “best effort” basis. They may or may not work, depending on the external
-database and the driver being used.</p>
+<div class="section" id="kerberos-sasl-with-ssl">
+<h3>Kerberos (SASL) with SSL</h3>
+<p>With SASL authentication, the Kafka server authenticates the Presto Kafka connector using the Kerberos service.
+This protocol uses SSL encryption.</p>
+<p>To use Kerberos (SASL) with SSL protocol add the following configuration to your kafka.properties file.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_SSL
+</pre></div>
+</div>
+<p>The following configuration properties have to be also set:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="38%" />
+<col width="62%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.principal</span></code></td>
+<td>Kafka Kerboros client principal.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.keytab</span></code></td>
+<td>Kafka Kerberos client keytab location.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.config</span></code></td>
+<td>Kerberos service file location. Typically <code class="docutils literal notranslate"><span class="pre">/etc/krb5.conf</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.service-name</span></code></td>
+<td>The Kerberos principal name of Kafka service.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.location</span></code></td>
+<td>Location of the SSL truststore file.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.password</span></code></td>
+<td>Password to the truststore file.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.location</span></code></td>
+<td>Location of the SSL keystore file.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.password</span></code></td>
+<td>Password to the keystore file.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">kafka.ssl.key.password</span></code></td>
+<td>Password of the private key stored in the keystore file.</td>
+</tr>
+</tbody>
+</table>
+<p>Example configuration with <code class="docutils literal notranslate"><span class="pre">SASL_SSL</span></code> security protocol:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
+...
+kafka.security-protocol=SASL_SSL
+kafka.kerberos.client.principal=kafka/broker1.your.org@YOUR.ORG
+kafka.kerberos.client.keytab=/etc/secrets/kafka_client.keytab
+kafka.kerberos.config=/etc/krb5.conf
+kafka.kerberos.service-name=kafka
+kafka.ssl.truststore.location=/etc/secrets/kafka.broker.truststore.jks
+kafka.ssl.truststore.password=truststore_passwrod
+kafka.ssl.keystore.location=/etc/secrets/kafka.broker.keystore.jks
+kafka.ssl.keystore.password=keystore_password
+kafka.ssl.key.password=private_key_password
+</pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -314,10 +379,10 @@ database and the driver being used.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="system.html" class="btn btn-neutral float-right" title="14.31. System Connector" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="kinesis.html" class="btn btn-neutral float-right" title="14.17. Kinesis Connector" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="sqlserver.html" class="btn btn-neutral" title="14.29. SQL Server Connector" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="kafka-tutorial.html" class="btn btn-neutral" title="14.15. Kafka Connector Tutorial" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
