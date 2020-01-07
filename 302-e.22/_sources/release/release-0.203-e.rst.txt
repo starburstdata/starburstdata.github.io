@@ -1,0 +1,243 @@
+===============
+Release 0.203-e
+===============
+
+General changes
+---------------
+
+* Introduce cost-based plan optimizations.
+* Replace ``distributed_join`` session property with ``join_distribution_type``.
+* Replace ``reorder_joins`` session property with ``join_reordering_strategy``.
+* Add support for ROLE management including CREATE ROLE, DROP ROLE, GRANT ROLE, REVOKE ROLE, SET ROLE, SHOW CURRENT ROLES, SHOW ROLES and SHOW ROLE GRANTS commands.
+* Track execution statistics of AddExchanges and PredicatePushdown optimizer rules.
+* Support prepared statements that are longer than 4K bytes.
+* Improve performance of correlated subqueries with non-equi correlated predicates when broadcast join is enabled
+* Improve stats calculation for outer joins and correlated subqueries
+
+Hive Connector changes
+----------------------
+
+* Implement ROLE management support.
+* Allow partitions without files for bucketed tables (via hive.empty-bucketed-partitions.enabled).
+* Allow multiple files per bucket for bucketed tables (via hive.multi-file-bucketing.enabled). There must be one or more files per bucket. File names must match the Hive naming convention.
+* Allow reading incompletely bucketed tables with missing files (via hive.empty-bucketed-partitions.enabled).
+* Respect the ``skip.footer.line.count`` Hive table property.
+
+Security changes
+----------------
+
+* Secured internal cluster communication over HTTPS using Kerberos or LDAP authentication.
+
+Data Types
+----------
+Release changes the semantics of the ``TIMESTAMP`` and ``TIME``
+types to align with the SQL standard. See the following sections for details.
+
+Note: This is still experimental work and subject to subsequent changes.
+The new semantics is disabled by default but can be enabled using ``deprecated.legacy-timestamp`` config property
+or ``legacy_timestamp`` session property.
+
+**TIMESTAMP semantic changes**
+
+Previously, the ``TIMESTAMP`` type described an instance in time in the Presto session's time zone.
+Now, Presto treats ``TIMESTAMP`` values as a set of the following fields representing wall time:
+
+ * ``YEAR OF ERA``
+ * ``MONTH OF YEAR``
+ * ``DAY OF MONTH``
+ * ``HOUR OF DAY``
+ * ``MINUTE OF HOUR``
+ * ``SECOND OF MINUTE`` - as decimal with precision 3
+
+For that reason, a ``TIMESTAMP`` value is not linked with the session time zone in any way until a time zone is needed explicitly,
+such as when casting to a ``TIMESTAMP WITH TIME ZONE`` or ``TIME WITH TIME ZONE``.
+In those cases, the time zone offset of the session time zone is applied, as specified in the SQL standard.
+
+For various compatibility reasons, when casting from date/time type without a time zone to one with a time zone, a fixed time zone
+is used as opposed to the named one that may be set for the session.
+
+eg. with ``-Duser.timezone="Asia/Kathmandu"`` on CLI
+
+ * Query: ``SELECT CAST(TIMESTAMP '2000-01-01 10:00' AS TIMESTAMP WITH TIME ZONE);``
+ * Previous result: ``2000-01-01 10:00:00.000 Asia/Kathmandu``
+ * Current result: ``2000-01-01 10:00:00.000 +05:45``
+
+**TIME semantic changes**
+
+The ``TIME`` type was changed similarly to the ``TIMESTAMP`` type.
+
+**TIME WITH TIME ZONE semantic changes**
+
+Due to compatibility requirements, having ``TIME WITH TIME ZONE`` completely aligned with the SQL standard was not possible yet.
+For that reason, when calculating the time zone offset for ``TIME WITH TIME ZONE``, the Teradata distribution of Presto uses
+the session's start date and time.
+
+This can be seen in queries using ``TIME WITH TIME ZONE`` in a time zone that has had time zone policy changes or uses DST.
+eg. With session start time on 1 March 2017
+
+ * Query: ``SELECT TIME '10:00:00 Asia/Kathmandu' AT TIME ZONE 'UTC'``
+ * Previous result: ``04:30:00.000 UTC``
+ * Current result: ``04:15:00.000 UTC``
+
+**Time-related bug fixes**
+
+ * The ``current_time`` and ``localtime`` functions were fixed to return the correct value for non-UTC timezones.
+
+
+===================
+Release 0.203-e.0.2
+===================
+
+General changes
+---------------
+
+* Improve data size estimation heuristics to account for auxiliary structures overhead.
+* Fix average row size computation to account for non-null rows only.
+* Optimize checking the table privileges.
+
+===================
+Release 0.203-e.0.3
+===================
+
+General changes
+---------------
+
+* Fix execution failure for certain queries containing a join followed by an aggregation
+  when ``dictionary_aggregation`` is enabled.
+* Fix backward-compatibility processing for array with one group field.
+
+===================
+Release 0.203-e.0.4
+===================
+
+General changes
+---------------
+
+* Fix timeout issue when getting stats on large number of partitions.
+
+===================
+Release 0.203-e.0.5
+===================
+
+General changes
+---------------
+
+* Improve performance of SHOW GRANTS query.
+* Fix varchar handling in Parquet predicate pushdown
+* Fix for legacy resource group configuration manager
+  that were unable to run more than a single query that used memory concurrently
+
+Hive changes
+------------
+
+* Fix bug with inconsistent results in SHOW GRANTS when ``admin`` role is set.
+  
+
+===================
+Release 0.203-e.0.6
+===================
+
+General changes
+---------------
+
+* Fix failures when AWS Glue database, table, or partition is missing properties
+  
+
+===================
+Release 0.203-e.0.7
+===================
+
+General changes
+---------------
+
+* Allow for predicate pushdown of ``DECIMAL`` and ``CHAR`` predicates
+* Add support for Azure Blob Storage
+* Add support for Azure Azure Data Lake Storage (ADLS)
+
+
+===================
+Release 0.203-e.0.8
+===================
+
+Hive Connector changes
+----------------------
+
+* Fix multi-file buckets when Presto does the insert
+
+
+===================
+Release 0.203-e.0.9
+===================
+
+General changes
+---------------
+
+* Improve statistics estimation for filter expressions
+
+
+====================
+Release 0.203-e.0.11
+====================
+
+Web UI Changes
+--------------
+
+* Fix kill query button
+  
+====================
+Release 0.203-e.0.12
+====================
+
+Hive Security changes
+---------------------
+* Add support for cross-realm Kerberos authentication
+
+====================
+Release 0.203-e.0.13
+====================
+
+Hive Security changes
+---------------------
+* Add support for Apache Sentry authorization
+
+====================
+Release 0.203-e.0.14
+====================
+
+Hive Security changes
+---------------------
+* Add support for wire encryption 
+
+====================
+Release 0.203-e.0.15
+====================
+
+Hive changes
+------------
+* Add support for reading Parquet, ORC and RCFile files from KMS-encrypted Hadoop zone.
+
+====================
+Release 0.203-e.0.16
+====================
+
+Hive changes
+------------
+* Add support for creating Avro Hive tables with schema set using the ``avro_schema_url`` table property.
+* Support for backward compatible Avro schema evolution.
+
+====================
+Release 0.203-e.0.17
+====================
+
+Security Changes
+----------------
+
+* Make query result and cancellation URIs secure. Previously, an authenticated user could potentially steal the result data of any running query.
+
+General changes
+---------------
+* Fix bug where the vague error ``Query gone(server restarted?)`` was being propagated to clients instead of actual Exception message.
+
+Hive changes
+------------
+* Improve error reporting from SerDe.
