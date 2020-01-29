@@ -103,12 +103,123 @@ you will not be able to access them.
 User Impersonation
 ------------------
 
-The Snowflake connector supports :doc:`/security/impersonation`. It can be turned on with:
+The Snowflake connector supports :doc:`/security/impersonation`. It can be
+configured to use a number of different impersonation mechanisms, specified by
+the values configured for the property ``snowflake.impersonation-type``:
+
+.. code-block:: none
+ 
+    snowflake.impersonation.enabled=ROLE
+
+``NONE``
+  Connect as the service user with the credentials from the catalog properties
+  file and assume its default role, this is the same as the default behavior
+``ROLE``
+  Connect as the service user assuming the role defined in with the
+  ``snowflake.role`` property
+``OKTA_LDAP_PASSTHROUGH``
+  Assume the identity of the Presto user, authenticated with Okta using LDAP
+  credentials, and use the default Snowflake user role
+``ROLE_OKTA_LDAP_PASSTHROUGH``
+  As above, but additionally use auth-to-local mapping to map the user to a
+  role.
+
+
+Authentication with Okta
+------------------------
+
+The Snowflake connector supports the usage of the `Okta Single Sign-On
+<https://www.okta.com/>`_ system to authenticate users via Presto to Snowflake.
+
+The setup allows users to authenticate to Presto using their LDAP credentials
+and use the same credentials to authenticate to Snowflake through Okta. The same
+credentials are used by Presto when accessing data in Snowflake.
+
+Behind the scenes Presto and the Snowflake connector authenticate to Okta with
+the LDAP credentials of the user. After the user authenticates with Okta,
+including MFA potentially, a SAML assertion allows Snowflake to issue an an
+OAuth 2.0 token pair. The tokens are cached in Presto and used for further
+authentications until they expire, and another authentication is requested.
+
+If Okta multi-factor authentication (MFA) is configured, users have to confirm
+authentication with it. One time codes are not supported.
+
+To enable the Okta integration, Presto and Snowflake need to be configured
+correctly.
+
+Okta and Presto are configured to use LDAP authentication using the same user
+identifiers and LDAP directory. In addition to the usual LDAP configuration,
+:doc:`/security/ldap`, for Presto, you need to enable password forwarding in
+``etc/config.properties``:
 
 .. code-block:: none
 
-    snowflake.impersonation.enabled=true
+    http.server.authentication.password.forwarding-enabled=true
 
+Snowflake is configured in Okta as a SAML application as detailed in the
+`Snowflake documentation
+<https://community.snowflake.com/s/article/Okta-SSO-with-Snowflake-Part-1>`_.
+Note that the Snowflake ``login_name`` must match the corresponding SAML Subject
+``NameID`` attribute value.
+
+Presto is configured as an OAuth client in Snowflake, again detailed in the
+`Snowflake OAuth documentation <https://docs.snowflake.net/manuals/user-guide/oauth-custom.html>`_.
+
+A number of properties are *required* to configure the Okta integration in the
+Snowflake catalog properties file:
+
+``snowflake.account-name``
+  Name of Snowflake account.
+
+``snowflake.account-url``
+  URL of the Snowflake account. The URL usually has the form
+  https://account_name.snowflakecomputing.com, but might include additional
+  segments.
+
+``snowflake.client-id``
+  Snowflake OAuth client id. This can be retrieved with the secret name and a
+  query like ``select system$show_oauth_client_secrets('OAUTH_TEST_INT');``.
+
+``snowflake.client-secret``
+  Snowflake OAuth client secret.
+
+``snowflake.credential.cache-ttl``
+  Duration the OAuth refresh token is cached. This value cannot exceed the
+  ``oauth_refresh_token_validity`` value used when the OAuth integration was
+  created. E.g. ``24h``.
+
+``okta.account-url``
+  The Okta URL, typically https://your_okta_account_name.okta.com).
+
+*Optional* properties allow you to override the default values:
+
+``snowflake.credential.cache-size``
+  The size of the OAuth credentials cache. Use a value that accommodates
+  the expected number of users that might connect to Snowflake through Presto
+  during the period defined by the TTL of the token. Defaults to 10000.
+
+``snowflake.credential.http-connect-timeout``
+  Connection timeout. Defaults to 30s.
+
+``snowflake.credential.http-read-timeout``
+  Connection read timeout. Defaults to 30s.
+
+``snowflake.credential.http-write-timeout``
+  Connection write timeout. Defaults to 30s.
+
+``snowflake.redirect-uri``
+  The redirect URI for OAUTH. Value must match the redirect URI specified when
+  creating the security integration (oauth_redirect_uri). Defaults to
+  https://localhost.
+
+``okta.credential.http-connect-timeout``
+  Connection timeout. Defaults to 30s.
+
+``okta.credential.http-read-timeout``
+  Connection read timeout. Defaults to 30s.
+
+``okta.credential.http-write-timeout``
+  Connection write timeout. Defaults to 30s.
 
 Table Statistics
 ----------------
