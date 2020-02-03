@@ -1,0 +1,256 @@
+===================
+Snowflake Connector
+===================
+
+The Snowflake connector allows querying and creating tables in an external
+`Snowflake <https://www.snowflake.com>`_ database. This can be used to join data
+between different systems like Snowflake and Hive, or between different Snowflake instances.
+
+.. note::
+ This connector is bundled in Presto Enterprise and requires a license from Starburst.
+ For more information about Presto Enterprise and the Snowflake connector, or to obtain a
+ free trial, please contact `hello@starburstdata.com <mailto:hello@starburstdata.com>`_.
+
+
+Configuration
+-------------
+
+To configure the Snowflake connector, create a catalog properties file
+in ``etc/catalog`` named, for example, ``snowflake.properties``, to
+mount the Snowflake connector as the ``snowflake`` catalog.
+
+There are two flavors of the Snowflake connector - ``snowflake-jdbc`` and ``snowflake-distributed``.
+
+``snowflake-jdbc`` uses JDBC for all reads and writes and is more efficient
+when the result set returned from Snowflake is small.
+
+When larger result sets are extracted from Snowflake, the ``snowflake-distributed``
+connector may be a better choice. Instead of requesting query results over a JDBC
+connection, the connector asks Snowflake to export them to S3 and Presto reads them
+from there. Since both the write and the read are parallelized, this approach scales
+better for large data sets, but has a higher latency.
+
+Create the catalog properties file with the following contents, replacing the
+connection properties as appropriate for your setup (for example, replace
+``<account_name>`` with the full name of your account, as provided by Snowflake).
+
+.. code-block:: none
+
+    connector.name=<snowflake-jdbc or snowflake-distributed>
+    connection-url=jdbc:snowflake://<account_name>.snowflakecomputing.com/
+    connection-user=<user_name>
+    connection-password=<password>
+    snowflake.warehouse=<warehouse_name>
+    snowflake.database=<database_name>
+
+The role used by Snowflake to execute operations can be specified as ``snowflake.role=<role_name>``.
+This configuration is optional, and can not be used together with :ref:`impersonation`.
+
+Additionally, there are a number of configuration properties that apply only to the
+distributed connector.
+
+Distributed Connector Configuration Properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+============================================ ====================================================================== ====================================
+Property Name                                Description                                                             Default
+============================================ ====================================================================== ====================================
+``snowflake.stage-schema``                   Name of schema in which stages are created for exporting data.
+
+``snowflake.max-export-retries``             Number of export retries.                                              3
+
+``snowflake.parquet.max-read-block-size``    Maximum block size when reading from the export file.                  16MB
+
+``snowflake.max-split-size``                 Maximum split size for processing the export file.                     64MB
+
+``snowflake.max-initial-split-size``         Maximum initial split size.                                            Half of ``snowflake.max-split-size``
+
+``snowflake.export-file-max-size``           Maximum size of files to create when exporting data.                   16MB
+
+============================================ ====================================================================== ====================================
+
+
+Querying Snowflake
+------------------
+
+The Snowflake connector provides a schema for each Snowflake database.
+Assuming the catalog name is ``snowflake``, you can see the available schemas by running
+``SHOW SCHEMAS``::
+
+    SHOW SCHEMAS FROM snowflake;
+
+If you have a Snowflake database named ``web``, you can view the tables
+in this database by running ``SHOW TABLES``::
+
+    SHOW TABLES FROM snowflake.web;
+
+You can see a list of the columns in the ``clicks`` table in ``web``'s schema
+using either of the following::
+
+    DESCRIBE snowflake.web.clicks;
+    SHOW COLUMNS FROM snowflake.web.clicks;
+
+Finally, you can access the ``clicks`` table in ``web``'s schema::
+
+    SELECT * FROM snowflake.web.clicks;
+
+Your privileges in these schemas are those of the user configured in the
+connection properties file. If the user does not have access to these tables,
+you will not be able to access them.
+
+
+.. _impersonation:
+
+User Impersonation
+------------------
+
+The Snowflake connector supports :doc:`/security/impersonation`. It can be
+configured to use a number of different impersonation mechanisms, specified by
+the values configured for the property ``snowflake.impersonation-type``:
+
+.. code-block:: none
+ 
+    snowflake.impersonation.enabled=ROLE
+
+``NONE``
+  Connect as the service user with the credentials from the catalog properties
+  file and assume its default role, this is the same as the default behavior
+``ROLE``
+  Connect as the service user assuming the role defined in with the
+  ``snowflake.role`` property
+``OKTA_LDAP_PASSTHROUGH``
+  Assume the identity of the Presto user, authenticated with Okta using LDAP
+  credentials, and use the default Snowflake user role
+``ROLE_OKTA_LDAP_PASSTHROUGH``
+  As above, but additionally use auth-to-local mapping to map the user to a
+  role.
+
+
+Authentication with Okta
+------------------------
+
+The Snowflake connector supports the usage of the `Okta Single Sign-On
+<https://www.okta.com/>`_ system to authenticate users via Presto to Snowflake.
+
+The setup allows users to authenticate to Presto using their LDAP credentials
+and use the same credentials to authenticate to Snowflake through Okta. The same
+credentials are used by Presto when accessing data in Snowflake.
+
+Behind the scenes Presto and the Snowflake connector authenticate to Okta with
+the LDAP credentials of the user. After the user authenticates with Okta,
+including MFA potentially, a SAML assertion allows Snowflake to issue an an
+OAuth 2.0 token pair. The tokens are cached in Presto and used for further
+authentications until they expire, and another authentication is requested.
+
+If Okta multi-factor authentication (MFA) is configured, users have to confirm
+authentication with it. One time codes are not supported.
+
+To enable the Okta integration, Presto and Snowflake need to be configured
+correctly.
+
+Okta and Presto are configured to use LDAP authentication using the same user
+identifiers and LDAP directory. In addition to the usual LDAP configuration,
+:doc:`/security/ldap`, for Presto, you need to enable password forwarding in
+``etc/config.properties``:
+
+.. code-block:: none
+
+    http.server.authentication.password.forwarding-enabled=true
+
+Snowflake is configured in Okta as a SAML application as detailed in the
+`Snowflake documentation
+<https://community.snowflake.com/s/article/Okta-SSO-with-Snowflake-Part-1>`_.
+Note that the Snowflake ``login_name`` must match the corresponding SAML Subject
+``NameID`` attribute value.
+
+Presto is configured as an OAuth client in Snowflake, again detailed in the
+`Snowflake OAuth documentation <https://docs.snowflake.net/manuals/user-guide/oauth-custom.html>`_.
+
+A number of properties are *required* to configure the Okta integration in the
+Snowflake catalog properties file:
+
+``snowflake.account-name``
+  Name of Snowflake account.
+
+``snowflake.account-url``
+  URL of the Snowflake account. The URL usually has the form
+  https://account_name.snowflakecomputing.com, but might include additional
+  segments.
+
+``snowflake.client-id``
+  Snowflake OAuth client id. This can be retrieved with the secret name and a
+  query like ``select system$show_oauth_client_secrets('OAUTH_TEST_INT');``.
+
+``snowflake.client-secret``
+  Snowflake OAuth client secret.
+
+``snowflake.credential.cache-ttl``
+  Duration the OAuth refresh token is cached. This value cannot exceed the
+  ``oauth_refresh_token_validity`` value used when the OAuth integration was
+  created. E.g. ``24h``.
+
+``okta.account-url``
+  The Okta URL, typically https://your_okta_account_name.okta.com).
+
+*Optional* properties allow you to override the default values:
+
+``snowflake.credential.cache-size``
+  The size of the OAuth credentials cache. Use a value that accommodates
+  the expected number of users that might connect to Snowflake through Presto
+  during the period defined by the TTL of the token. Defaults to 10000.
+
+``snowflake.credential.http-connect-timeout``
+  Connection timeout. Defaults to 30s.
+
+``snowflake.credential.http-read-timeout``
+  Connection read timeout. Defaults to 30s.
+
+``snowflake.credential.http-write-timeout``
+  Connection write timeout. Defaults to 30s.
+
+``snowflake.redirect-uri``
+  The redirect URI for OAUTH. Value must match the redirect URI specified when
+  creating the security integration (oauth_redirect_uri). Defaults to
+  https://localhost.
+
+``okta.credential.http-connect-timeout``
+  Connection timeout. Defaults to 30s.
+
+``okta.credential.http-read-timeout``
+  Connection read timeout. Defaults to 30s.
+
+``okta.credential.http-write-timeout``
+  Connection write timeout. Defaults to 30s.
+
+Table Statistics
+----------------
+
+The Snowflake connector supports only table statistics. They are based on
+Snowflake's ``INFORMATION_SCHEMA.TABLES`` table.  Table statistics are
+automatically updated by Snowflake.
+
+Table Statistics Configuration Properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+================================================== ============================================================ ==================================
+Property Name                                      Description                                                  Default
+================================================== ============================================================ ==================================
+``statistics.enabled``                             Enables table statistics.                                    ``true``
+
+``statistics.cache-ttl``                           Duration for which table and column statistics are cached.   ``10m``
+
+``statistics.cache-missing``                       Cache the fact that table statistics are not available.      ``false``
+
+================================================== ============================================================ ==================================
+
+
+Snowflake Connector Limitations
+-------------------------------
+
+The following SQL statements are not yet supported:
+
+* :doc:`/sql/delete`
+* :doc:`/sql/grant`
+* :doc:`/sql/revoke`
+* :doc:`/sql/show-grants`
+* :doc:`/sql/show-roles`
+* :doc:`/sql/show-role-grants`

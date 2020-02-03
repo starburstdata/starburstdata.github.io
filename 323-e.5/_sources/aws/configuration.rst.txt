@@ -1,0 +1,133 @@
+Configuring Presto
+==================
+
+Presto has an extensive set of configuration switches that allow it to be tuned for certain specific requirements. Default values are chosen for the best "out of the box" experience. However, if you need to fine-tune Presto behavior, you can do so when using Starburst’s CloudFormation template.
+
+Default Configuration
+---------------------
+
+The following configuration changes are applied automatically for you:
+
+* Java heap maximum memory (-Xmx) is set appropriately for the selected EC2 instance type
+* JVM's JIT caches are set to 512 MiB
+* Java is configured to use G1 garbage collector, this is the recommended garbage collector to use when running Presto
+* If Hive Metastore is configured (refer to :doc:`/aws/metastore`), the ``hive`` catalog is configured with connector
+  configuration left at its `defaults values <https://docs.starburstdata.com/latest/connector/hive.html>`_
+
+.. _custom_configuration:
+
+Custom Configuration
+--------------------
+
+When using Starburst’s CloudFormation template, you can expand on the default configuration by providing your own configuration packages for either the Presto Coordinator
+or Presto Workers or both. These configuration packages are used to append or override the default Presto configuration. In addition they can be used to provide the configuration for additional Presto connectors.
+
+The CloudFormation template provide the ``AdditionalCoordinatorConfigurationURI`` and ``AdditionalWorkersConfigurationURI`` parameters used to specify the locations
+of the configuration packages for the Presto Coordinator and Presto Workers respectively. See the following sections for how to create, upload, and use configuration
+packages.
+
+.. Note:: All configuration changes made to your Presto cluster should be performed via the CloudFormation Template. If you manually change the configurations on the instances running Presto, the changes are not guaranteed to be persisted. If you manually edit the configuration the first time while you set up and configure Presto, you should create a configuration package from it so you can reuse and persist the configuration.
+
+Creating a Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A configuration package is a ZIP file with the structure shown below. All files are optional except for top-level ``etc/`` directory entry.
+
+.. code-block:: none
+
+	etc/
+  		config.properties
+  		jvm.config
+  		catalog/
+     			hive.properties
+      			<catalog-name>.properties
+
+.. Note:: It is important to use this exact directory structure. It is not adequate to simply zip up a directory structure from another Presto installation to use unless that directory structure follows this same template.
+
+
+**etc/config.properties**
+
+This file is optional. Please refer to `Properties Reference <https://docs.starburstdata.com/latest/admin/properties.html>`_ for documentation of properties that can be set here.
+
+**etc/jvm.config**
+
+This file is optional. Please refer to `Oracle's <https://docs.oracle.com/javase/8/docs/technotes/tools/unix/java.html>`_ documentation of options that can be set here. Please refer to `Tuning Presto <https://docs.starburstdata.com/latest/admin/tuning.html>`_ for information about JVM options that are often useful when troubleshooting performance issues.
+Certain options, including ``-Xmx`` and garbage collection algorithm selection are set by default.
+
+**etc/catalog/hive.properties**
+
+This file is optional. If configuration package contains this file and the Hive Metastore is not configured (refer to
+:doc:`/aws/metastore`) when launching Starburst’s CloudFormation template, then the file must contain the following:
+
+.. code-block:: RST
+
+	connector.name=hive-hadoop2
+	hive.metastore.uri=thrift://example.net:9083
+
+If the ``MetastoreType`` parameter is set to something other than ``None``, then the ``hive.properties`` file was already created and it is not needed to provide the above. However, you can still provide a ``hive.properties`` file that include properties you wish to append to the configuration. Please refer to `Hive Connector <https://docs.starburstdata.com/latest/connector/hive.html>`_ and `Hive Security <https://docs.starburstdata.com/latest/connector/hive-security.html>`_ for documentation of options that can be set here.
+Also refer to :ref:`Auxiliary Files <aux-files-aws>` for instructions on how to configure properties that refer to additional files.
+
+**etc/catalog/<catalog-name>.properties**
+
+This file is optional. When such a file is placed in the configuration package, a catalog ``<catalog-name>`` will be created. The file must contain the following:
+
+.. code-block:: RST
+
+	connector.name=<connector-name>
+
+Where ``<connector-name>`` is the name of the connector you are going to use, please refer to the `Connector <https://docs.starburstdata.com/latest/connector.html>`_ documentation for a list of supported connectors and their documentation. If the chosen connector has some mandatory configuration parameters, they must be set in the ``<catalog-name>.properties`` file. There can be more than one such file in the ``etc/catalog/`` folder of the configuration package. This allows you to define multiple catalogs.
+
+Please refer to :ref:`Auxiliary Files <aux-files-aws>` for instructions on how to configure properties that refer to additional files.
+
+.. _aux-files-aws:
+
+**Auxiliary Files**
+
+If a configuration property in any of the configuration files accepts a path to an additional file (e.g., Hive's ``security.config-file``), add the file in the configuration package and refer to it using a path that is *relative*, starting with the configuration package top-level directory.
+
+For example, if you are configuring Hive connector to use ``hive.security=file``, you also need to set ``security.config-file`` (see `Hive Security <https://docs.starburstdata.com/latest/connector/hive-security.html>`_ documentation for the meaning and structure of the file). To do so, add ``etc/catalog/hive-security.json`` in the configuration package and refer to ``etc/catalog/hive-security.json`` using a relative path:
+
+.. code-block:: RST
+
+	...
+	hive.security=file
+	security.config-file=etc/catalog/hive-security.json
+
+Uploading a Configuration Package to S3
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For a configuration package ZIP to be used when launching  Starburst’s CloudFormation template, it must be uploaded to S3 first to a location of your choice. If the configuration package contains sensitive information (passwords, AWS access keys or Kerberos keytab files, etc.), please make sure to use an S3 location that is not publicly accessible.
+
+
+Using a Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When launching Starburst’s CloudFormation template, you can use the ``AdditionalCoordinatorConfigurationURI`` and ``AdditionalWorkersConfigurationURI`` parameters to refer to the configuration package that should be applied on top of default configuration done by the template. The URI should be of the form ``s3://my_bucket/path/to/configuration/package.zip``. You may decide to use a single configuration package for use by both the Presto Coordinator and Workers or use different packages for each. Additonally, you may provide a configuration package only for the Prersto Coordinator or Worker.
+
+
+If you upload to a location that is not publicly accessible, you need to use ``IamInstanceProfile`` parameter when launching the cluster, and the selected Instance Profile must allow read access to the selected S3 location.
+
+Example Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can download an example configuration package from Starburst `here <https://s3.us-east-2.amazonaws.com/starburstdata/aws-marketplace/examples/cft/cloudformation-template-configuration/0.1/hive-allow-drop-table.zip>`_. To use it when launching Starburst’s CloudFormation template, use its S3-native address:
+
+.. code-block:: RST
+
+	s3://starburstdata/aws-marketplace/examples/cft/cloudformation-template-configuration/0.1/hive-allow-drop-table.zip
+
+Updating a Configuration Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Instead of deleting a CloudFormation stack and creating a new one, you can use the AWS `stack update <https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-updating-stacks.html>`_ feature to update the Presto configuration package. You first need to create a new configuration package with the changes you need and then upload it to S3 as described in the previous sections. Then when updating the CloudFormation stack, you should enter in the new S3 location as values to the ``AdditionalCoordinatorConfigurationURI`` and ``AdditionalWorkersConfigurationURI`` parameters. When CloudFormation is applying the updates, it will update the stack by using the new configuration package to configure Presto.
+
+AWS CloudFormation will not update the CloudFormation stack if the values to the parameters have not changed. Therefore you should create a new configuration package zip file with a different name. We recommend including a version name within the file name to avoid any complications when updating your configurations. 
+
+For example, if the original configuration package was located at: ``s3://my_bucket/path/to/configuration/package-1.0.zip``, then you will want to create a new configuration package with location such as: ``s3://my_bucket/path/to/configuration/package-2.0.zip``. Even if you changed the contents of ``s3://my_bucket/path/to/configuration/package-1.0.zip`` and keep the name, CloudFormation will not be able to update the configuration.
+
+The advanced configuration zip file name must be changed in order to update it successfully. We recommend including a version name within the file name to avoid any complications when updating your configurations.
+
+Interactions Between Default and Advanced Configurations
+--------------------------------------------------------
+
+It is important to note that the “out of the box” default values are overridden only for the keys where an advanced configuration entry exits. If no advanced configuration is entered, the default value will remain. However, in the case of ``jvm.config`` , additional configuration entries are appended to the default configuration.
