@@ -1,0 +1,86 @@
+Integration with CloudWatch metrics
+===================================
+
+Starburst's CloudFormation template provides optional integration with CloudWatch metrics.
+Metrics integration can be enabled via ``EnableCloudWatchMetrics`` template property.
+When enabled detailed OS and Presto metrics will be collected and uploaded to CloudWatch metrics service.
+Additionally, a CloudWatch Dashboard with cluster overview will be created.
+
+Metrics will be stored within ``Presto`` CloudWatch metrics namespace.
+Metrics collection interval is 10 seconds. Metrics are split into ``Node`` and
+``Presto`` types.
+
+Node metrics
+------------
+
+All node metrics contain following dimensions:
+
+* ``Category`` - one of the following: ``cpu, memory, net, diskio``
+* ``InstanceId`` - an instance ID designated by AWS
+* ``PrestoNodeRole`` - either ``coordinator`` or ``worker``
+* ``PrestoStackName`` - the name of a CloudFormation stack
+* ``Type`` - this dimension is always ``Node``
+* ``host`` - the private, internal hostname of the instance
+
+There are following node metrics:
+
+* ``cpu_usage_idle, cpu_usage_iowait, cpu_usage_system, cpu_usage_softirq, cpu_usage_idle`` -- percentage node CPU usage. Those metrics additionally contain ``cpu`` dimension which is always ``cpu-total``.
+* ``mem_used, mem_cached, mem_free`` -- node OS memory usage.
+* ``net_bytes_recv, net_bytes_sent`` -- amount of bytes sent/read within last collection period (10 seconds). Those metrics additionally contain ``interface`` dimension which is always ``eth0``.
+* ``diskio_read_bytes, diskio_write_bytes`` -- amount of bytes read/written within last collection period (10 seconds). Those metrics additionally contain ``name`` dimension which is always ``xvda1``.
+
+Presto metrics
+--------------
+
+All Presto metrics contain following dimensions:
+
+* ``Category`` - one of the following: ``executor, memory``
+* ``InstanceId`` - an instance ID designated by AWS
+* ``PrestoNodeRole`` - either ``coordinator`` or ``worker``
+* ``PrestoStackName`` - the name of a CloudFormation stack
+* ``Type`` - this dimension is always ``Presto``
+* ``host`` - the private, internal hostname of the instance
+* ``metric_type`` - one of the following: ``counter, timing``
+
+There are following Presto metrics:
+
+* ``RunningQueries`` -- the number of currently running Presto queries.
+* ``QueuedQueries`` -- the number of currently queued Presto queries.
+* ``HeapMemoryUsage_used, HeapMemoryUsage_committed, HeapMemoryUsage_max`` -- JVM heap memory usage metrics. For more information see `MemoryMXBean <https://docs.oracle.com/javase/8/docs/api/java/lang/management/MemoryMXBean.html>`_.
+* ``NonHeapMemoryUsage_used, HeapMemoryUsage_committed`` -- JVM non-heap memory usage metrics. For more information see `MemoryMXBean <https://docs.oracle.com/javase/8/docs/api/java/lang/management/MemoryMXBean.html>`_.
+* ``gc_young_CollectionCount, gc_young_CollectionTime`` -- counter and timer for G1 young and mixed collections (see also `GarbageCollectorMXBean <https://docs.oracle.com/javase/8/docs/api/java/lang/management/GarbageCollectorMXBean.html>`_).
+* ``gc_old_CollectionCount, gc_old_CollectionTime`` -- counter and timer for G1 full collections (see also `GarbageCollectorMXBean <https://docs.oracle.com/javase/8/docs/api/java/lang/management/GarbageCollectorMXBean.html>`_). Ideally, those metrics should always be 0.
+
+Aggregated metrics
+------------------
+
+Apart from per node metrics, there are also aggregated metrics with data from all
+workers. Those metrics contain only: ``Category, PrestoNodeRole, PrestoStackName, Type`` dimensions.
+
+Dashboard
+---------
+
+When metrics are enabled Starburst's CloudFormation template will also create a cluster overview dashboard with ``Starburst-Dashboard-STACK_NAME``
+name. Dashboard contains various charts that provide visualization of collected metrics for coordinator
+and workers, but also HA (see :doc:`/aws/high-availability`) alarm state and useful Presto links.
+
+.. image:: /_static/aws/dashboard_example.png
+    :scale: 100%
+
+
+Troubleshooting
+---------------
+
+Metrics and dashboard can be used to determine various Presto performance issues. As an example, Presto should never trigger
+full G1 garbage collection during normal operation. Therefore ``gc_old_CollectionCount, gc_old_CollectionTime`` metrics
+should always be 0.
+
+Metrics can also be used to investigate cluster bottlenecks. For instance, it is possible to easily verify if cluster
+fully utilizes network, cpu or disk capacity.
+
+Pricing
+-------
+
+AWS CloudWatch metrics, dashboard and API requests come with a fee (see `Amazon CloudWatch Pricing <https://aws.amazon.com/cloudwatch/pricing/>`_).
+While the number of aggregated metrics is constant (below 30) the number of per-node metrics scales with the number of nodes.
+There are in total 21 metrics per node.
