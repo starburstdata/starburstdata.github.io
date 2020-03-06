@@ -1,0 +1,1240 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>13.7. Hive Connector &mdash; Starburst Distribution of Presto 312-e.16 Documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Distribution of Presto 312-e.16 Documentation" href="../index.html"/>
+        <link rel="up" title="13. Connectors" href="../connector.html"/>
+        <link rel="next" title="13.8. Hive Connector GCS Tutorial" href="hive-gcs-tutorial.html"/>
+        <link rel="prev" title="13.6. Elasticsearch Connector" href="elasticsearch.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Distribution of Presto
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                312-e.16
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../system-requirements.html">2. License and System Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../docker.html">3. Running Presto in a Docker container</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">4. Presto on Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../azure.html">5. Presto on Microsoft Azure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Presto 312e on Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation-rpm.html">7. Presto RPM Installation using Presto Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation/deployment.html">8. Presto Tarball Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">9. Presto Client Software</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">10. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">11. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">12. Query Optimizer</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../connector.html">13. Connectors</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="accumulo.html">13.1. Accumulo Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="alluxio.html">13.2. Alluxio Data Orchestrator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="blackhole.html">13.3. Black Hole Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bigquery.html">13.4. BigQuery Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cassandra.html">13.5. Cassandra Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="elasticsearch.html">13.6. Elasticsearch Connector</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">13.7. Hive Connector</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-file-types">Supported File Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-hive-clusters">Multiple Hive Clusters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hdfs-configuration">HDFS Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hdfs-username">HDFS Username</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#accessing-hadoop-clusters-protected-with-kerberos-authentication">Accessing Hadoop clusters protected with Kerberos authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hdfs-permissions">HDFS Permissions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-configuration-properties">Hive Configuration Properties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-thrift-metastore-configuration-properties">Hive Thrift Metastore Configuration Properties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#aws-glue-catalog-configuration-properties">AWS Glue Catalog Configuration Properties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#amazon-s3-configuration">Amazon S3 Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#s3-configuration-properties">S3 Configuration Properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#s3-credentials">S3 Credentials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#custom-s3-credentials-provider">Custom S3 Credentials Provider</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#tuning-properties">Tuning Properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#s3-data-encryption">S3 Data Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#s3-select-pushdown">S3 Select Pushdown</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#google-cloud-storage-configuration">Google Cloud Storage Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gcs-configuration-properties">GCS Configuration properties</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#table-statistics">Table Statistics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#updating-table-and-partition-statistics">Updating table and partition statistics</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#amazon-glue-support">Amazon Glue Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#schema-evolution">Schema Evolution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#avro-schema-evolution">Avro Schema Evolution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#procedures">Procedures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cleaning-up">Cleaning up</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-connector-limitations">Hive Connector Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hive-gcs-tutorial.html">13.8. Hive Connector GCS Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-security.html">13.9. Hive Security Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-mapr.html">13.10. Hive MapR Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmx.html">13.11. JMX Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka.html">13.12. Kafka Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kafka-tutorial.html">13.13. Kafka Connector Tutorial</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kudu.html">13.14. Kudu Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="localfile.html">13.15. Local File Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="memory.html">13.16. Memory Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mongodb.html">13.17. MongoDB Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mysql.html">13.18. MySQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="oracle.html">13.19. Oracle Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="phoenix.html">13.20. Phoenix Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="postgresql.html">13.21. PostgreSQL Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redis.html">13.22. Redis Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="redshift.html">13.23. Redshift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sqlserver.html">13.24. SQL Server Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generic-jdbc.html">13.25. Generic JDBC Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system.html">13.26. System Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="teradata.html">13.27. Teradata Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="thrift.html">13.28. Thrift Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpcds.html">13.29. TPCDS Connector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tpch.html">13.30. TPCH Connector</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">14. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">15. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">16. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">17. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">18. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">19. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">20. Release Notes</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">Starburst Distribution of Presto</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../connector.html">13. Connectors</a> &raquo;</li>
+      
+    <li>13.7. Hive Connector</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/connector/hive.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="hive-connector">
+<h1>13.7. Hive Connector</h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#overview" id="id2">Overview</a></li>
+<li><a class="reference internal" href="#supported-file-types" id="id3">Supported File Types</a></li>
+<li><a class="reference internal" href="#configuration" id="id4">Configuration</a></li>
+<li><a class="reference internal" href="#hive-configuration-properties" id="id5">Hive Configuration Properties</a></li>
+<li><a class="reference internal" href="#hive-thrift-metastore-configuration-properties" id="id6">Hive Thrift Metastore Configuration Properties</a></li>
+<li><a class="reference internal" href="#aws-glue-catalog-configuration-properties" id="id7">AWS Glue Catalog Configuration Properties</a></li>
+<li><a class="reference internal" href="#amazon-s3-configuration" id="id8">Amazon S3 Configuration</a></li>
+<li><a class="reference internal" href="#google-cloud-storage-configuration" id="id9">Google Cloud Storage Configuration</a></li>
+<li><a class="reference internal" href="#table-statistics" id="id10">Table Statistics</a></li>
+<li><a class="reference internal" href="#amazon-glue-support" id="id11">Amazon Glue Support</a></li>
+<li><a class="reference internal" href="#schema-evolution" id="id12">Schema Evolution</a></li>
+<li><a class="reference internal" href="#avro-schema-evolution" id="id13">Avro Schema Evolution</a></li>
+<li><a class="reference internal" href="#procedures" id="id14">Procedures</a></li>
+<li><a class="reference internal" href="#examples" id="id15">Examples</a></li>
+<li><a class="reference internal" href="#hive-connector-limitations" id="id16">Hive Connector Limitations</a></li>
+</ul>
+</div>
+<div class="section" id="overview">
+<h2>Overview</h2>
+<p>The Hive connector allows querying data stored in a Hive
+data warehouse. Hive is a combination of three components:</p>
+<ul class="simple">
+<li>Data files in varying formats that are typically stored in the
+Hadoop Distributed File System (HDFS) or in Amazon S3.</li>
+<li>Metadata about how the data files are mapped to schemas and tables.
+This metadata is stored in a database such as MySQL and is accessed
+via the Hive metastore service.</li>
+<li>A query language called HiveQL. This query language is executed
+on a distributed computing framework such as MapReduce or Tez.</li>
+</ul>
+<p>Presto only uses the first two components: the data and the metadata.
+It does not use HiveQL or any part of Hive’s execution environment.</p>
+</div>
+<div class="section" id="supported-file-types">
+<h2>Supported File Types</h2>
+<p>The following file types are supported for the Hive connector:</p>
+<ul class="simple">
+<li>ORC</li>
+<li>Parquet</li>
+<li>Avro</li>
+<li>RCFile</li>
+<li>SequenceFile</li>
+<li>JSON</li>
+<li>Text</li>
+</ul>
+</div>
+<div class="section" id="configuration">
+<h2>Configuration</h2>
+<p>The Hive connector supports Apache Hadoop 2.x and derivative distributions
+including Cloudera CDH 5 and Hortonworks Data Platform (HDP).</p>
+<p>Create <code class="docutils literal"><span class="pre">etc/catalog/hive.properties</span></code> with the following contents
+to mount the <code class="docutils literal"><span class="pre">hive-hadoop2</span></code> connector as the <code class="docutils literal"><span class="pre">hive</span></code> catalog,
+replacing <code class="docutils literal"><span class="pre">example.net:9083</span></code> with the correct host and port
+for your Hive metastore Thrift service:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>connector.name=hive-hadoop2
+hive.metastore.uri=thrift://example.net:9083
+</pre></div>
+</div>
+<p>Use <code class="docutils literal"><span class="pre">presto-admin</span></code> to deploy the connector file. See <a class="reference internal" href="../presto-admin/installation/presto-catalog-installation.html"><span class="doc">Adding a Catalog</span></a>.</p>
+<div class="section" id="multiple-hive-clusters">
+<h3>Multiple Hive Clusters</h3>
+<p>You can have as many catalogs as you need, so if you have additional
+Hive clusters, simply add another properties file to <code class="docutils literal"><span class="pre">etc/catalog</span></code>
+with a different name (making sure it ends in <code class="docutils literal"><span class="pre">.properties</span></code>). For
+example, if you name the property file <code class="docutils literal"><span class="pre">sales.properties</span></code>, Presto
+will create a catalog named <code class="docutils literal"><span class="pre">sales</span></code> using the configured connector.</p>
+</div>
+<div class="section" id="hdfs-configuration">
+<h3>HDFS Configuration</h3>
+<p>For basic setups, Presto configures the HDFS client automatically and
+does not require any configuration files. In some cases, such as when using
+federated HDFS or NameNode high availability, it is necessary to specify
+additional HDFS client options in order to access your HDFS cluster. To do so,
+add the <code class="docutils literal"><span class="pre">hive.config.resources</span></code> property to reference your HDFS config files:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>hive.config.resources=/etc/hadoop/conf/core-site.xml,/etc/hadoop/conf/hdfs-site.xml
+</pre></div>
+</div>
+<p>Only specify additional configuration files if necessary for your setup.
+We also recommend reducing the configuration files to have the minimum
+set of required properties, as additional properties may cause problems.</p>
+<p>The configuration files must exist on all Presto nodes. If you are
+referencing existing Hadoop config files, make sure to copy them to
+any Presto nodes that are not running Hadoop.</p>
+</div>
+<div class="section" id="hdfs-username">
+<h3>HDFS Username</h3>
+<p>When not using Kerberos with HDFS, Presto will access HDFS using the
+OS user of the Presto process. For example, if Presto is running as
+<code class="docutils literal"><span class="pre">nobody</span></code>, it will access HDFS as <code class="docutils literal"><span class="pre">nobody</span></code>. You can override this
+username by setting the <code class="docutils literal"><span class="pre">HADOOP_USER_NAME</span></code> system property in the
+Presto <a class="reference internal" href="../installation/deployment.html#presto-jvm-config"><span class="std std-ref">JVM Config</span></a>, replacing <code class="docutils literal"><span class="pre">hdfs_user</span></code> with the
+appropriate username:</p>
+<div class="highlight-none"><div class="highlight"><pre><span></span>-DHADOOP_USER_NAME=hdfs_user
+</pre></div>
+</div>
+</div>
+<div class="section" id="accessing-hadoop-clusters-protected-with-kerberos-authentication">
+<h3>Accessing Hadoop clusters protected with Kerberos authentication</h3>
+<p>Kerberos authentication is supported for both HDFS and the Hive metastore.
+However, Kerberos authentication by ticket cache is not yet supported.</p>
+<p>The properties that apply to Hive connector security are listed in the
+<a class="reference internal" href="#id1">Hive Configuration Properties</a> table. Please see the
+<a class="reference internal" href="hive-security.html"><span class="doc">Hive Security Configuration</span></a> section for a more detailed discussion of the
+security options in the Hive connector.</p>
+</div>
+<div class="section" id="hdfs-permissions">
+<h3>HDFS Permissions</h3>
+<p>Before running any <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> or <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">AS</span></code> statements
+for Hive tables in Presto, you need to check that the operating system user
+running the Presto server has access to the Hive warehouse directory on HDFS. The Hive warehouse
+directory is specified by the configuration variable <code class="docutils literal"><span class="pre">hive.metastore.warehouse.dir</span></code>
+in <code class="docutils literal"><span class="pre">hive-site.xml</span></code>, and the default value is <code class="docutils literal"><span class="pre">/user/hive/warehouse</span></code>. If that
+is not the case, either add the following to <code class="docutils literal"><span class="pre">jvm.config</span></code> on all of the nodes:
+<code class="docutils literal"><span class="pre">-DHADOOP_USER_NAME=USER</span></code>, where <code class="docutils literal"><span class="pre">USER</span></code> is an operating system user that has proper
+permissions for the Hive warehouse directory, or start the Presto server as a user with
+similar permissions. The <code class="docutils literal"><span class="pre">hive</span></code> user generally works as <code class="docutils literal"><span class="pre">USER</span></code>, since Hive is often
+started with the <code class="docutils literal"><span class="pre">hive</span></code> user. If you run into HDFS permissions problems on
+<code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">AS</span></code>, remove <code class="docutils literal"><span class="pre">/tmp/presto-*</span></code> on HDFS, fix the user as described
+above, then restart all of the Presto servers.</p>
+</div>
+</div>
+<div class="section" id="hive-configuration-properties">
+<span id="id1"></span><h2>Hive Configuration Properties</h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="41%" />
+<col width="49%" />
+<col width="10%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore</span></code></td>
+<td>The type of Hive metastore to use. Presto currently supports
+the default Hive Thrift metastore (<code class="docutils literal"><span class="pre">thrift</span></code>), and the AWS
+Glue Catalog (<code class="docutils literal"><span class="pre">glue</span></code>) as metadata sources.</td>
+<td><code class="docutils literal"><span class="pre">thrift</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.config.resources</span></code></td>
+<td>An optional comma-separated list of HDFS
+configuration files. These files must exist on the
+machines running Presto. Only specify this if
+absolutely necessary to access HDFS.
+Example: <code class="docutils literal"><span class="pre">/etc/hdfs-site.xml</span></code></td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.recursive-directories</span></code></td>
+<td>Enable reading data from subdirectories of table or
+partition locations. If disabled, subdirectories are
+ignored. This is equivalent to the
+<code class="docutils literal"><span class="pre">hive.mapred.supports.subdirectories</span></code> property in Hive.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.storage-format</span></code></td>
+<td>The default file format used when creating new tables.</td>
+<td><code class="docutils literal"><span class="pre">ORC</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.compression-codec</span></code></td>
+<td>The compression codec to use when writing files.</td>
+<td><code class="docutils literal"><span class="pre">GZIP</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.force-local-scheduling</span></code></td>
+<td>Force splits to be scheduled on the same node as the Hadoop
+DataNode process serving the split data.  This is useful for
+installations where Presto is collocated with every
+DataNode.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.respect-table-format</span></code></td>
+<td>Should new partitions be written using the existing table
+format or the default Presto format?</td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.immutable-partitions</span></code></td>
+<td>Can new data be inserted into existing partitions?</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.create-empty-bucket-files</span></code></td>
+<td>Should empty files be created for buckets that have no data?</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.max-partitions-per-writers</span></code></td>
+<td>Maximum number of partitions per writer.</td>
+<td>100</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.max-partitions-per-scan</span></code></td>
+<td>Maximum number of partitions for a single table scan.</td>
+<td>100,000</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.hdfs.authentication.type</span></code></td>
+<td>HDFS authentication type.
+Possible values are <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>.</td>
+<td><code class="docutils literal"><span class="pre">NONE</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.impersonation.enabled</span></code></td>
+<td>Enable HDFS end user impersonation.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.hdfs.presto.principal</span></code></td>
+<td>The Kerberos principal that Presto will use when connecting
+to HDFS.</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.hdfs.presto.keytab</span></code></td>
+<td>HDFS client keytab location.</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.security</span></code></td>
+<td>See <a class="reference internal" href="hive-security.html"><span class="doc">Hive Security Configuration</span></a>.</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">security.config-file</span></code></td>
+<td>Path of config file to use when <code class="docutils literal"><span class="pre">hive.security=file</span></code>.
+See <a class="reference internal" href="hive-security.html#hive-file-based-authorization"><span class="std std-ref">File Based Authorization</span></a> for details.</td>
+<td>&#160;</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.non-managed-table-writes-enabled</span></code></td>
+<td>Enable writes to non-managed (external) Hive tables.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.non-managed-table-creates-enabled</span></code></td>
+<td>Enable creating non-managed (external) Hive tables.</td>
+<td><code class="docutils literal"><span class="pre">true</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.collect-column-statistics-on-write</span></code></td>
+<td>Enables automatic column level statistics collection
+on write. See <a class="reference external" href="#table-statistics">Table Statistics</a> for
+details.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3select-pushdown.enabled</span></code></td>
+<td>Enable query pushdown to AWS S3 Select service.</td>
+<td><code class="docutils literal"><span class="pre">false</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3select-pushdown.max-connections</span></code></td>
+<td>Maximum number of simultaneously open connections to S3 for
+<a class="reference internal" href="#s3selectpushdown"><span class="std std-ref">S3 Select Pushdown</span></a>.</td>
+<td>500</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="hive-thrift-metastore-configuration-properties">
+<h2>Hive Thrift Metastore Configuration Properties</h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="45%" />
+<col width="55%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.uri</span></code></td>
+<td>The URI(s) of the Hive metastore to connect to using the
+Thrift protocol. If multiple URIs are provided, the first
+URI is used by default and the rest of the URIs are
+fallback metastores. This property is required.
+Example: <code class="docutils literal"><span class="pre">thrift://192.0.2.3:9083</span></code> or
+<code class="docutils literal"><span class="pre">thrift://192.0.2.3:9083,thrift://192.0.2.4:9083</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.username</span></code></td>
+<td>The username Presto will use to access the Hive metastore.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.authentication.type</span></code></td>
+<td>Hive metastore authentication type.
+Possible values are <code class="docutils literal"><span class="pre">NONE</span></code> or <code class="docutils literal"><span class="pre">KERBEROS</span></code>
+(defaults to <code class="docutils literal"><span class="pre">NONE</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.service.principal</span></code></td>
+<td>The Kerberos principal of the Hive metastore service.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.impersonation-enabled</span></code></td>
+<td>Enable Metastore end user impersonation.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.client.principal</span></code></td>
+<td>The Kerberos principal that Presto will use when connecting
+to the Hive metastore service.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.client.keytab</span></code></td>
+<td>Hive metastore client keytab location.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="aws-glue-catalog-configuration-properties">
+<h2>AWS Glue Catalog Configuration Properties</h2>
+<table border="1" class="docutils">
+<colgroup>
+<col width="46%" />
+<col width="54%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.region</span></code></td>
+<td>AWS region of the Glue Catalog. This is required when not
+running in EC2, or when the catalog is in a different region.
+Example: <code class="docutils literal"><span class="pre">us-east-1</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.pin-client-to-current-region</span></code></td>
+<td>Pin Glue requests to the same region as the EC2 instance
+where Presto is running (defaults to <code class="docutils literal"><span class="pre">false</span></code>).</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.max-connections</span></code></td>
+<td>Max number of concurrent connections to Glue
+(defaults to <code class="docutils literal"><span class="pre">5</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.default-warehouse-dir</span></code></td>
+<td>Hive Glue metastore default warehouse directory</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.aws-access-key</span></code></td>
+<td>AWS access key to use to connect to the Glue Catalog. If
+specified along with <code class="docutils literal"><span class="pre">hive.metastore.glue.aws-secret-key</span></code>,
+this parameter takes precedence over
+<code class="docutils literal"><span class="pre">hive.metastore.glue.iam-role</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.aws-secret-key</span></code></td>
+<td>AWS secret key to use to connect to the Glue Catalog. If
+specified along with <code class="docutils literal"><span class="pre">hive.metastore.glue.aws-access-key</span></code>,
+this parameter takes precedence over
+<code class="docutils literal"><span class="pre">hive.metastore.glue.iam-role</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.iam-role</span></code></td>
+<td>ARN of an IAM role to assume when connecting to the Glue
+Catalog.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="amazon-s3-configuration">
+<h2>Amazon S3 Configuration</h2>
+<p>The Hive Connector can read and write tables that are stored in S3.
+This is accomplished by having a table or database location that
+uses an S3 prefix rather than an HDFS prefix.</p>
+<p>Presto uses its own S3 filesystem for the URI prefixes
+<code class="docutils literal"><span class="pre">s3://</span></code>, <code class="docutils literal"><span class="pre">s3n://</span></code> and  <code class="docutils literal"><span class="pre">s3a://</span></code>.</p>
+<div class="section" id="s3-configuration-properties">
+<h3>S3 Configuration Properties</h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="35%" />
+<col width="65%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.use-instance-credentials</span></code></td>
+<td>Use the EC2 metadata service to retrieve API credentials
+(defaults to <code class="docutils literal"><span class="pre">true</span></code>). This works with IAM roles in EC2.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.aws-access-key</span></code></td>
+<td>Default AWS access key to use.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.aws-secret-key</span></code></td>
+<td>Default AWS secret key to use.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.iam-role</span></code></td>
+<td>IAM role to assume.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.endpoint</span></code></td>
+<td>The S3 storage endpoint server. This can be used to
+connect to an S3-compatible storage system instead
+of AWS. When using v4 signatures, it is recommended to
+set this to the AWS region-specific endpoint
+(e.g., <code class="docutils literal"><span class="pre">http[s]://&lt;bucket&gt;.s3-&lt;AWS-region&gt;.amazonaws.com</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.signer-type</span></code></td>
+<td>Specify a different signer type for S3-compatible storage.
+Example: <code class="docutils literal"><span class="pre">S3SignerType</span></code> for v2 signer type</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.path-style-access</span></code></td>
+<td>Use path-style access for all requests to the S3-compatible storage.
+This is for S3-compatible storage that doesn’t support virtual-hosted-style access.
+(defaults to <code class="docutils literal"><span class="pre">false</span></code>)</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.staging-directory</span></code></td>
+<td>Local staging directory for data written to S3.
+This defaults to the Java temporary directory specified
+by the JVM system property <code class="docutils literal"><span class="pre">java.io.tmpdir</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.pin-client-to-current-region</span></code></td>
+<td>Pin S3 requests to the same region as the EC2
+instance where Presto is running (defaults to <code class="docutils literal"><span class="pre">false</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.ssl.enabled</span></code></td>
+<td>Use HTTPS to communicate with the S3 API (defaults to <code class="docutils literal"><span class="pre">true</span></code>).</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.sse.enabled</span></code></td>
+<td>Use S3 server-side encryption (defaults to <code class="docutils literal"><span class="pre">false</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.sse.type</span></code></td>
+<td>The type of key management for S3 server-side encryption.
+Use <code class="docutils literal"><span class="pre">S3</span></code> for S3 managed or <code class="docutils literal"><span class="pre">KMS</span></code> for KMS-managed keys
+(defaults to <code class="docutils literal"><span class="pre">S3</span></code>).</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.sse.kms-key-id</span></code></td>
+<td>The KMS Key ID to use for S3 server-side encryption with
+KMS-managed keys. If not set, the default key is used.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.kms-key-id</span></code></td>
+<td>If set, use S3 client-side encryption and use the AWS
+KMS to store encryption keys and use the value of
+this property as the KMS Key ID for newly created
+objects.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.encryption-materials-provider</span></code></td>
+<td>If set, use S3 client-side encryption and use the
+value of this property as the fully qualified name of
+a Java class which implements the AWS SDK’s
+<code class="docutils literal"><span class="pre">EncryptionMaterialsProvider</span></code> interface.   If the
+class also implements <code class="docutils literal"><span class="pre">Configurable</span></code> from the Hadoop
+API, the Hadoop configuration will be passed in after
+the object has been created.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.upload-acl-type</span></code></td>
+<td>Canned ACL to use while uploading files to S3 (defaults
+to <code class="docutils literal"><span class="pre">Private</span></code>).</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.skip-glacier-objects</span></code></td>
+<td>Ignore Glacier objects rather than failing the query. This
+will skip data that may be expected to be part of the table
+or partition. Defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="s3-credentials">
+<h3>S3 Credentials</h3>
+<p>If you are running Presto on Amazon EC2 using EMR or another facility,
+it is highly recommended that you set <code class="docutils literal"><span class="pre">hive.s3.use-instance-credentials</span></code>
+to <code class="docutils literal"><span class="pre">true</span></code> and use IAM Roles for EC2 to govern access to S3. If this is
+the case, your EC2 instances will need to be assigned an IAM Role which
+grants appropriate access to the data stored in the S3 bucket(s) you wish
+to use. It’s also possible to configure an IAM role with <code class="docutils literal"><span class="pre">hive.s3.iam-role</span></code>
+that will be assumed for accessing any S3 bucket. This is much cleaner than
+setting AWS access and secret keys in the <code class="docutils literal"><span class="pre">hive.s3.aws-access-key</span></code>
+and <code class="docutils literal"><span class="pre">hive.s3.aws-secret-key</span></code> settings, and also allows EC2 to automatically
+rotate credentials on a regular basis without any additional work on your part.</p>
+</div>
+<div class="section" id="custom-s3-credentials-provider">
+<h3>Custom S3 Credentials Provider</h3>
+<p>You can configure a custom S3 credentials provider by setting the Hadoop
+configuration property <code class="docutils literal"><span class="pre">presto.s3.credentials-provider</span></code> to be the
+fully qualified class name of a custom AWS credentials provider
+implementation. This class must implement the
+<a class="reference external" href="http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/AWSCredentialsProvider.html">AWSCredentialsProvider</a>
+interface and provide a two-argument constructor that takes a
+<code class="docutils literal"><span class="pre">java.net.URI</span></code> and a Hadoop <code class="docutils literal"><span class="pre">org.apache.hadoop.conf.Configuration</span></code>
+as arguments. A custom credentials provider can be used to provide
+temporary credentials from STS (using <code class="docutils literal"><span class="pre">STSSessionCredentialsProvider</span></code>),
+IAM role-based credentials (using <code class="docutils literal"><span class="pre">STSAssumeRoleSessionCredentialsProvider</span></code>),
+or credentials for a specific use case (e.g., bucket/user specific credentials).
+This Hadoop configuration property must be set in the Hadoop configuration
+files referenced by the <code class="docutils literal"><span class="pre">hive.config.resources</span></code> Hive connector property.</p>
+</div>
+<div class="section" id="tuning-properties">
+<h3>Tuning Properties</h3>
+<p>The following tuning properties affect the behavior of the client
+used by the Presto S3 filesystem when communicating with S3.
+Most of these parameters affect settings on the <code class="docutils literal"><span class="pre">ClientConfiguration</span></code>
+object associated with the <code class="docutils literal"><span class="pre">AmazonS3Client</span></code>.</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="33%" />
+<col width="53%" />
+<col width="14%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+<th class="head">Default</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.max-error-retries</span></code></td>
+<td>Maximum number of error retries, set on the S3 client.</td>
+<td><code class="docutils literal"><span class="pre">10</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.max-client-retries</span></code></td>
+<td>Maximum number of read attempts to retry.</td>
+<td><code class="docutils literal"><span class="pre">5</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.max-backoff-time</span></code></td>
+<td>Use exponential backoff starting at 1 second up to
+this maximum value when communicating with S3.</td>
+<td><code class="docutils literal"><span class="pre">10</span> <span class="pre">minutes</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.max-retry-time</span></code></td>
+<td>Maximum time to retry communicating with S3.</td>
+<td><code class="docutils literal"><span class="pre">10</span> <span class="pre">minutes</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.connect-timeout</span></code></td>
+<td>TCP connect timeout.</td>
+<td><code class="docutils literal"><span class="pre">5</span> <span class="pre">seconds</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.socket-timeout</span></code></td>
+<td>TCP socket read timeout.</td>
+<td><code class="docutils literal"><span class="pre">5</span> <span class="pre">seconds</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.max-connections</span></code></td>
+<td>Maximum number of simultaneous open connections to S3.</td>
+<td><code class="docutils literal"><span class="pre">500</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.multipart.min-file-size</span></code></td>
+<td>Minimum file size before multi-part upload to S3 is used.</td>
+<td><code class="docutils literal"><span class="pre">16</span> <span class="pre">MB</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.multipart.min-part-size</span></code></td>
+<td>Minimum multi-part upload part size.</td>
+<td><code class="docutils literal"><span class="pre">5</span> <span class="pre">MB</span></code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="s3-data-encryption">
+<h3>S3 Data Encryption</h3>
+<p>Presto supports reading and writing encrypted data in S3 using both
+server-side encryption with S3 managed keys and client-side encryption using
+either the Amazon KMS or a software plugin to manage AES encryption keys.</p>
+<p>With <a class="reference external" href="http://docs.aws.amazon.com/AmazonS3/latest/dev/serv-side-encryption.html">S3 server-side encryption</a>,
+(called <em>SSE-S3</em> in the Amazon documentation) the S3 infrastructure takes care of all encryption and decryption
+work (with the exception of SSL to the client, assuming you have <code class="docutils literal"><span class="pre">hive.s3.ssl.enabled</span></code> set to <code class="docutils literal"><span class="pre">true</span></code>).
+S3 also manages all the encryption keys for you. To enable this, set <code class="docutils literal"><span class="pre">hive.s3.sse.enabled</span></code> to <code class="docutils literal"><span class="pre">true</span></code>.</p>
+<p>With <a class="reference external" href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingClientSideEncryption.html">S3 client-side encryption</a>,
+S3 stores encrypted data and the encryption keys are managed outside of the S3 infrastructure. Data is encrypted
+and decrypted by Presto instead of in the S3 infrastructure. In this case, encryption keys can be managed
+either by using the AWS KMS or your own key management system. To use the AWS KMS for key management, set
+<code class="docutils literal"><span class="pre">hive.s3.kms-key-id</span></code> to the UUID of a KMS key. Your AWS credentials or EC2 IAM role will need to be
+granted permission to use the given key as well.</p>
+<p>To use a custom encryption key management system, set <code class="docutils literal"><span class="pre">hive.s3.encryption-materials-provider</span></code> to the
+fully qualified name of a class which implements the
+<a class="reference external" href="http://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/services/s3/model/EncryptionMaterialsProvider.html">EncryptionMaterialsProvider</a>
+interface from the AWS Java SDK. This class will have to be accessible to the Hive Connector through the
+classpath and must be able to communicate with your custom key management system. If this class also implements
+the <code class="docutils literal"><span class="pre">org.apache.hadoop.conf.Configurable</span></code> interface from the Hadoop Java API, then the Hadoop configuration
+will be passed in after the object instance is created and before it is asked to provision or retrieve any
+encryption keys.</p>
+</div>
+<div class="section" id="s3-select-pushdown">
+<span id="s3selectpushdown"></span><h3>S3 Select Pushdown</h3>
+<p>S3 Select Pushdown enables pushing down projection (SELECT) and predicate (WHERE)
+processing to <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html">S3 Select</a>.
+With S3 Select Pushdown, Presto only retrieves the required data from S3 instead
+of entire S3 objects, reducing both latency and network usage.</p>
+<div class="section" id="is-s3-select-a-good-fit-for-my-workload">
+<h4>Is S3 Select a good fit for my workload?</h4>
+<p>Performance of S3 Select Pushdown depends on the amount of data filtered by the
+query. Filtering a large number of rows should result in better performance. If
+the query doesn’t filter any data then pushdown may not add any additional value
+and user will be charged for S3 Select requests. Thus, we recommend that you
+benchmark your workloads with and without S3 Select to see if using it may be
+suitable for your workload. By default, S3 Select Pushdown is disabled and you
+should enable it in production after proper benchmarking and cost analysis. For
+more information on S3 Select request cost, please see
+<a class="reference external" href="https://aws.amazon.com/s3/pricing/">Amazon S3 Cloud Storage Pricing</a>.</p>
+<p>Use the following guidelines to determine if S3 Select is a good fit for your
+workload:</p>
+<ul class="simple">
+<li>Your query filters out more than half of the original data set.</li>
+<li>Your query filter predicates use columns that have a data type supported by
+Presto and S3 Select.
+The <code class="docutils literal"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal"><span class="pre">REAL</span></code>, and <code class="docutils literal"><span class="pre">DOUBLE</span></code> data types are not supported by S3
+Select Pushdown. We recommend using the decimal data type for numerical data.
+For more information about supported data types for S3 Select, see the
+<a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-data-types.html">Data Types documentation</a>.</li>
+<li>Your network connection between Amazon S3 and the Amazon EMR cluster has good
+transfer speed and available bandwidth. Amazon S3 Select does not compress
+HTTP responses, so the response size may increase for compressed input files.</li>
+</ul>
+</div>
+<div class="section" id="considerations-and-limitations">
+<h4>Considerations and Limitations</h4>
+<ul class="simple">
+<li>Only objects stored in CSV format are supported. Objects can be uncompressed
+or optionally compressed with gzip or bzip2.</li>
+<li>The “AllowQuotedRecordDelimiters” property is not supported. If this property
+is specified, the query fails.</li>
+<li>Amazon S3 server-side encryption with customer-provided encryption keys
+(SSE-C) and client-side encryption are not supported.</li>
+<li>S3 Select Pushdown is not a substitute for using columnar or compressed file
+formats such as ORC and Parquet.</li>
+</ul>
+</div>
+<div class="section" id="enabling-s3-select-pushdown">
+<h4>Enabling S3 Select Pushdown</h4>
+<p>You can enable S3 Select Pushdown using the <code class="docutils literal"><span class="pre">s3_select_pushdown_enabled</span></code>
+Hive session property or using the <code class="docutils literal"><span class="pre">hive.s3select-pushdown.enabled</span></code>
+configuration property. The session property will override the config
+property, allowing you enable or disable on a per-query basis.</p>
+</div>
+<div class="section" id="understanding-and-tuning-the-maximum-connections">
+<h4>Understanding and Tuning the Maximum Connections</h4>
+<p>Presto can use its native S3 file system or EMRFS. When using the native FS, the
+maximum connections is configured via the <code class="docutils literal"><span class="pre">hive.s3.max-connections</span></code>
+configuration property. When using EMRFS, the maximum connections is configured
+via the <code class="docutils literal"><span class="pre">fs.s3.maxConnections</span></code> Hadoop configuration property.</p>
+<p>S3 Select Pushdown bypasses the file systems when accessing Amazon S3 for
+predicate operations. In this case, the value of
+<code class="docutils literal"><span class="pre">hive.s3select-pushdown.max-connections</span></code> determines the maximum number of
+client connections allowed for those operations from worker nodes.</p>
+<p>If your workload experiences the error <em>Timeout waiting for connection from
+pool</em>, increase the value of both <code class="docutils literal"><span class="pre">hive.s3select-pushdown.max-connections</span></code> and
+the maximum connections configuration for the file system you are using.</p>
+</div>
+</div>
+</div>
+<div class="section" id="google-cloud-storage-configuration">
+<h2>Google Cloud Storage Configuration</h2>
+<p>The Hive connector can access data stored in GCS, using the <code class="docutils literal"><span class="pre">gs://</span></code> URI prefix.
+Please refer to the <a class="reference internal" href="hive-gcs-tutorial.html"><span class="doc">Hive Connector GCS Tutorial</span></a> for step-by-step instructions.</p>
+<div class="section" id="gcs-configuration-properties">
+<h3>GCS Configuration properties</h3>
+<table border="1" class="docutils">
+<colgroup>
+<col width="40%" />
+<col width="60%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Property Name</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.gcs.json-key-file-path</span></code></td>
+<td>JSON key file used to authenticate with Google Cloud Storage.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.gcs.use-access-token</span></code></td>
+<td>Use client-provided OAuth token to access Google Cloud Storage.
+This is mutually exclusive with a global JSON key file.</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="table-statistics">
+<h2>Table Statistics</h2>
+<p>The Hive connector automatically collects basic statistics
+(<code class="docutils literal"><span class="pre">numFiles</span></code>, <code class="docutils literal"><span class="pre">numRows</span></code>, <code class="docutils literal"><span class="pre">rawDataSize</span></code>, <code class="docutils literal"><span class="pre">totalSize</span></code>)
+on <code class="docutils literal"><span class="pre">INSERT</span></code> and <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> operations.</p>
+<p>The Hive connector can also collect column level statistics:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="16%" />
+<col width="84%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Column Type</th>
+<th class="head">Collectible Statistics</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">TINYINT</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">SMALLINT</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">INTEGER</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">BIGINT</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">DOUBLE</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">REAL</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">DECIMAL</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">DATE</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">TIMESTAMP</span></code></td>
+<td>number of nulls, number of distinct values, min/max values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">VARCHAR</span></code></td>
+<td>number of nulls, number of distinct values</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">CHAR</span></code></td>
+<td>number of nulls, number of distinct values</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">VARBINARY</span></code></td>
+<td>number of nulls</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">BOOLEAN</span></code></td>
+<td>number of nulls, number of true/false values</td>
+</tr>
+</tbody>
+</table>
+<p>Automatic column level statistics collection on write is controlled by
+the <code class="docutils literal"><span class="pre">collect-column-statistics-on-write</span></code> catalog session property.</p>
+<div class="section" id="updating-table-and-partition-statistics">
+<span id="hive-analyze"></span><h3>Updating table and partition statistics</h3>
+<p>If your queries are complex and include joining large data sets,
+running <a class="reference internal" href="../sql/analyze.html"><span class="doc">ANALYZE</span></a> on tables/partitions may improve query performance
+by collecting statistical information about the data.</p>
+<p>When analyzing a partitioned table, the partitions to analyze can be specified
+via the optional <code class="docutils literal"><span class="pre">partitions</span></code> property, which is an array containing
+the values of the partition keys in the order they are declared in the table schema:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="k">table_name</span> <span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitions</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span>
+        <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;p1_value1&#39;</span><span class="p">,</span> <span class="s1">&#39;p1_value2&#39;</span><span class="p">],</span>
+        <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;p2_value1&#39;</span><span class="p">,</span> <span class="s1">&#39;p2_value2&#39;</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>This query will collect statistics for two partitions with keys
+<code class="docutils literal"><span class="pre">p1_value1,</span> <span class="pre">p1_value2</span></code> and <code class="docutils literal"><span class="pre">p2_value1,</span> <span class="pre">p2_value2</span></code>.</p>
+<p>On wide tables, collecting statistics for all columns can be expensive and can have a
+detrimental effect on query planning. It is also typically unnecessary - statistics are
+only useful on specific columns, like join keys, predicates, grouping keys. One can
+specify a subset of columns to be analyzed via the optional <code class="docutils literal"><span class="pre">columns</span></code> property:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="k">table_name</span> <span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitions</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;p2_value1&#39;</span><span class="p">,</span> <span class="s1">&#39;p2_value2&#39;</span><span class="p">]],</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;col_1&#39;</span><span class="p">,</span> <span class="s1">&#39;col_2&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This query will collect statistics for columns <code class="docutils literal"><span class="pre">col_1</span></code> and <code class="docutils literal"><span class="pre">col_2</span></code> for the partition
+with keys <code class="docutils literal"><span class="pre">p2_value1,</span> <span class="pre">p2_value2</span></code>.</p>
+<p>Note that if statistics were previously collected for all columns, they need to be dropped
+before re-analyzing just a subset:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">drop_stats</span><span class="p">(</span><span class="k">schema_name</span><span class="p">,</span> <span class="k">table_name</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;p2_value1&#39;</span><span class="p">,</span> <span class="s1">&#39;p2_value2&#39;</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Statistics collection is supported for Hive Metastore and Amazon Glue.</p>
+</div>
+</div>
+<div class="section" id="amazon-glue-support">
+<h2>Amazon Glue Support</h2>
+<p>Configuring and using Presto with AWS Glue is described in the <a class="reference internal" href="../aws/glue.html"><span class="doc">AWS Glue Support</span></a> documentation section.</p>
+</div>
+<div class="section" id="schema-evolution">
+<h2>Schema Evolution</h2>
+<p>Hive allows the partitions in a table to have a different schema than the
+table. This occurs when the column types of a table are changed after
+partitions already exist (that use the original column types). The Hive
+connector supports this by allowing the same conversions as Hive:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">varchar</span></code> to and from <code class="docutils literal"><span class="pre">tinyint</span></code>, <code class="docutils literal"><span class="pre">smallint</span></code>, <code class="docutils literal"><span class="pre">integer</span></code> and <code class="docutils literal"><span class="pre">bigint</span></code></li>
+<li><code class="docutils literal"><span class="pre">real</span></code> to <code class="docutils literal"><span class="pre">double</span></code></li>
+<li>Widening conversions for integers, such as <code class="docutils literal"><span class="pre">tinyint</span></code> to <code class="docutils literal"><span class="pre">smallint</span></code></li>
+</ul>
+<p>Any conversion failure will result in null, which is the same behavior
+as Hive. For example, converting the string <code class="docutils literal"><span class="pre">'foo'</span></code> to a number,
+or converting the string <code class="docutils literal"><span class="pre">'1234'</span></code> to a <code class="docutils literal"><span class="pre">tinyint</span></code> (which has a
+maximum value of <code class="docutils literal"><span class="pre">127</span></code>).</p>
+</div>
+<div class="section" id="avro-schema-evolution">
+<h2>Avro Schema Evolution</h2>
+<p>Presto supports querying and manipulating Hive tables with Avro storage format which has the schema set
+based on an Avro schema file/literal. It is also possible to create tables in Presto which infers the schema
+from a valid Avro schema file located locally or remotely in HDFS/Web server.</p>
+<p>To specify that Avro schema should be used for interpreting table’s data one must use <code class="docutils literal"><span class="pre">avro_schema_url</span></code> table property.
+The schema can be placed remotely in
+HDFS (e.g. <code class="docutils literal"><span class="pre">avro_schema_url</span> <span class="pre">=</span> <span class="pre">'hdfs://user/avro/schema/avro_data.avsc'</span></code>),
+S3 (e.g. <code class="docutils literal"><span class="pre">avro_schema_url</span> <span class="pre">=</span> <span class="pre">'s3n:///schema_bucket/schema/avro_data.avsc'</span></code>),
+a web server (e.g. <code class="docutils literal"><span class="pre">avro_schema_url</span> <span class="pre">=</span> <span class="pre">'http://example.org/schema/avro_data.avsc'</span></code>)
+as well as local file system. This url where the schema is located, must be accessible from the
+Hive metastore and Presto coordinator/worker nodes.</p>
+<p>The table created in Presto using <code class="docutils literal"><span class="pre">avro_schema_url</span></code> behaves the same way as a Hive table with <code class="docutils literal"><span class="pre">avro.schema.url</span></code> or <code class="docutils literal"><span class="pre">avro.schema.literal</span></code> set.</p>
+<p>Example:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">avro</span><span class="p">.</span><span class="n">avro_data</span> <span class="p">(</span>
+   <span class="n">id</span> <span class="nb">bigint</span>
+ <span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+   <span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;AVRO&#39;</span><span class="p">,</span>
+   <span class="n">avro_schema_url</span> <span class="o">=</span> <span class="s1">&#39;/usr/local/avro_data.avsc&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The columns listed in the DDL (<code class="docutils literal"><span class="pre">id</span></code> in the above example) will be ignored if <code class="docutils literal"><span class="pre">avro_schema_url</span></code> is specified.
+The table schema will match the schema in the Avro schema file. Before any read operation, the Avro schema is
+accessed so query result reflects any changes in schema. Thus Presto takes advantage of Avro’s backward compatibility abilities.</p>
+<p>If the schema of the table changes in the Avro schema file, the new schema can still be used to read old data.
+Newly added/renamed fields <em>must</em> have a default value in the Avro schema file.</p>
+<p>The schema evolution behavior is as follows:</p>
+<ul class="simple">
+<li>Column added in new schema:
+Data created with an older schema will produce a <em>default</em> value when table is using the new schema.</li>
+<li>Column removed in new schema:
+Data created with an older schema will no longer output the data from the column that was removed.</li>
+<li>Column is renamed in the new schema:
+This is equivalent to removing the column and adding a new one, and data created with an older schema
+will produce a <em>default</em> value when table is using the new schema.</li>
+<li>Changing type of column in the new schema:
+If the type coercion is supported by Avro or the Hive connector, then the conversion happens.
+An error is thrown for incompatible types.</li>
+</ul>
+<div class="section" id="limitations">
+<h3>Limitations</h3>
+<p>The following operations are not supported when <code class="docutils literal"><span class="pre">avro_schema_url</span></code> is set:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> is not supported.</li>
+<li>Using partitioning(<code class="docutils literal"><span class="pre">partitioned_by</span></code>) or bucketing(<code class="docutils literal"><span class="pre">bucketed_by</span></code>) columns are not supported in <code class="docutils literal"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code>.</li>
+<li><code class="docutils literal"><span class="pre">ALTER</span> <span class="pre">TABLE</span></code> commands modifying columns are not supported.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="procedures">
+<h2>Procedures</h2>
+<ul>
+<li><p class="first"><code class="docutils literal"><span class="pre">system.create_empty_partition(schema_name,</span> <span class="pre">table_name,</span> <span class="pre">partition_columns,</span> <span class="pre">partition_values)</span></code></p>
+<blockquote>
+<div><p>Create an empty partition in the specified table.</p>
+</div></blockquote>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">system.sync_partition_metadata(schema_name,</span> <span class="pre">table_name,</span> <span class="pre">mode)</span></code></p>
+<blockquote>
+<div><p>Check and update partitions list in metastore. There are three modes available:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">ADD</span></code> : add any partitions that exist on the file system but not in the metastore.</li>
+<li><code class="docutils literal"><span class="pre">DROP</span></code>: drop any partitions that exist in the metastore but not on the file system.</li>
+<li><code class="docutils literal"><span class="pre">FULL</span></code>: perform both <code class="docutils literal"><span class="pre">ADD</span></code> and <code class="docutils literal"><span class="pre">DROP</span></code>.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first"><code class="docutils literal"><span class="pre">system.drop_stats(schema_name,</span> <span class="pre">table_name,</span> <span class="pre">partitions)</span></code></p>
+<blockquote>
+<div><p>Drops statistics for a subset of partitions or the entire table. The partitions are specified as an
+array whose elements are arrays of partition values (similar to the <code class="docutils literal"><span class="pre">partition_values</span></code> argument in
+<code class="docutils literal"><span class="pre">create_empty_partition</span></code>). A null value for the <code class="docutils literal"><span class="pre">partition_values</span></code> argument indicates that stats
+should be dropped for the entire table.</p>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="examples">
+<h2>Examples</h2>
+<p>The Hive connector supports querying and manipulating Hive tables and schemas
+(databases). While some uncommon operations will need to be performed using
+Hive directly, most operations can be performed using Presto.</p>
+<p>Create a new Hive schema named <code class="docutils literal"><span class="pre">web</span></code> that will store tables in an
+S3 bucket named <code class="docutils literal"><span class="pre">my-bucket</span></code>:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">&#39;s3://my-bucket/&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a new Hive table named <code class="docutils literal"><span class="pre">page_views</span></code> in the <code class="docutils literal"><span class="pre">web</span></code> schema
+that is stored using the ORC file format, partitioned by date and
+country, and bucketed by user into <code class="docutils literal"><span class="pre">50</span></code> buckets (note that Hive
+requires the partition columns to be the last columns in the table):</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span> <span class="p">(</span>
+  <span class="n">view_time</span> <span class="k">timestamp</span><span class="p">,</span>
+  <span class="n">user_id</span> <span class="nb">bigint</span><span class="p">,</span>
+  <span class="n">page_url</span> <span class="nb">varchar</span><span class="p">,</span>
+  <span class="n">ds</span> <span class="nb">date</span><span class="p">,</span>
+  <span class="n">country</span> <span class="nb">varchar</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;ORC&#39;</span><span class="p">,</span>
+  <span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;ds&#39;</span><span class="p">,</span> <span class="s1">&#39;country&#39;</span><span class="p">],</span>
+  <span class="n">bucketed_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;user_id&#39;</span><span class="p">],</span>
+  <span class="n">bucket_count</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Drop a partition from the <code class="docutils literal"><span class="pre">page_views</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+<span class="k">WHERE</span> <span class="n">ds</span> <span class="o">=</span> <span class="nb">DATE</span> <span class="s1">&#39;2016-08-09&#39;</span>
+  <span class="k">AND</span> <span class="n">country</span> <span class="o">=</span> <span class="s1">&#39;US&#39;</span>
+</pre></div>
+</div>
+<p>Add an empty partition to the <code class="docutils literal"><span class="pre">page_views</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">create_empty_partition</span><span class="p">(</span>
+    <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">&#39;web&#39;</span><span class="p">,</span>
+    <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">&#39;page_views&#39;</span><span class="p">,</span>
+    <span class="n">partition_columns</span> <span class="o">=&gt;</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;ds&#39;</span><span class="p">,</span> <span class="s1">&#39;country&#39;</span><span class="p">],</span>
+    <span class="n">partition_values</span> <span class="o">=&gt;</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;2016-08-09&#39;</span><span class="p">,</span> <span class="s1">&#39;US&#39;</span><span class="p">]);</span>
+</pre></div>
+</div>
+<p>Drop stats for a partition of the <code class="docutils literal"><span class="pre">page_views</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">drop_stats</span><span class="p">((</span>
+    <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">&#39;web&#39;</span><span class="p">,</span>
+    <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">&#39;page_views&#39;</span><span class="p">,</span>
+    <span class="n">partition_values</span> <span class="o">=&gt;</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;2016-08-09&#39;</span><span class="p">,</span> <span class="s1">&#39;US&#39;</span><span class="p">]);</span>
+</pre></div>
+</div>
+<p>Query the <code class="docutils literal"><span class="pre">page_views</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+</pre></div>
+</div>
+<p>List the partitions of the <code class="docutils literal"><span class="pre">page_views</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="ss">&quot;page_views$partitions&quot;</span>
+</pre></div>
+</div>
+<p>Create an external Hive table named <code class="docutils literal"><span class="pre">request_logs</span></code> that points at
+existing data in S3:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">request_logs</span> <span class="p">(</span>
+  <span class="n">request_time</span> <span class="k">timestamp</span><span class="p">,</span>
+  <span class="n">url</span> <span class="nb">varchar</span><span class="p">,</span>
+  <span class="n">ip</span> <span class="nb">varchar</span><span class="p">,</span>
+  <span class="n">user_agent</span> <span class="nb">varchar</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">format</span> <span class="o">=</span> <span class="s1">&#39;TEXTFILE&#39;</span><span class="p">,</span>
+  <span class="n">external_location</span> <span class="o">=</span> <span class="s1">&#39;s3://my-bucket/data/logs/&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Collect statistics for the <code class="docutils literal"><span class="pre">request_logs</span></code> table:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">request_logs</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The examples shown here should work on Google Cloud Storage after replacing <code class="docutils literal"><span class="pre">s3://</span></code> with <code class="docutils literal"><span class="pre">gs://</span></code>.</p>
+<div class="section" id="cleaning-up">
+<h3>Cleaning up</h3>
+<p>Drop the external table <code class="docutils literal"><span class="pre">request_logs</span></code>. This only drops the metadata
+for the table. The referenced data directory is not deleted:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">DROP</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">request_logs</span>
+</pre></div>
+</div>
+<p>Drop a schema:</p>
+<div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">DROP</span> <span class="k">SCHEMA</span> <span class="n">hive</span><span class="p">.</span><span class="n">web</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="hive-connector-limitations">
+<h2>Hive Connector Limitations</h2>
+<p><a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a> is only supported if the <code class="docutils literal"><span class="pre">WHERE</span></code> clause matches entire partitions.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="hive-gcs-tutorial.html" class="btn btn-neutral float-right" title="13.8. Hive Connector GCS Tutorial" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="elasticsearch.html" class="btn btn-neutral" title="13.6. Elasticsearch Connector" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'312-e.16',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
