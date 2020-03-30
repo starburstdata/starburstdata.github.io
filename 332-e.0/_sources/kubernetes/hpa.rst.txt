@@ -1,0 +1,51 @@
+==========================================
+Horizontal Scaling of a Presto K8s Cluster
+==========================================
+
+Kubernetes allows scaling Presto using `Horizontal Pod Autoscaler <https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/>`_.
+
+
+Horizontal pod scaling
+----------------------
+
+HPA continously monitors Presto worker metrics and creates/terminates worker pods as needed
+to ensure there are enough worker pods to handle incoming queries.
+
+HPA can be enabled in the ``worker`` section of the Presto operator configuration file:
+
+.. code-block:: yaml
+
+    worker:
+      count: 2
+      autoscaling:
+        enabled: true
+        minReplicas: 1
+        maxReplicas: 100
+        targetCPUUtilizationPercentage: 80
+      cpuLimit: 15
+      cpuRequest: 15
+
+This configuration allows controlling the number of pods, as well as sets the target CPU usage the HPA will try to achieve.
+
+Note that for HPA to work, worker CPU limit must also be set, otherwise Kubernetes won't monitor CPU usage and HPA won't have any useful metrics to work on.
+Please set the CPU limit and CPU request to the same value when using HPA, preferably to ``number of node cores - 1`` for dedicated Presto nodes.
+Setting both of these to the same value is important because CPU utilization percentage is calculated as ``cpuUsage/cpuRequest``, but is limited by ``cpuLimit``.
+If ``cpuRequest`` is smaller than ``cpuLimit``, CPU utilization can be greater than 100%, and this can lead to huge spikes in the number of pods.
+
+Cluster scaling
+---------------
+
+HPA schedules new pods to be started, but the pods still need nodes to run on.
+They can be provisioned on demand or taken from a large global pool.
+
+Google Kubernetes Engine
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+On GKE it's possible for a Kubernetes cluster to autoscale the number of nodes according to the resources required by pods (see `Cluster autoscaler <https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler?hl=en_US>`_).
+Combined with HPA these two mechanisms allow you to minimize the cost of running an efficient Presto cluster.
+
+On-prem Kubernetes cluster
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+An on-prem cluster typically pools all machines available, with resources shared between different services in separate namespaces.
+While the total number of nodes is constant in this scenario, the amount of resources dedicated to Presto still matches the demand thanks to pod creation/termination by the HPA.

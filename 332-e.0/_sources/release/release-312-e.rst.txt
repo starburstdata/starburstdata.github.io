@@ -1,0 +1,412 @@
+=============
+Release 312-e
+=============
+
+General Changes
+---------------
+
+* Display actual statistics in ``EXPLAIN ANALYZE VERBOSE``.
+* Improve cardinality estimation for aggregations.
+* Add Oracle compatibility functions
+* Add support for column statistics in Glue.
+* Add support for Glue API proxy.
+* Support prepared statements that are longer than 4K bytes.
+* Add :doc:`/connector/sb-generic-jdbc`.
+* Add :doc:`/connector/sb-oracle` (requires license).
+* Add Starburst BigQuery Connector (requires license).
+* Add :doc:`/connector/sb-teradata` (requires license).
+* Add :doc:`/connector/sb-hive-mapr` (requires license).
+
+* Support resource group selection based on client tags for enterprise ODBC and JDBC drivers.
+* Add compression and encryption support for Spill to Disk.
+* Enable Cost-Based Optimizer (CBO) by default.
+* Add CloudWatch Agent compatible logger.
+* Fix incorrect results when dividing certain decimal numbers.
+
+Security Changes
+----------------
+
+* Add security audit log collection.
+* Add ``ldap.bind-dn`` and ``ldap.bind-password`` LDAP properties to allow LDAP 
+  authentication access LDAP server using service account.
+* Add optional additional security configuration options for authorizing 
+  resource access on HTTP level. Find more information about resource rules in
+  :doc:`/security/built-in-system-access-control`.
+
+* Raise required Java version to 8u161. This version allows unlimited strength cryptography.
+
+CLI Changes
+-----------
+
+* Fix failure when selecting a value of type ``UUID``.
+
+JDBC Changes
+------------
+
+* Fix failure when selecting a value of type ``UUID``.
+
+Hive Connector Changes
+----------------------
+
+.. warning::
+
+    The Hive configuration properties ``hive.empty-bucketed-partitions.enabled`` and
+    ``hive.multi-file-bucketing.enabled`` were removed in this release.
+    Behaviour of Hive Connector with ``hive.empty-bucketed-partitions.enabled=true`` and
+    ``hive.multi-file-bucketing.enabled=true`` is incorporated into default implementation
+    and it cannot be disabled.
+
+* Add support for Azure Data Lake Storage gen 2 (ABFS).
+* Enable Hive views execution using a config toggle.
+* Support CSV table storage format.
+* Support Apache Ranger authorization (requires licence).
+* Support Apache Sentry authorization (requires licence).
+* Support Avro tables with ``avro.schema.url`` in kerberized HDFS.
+* Fix Avro schema loading when ``SERDEPROPERTIES`` set.
+* Support partitioned Avro table with very long column type definition.
+* Support tables located in HDFS encryption zones managed with Hadoop KMS.
+* Add support for user impersonation when communicating with Hive Metastore.
+* Add ``hive.s3.positioned-reads.enabled`` configuration property allowing disabling positioned reads optimization.
+  Consider disabling the optimization when working with small Parquet files.
+
+
+SQL Server Connector Changes
+----------------------------
+
+* Support user impersonation.
+* Support retrieving table and column statistics. The statistics can be   
+  inspected with :doc:`/sql/show-stats` and are taken into account in
+  :doc:`/optimizer/cost-based-optimizations`.
+
+PostgreSQL Connector Changes
+----------------------------
+
+* Support user impersonation.
+* Support retrieving table and column statistics. The statistics can be 
+  inspected with :doc:`/sql/show-stats` and are taken into account in
+  :doc:`/optimizer/cost-based-optimizations`.
+
+MySQL Connector Changes
+-----------------------
+
+* Support retrieving table and column statistics. The statistics can be   
+  inspected with :doc:`/sql/show-stats` and are taken into account in
+  :doc:`/optimizer/cost-based-optimizations`.
+
+JDBC based Connectors Changes
+-----------------------------
+
+* Add metadata cache that is configured with ``metadata.cache-ttl`` and ``metadata.cache-missing``.
+  By default caching is disabled (equivalent to ``metadata.cache-ttl=0s`` and ``metadata.cache-missing=false``).
+* Collect JMX metrics about metadata information collection and connection usage.
+
+MongoDB Connector Changes
+-------------------------
+
+* Fix queries involving joins or aggregations on ``ObjectId`` type.
+* Fix queries involving joins or aggregations on ``row`` types containing ``ObjectId``.
+
+Server RPM Changes
+------------------
+
+* Change default location of the ``http-request.log`` to ``/var/log/presto``.
+  Previously, the log would be located in ``/var/lib/presto/data/var/log`` by default.
+
+Update 2
+========
+
+Security Changes
+----------------
+
+* Add support for selective disabling of KRB authentication for Presto clients.
+* Improve authenticated user authorization.
+
+RPM Changes
+-----------
+
+* Limit the size of ``http-request.log`` to 100MB by default.
+
+Hive Connector Changes
+----------------------
+
+* Optimize checking object privileges for Sentry.
+  Especially queries like ``SHOW TABLES`` on schemas with thousands of tables should be now much faster.
+
+JDBC based Connectors Changes
+-----------------------------
+
+* Fail query when accessing unsupported column. **This is backward incompatible** change,
+  user may restore previous behaviour by using ``unsupported-type.handling-strategy=IGNORE`` connector configuration
+  property or by setting ``unsupported_type_handling_strategy`` catalog session property to ``IGNORE``.
+* Add option to convert unsupported column values to unbounded ``VARCHAR``.
+  This could be achieved by using ``unsupported-type.handling-strategy=CONVERT_TO_VARCHAR`` connector configuration
+  property or by setting ``unsupported_type_handling_strategy`` catalog session property to ``CONVERT_TO_VARCHAR``.
+
+Oracle Connector Changes
+------------------------
+
+* Introduce ``oracle.number.default-scale`` configuration property (and matching ``number_default_scale`` session
+  property). This value will be used when mapping Oracle ``NUMBER`` data type (without precision and scale) to Presto
+  ``DECIMAL``.
+* Introduce ``oracle.number.rounding-mode`` configuration property (and matching ``number_rounding_mode`` session
+  property). This value will be used for rounding fractional part of Oracle ``NUMBER`` data type (without precision and scale)
+  value to Presto ``DECIMAL`` where needed scale exceeds configured (with ``oracle.number.default-scale``) Presto ``DECIMAL`` scale.
+* Push down ``LIMIT`` clause to Oracle Database.
+
+Teradata Connector Changes
+--------------------------
+
+* Push down ``LIMIT`` clause to Teradata Database.
+
+Big Query Connector Changes
+---------------------------
+
+* Push down ``LIMIT`` clause.
+
+Update 3
+========
+
+Teradata Table Operator Connector Changes
+-----------------------------------------
+
+* Fix handling unsupported types.
+
+Update 4
+========
+
+Hive Connector Changes
+----------------------
+
+* Update Apache Ranger dependency to 1.2.0
+* Support column masking for tag based policies in ``ranger`` Hive security.
+
+Update 5
+========
+
+General Changes
+---------------
+
+* Respect ``X-Forwarded-For`` header when retrieving query submitting user's source address.
+  The behavior can be controlled with ``dispatcher.forwarded-header`` configuration property.
+
+Security Changes
+----------------
+
+* Allow schema owner to create, drop and rename schema when using file-based connector access control.
+
+Teradata Connector Changes
+--------------------------
+
+* Fix bug causing incorrect results for ``LIMIT`` pushdown.
+* Support Kerberos authentication.
+
+Teradata Table Operator Connector Changes
+-----------------------------------------
+
+* Introduce system table ``system.table_operator_logs`` that can expose logs from Table Operator executions.
+* Propagate proper Teradata errors.
+* Support data transfer encryption.
+* Support Kerberos authentication.
+* Support ``NUMBER`` (without precision and scale) data format.
+
+JDBC based Connectors Changes
+-----------------------------
+
+* Restoring default behaviour for column with unsupported types. Such columns will be ignored.
+  User may configure to fail such queries by using ``unsupported-type.handling-strategy=FAIL`` connector configuration
+  property or by setting ``unsupported_type_handling_strategy`` catalog session property to ``FAIL``.
+
+Generic JDBC Connector Changes
+------------------------------
+
+* Support user impersonation.
+
+Update 6
+========
+
+Teradata Connector Changes
+--------------------------
+
+* Support views with optimized metadata queries.
+
+Teradata Table Operator Connector Changes
+-----------------------------------------
+
+* Support views with optimized metadata queries.
+
+Update 7
+========
+
+General Changes
+---------------
+
+* Fix a rare failure when running ``EXPLAIN ANALYZE`` on a query containing
+  window functions.
+* Fix failure when querying ``/v1/resourceGroupState`` endpoint for non-existing resource group.
+* Allow to display details of query that is in the queue or during semantic analysis.
+  Query details are accessible from the web ui or ``system.runtime.queries``.
+* Allow to cancel query that is in the queue or during semantic analysis.
+  Query can be cancelled from the web ui or using builtin procedure ``system.runtime.kill_query``.
+* Remove ``distributed_planning_time_ms`` column from ``system.runtime.queries``.
+* Change the semantics of ``analysis_time_ms`` column from ``system.runtime.queries``.
+  Previously it was showing the time spent on query planning, now it shows time spent on semantic analysis.
+* Add ``planning_time_ms`` column to ``system.runtime.queries`` that shows time spent on query planning.
+* Improve performance of information schema tables.
+* Eliminate cross joins in some queries with coercions and complex expressions on join conditions.
+
+Hive Connector Changes
+----------------------
+
+* Fix reading collection delimiter set by Hive version earlier than 3.0.
+* Fix reading LZOP compressed text files.
+* Support ``INSERT INTO`` bucketed Hive table.
+* Allow to ignore partitions that do not have matching data directory with ``hive.ignore-absent-partitions=true`` connector
+  configuration property.
+
+Teradata Table Operator Connector Changes
+-----------------------------------------
+
+* Add ``system.validate_table_operator`` procedure that can validate if connector is installed and configured properly.
+  This can be executed with ``CALL teradata.system.validate_table_operator()``.
+
+Kudu Connector Changes
+----------------------
+
+* Update Kudu client library version to ``1.10.0``.
+
+Update 8
+========
+
+Hive Connector Changes
+----------------------
+
+* Add support for custom S3 filesystems.
+* Add ``ranger.policy-cache-dir`` property that enables Presto startup without connectivity with Ranger.
+
+JDBC based Connectors Changes
+-----------------------------
+
+* Improve metadata caching by storing list of schemas and tables.
+
+Teradata Connectors Changes
+---------------------------
+
+* Optimize metadata query to verify table existence.
+* Optimize metadata query to retrieve table columns.
+
+Update 9
+========
+
+General Changes
+---------------
+
+* Improve configuration file parsing. Trailing whitespace in configuration values will is now ignored
+  just as the leading whitespace used to be. Parsing of boolean values is now strict, anything other than
+  ``true`` or ``false`` (case-insensitively) is now considered an error. Previously anything other than
+  ``true`` was considered a false value.
+* Limit total size of ``http-request.log.*.gz`` files. This is controlled by ``http-server.log.max-history
+  * http-server.log.max-size``, which is 1500MB by default.
+* Allow overriding session time zone for clients via the
+  ``sql.forced-session-time-zone`` configuration property.
+* Allow specifying column lists to analyze in ``ANALYZE``.
+
+Teradata Connector Changes
+--------------------------
+
+* Create table in Teradata with ``NO PRIMARY INDEX``.
+
+Oracle Connector Changes
+---------------------------
+
+* Fix ``CREATE TABLE AS SELECT`` when table is created in non user schema.
+* Support Kerberos authentication.
+
+JDBC Driver Changes
+-------------------
+
+* Fix listing of views in ``java.sql.DatabaseMetaData.getTables``.
+
+Hive Connector Changes
+----------------------
+
+* Add ``ranger.cache-refresh-interval`` property that allows ranger groups data to be refreshed
+  when ranger cache is enabled.
+* Fix parametric column types support for Hive views.
+* Fix projection pushdown during cross-join elimination when outer join is present.
+
+MySQL Connector Changes
+-----------------------
+
+* Add ``mysql.jdbc.use-information-schema`` configuration option to control whether
+  MySQL JDBC driver should use MySQL ``information_schema`` to answer metadata
+  queries. This may be helpful when diagnosing problems.
+
+Update 10
+=========
+
+General Changes
+---------------
+
+* Fix rare failure on the client side due to the server sending incorrect
+  additional row of data.
+* Add procedure ``drop_stats`` for removing statistics for a table or a specified set of partitions.
+
+Hive Connector Changes
+----------------------
+
+* Allow to to specify only ``hive.metastore-cache-ttl`` when enabling Hive Metastore caching (without setting
+  ``hive.metastore-refresh-interval``, which is disabled by default).
+* Optimize checking object privileges for Sentry.
+  Especially queries like ``SHOW TABLES`` on schemas with thousands of tables should be now much faster.
+* Improve hive query execution when view was created with tables without schema specified.
+
+Security Changes
+----------------
+
+* Improve query results authorization security with one-time tokens.
+* Add user groups and user group providers.
+* Add group support to file-based access control rules.
+* Add group provider which uses LDAP group information.
+
+Teradata Connector Changes
+--------------------------
+
+* Make data transfer resilient to network outages.
+
+Update 11
+=========
+
+Hive Connector Changes
+----------------------
+
+* Fix reading Parquet statistics for ``varchar`` data type. Previously queries would fail with
+  ``Corrupted statistics for column ...`` error.
+* Allow using several Hive catalogs with different configuration (with different Kerberos authentication setup).
+
+Update 12
+=========
+
+Hive Connector Changes
+----------------------
+
+* Reduce Metastore load when inserting data or analyzing tables.
+
+Update 13
+=========
+
+General Changes
+---------------
+
+* Limit total size of ``server.log.*.gz`` files. This is controlled by ``log.max-history * log.max-size``,
+  which is 1500MB by default.
+* Reduce number of metadata queries during planning.
+  This change disables stats collection for non-EXPLAIN queries. If you
+  want to have access to such stats in query completed event listener, you
+  need to re-enable stats by collection using ``collect-plan-statistics-for-all-queries``
+  property.
+
+Hive Connector Changes
+----------------------
+
+* Fix query failure when reading Parquet file with character data and no statistics.
+* Add support for Parquet files with compatible decimal precision.

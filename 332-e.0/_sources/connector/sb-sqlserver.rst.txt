@@ -1,0 +1,75 @@
+==============================
+Starburst SQL Server Connector
+==============================
+
+The Starburst SQL Server Connector is an extended version of the
+:doc:`/connector/sqlserver` with configuration and usage identical.
+
+The following improvements are included: 
+
+.. contents::
+  :local:
+
+User Impersonation
+------------------
+
+SQL Server connector supports user impersonation. Please see
+:doc:`/security/impersonation` for more details.
+
+User impersonation can be turned with:
+
+.. code-block:: none
+
+    sqlserver.impersonation.enabled=true
+
+User impersonation in SQL Server connector is based on ``EXECUTE AS USER``.
+For more details please visit: `docs.microsoft.com <https://docs.microsoft.com/en-us/sql/t-sql/statements/execute-as-transact-sql?view=sql-server-2017>`_.
+
+
+Table Statistics
+----------------
+
+SQL Server connector supports table and column statistics, as documented in
+:doc:`/optimizer/statistics`. The statistics are collected by SQL Server and
+retrieved by the connector. Currently, the connector can use information stored
+in single-column statistics. SQL Server Database can automatically create column
+statistics for certain columns. If column statistics were not created
+automatically for a certain column, you can create them by executing the
+following statement in SQL Server Database.
+
+.. code-block:: none
+
+    CREATE STATISTICS my_statistics_name ON table_schema.table_name (column_name);
+
+SQL Server Database routinely updates the statistics. In some cases, you may
+want to force statistics update (e.g. after defining new column statistics or
+after changing data in the table). You can do that by executing the following
+statement in SQL Server Database.
+
+.. code-block:: none
+
+    UPDATE STATISTICS table_schema.table_name;
+
+Please refer to SQL Server documentation for information about options,
+limitations and additional considerations.
+
+The table and column statistics can be viewed in Presto using :doc:`/sql/show-stats`
+and are used for :doc:`/optimizer/cost-based-optimizations`.
+
+.. list-table:: Table Statistics Configuration Properties
+  :widths: 15, 80, 5
+  :header-rows: 1
+
+  * - Property Name
+    - Description
+    - Default
+  * - ``statistics.enabled``
+    - Enables table and column statistics.
+    - ``true``
+  * - ``statistics.cache-ttl``
+    - Duration for which table and column statistics are cached.
+    - ``0s``
+  * - ``statistics.cache-missing``
+    - Cache the fact that table statistics are not available.
+    - ``false``
+
