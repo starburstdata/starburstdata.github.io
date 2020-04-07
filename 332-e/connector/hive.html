@@ -35,7 +35,7 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
         <link rel="up" title="9. Connectors" href="../connector.html"/>
-        <link rel="next" title="Hive Connector GCS Tutorial" href="hive-gcs-tutorial.html"/>
+        <link rel="next" title="Hive Object Caching" href="hive-cache.html"/>
         <link rel="prev" title="Google Sheets Connector" href="googlesheets.html"/> 
 
   
@@ -87,7 +87,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../admin.html">7. Administration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">8. Query Optimizer</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../connector.html">9. Connectors</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../connector.html#starburst-connectors">9.1. Starburst Connectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../connector.html#starburst-connectors-and-connector-extensions">9.1. Starburst Connectors and Connector Extensions</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../connector.html#presto-connectors">9.2. Presto Connectors</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="accumulo.html">Accumulo Connector</a></li>
 <li class="toctree-l3"><a class="reference internal" href="bigquery.html">BigQuery Connector</a></li>
@@ -117,6 +117,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#hive-connector-limitations">Hive Connector Limitations</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="hive-cache.html">Hive Object Caching</a></li>
 <li class="toctree-l3"><a class="reference internal" href="hive-gcs-tutorial.html">Hive Connector GCS Tutorial</a></li>
 <li class="toctree-l3"><a class="reference internal" href="hive-security.html">Hive Security Configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="jmx.html">JMX Connector</a></li>
@@ -146,8 +147,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../language.html">11. SQL Language</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sql.html">12. SQL Statement Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">13. Migration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../versions.html">14. Older Versions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">14. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">15. Versions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release.html">16. Release Notes</a></li>
 </ul>
 
@@ -615,11 +616,15 @@ this parameter takes precedence over
 <td>ARN of an IAM role to assume when connecting to the Glue
 Catalog.</td>
 </tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.metastore.glue.external-id</span></code></td>
+<td>External ID for the IAM role trust policy when connecting
+to the Glue Catalog.</td>
+</tr>
 </tbody>
 </table>
 </div>
 <div class="section" id="amazon-s3-configuration">
-<h2>Amazon S3 Configuration<a class="headerlink" href="#amazon-s3-configuration" title="Permalink to this headline">#</a></h2>
+<span id="hive-s3"></span><h2>Amazon S3 Configuration<a class="headerlink" href="#amazon-s3-configuration" title="Permalink to this headline">#</a></h2>
 <p>The Hive Connector can read and write tables that are stored in S3.
 This is accomplished by having a table or database location that
 uses an S3 prefix, rather than an HDFS prefix.</p>
@@ -647,62 +652,65 @@ uses an S3 prefix, rather than an HDFS prefix.</p>
 <tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.iam-role</span></code></td>
 <td>IAM role to assume.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.endpoint</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.external-id</span></code></td>
+<td>External ID for the IAM role trust policy.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.endpoint</span></code></td>
 <td>The S3 storage endpoint server. This can be used to
 connect to an S3-compatible storage system instead
 of AWS. When using v4 signatures, it is recommended to
 set this to the AWS region-specific endpoint
 (e.g., <code class="docutils literal"><span class="pre">http[s]://&lt;bucket&gt;.s3-&lt;AWS-region&gt;.amazonaws.com</span></code>).</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.storage-class</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.storage-class</span></code></td>
 <td>The S3 storage class to use when writing the data. Currently only
 <code class="docutils literal"><span class="pre">STANDARD</span></code> and <code class="docutils literal"><span class="pre">INTELLIGENT_TIERING</span></code> storage classes are supported.
 Default storage class is <code class="docutils literal"><span class="pre">STANDARD</span></code></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.signer-type</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.signer-type</span></code></td>
 <td>Specify a different signer type for S3-compatible storage.
 Example: <code class="docutils literal"><span class="pre">S3SignerType</span></code> for v2 signer type</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.signer-class</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.signer-class</span></code></td>
 <td>Specify a different signer class for S3-compatible storage.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.path-style-access</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.path-style-access</span></code></td>
 <td>Use path-style access for all requests to the S3-compatible storage.
 This is for S3-compatible storage that doesn’t support virtual-hosted-style access,
 defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.staging-directory</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.staging-directory</span></code></td>
 <td>Local staging directory for data written to S3.
 This defaults to the Java temporary directory specified
 by the JVM system property <code class="docutils literal"><span class="pre">java.io.tmpdir</span></code>.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.pin-client-to-current-region</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.pin-client-to-current-region</span></code></td>
 <td>Pin S3 requests to the same region as the EC2
 instance where Presto is running,
 defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.ssl.enabled</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.ssl.enabled</span></code></td>
 <td>Use HTTPS to communicate with the S3 API, defaults to <code class="docutils literal"><span class="pre">true</span></code>.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.sse.enabled</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.sse.enabled</span></code></td>
 <td>Use S3 server-side encryption, defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.sse.type</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.sse.type</span></code></td>
 <td>The type of key management for S3 server-side encryption.
 Use <code class="docutils literal"><span class="pre">S3</span></code> for S3 managed or <code class="docutils literal"><span class="pre">KMS</span></code> for KMS-managed keys,
 defaults to <code class="docutils literal"><span class="pre">S3</span></code>.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.sse.kms-key-id</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.sse.kms-key-id</span></code></td>
 <td>The KMS Key ID to use for S3 server-side encryption with
 KMS-managed keys. If not set, the default key is used.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.kms-key-id</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.kms-key-id</span></code></td>
 <td>If set, use S3 client-side encryption and use the AWS
 KMS to store encryption keys and use the value of
 this property as the KMS Key ID for newly created
 objects.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.encryption-materials-provider</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.encryption-materials-provider</span></code></td>
 <td>If set, use S3 client-side encryption and use the
 value of this property as the fully qualified name of
 a Java class which implements the AWS SDK’s
@@ -711,11 +719,11 @@ class also implements <code class="docutils literal"><span class="pre">Configura
 API, the Hadoop configuration will be passed in after
 the object has been created.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.upload-acl-type</span></code></td>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.upload-acl-type</span></code></td>
 <td>Canned ACL to use while uploading files to S3, defaults
 to <code class="docutils literal"><span class="pre">Private</span></code>.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">hive.s3.skip-glacier-objects</span></code></td>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">hive.s3.skip-glacier-objects</span></code></td>
 <td>Ignore Glacier objects rather than failing the query. This
 skips data that may be expected to be part of the table
 or partition. Defaults to <code class="docutils literal"><span class="pre">false</span></code>.</td>
@@ -724,7 +732,7 @@ or partition. Defaults to <code class="docutils literal"><span class="pre">false
 </table>
 </div>
 <div class="section" id="s3-credentials">
-<h3>S3 Credentials<a class="headerlink" href="#s3-credentials" title="Permalink to this headline">#</a></h3>
+<span id="hive-s3-credentials"></span><h3>S3 Credentials<a class="headerlink" href="#s3-credentials" title="Permalink to this headline">#</a></h3>
 <p>If you are running Presto on Amazon EC2, using EMR or another facility,
 it is recommended that you use IAM Roles for EC2 to govern access to S3.
 To enable this, your EC2 instances need to be assigned an IAM Role which
@@ -752,7 +760,7 @@ This Hadoop configuration property must be set in the Hadoop configuration
 files referenced by the <code class="docutils literal"><span class="pre">hive.config.resources</span></code> Hive connector property.</p>
 </div>
 <div class="section" id="s3-security-mapping">
-<h3>S3 Security Mapping<a class="headerlink" href="#s3-security-mapping" title="Permalink to this headline">#</a></h3>
+<span id="hive-s3-security-mapping"></span><h3>S3 Security Mapping<a class="headerlink" href="#s3-security-mapping" title="Permalink to this headline">#</a></h3>
 <p>Presto supports flexible security mapping for S3, allowing for separate
 credentials or IAM roles for specific users or buckets/paths. The IAM role
 for a specific query can be selected from a list of allowed roles by providing
@@ -1471,7 +1479,7 @@ Presto returns different results than Hive.</li>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="hive-gcs-tutorial.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="Hive Connector GCS Tutorial" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="hive-cache.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="Hive Object Caching" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="googlesheets.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="Google Sheets Connector" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
