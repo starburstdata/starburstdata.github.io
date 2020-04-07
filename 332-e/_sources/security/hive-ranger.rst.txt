@@ -1,0 +1,112 @@
+======================================
+Hive Level Security with Apache Ranger
+======================================
+
+Overview
+========
+
+Apache Ranger offers comprehensive security for Hadoop. Using the Apache Ranger
+web console, you can manage policies for access to data for authenticated users
+and applications such as Presto.
+
+Starburst Enterprise Presto can use Apache Ranger for :doc:`role-base access
+control <./rbac>` enforcing the same and existing privileges granted on Hive
+objects. Presto will enforce privileges assigned to Hive Databases, Tables, and
+Columns. If a user does not have a privilege to query an object, the query will
+fail and an error will be returned.
+
+.. warning::
+
+  The Hive level security for Apache Ranger is limited to usage with the
+  :doc:`Hive connector only </connector/sb-hive>`. We suggest to replace it with
+  the more powerful :doc:`system level security <./system-ranger>`. It is
+  capable of securing catalogs using other connectors and many other aspects.
+
+Before You Begin
+================
+
+Before you configure Presto with Apache Ranger, verify the following prerequisites:
+
+* Hortonworks Data Platform (HDP) 2.6+ with Apache Ranger and Apache Hive 
+  installed.
+* If you’re not using HDP, then Apache Ranger 0.7.1+ must be installed.
+* Presto Coordinator and Presto Workers have the appropriate network access to 
+  communicate with the Apache Ranger Service. Typically this is port 6080 or 
+  6182, if SSL is used.
+
+If you are new to Apache Ranger, Hortonworks provides excellent documentation
+for installing and configuring Apache Ranger:
+
+* https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.5/bk_security/content/overview_ranger_ambari_install.html>
+
+Architecture
+============
+
+When a query is submitted to Presto, Presto parses and analyzes the query to
+understand the privileges required by the user to access a particular object.
+Presto communicates with the Apache Ranger Service to determine if the request
+is valid. If the request is valid, the query continues to execute. If the
+request is invalid, an error is returned to the user.
+
+Caching is also used to improve performance and reduce the number of requests to
+the Ranger service.
+
+Configuring Presto with Apache Ranger
+=====================================
+
+Apache Ranger Configuration
+---------------------------
+
+There needs to be sys admin Ranger user (user with role ``ROLE_SYS_ADMIN``) that
+matches Presto Kerberos principal ``ranger.kerberos-principal`` or Ranger Presto
+plugin username ``ranger.presto-plugin-username`` and password
+``ranger.presto-plugin-password``, if ``BASIC`` auth is used.
+
+Presto Kerberos principal is translated to Ranger user name via
+``auth-to-local`` hadoop rules from ``core-site.xml``.
+
+Presto Configuration for Apache Ranger
+--------------------------------------
+
+Starburst Enterprise Presto must be configured to enable Presto to communicate
+with the Apache Ranger service. To enable set the following property in the Hive
+connector configuration.
+
+.. code-block:: none
+
+    hive.security = ranger
+
+Once Apache Ranger is enabled for Presto, there are additional required and
+optional properties to further configure.
+
+Apache Ranger Based Authorization
+=================================
+
+Find more information about the necessary configuration properties in
+:ref:`hive-ranger-authorization`.
+
+Additional Features
+===================
+
+In addition to enforcing the policies in Apache Ranger, Presto also integrates
+with:
+
+* Apache Ranger Key Management Service
+* row level filtering
+* column masking
+* tag based policies
+* support for AWS Glue Data Catalog
+
+
+Limitations
+===========
+
+Presto only enforces the Apache Ranger policies. Presto does not support any
+modification of authorization policies in Ranger. This includes commands like
+CREATE ROLE, GRANT, or REVOKE. If you need to modify the roles and privileges,
+that must be done via Apache Ranger UI.
+
+Authorization information cannot be accessed by querying the following tables
+such as ``information_schema.roles``, ``information_schema.applicable_roles``,
+``information_schema.enabled_roles``, and
+``information_schema.table_privileges``

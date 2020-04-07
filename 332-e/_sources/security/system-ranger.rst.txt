@@ -1,0 +1,290 @@
+========================================
+System Level Security with Apache Ranger
+========================================
+
+The integration of `Apache Ranger <https://ranger.apache.org/>`_ with Starburst
+Enterprise Presto enables a :doc:`global role-based access control <./rbac>` and
+authorization model at the Presto system level.
+
+Policies in Ranger are created with the Ranger user interface and define access
+and authorization. Each policy combines user and group information with a
+resource and access rights to the resource. Ranger is configured to your
+organization's LDAP system for user and group information. Ranger usage requires
+the installation of the Presto Ranger plugin. It creates the Starburst
+Enterprise Presto ``starburst-enterprise-presto`` service type, or service
+definition, in Ranger. This encompasses a Presto-specific set of resources that
+include catalog, schema, table, column, and more, so access rules for there
+resources can be configured in Ranger.
+
+The Ranger Presto plugin is responsible for connecting to Ranger from Presto and
+using the defined policies for Presto resources. Any user action in Presto, such
+as submitting a query, is validated against the policies from Ranger and
+potentially prevented.
+
+For example, a query is parsed and analyzed to determine all involved resources
+such as schemas and tables. Once a list is created, all policies are analyzed in
+Presto to determine if the user initiating the query has all necessary access
+rights. Processing only continues if all rights are granted.
+
+.. note::
+
+  Contrary to the :doc:`Hive level security <hive-ranger>`, the system level
+  Ranger integration is suitable to define role-based access to catalogs using
+  any connector as well as a number of other system resources.
+
+Starting to use of Ranger for role-based access control can be summarized into a
+few steps:
+
+* Install Ranger and add the Presto Ranger plugin
+* Configure Ranger for user and group information from LDAP
+* Configure Presto to use Ranger
+* Define policies with the Ranger user interface
+* Enjoy the access control for catalogs, schema, tables and more for all users
+
+Details for all these steps and more are documented in the following sections.
+
+.. contents::
+  :local:
+
+Ranger Installation and Configuration
+-------------------------------------
+
+Your first important step is the installation and configuration of
+Ranger, which can be summarized to the following steps:
+
+* Install Ranger
+* Configure Ranger to access your LDAP system for user, group and role 
+  information
+* Add Presto Ranger plugin to Ranger
+
+**Installation**
+
+AWS CloudFoundation Deployment
+
+  The Starburst support for Amazon CFT-based installation includes installation
+  of Apache Ranger and all relevant configuration. Detailed information is
+  available in the :doc:`AWS documentation </aws>`.
+
+.. TBD the link above needs to link to a specific document in the kubernetes
+  folder that is yet to be created
+
+K8s Deployment
+
+  The Starburst support for Kubernetes-based installation includes installation
+  of Apache Ranger and all relevant configuration. Detailed information is
+  available in the :doc:`Kubernetes documentation </kubernetes>`.
+
+.. TBD the link above needs to link to a specific document in the kubernetes 
+  folder that is yet to be created
+
+Connect Existing Ranger
+
+  Using an existing Ranger is supported. You just have to make sure that the
+  coordinator has network access to Ranger and LDAP is configured, so that all
+  relevant users, groups and roles are available. As a next step you need
+  install the Presto Ranger Plugin.
+    
+Manual Ranger Installation
+
+  If you are running Presto on-premise or some other custom deployment, you need
+  to install Ranger following the documentation from the Ranger project.
+
+**Connect Ranger to LDAP**
+
+Ranger needs to access the information about your users, groups and roles in
+your LDAP system. With the K8s and AWS installation methods, all details are
+already configured. For existing Ranger usage or manual installation, you need
+to ensure that Ranger is connected to your LDAP directory provider and a
+synchronization process is in place. The process varies based on your LDAP
+system and documented in the Ranger documentation.
+
+..  we have a doc for ldap/ranger sync 
+  https://starburstdata.atlassian.net/wiki/spaces/STARBURST/pages/313491457/Syncing+Ranger+with+LDAP 
+  do we want have this content here or something similar (imho yes)
+
+**Presto Ranger Plugin**
+
+The Presto Ranger plugin is automatically installed with Ranger when using the
+AWS CFT and Kubernetes installations. For existing Ranger instances or custom
+Ranger installation, you need follow these steps:
+
+.. TBD .. fix info below
+
+* Locate the directory (or JAR file) ??? from your Starburst Enterprise Presto distribution
+* Copy the directory into ??? in your Ranger installation
+* Restart Ranger
+* Access the Ranger user interface and confirm that you can find the
+  *Starburst Enterprise Presto* service type
+
+With the Presto Ranger plugin installed in Ranger, you can create one or
+multiple services with the Starburst Enterprise Presto. This allows you to have
+separate services for different Presto clusters.
+
+Ranger Plugin Configuration
+---------------------------
+
+With Ranger installed and configured you are now ready to configure Ranger as
+the activated :doc:`access control system
+</security/built-in-system-access-control>`. Update ``etc/config.properties``
+and set the path to your Ranger access control configuration file:
+
+.. code-block:: properties
+
+  access-control.config-files=etc/access-control-ranger.properties
+
+Subsequently configure details in the file:
+
+.. code-block:: properties
+
+    access-control.name=ranger 
+    ranger.policy-rest-url=http://ranger.example.com:6080
+    ranger.service-name=presto-production
+    ranger.presto-plugin-username=<username>
+    ranger.presto-plugin-password=<password>
+    ranger.policy-refresh-interval=30s
+
+
+.. list-table:: Ranger Configuration Properties
+  :widths: 15, 80, 5
+  :header-rows: 1
+
+  * - Property
+    - Description
+    - Default value
+  * - ``access-control.name``
+    - Set the name of the access control system to ``ranger`` to activate the
+      Ranger plugin.
+    - 
+  * - ``ranger.policy-rest-url``
+    - The URL to the Ranger server
+    -
+  * - ``ranger.service-name``
+    - Name of the service defined in Ranger for this Presto cluster
+    -
+  * - ``ranger.authentication-type``
+    - Authentication type for Presto connecting to Ranger, ``BASIC`` or 
+      ``KERBEROS``
+    - BASCIC
+  * - ``ranger.presto-plugin-username``
+    - Username for the Ranger Presto plugin to use to connect to Ranger with 
+      BASIC authentication
+    -
+  * - ``ranger.presto-plugin-password``
+    - Password for the Ranger Presto plugin to use to connect to Ranger with 
+      BASIC authentication
+    -
+  * - ``ranger.plugin-policy-ssl-config-file``
+    - Path to Ranger plugin SSL configuration
+    - 
+  * - ``ranger.kerberos-principal``
+    - Ranger service kerberos principal
+    - 
+  * - ``ranger.kerberos-keytab``
+    - Path to the Ranger service kerberos keytab file
+    - 
+  * - ``ranger.policy-cache-dir``
+    - Ranger's client persistent cache for policies
+    - 
+  * - ``ranger.policy-refresh-interval``
+    - Interval to refresh policies from Ranger
+    - ``30s``
+  * - ``ranger.policy-connection-timeout``
+    - Timeout to use when connecting to Ranger
+    - ``120s``
+  * - ``ranger.policy-read-timeout``
+    - Timeout to use when reading policies from Ranger
+    - ``30s``
+
+.. Following properties are commented out since at this stage we do not want  
+   them exposed to readers
+  * - ``ranger.all-groups.page-size``
+    - Page size to load all groups from Ranger, used to chunk the data loading 
+    - TBD ???
+  * - ``ranger.all-groups.loading-parallelism``
+    - Max ranger groups parallel sections during single load TBD ?? doesnt make sense
+    - 
+  * - ``ranger.all-groups.loading-connection-timeout``
+    - Timeout to use when connecting to load all groups from Ranger
+    - ``120s``
+  * - ``ranger.all-groups.loading-read-timeout``
+    - Timeout to use when reading all groups from Ranger
+    - ``30s``
+  * - ``ranger.single-user-groups.loading-connection-timeout``
+    - Timeout to use when connecting to load a single user's groups from Ranger
+    - ``30s``
+  * - ``ranger.single-user-groups.loading-read-timeout``
+    - Timeout to use when reading a single user's groups from Ranger
+    - ``10s``
+
+User, Groups and Roles
+----------------------
+
+User, groups and roles are sourced from your connected LDAP directory and are
+used the target users for each policy.
+
+Policies
+--------
+
+Policy creation and management is performed with the Ranger user interface, or
+optionally with the Ranger REST API.
+
+A policy is a combination of set of resources and the associated privileges.
+Specific user interface elements with drop down and auto-completion are
+available for all resources.
+
+Resource Sets
+-------------
+
+A resource set includes one or more resources of different resource types.
+Wildcard characters are supported to select a number of resources based on a
+pattern.
+
+* catalog
+* catalog - schema
+* catalog - schema - table
+* catalog - schema - table - column
+* catalog - schema - procedure
+* catalog - session property
+* function
+* system session property
+* query
+
+As you can see from the list above, some resources are hierarchically organized
+within a catalog and below. This allows you for example to restrict access to a
+complete catalog, a specific schema, or table or even down to a column or a
+procedure within a schema.
+
+For example, if you can define a set of resources, that allows you to restrict
+access to all the two tables ``credit-info`` and ``cards-info`` in all schemas
+in the ``hdfs`` catalog.
+
+* Catalog: hdfs
+* Schema: *
+* Table: credit-info, cards-info
+
+A set of resource works as a primary key for a policy. It needs to be unique.
+Multiple policies however may cover a single resource because of the wildcard.
+
+Privilege Sets
+--------------
+
+A set of privileges consists of one or more user groups, roles and users, and a
+set of access types for the specified resource set. Privileges can allow or deny operations.
+
+The catalog, schema, table and column resources, which grant access to resources
+for queries, have the following access types.
+
+* ``SELECT`` to read data from the resource.
+* ``INSERT`` to add data to the resource.
+* ``UPDATE`` to change data in the resource.
+* ``DELETE`` to remove data from the resource.
+* ``OWNERSHIP`` to claim ownership of the resource, which provides complete 
+  access.
+
+In addition there are privileges that determine access to queries and their usage, and are therefore of a more general nature.
+
+* ``SELECT`` to list queries.
+* ``EXECUTE`` to initiate processing of any query. Without this privilege user 
+  action is extremely limited.
+* ``KILL`` to stop processing of any query.
+

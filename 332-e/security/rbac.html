@@ -35,7 +35,7 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
         <link rel="up" title="6. Security" href="../security.html"/>
-        <link rel="next" title="6.14. Apache Ranger Integration" href="ranger.html"/>
+        <link rel="next" title="6.14. System Level Security with Apache Ranger" href="system-ranger.html"/>
         <link rel="prev" title="6.12. Event Logger" href="event-logger.html"/> 
 
   
@@ -99,14 +99,15 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">6.13. Role Based Access Control</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#roles-in-presto">ROLES in Presto</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#column-level-authorization">Column Level Authorization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#apache-ranger-or-apache-sentry">Apache Ranger or Apache Sentry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apache-ranger-or-apache-sentry-for-hive-level-security">Apache Ranger or Apache Sentry for Hive Level Security</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="ranger.html">6.14. Apache Ranger Integration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sentry.html">6.15. Apache Sentry Integration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="impersonation.html">6.16. User Impersonation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="credential-passthrough.html">6.17. Kerberos Credential Passthrough</a></li>
-<li class="toctree-l2"><a class="reference internal" href="okta-authentication.html">6.18. Okta Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="system-ranger.html">6.14. System Level Security with Apache Ranger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-ranger.html">6.15. Hive Level Security with Apache Ranger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-sentry.html">6.16. Hive Level Security with Apache Sentry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="impersonation.html">6.17. User Impersonation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="credential-passthrough.html">6.18. Kerberos Credential Passthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="okta-authentication.html">6.19. Okta Authentication</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../admin.html">7. Administration</a></li>
@@ -116,8 +117,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../language.html">11. SQL Language</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../sql.html">12. SQL Statement Syntax</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../migration.html">13. Migration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../develop.html">14. Developer Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../versions.html">15. Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">14. Older Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../release.html">16. Release Notes</a></li>
 </ul>
 
@@ -164,16 +165,22 @@
             
   <div class="section" id="role-based-access-control">
 <h1>6.13. Role Based Access Control<a class="headerlink" href="#role-based-access-control" title="Permalink to this headline">#</a></h1>
-<p>Using Role-Based Access Control (RBAC) in Presto, one can manage authorization
-for large number of users and objects through the entire enterprise. Using SQL
-Standard Based authorization is one way to achieve this. For an overview of this
-authorization option, see the documentation in
+<p>Using role based access control (RBAC) in Starburst Enterprise Presto, you can
+manage authorization for large number of users and objects through the entire
+enterprise.</p>
+<p>Starburst Enterprise Presto supports three RBAC mechanisms</p>
+<ul class="simple">
+<li><a class="reference internal" href="system-ranger.html"><span class="doc">System Level Security with Apache Ranger</span></a> for security across all connectors and more system
+level resources</li>
+<li><a class="reference internal" href="hive-ranger.html"><span class="doc">Hive Level Security with Apache Ranger</span></a> for Hive catalogs accessing HDFS and others only</li>
+<li><a class="reference internal" href="hive-sentry.html"><span class="doc">Hive Level Security with Apache Sentry</span></a> for Hive catalogs accessing HDFS and others only</li>
+</ul>
+<p>Using SQL Standard Based authorization is one way to achieve this.
+For an overview of this authorization option, see the documentation in
 <a class="reference internal" href="../connector/hive-security.html#hive-sql-standard-based-authorization"><span class="std std-ref">SQL Standard Based Authorization</span></a>.</p>
-<p>Role-Based Access Control can be accomplished by using Apache Ranger and Apache
-Sentry for services that interact with Hadoop data such as Presto. In RBAC there is
-the notion of Roles and Privileges. Roles are authorization entities for which
-authorization privileges are granted to. Privileges can be granted to zero, one, or
-more roles. Users belong to one or more groups.</p>
+<p>In RBAC there is the notion of Roles and Privileges. Roles are authorization
+entities for which authorization privileges are granted to. Privileges can be
+granted to zero, one, or more roles. Users belong to one or more groups.</p>
 <blockquote>
 <div><a class="reference internal image-reference" href="../_images/rbac.png"><img alt="../_images/rbac.png" src="../_images/rbac.png" style="width: 960.0px; height: 540.0px;" /></a>
 </div></blockquote>
@@ -202,13 +209,13 @@ are active and the user has the combined privileges of these roles.</p>
 access to a subset of table columns, they will only be able to query from these columns.
 If they execute an SQL statement that refers to other columns, the query will fail with an error.</p>
 </div>
-<div class="section" id="apache-ranger-or-apache-sentry">
-<h2>Apache Ranger or Apache Sentry<a class="headerlink" href="#apache-ranger-or-apache-sentry" title="Permalink to this headline">#</a></h2>
-<p>Presto is integrated with both <a class="reference internal" href="ranger.html"><span class="doc">Apache Ranger</span></a> and <a class="reference internal" href="sentry.html"><span class="doc">Apache Sentry</span></a>
+<div class="section" id="apache-ranger-or-apache-sentry-for-hive-level-security">
+<h2>Apache Ranger or Apache Sentry for Hive Level Security<a class="headerlink" href="#apache-ranger-or-apache-sentry-for-hive-level-security" title="Permalink to this headline">#</a></h2>
+<p>Presto is integrated with both <a class="reference internal" href="hive-ranger.html"><span class="doc">Apache Ranger</span></a> and <a class="reference internal" href="hive-sentry.html"><span class="doc">Apache Sentry</span></a>
 for RBAC support. Each are excellent options and the choice simply depends on the Hadoop distribution you are using.
 Apache Ranger is packaged with Hortonworks Data Platform and Apache Sentry is packaged with Cloudera Enterprise.
-Therefore it makes most sense to simply use what is packaged with your Hadoop distribution.
-Apache Ranger is also an excellent option for those not tied to a specific Hadoop distribution.</p>
+Therefore it makes most sense to simply use what is packaged with your Hadoop distribution.</p>
+<p>Apache Ranger is an excellent option for those not tied to a specific Hadoop distribution, or if you want to use <a class="reference internal" href="system-ranger.html"><span class="doc">System Level Security with Apache Ranger</span></a>.</p>
 </div>
 </div>
 
@@ -219,7 +226,7 @@ Apache Ranger is also an excellent option for those not tied to a specific Hadoo
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="ranger.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.14. Apache Ranger Integration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="system-ranger.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.14. System Level Security with Apache Ranger" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="event-logger.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="6.12. Event Logger" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
