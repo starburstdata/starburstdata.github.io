@@ -1,0 +1,239 @@
+============================================
+Starburst Teradata Parallel Direct Connector
+============================================
+
+The Teradata Parallel Direct Connector is an alternative connector for Teradata
+databases.
+
+Compared to the :doc:`starburst-teradata`, it requires more advanced configuration and
+is capable of achieving higher performance. It supports all use cases of the
+Teradata connector, and adds greatly improved performance for ``SELECT``
+queries.
+
+.. contents::
+  :local:
+
+The connector is composed of components running on Presto, and others running on
+Teradata. All components participate in every transmission. A transmission
+includes all data transfer related to a single table scan.
+
+The connector uses JDBC as a control channel to schedule the query in Teradata.
+Any ``SELECT`` statement run with JDBC is passed to a Teradata Table Operator,
+which then uses the custom transmitters to pass the data over HTTP to the Presto
+controller and receivers:
+
+Presto
+
+    Controller
+        The controller starts and manages all transmissions. It runs on the
+        Presto coordinator and distributes work to the receivers, and provides
+        status information to the transmitters.
+
+    Receivers
+        The receivers connect to the transmitters and receive data from Teradata
+        from the transmitters. They run on the Presto workers and are managed by
+        the controller.
+
+Teradata
+
+    Table Operator and JDBC Driver
+        The table operator and JDBC driver read the data from the Teradata
+        storage.
+
+    Transmitters
+        The transmitters send the data for each table operator invocation on
+        Teradata to the receivers on Presto.
+
+Follow the documentation below to start using the connector:
+
+.. contents:: :local:
+
+Presto Controller and Receiver Installation
+-------------------------------------------
+
+The Teradata Parallel Direct connector needs to be configured in a catalog
+properties file. e.g. ``myteradatadb.properties``, using the connector name
+``teradata-parallel-direct``.
+
+.. code-block:: none
+
+    connector.name=teradata-parallel-direct
+    connection-url=jdbc:teradata://HOST
+    connection-user=USERNAME
+    connection-password=PASSWORD
+    teradata-parallel-direct.table-operator.name=some_schema.presto_table_operator
+    teradata-parallel-direct.http.port=9000
+    teradata-parallel-direct.http.host=hostname.accessible.from.teradata.instance
+
+Besides the connector name, you need to provide the JDBC connection parameters
+and the relevant JAR files in the ``teradata`` plugin directory, as discussed in
+:doc:`starburst-teradata`. Additionally you need to configure the parameters for the
+connector specifying the table operator name, and the HTTP port and host of the
+Presto coordinator node.
+
+Further tweaking can be done with the following parameters:
+
+``teradata-parallel-direct.receiver.buffer.size`` in the catalog properties
+file, or ``receiver_buffer_size`` in catalog session properties:
+
+    Determines the buffer size per each Presto worker. This buffer is available
+    per table scan, so a single query joining three tables uses three buffers.
+    Default value is 32MB.
+
+
+``teradata-parallel-direct.parcel.size`` in ``catalog.properties``, or
+``parcel_size`` in catalog session properties:
+
+    The size of the data packets sent to the Presto receivers. The last packet
+    may be smaller. Defaults to 2MB. Parcel size should not be higher than the
+    buffer size.
+
+``teradata-parallel-direct.compression.enabled`` in ``catalog.propertes``, or
+``compression_enabled`` in catalog session properties:
+
+    Determines if transmission data is compressed. Defaults to ``false``.
+
+``teradata-parallel-direct.splits-per-worker`` in ``catalog.propertes``, or
+``splits_per_worker`` in catalog session properties:
+
+    Determines how many splits each Presto worker receives. This determines the
+    maximum concurrency level on Presto. Defaults to 16, identical to the
+    ``task.concurrency`` of the Presto server.
+
+Aside from Teradata specific options, it is recommended to use JDBC connection
+configuration, configured in the catalog properties file, to cache the Teradata
+metadata on Presto and improve query performance.
+
+.. code-block:: none
+
+    metadata.cache-ttl=10m
+    metadata.cache-missing=true
+    statistics.cache-ttl=10m
+    statistics.cache-missing=true
+
+
+Encryption
+^^^^^^^^^^
+
+The connector can encrypt all data transmissions and use HTTPS. Add the details
+for the Java keystore file to use in the Presto server config.
+
+.. code-block:: none
+
+    teradata-parallel-direct.https.keystore.path=mykekstore.jks
+    teradata-parallel-direct.https.keystore.password=123456
+
+Presto automatically distributes the keystore to the controller, the receivers,
+the transmitters and the table operator.
+
+Kerberos Authentication
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The connector supports Kerberos-based authentication with the following
+configuration:
+
+.. code-block:: none
+
+    teradata.authentication.type=KERBEROS
+    teradata.kerberos.client.principal=test@TESTING-KRB.STARBURSTDATA.COM
+    teradata.kerberos.client.keytab=krb/client/test.keytab
+
+With this configuration the user ``example@example.com``, defined in the
+principal property, is used to connect to the database, and the related Kerberos
+service ticket is located in the ``example.keytab`` file.
+
+.. _teradata-pd-kerberos-passthrough:
+
+Kerberos Credential Passthrough
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The connector can be configured to pass through Kerberos credentials, received
+by Presto, to the Teradata database.
+
+Configure Kerberos and Presto, following the instructions in
+:doc:`/security/credential-passthrough`.
+
+Then configure the connector to pass through the credentials from the server to
+the database in your catalog properties file and ensure the Kerberos client
+configuration properties are in place.
+
+.. code-block:: properties
+
+    teradata.authentication.type=KERBEROS_PASS_THROUGH
+    http.authentication.krb5.config=/etc/krb5.conf
+    http-server.authentication.krb5.service-name=exampleServiceName
+    http-server.authentication.krb5.keytab=/path/to/Keytab/File
+
+Now any database access via Presto is subject to the data access restrictions
+and permissions of the user supplied via Kerberos.
+
+Teradata Table Operator Installation
+------------------------------------
+
+Prerequistes:
+
+- Contact Starburst Support to receive the required JAR file,
+  ``presto-table-operator.jar``.
+- Teradata instance is up and running.
+- Teradata user with sufficient access rights to install JAR and create user
+  defined functions UDF
+
+    .. code-block:: SQL
+
+        GRANT CREATE EXTERNAL PROCEDURE ON syslib TO your_user WITH GRANT OPTION
+        GRANT EXECUTE PROCEDURE ON sqlj.install_jar TO your_user WITH GRANT OPTION
+        GRANT EXECUTE PROCEDURE ON sqlj.remove_jar TO your_user WITH GRANT OPTION
+        GRANT EXECUTE PROCEDURE ON sqlj.replace_jar TO your_user WITH GRANT OPTION
+
+JAR Installation:
+
+Install the JAR located in ``JARPATH`` on the Teradata server, and create the
+table operator UDF using BTEQ or a JDBC-connected tool. Ensure a short path to
+the JAR file is used since only up to 64 character length for the path is
+supported.
+
+.. code-block:: none
+
+    CALL sqlj.install_jar('SJ!/presto/table/operator/jar/JARPATH',’presto',0)
+    REPLACE FUNCTION presto_table_operator() 
+	    RETURNS TABLE VARYING USING FUNCTION session_contract 
+	    LANGUAGE JAVA NO SQL PARAMETER STYLE SQLTABLE EXTERNAL 
+	    NAME 'presto:com.starburstdata.teradata.PrestoTableOperator.execute'
+
+No Teradata restart is needed for the changes to take effect.
+
+Each user that connects to Teradata from Presto needs to be granted sufficient
+access:
+
+.. code-block:: SQL
+
+    GRANT EXECUTE ON SPECIFIC FUNCTION test.presto_table_operator TO your_user
+
+Alternatively access to table operator UDF can be granted via ROLE 
+
+.. code-block:: none
+
+    CREATE ROLE presto_table_operator_users;
+    GRANT EXECUTE ON SPECIFIC FUNCTION test.presto_table_operator TO presto_table_operator_users;
+    GRANT presto_table_operator_users TO your_user;
+
+This also requires to set the role for any impersonated user, this could be
+achieved with the below in the catalog file:
+
+.. code-block:: none
+
+    teradata.impersonation-role=presto_table_operator_users
+
+Uninstallation:
+
+.. code-block:: none
+
+    DROP FUNCTION presto_table_operator
+    CALL sqlj.remove_jar(‘presto’',0)
+
+Upgrades: 
+
+It is recommended for upgrade to install the Presto table operator under a
+different name. The UDF function should also use a different name. That way it
+is possible to have different Presto table operator versions installed at the
+same time and an upgrade process does not affect the currently working system.
