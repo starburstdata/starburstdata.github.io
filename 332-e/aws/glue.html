@@ -97,7 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#starburst-enterprise-presto-with-aws-glue-usage">Starburst Enterprise Presto with AWS Glue Usage</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#table-and-column-statistics-support">Table and Column Statistics Support</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#known-limitations-of-aws-glue-support">Known limitations of AWS Glue support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#known-limitations-of-aws-glue-support">Known Limitations of AWS Glue Support</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="superset.html">4.11. Using Apache Superset</a></li>
@@ -193,8 +193,9 @@ contents below:</p>
 </pre></div>
 </div>
 </div></blockquote>
-<p>You should add all other Hive Connector specific properties for your use case.
-See <a class="reference internal" href="../connector/hive.html"><span class="doc">Hive Connector</span></a> and <a class="reference internal" href="../connector/hive-security.html"><span class="doc">Hive Security Configuration</span></a> for more details.</p>
+<p>You should add all other Hive connector specific properties for your use case.
+See <a class="reference internal" href="../connector/starburst-hive.html"><span class="doc">Starburst Hive Connector</span></a> and
+<a class="reference internal" href="../connector/starburst-hive-security.html"><span class="doc">Starburst Hive Connector Security</span></a> for more details.</p>
 <ol class="arabic simple" start="2">
 <li>restart Presto with:</li>
 </ol>
@@ -208,16 +209,16 @@ See <a class="reference internal" href="../connector/hive.html"><span class="doc
 <h2>AWS Glue with Starburst Enterprise Presto CloudFormation Template<a class="headerlink" href="#aws-glue-with-starburst-enterprise-presto-cloudformation-template" title="Permalink to this headline">#</a></h2>
 <p>When using the Starburst CloudFormation template in AWS, you can leverage Glue
 by simply choosing <code class="docutils literal"><span class="pre">AWS</span> <span class="pre">Glue</span> <span class="pre">Data</span> <span class="pre">Catalog</span></code> in <code class="docutils literal"><span class="pre">MetastoreType</span></code> field of the
-Stack creation form (<code class="docutils literal"><span class="pre">Presto</span> <span class="pre">Configuration</span></code> section)</p>
+stack creation form (<code class="docutils literal"><span class="pre">Presto</span> <span class="pre">Configuration</span></code> section)</p>
 </div>
 <div class="section" id="starburst-enterprise-presto-with-aws-glue-usage">
 <h2>Starburst Enterprise Presto with AWS Glue Usage<a class="headerlink" href="#starburst-enterprise-presto-with-aws-glue-usage" title="Permalink to this headline">#</a></h2>
-<p>When configured as above, the Glue catalog will be available as the <code class="docutils literal"><span class="pre">hive</span></code>
-connector from within Presto CLI or any other Presto connection. As usual
-remember to specify the location of the data on S3. Either for the entire schema
-or on the table level. For example to create a schema <code class="docutils literal"><span class="pre">foo</span></code> in Glue, with the
-S3 base directory (root folder for per table subdirectories) pointing to the
-root of <code class="docutils literal"><span class="pre">my-bucket</span></code> S3 bucket, you would write:</p>
+<p>When configured as above, the Glue catalog is available via the <code class="docutils literal"><span class="pre">hive</span></code> catalog
+from within Presto CLI or any other Presto connection. As usual remember to
+specify the location of the data on S3. Either for the entire schema or on the
+table level. For example to create a schema <code class="docutils literal"><span class="pre">foo</span></code> in Glue, with the S3 base
+directory (root folder for per table subdirectories) pointing to the root of
+<code class="docutils literal"><span class="pre">my-bucket</span></code> S3 bucket, you would write:</p>
 <div class="highlight-sql"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">hive</span><span class="p">.</span><span class="n">foo</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">&#39;s3://my-bucket/&#39;</span><span class="p">)</span>
 </pre></div>
@@ -230,28 +231,27 @@ AWS Glue terminology the schema is called “database”.</p>
 <p>Both the AMI and CloudFormation approach mentioned above require the Presto
 instances to have permissions to access both S3 and Glue AWS services.</p>
 <p><strong>When using Starburst Enterprise Presto via our CloudFormation template by
-default you do not need to provide anything, the template will create all
-necessary resources automatically.</strong></p>
-<p>If however you need to provide your own IAM Instance Profile for the Presto
-instances (<code class="docutils literal"><span class="pre">IamInstanceProfile</span></code> field in the Stack creation form) please
-consult the <a class="reference internal" href="prerequisites.html#aws-security-prereq-nodes"><span class="std std-ref">IAM Role Permissions for Presto Cluster Nodes</span></a> section. Same applies when
-launching the AMI manually, make sure you choose an IAM Role that satisfies the
-requirements.</p>
+default you do not need to provide anything, the template creates all necessary
+resources automatically.</strong></p>
+<p>If you need to provide your own IAM Instance Profile for the Presto instances
+(<code class="docutils literal"><span class="pre">IamInstanceProfile</span></code> field in the Stack creation form) please consult the
+<a class="reference internal" href="prerequisites.html#aws-security-prereq-nodes"><span class="std std-ref">IAM Role Permissions for Presto Cluster Nodes</span></a> section. Same applies when launching the AMI
+manually, make sure you choose an IAM Role that satisfies the requirements.</p>
 </div>
 <div class="section" id="table-and-column-statistics-support">
 <h2>Table and Column Statistics Support<a class="headerlink" href="#table-and-column-statistics-support" title="Permalink to this headline">#</a></h2>
 <p>With <code class="docutils literal"><span class="pre">hive.metastore.glue.column-statistics-enabled</span></code> set to <code class="docutils literal"><span class="pre">true</span></code> (default)
-table and column statistics will be collected for Glue tables and partitions.
+table and column statistics are collected for Glue tables and partitions.
 Such statistics are stored in JSON format as Glue table and partition
 parameters. See also <a class="reference internal" href="../sql/analyze.html"><span class="doc">ANALYZE</span></a>.</p>
 </div>
 <div class="section" id="known-limitations-of-aws-glue-support">
-<h2>Known limitations of AWS Glue support<a class="headerlink" href="#known-limitations-of-aws-glue-support" title="Permalink to this headline">#</a></h2>
+<h2>Known Limitations of AWS Glue Support<a class="headerlink" href="#known-limitations-of-aws-glue-support" title="Permalink to this headline">#</a></h2>
 <p>There are a couple Presto features that are not yet supported with the Glue
 catalog:</p>
 <ul class="simple">
-<li>When column is renamed its statistics are not preserved. Therefore the table
-needs to be reanalyzed.</li>
+<li>When a column is renamed, its statistics are not preserved. Therefore the
+table needs to be re-analyzed.</li>
 <li>Renaming tables from within AWS Glue is not supported.</li>
 <li>Partition values containing quotes and apostrophes are not supported (for
 example, <code class="docutils literal"><span class="pre">PARTITION</span> <span class="pre">(owner=&quot;Doe's&quot;</span></code>).</li>

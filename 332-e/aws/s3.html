@@ -93,7 +93,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">4.9. Querying AWS S3</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#preliminary-steps">Preliminary Steps</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#ensure-access-to-s3">Ensure Access to S3</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#hive-connector">Hive Connector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hive-catalog">Hive Catalog</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#accessing-s3-data-from-presto-for-the-first-time">Accessing S3 Data From Presto for the First Time</a><ul>
@@ -198,27 +198,27 @@
 <p>Before you start querying the data on S3, you need to make sure the Presto
 cluster is allowed to query the data. If your S3 data is publicly available, you
 do not need to do anything. However, typically the data is not publicly
-available, and you need to grant the Presto cluster access to the data. For
-this, you need to create an instance profile and select it when creating a
-cluster. You can then validate the selected instance profile is sufficient for
-Presto to read S3 data by opening an SSH connection to the Presto coordinator
-and issuing the following commands. For more information on creating Instance
-profiles, refer to the <a class="reference internal" href="deploy.html"><span class="doc">Deploying Presto</span></a> section.</p>
+available, and you need to grant Presto access. For this, you need to create an
+instance profile and select it when creating a cluster. You can then validate
+the selected instance profile is sufficient for Presto to read S3 data by
+opening an SSH connection to the coordinator and issuing the following commands.
+For more information on creating Instance profiles, refer to the
+<a class="reference internal" href="deploy.html"><span class="doc">Deploying Presto</span></a> section.</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>aws s3 ls s3://your-bucket/path/to/dataset/
 aws s3 cp s3://your-bucket/path/to/dataset/data-file - &gt; /dev/null
 </pre></div>
 </div>
 </div>
-<div class="section" id="hive-connector">
-<span id="aws-s3-hive-connector"></span><h3>Hive Connector<a class="headerlink" href="#hive-connector" title="Permalink to this headline">#</a></h3>
-<p>Another requirement is that you have enabled and configured a Hive connector in
-Presto. The Hive Metastore should also have an instance profile granting access
-to S3.</p>
-<p><strong>Configuring Hive Connector</strong></p>
-<p>If you have not yet done so, you need to configure a Hive connector in Presto.
-The connector uses a Hive Metastore for data discovery and is not limited to
-data residing on HDFS. Metastore should be viewed as a database of metadata
-about your data. You can use an existing Hive Metastore or start a new one.</p>
+<div class="section" id="hive-catalog">
+<span id="aws-s3-hive-connector"></span><h3>Hive Catalog<a class="headerlink" href="#hive-catalog" title="Permalink to this headline">#</a></h3>
+<p>Another requirement is that you have enabled and configured a Hive catalog. The
+Hive Metastore should also have an instance profile granting access to S3.</p>
+<p><strong>Configuring Hive Catalog</strong></p>
+<p>If you have not yet done so, you need to configure catalog using the Hive c
+connector in Presto. The connector uses a Hive Metastore for data discovery and
+is not limited to data residing on HDFS. Metastore should be viewed as a
+database of metadata about your data. You can use an existing Hive Metastore or
+start a new one.</p>
 <blockquote>
 <div><ul>
 <li><p class="first"><strong>Existing Hive Metastore:</strong></p>
@@ -246,15 +246,15 @@ of this documentation along with the following <a class="reference external" hre
 <div class="section" id="accessing-data-already-mapped-in-the-hive-metastore">
 <h3>Accessing Data Already Mapped in the Hive Metastore<a class="headerlink" href="#accessing-data-already-mapped-in-the-hive-metastore" title="Permalink to this headline">#</a></h3>
 <p>If you chose an existing Hive Metastore instance when configuring the Hive
-connector, the chances are that your S3 data is already mapped to SQL tables in
-the Metastore. In that case, you should be able to query it.</p>
+catalog, chances are that your S3 data is already mapped to SQL tables in the
+Metastore. In that case, you should be able to query it.</p>
 </div>
 <div class="section" id="accessing-data-not-yet-mapped-in-the-hive-metastore">
 <h3>Accessing Data Not Yet Mapped in the Hive Metastore<a class="headerlink" href="#accessing-data-not-yet-mapped-in-the-hive-metastore" title="Permalink to this headline">#</a></h3>
 <p>To access S3 data that is not yet mapped in the Hive Metastore you need to
 provide the schema of the data, the file format, and the data location. For
 example, if you have ORC or Parquet files in an S3 bucket, <code class="docutils literal"><span class="pre">my_bucket</span></code>, you
-will need to execute a command similar to the following.</p>
+need to execute a command similar to the following.</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>presto&gt; -- select schema in which the table will be defined, must already exist
 presto&gt; USE hive.default;
 USE
@@ -289,11 +289,11 @@ CREATE TABLE
 mapping between the S3 data and SQL tables. However, if your queries are complex
 and include joining large data sets, you may run into performance issues. This
 is because Presto does not know the statistical properties of the data and the
-such properties are a basis for the Presto Cost-Based Optimizer’s decisions.</p>
+such properties are a base for the cost-based optimizer’s decisions.</p>
 <div class="section" id="collecting-statistics">
 <h3>Collecting Statistics<a class="headerlink" href="#collecting-statistics" title="Permalink to this headline">#</a></h3>
-<p>To gather table statistics for tables in Hive connector, you will need to
-execute the following command:</p>
+<p>To gather table statistics for tables in Hive connector, you need to execute the
+following command:</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>presto&gt; ANALYZE orders;
 </pre></div>
 </div>
@@ -308,9 +308,9 @@ necessary to read data from S3.</p>
 </div>
 <div class="section" id="create-export-schema">
 <h3>Create Export Schema<a class="headerlink" href="#create-export-schema" title="Permalink to this headline">#</a></h3>
-<p>If Hive Metastore contains schema(s) mapped to S3 locations, you can use them to
-export data to S3. If you don’t want to use existing schemas (or there are no
-appropriate schemas in the Hive Metastore), you need to create a new one.</p>
+<p>If the Hive Metastore contains schema(s) mapped to S3 locations, you can use
+them to export data to S3. If you don’t want to use existing schemas (or there
+are no appropriate schemas in the Hive Metastore), you need to create a new one.</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>presto&gt; CREATE SCHEMA hive.s3_export WITH (location = &#39;s3://my_bucket/some/path&#39;);
 </pre></div>
 </div>
@@ -325,7 +325,7 @@ WITH (format = &#39;ORC&#39;)
 AS &lt;source query&gt;;
 </pre></div>
 </div>
-<p>The data will be written to one or more files within the
+<p>The data is written to one or more files within the
 <code class="docutils literal"><span class="pre">s3://my_bucket/some/path/my_table</span></code> namespace. The number of files depends on
 the size of the data being exported and possible parallelization of the source
 of the data.</p>
