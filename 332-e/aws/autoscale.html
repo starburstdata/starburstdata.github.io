@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>4.13. Auto Scaling a Running Presto Cluster &mdash; Starburst Enterprise Presto</title>
+  <title>4.13. Auto Scaling a Presto Cluster &mdash; Starburst Enterprise Presto</title>
   
 
   
@@ -94,28 +94,27 @@
 <li class="toctree-l2"><a class="reference internal" href="glue.html">4.10. AWS Glue Support</a></li>
 <li class="toctree-l2"><a class="reference internal" href="superset.html">4.11. Using Apache Superset</a></li>
 <li class="toctree-l2"><a class="reference internal" href="manualscale.html">4.12. Manual Scaling a Running Presto Cluster</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">4.13. Auto Scaling a Running Presto Cluster</a><ul>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">4.13. Auto Scaling a Presto Cluster</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#mange-auto-scaling-groups">Mange Auto Scaling Groups</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#auto-scaling-models">Auto Scaling Models</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#auto-scaling-activity">Auto Scaling Activity</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manual">Manual</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#graceful-scaledown-of-presto-workers">Graceful Scaledown of Presto Workers</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#how-it-works">How it works</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#aws-elements-on-the-stack">AWS elements on the Stack</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#starburst-enterprise-presto-node-role-permissions">Starburst Enterprise Presto Node Role Permissions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#graceful-scaledown-limitations">Graceful Scaledown limitations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#graceful-scaledown-of-workers">Graceful Scaledown of Workers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#how-it-works">How It Works</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#aws-elements-on-the-stack">AWS Elements on the Stack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#presto-node-role-permissions">Presto Node Role Permissions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#graceful-scaledown-limitations">Graceful Scaledown Limitations</a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="high-availability.html">4.14. Presto Coordinator High Availability</a></li>
 <li class="toctree-l2"><a class="reference internal" href="logs.html">4.15. Integration with CloudWatch Logs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="metrics.html">4.16. Integration with CloudWatch metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="metrics.html">4.16. Integration with CloudWatch Metrics</a></li>
 <li class="toctree-l2"><a class="reference internal" href="troubleshooting.html">4.17. Troubleshooting</a></li>
 <li class="toctree-l2"><a class="reference internal" href="uninstall.html">4.18. Uninstalling Presto</a></li>
-<li class="toctree-l2"><a class="reference internal" href="resources.html">4.19. Related Resources</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">5. Kubernetes</a></li>
@@ -173,7 +172,7 @@
       
         <li><a href="../aws.html">4. Amazon Web Services</a> &raquo;</li>
       
-    <li>4.13. Auto Scaling a Running Presto Cluster</li>
+    <li>4.13. Auto Scaling a Presto Cluster</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -182,52 +181,50 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="auto-scaling-a-running-presto-cluster">
-<h1>4.13. Auto Scaling a Running Presto Cluster<a class="headerlink" href="#auto-scaling-a-running-presto-cluster" title="Permalink to this headline">#</a></h1>
+  <div class="section" id="auto-scaling-a-presto-cluster">
+<h1>4.13. Auto Scaling a Presto Cluster<a class="headerlink" href="#auto-scaling-a-presto-cluster" title="Permalink to this headline">#</a></h1>
 <p>AWS Auto Scaling offers automatic control over the size of your Presto cluster
 (CloudFormation stack).</p>
 <div class="section" id="mange-auto-scaling-groups">
 <h2>Mange Auto Scaling Groups<a class="headerlink" href="#mange-auto-scaling-groups" title="Permalink to this headline">#</a></h2>
-<p>When you create a Presto cluster, an Auto Scaling Group (ASG) is automatically
-created for all the Presto worker nodes. To view and manage this ASG, please
-refer to the <a class="reference external" href="https://console.aws.amazon.com/ec2/autoscaling/home?#AutoScalingGroups">AWS ASG</a> page and log into your AWS account. There, you will see
-a list of ASGs for all Presto workers across all Presto clusters you have
-running. Here, you can control how Amazon Auto Scaling manages your Presto
-cluster.</p>
+<p>When you create a cluster, an Auto Scaling Group (ASG) is automatically created
+for all the workers. To view and manage this ASG, please refer to the <a class="reference external" href="https://console.aws.amazon.com/ec2/autoscaling/home?#AutoScalingGroups">AWS ASG</a>
+page and log into your AWS account. There, you see a list of ASGs for all
+workers across all clusters you have running. Here, you can control how Amazon
+Auto Scaling manages your cluster.</p>
 <div class="section" id="auto-scaling-models">
 <h3>Auto Scaling Models<a class="headerlink" href="#auto-scaling-models" title="Permalink to this headline">#</a></h3>
 <p>There are three types of auto scaling models you can employ to manage your
-Presto cluster:</p>
+cluster:</p>
 <ul class="simple">
-<li>Static / Manual</li>
-<li>Static / Scheduled</li>
+<li>Static/Manual</li>
+<li>Static/Scheduled</li>
 <li>Dynamic</li>
 </ul>
 <p><strong>Static/Manual Auto Scaling</strong></p>
 <p>The static or manual auto scaling model is managed from the “Details” tab. This
 model is configured by default. In this tab, there are three main properties:
-“Desired Capacity”, “Min” and “Max”. You can click on the “Edit” button to
-change those values to your desired values and when you hit “Save” the Auto
-Scaling mechanism will then start to satisfy your requirements – either
-spinning up new Presto Worker nodes or shutting down existing ones.</p>
+“Desired Capacity”, “Min” and “Max”. Click on the “Edit” button to change those
+values to your desired values and when you hit “Save” the Auto Scaling mechanism
+starts to satisfy your requirements – either spinning up new workers or
+shutting down existing ones.</p>
 <p>In the Starburst CloudFormation template, by default, all three properties are
-set to the same value, keeping the number of running worker nodes equal to what
-you chose when spun up the Presto cluster from the Starburst CloudFormation
-template. This means that when a node gets terminated (or is unavailable for
-whatever reason), Auto Scaling will start a new one to satisfy the requirements.</p>
+set to the same value. As a result the number of workers remains constant. When
+a worker is terminated (or is unavailable for whatever reason), Auto Scaling
+starts a new one to satisfy the requirements.</p>
 <p><strong>Static/Scheduled Auto Scaling</strong></p>
 <p>The static or scheduled auto scaling model is controlled from the “Scheduled
-Actions” tab. There, you can create a number of scheduled actions that will
-allow you to change the size of the Presto cluster based on the time of day. For
-example, you could keep a small number of nodes during the night, and boost it
-during different parts of the day that see peak demand.</p>
+Actions” tab. There, you can create a number of scheduled actions that allow you
+to change the size of the cluster based on the time of day. For example, you can
+keep a small number of nodes during the night, and boost it during different
+parts of the day.</p>
 <p>The configuration of this model is a simple list of actions that are scheduled
 to execute and change the static values of “Min”, “Max” and “Desired Capacity”
 properties to some other arbitrary (static) values of your choosing. Such an
-action will be executed with the configured schedule, either once or in a
-repetitive manner (cron). Continuing on the previous example, you would have a
-nightly cooldown – one event to handle lowering the values in the evening and
-another event every morning to bring them back up.</p>
+action is  executed with the configured schedule, either once or in a repetitive
+manner (cron). Continuing on the previous example, you can configure a nightly
+cooldown – one event to handle lowering the values in the evening and another
+event every morning to bring them back up.</p>
 <p><strong>Dynamic Auto Scaling</strong></p>
 <p>Dynamic auto scaling uses policies which you define in the in the “Scaling
 Policies” tab. Of the three types of policies, “scaling policy with steps” and
@@ -239,7 +236,7 @@ Policies” tab.</p>
 <div><ul>
 <li><p class="first"><strong>Dynamic Target Tracking:</strong></p>
 <p>With the dynamic target tracking policy you: (1) choose a relevant metric
-(eg., avg CPU utilization) and state the target value; and (2)  indicate the
+(eg., avg CPU utilization) and state the target value; and (2) indicate the
 time buffer to wait before reassessing the metric to let the new nodes start
 up and start contributing to the metric value. Additionally, you can disable
 scale-in to have the mechanism be able to only increase the worker count,
@@ -253,9 +250,9 @@ period of time higher than 70%). Additionally, the alarm can optionally send
 an event to an SNS topic for other systems to observe. Once the alarm is
 breached, a set of adjustments to the number of nodes are executed. Those
 adjustments can be either arbitrary (setting the number of nodes to a
-specific value) or increments. The increments, on the other hand, can be a
-value (eg., add 2 nodes, or remove 1 node) or a percentage of the current
-number of nodes (eg., add 10%, or reduce by 20%).</p>
+specific value) or increments. The increments can be a value (eg., add 2
+nodes, or remove 1 node) or a percentage of the current number of workers
+(eg., add 10%, or reduce by 20%).</p>
 </li>
 </ul>
 </div></blockquote>
@@ -270,75 +267,74 @@ are currently being started-up or decommissioned.</p>
 <div class="section" id="manual">
 <h3>Manual<a class="headerlink" href="#manual" title="Permalink to this headline">#</a></h3>
 <p>Auto Scaling can also be used for clusters built manually using the Starburst
-AMIs and not using the CloudFormation Stack. The workers need to be manually put
+AMIs and not using the CloudFormation stack. The workers need to be manually put
 into a single Auto Scaling Group, and configured as described above. Graceful
-Scaledown of Presto Worker nodes, as described in the <a class="reference internal" href="#graceful-scaledown"><span class="std std-ref">Graceful Scaledown of Presto Workers</span></a>,
-will not work for manually setup AutoScaling groups.</p>
+Scaledown of workers, as described in the <a class="reference internal" href="#graceful-scaledown"><span class="std std-ref">Graceful Scaledown of Workers</span></a>, does not
+work for manually setup AutoScaling groups.</p>
 </div>
 </div>
-<div class="section" id="graceful-scaledown-of-presto-workers">
-<span id="graceful-scaledown"></span><h2>Graceful Scaledown of Presto Workers<a class="headerlink" href="#graceful-scaledown-of-presto-workers" title="Permalink to this headline">#</a></h2>
-<p>When a CloudFormation Stack is created using the Starburst CloudFormation
-template all the Presto Workers are automatically organized within an AWS
-AutoScaling Group, as described in other sections of this documentation.</p>
-<p>When AWS AutoScaling resizes the cluster it starts decommissioning Presto
-Workers. The Starburst Enterprise Presto CloudFormation Stack has features to
-make sure this process doesn’t disrupt the usage of the cluster, most
-importantly that no queries fail because of that.</p>
-<p>Without this feature if a node is forcefully shut down, all queries currently
-running will fail and will need to be restarted.</p>
+<div class="section" id="graceful-scaledown-of-workers">
+<span id="graceful-scaledown"></span><h2>Graceful Scaledown of Workers<a class="headerlink" href="#graceful-scaledown-of-workers" title="Permalink to this headline">#</a></h2>
+<p>When a CloudFormation stack is created using the Starburst CloudFormation
+template all the workers are automatically organized within an AWS AutoScaling
+Group.</p>
+<p>When AWS AutoScaling resizes the cluster it starts decommissioning workers. The
+Starburst CloudFormation stack has features to make sure this process doesn’t
+disrupt the usage of the cluster, most importantly that no queries fail because
+of that.</p>
+<p>Without this feature if a worker is forcefully shut down, all queries currently
+running fail and need to be restarted.</p>
 <div class="section" id="how-it-works">
-<h3>How it works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">#</a></h3>
+<h3>How It Works<a class="headerlink" href="#how-it-works" title="Permalink to this headline">#</a></h3>
 <p>With graceful scaledown, when the AutoScalingGroup/Stack is modified to shrink
 the cluster (number of workers lowered, or the AutoScaling group is configured
-to do so automatically) then AWS AutoScaling will notify the Presto Worker nodes
-it intends to shut down and let them prepare for this.</p>
-<p>The Presto Worker enters a special state in which it (1) stops serving new
-requests, (2) continues processing the current query tasks that were scheduled
-on it and (3) shuts down after upon finishing that work. Next after a 2 minute
-quiet period the Presto Worker process automatically exits, and notifies the
-AutoScaling mechanism to proceed with the termination of its EC2 node.</p>
-<p>The maximum time a Presto Worker can postpone AWS AutoScaling termination of its
-node is 48hrs, this is a AWS limitation.</p>
+to do so automatically) then AWS AutoScaling notifies the workers it intends to
+shut down and let them prepare for this.</p>
+<p>The worker enters a special state in which it (1) stops serving new requests,
+(2) continues processing the current query tasks that are scheduled on it and
+(3) shuts down after finishing that work. Next after a 2 minute quiet period the
+worker process automatically exits, and notifies the AutoScaling mechanism to
+proceed with the termination of its EC2 node.</p>
+<p>The maximum time a worker can postpone AWS AutoScaling termination of its node
+is 48hrs, this is a AWS limitation.</p>
 </div>
 <div class="section" id="aws-elements-on-the-stack">
-<h3>AWS elements on the Stack<a class="headerlink" href="#aws-elements-on-the-stack" title="Permalink to this headline">#</a></h3>
-<p>The Starburst Enterprise Presto CloudFormation Template creates a number of
-resources on the Stack:</p>
+<h3>AWS Elements on the Stack<a class="headerlink" href="#aws-elements-on-the-stack" title="Permalink to this headline">#</a></h3>
+<p>The Starburst CloudFormation Template creates a number of resources on the
+stack:</p>
 <ul class="simple">
 <li>an <a class="reference external" href="https://docs.aws.amazon.com/autoscaling/ec2/userguide/lifecycle-hooks.html">AutoScaling Hook</a></li>
 <li>an <a class="reference external" href="https://aws.amazon.com/documentation/sqs/">SQS Queue</a> that this hook writes to</li>
 <li>an <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html">IAM Role</a> and an <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_switch-role-ec2_instance-profiles.html">InstanceProfile</a> wrapper to allow AutoScaling to
 write to SQS</li>
-<li>an <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html">IAM Role</a> to allow the Presto Worker nodes talk to SQS, AutoScaling and
+<li>an <a class="reference external" href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html">IAM Role</a> to allow the workers to talk to SQS, AutoScaling and
 EC2 services. The role is fine grained to allow only the necessary actions.
-It’s discussed in a section below</li>
+It’s discussed in a section below.</li>
 </ul>
-<p>All the resources created on the Stack are explicit and the user can find them
-and view their settings/permissions. All resources will be terminated once the
-Stack is deleted.</p>
+<p>All the resources created on the stack are explicit and you can find them and
+view their settings/permissions. All resources are terminated once the stack is
+deleted.</p>
 </div>
-<div class="section" id="starburst-enterprise-presto-node-role-permissions">
-<h3>Starburst Enterprise Presto Node Role Permissions<a class="headerlink" href="#starburst-enterprise-presto-node-role-permissions" title="Permalink to this headline">#</a></h3>
+<div class="section" id="presto-node-role-permissions">
+<h3>Presto Node Role Permissions<a class="headerlink" href="#presto-node-role-permissions" title="Permalink to this headline">#</a></h3>
 <p><strong>The Presto node role is created automatically by the Starburst CloudFormation
-template on the Stack (and deleted when the Stack is deleted).</strong></p>
-<p><strong>When using Starburst Enterprise Presto via our CloudFormation template by
-default you do not need to provide anything, the template will create all
-necessary resources automatically.</strong></p>
-<p>If however you need to provide your own IAM Instance Profile for the Presto
-instances (<code class="docutils literal"><span class="pre">IamInstanceProfile</span></code> field in the Stack creation form) please
-consult the <a class="reference internal" href="prerequisites.html#aws-security-prereq-nodes"><span class="std std-ref">IAM Role Permissions for Presto Cluster Nodes</span></a> section. Same applies when
-launching the AMI manually, make sure you choose an IAM Role that satisfies the
-requirements.</p>
+template on the stack (and deleted when the stack is deleted).</strong></p>
+<p><strong>When using Starburst Enterprise Presto via our CloudFormation template, by
+default, you do not need to provide anything. The template creates all necessary
+resources automatically.</strong></p>
+<p>If you need to provide your own IAM Instance Profile for the Presto instances
+(<code class="docutils literal"><span class="pre">IamInstanceProfile</span></code> field in the Stack creation form), consult the
+<a class="reference internal" href="prerequisites.html#aws-security-prereq-nodes"><span class="std std-ref">IAM Role Permissions for Presto Cluster Nodes</span></a> section. Same applies when launching the AMI
+manually. Make sure you choose an IAM Role that satisfies the requirements.</p>
 </div>
 <div class="section" id="graceful-scaledown-limitations">
-<h3>Graceful Scaledown limitations<a class="headerlink" href="#graceful-scaledown-limitations" title="Permalink to this headline">#</a></h3>
+<h3>Graceful Scaledown Limitations<a class="headerlink" href="#graceful-scaledown-limitations" title="Permalink to this headline">#</a></h3>
 <p>Presto instances created manually from the AWS Marketplace AMIs and manually
-setup in a AutoScaling Group will not benefit from this mechanism. At least not
-without manual setup. They will be operating without graceful scaledown, so when
+setup in a AutoScaling Group do not benefit from this mechanism. At least not
+without manual setup. They are operating without graceful scaledown, so when
 AutoScaling kicks in, all queries that are currently running may fail. In that
-case, at boot time a warning log will be recorded in the graceful scaledown
-handler log saying it’s not running - this is intended behavior.</p>
+case, at boot time a warning log is recorded in the graceful scaledown handler
+log saying it’s not running - this is intended behavior.</p>
 </div>
 </div>
 </div>
