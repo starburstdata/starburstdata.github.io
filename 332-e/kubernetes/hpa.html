@@ -92,10 +92,10 @@
 <li class="toctree-l2"><a class="reference internal" href="gke.html">5.7. Presto on Google Kubernetes Engine</a></li>
 <li class="toctree-l2"><a class="reference internal" href="customizing_presto_image.html">5.8. Customizing The Presto Docker Images</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">5.9. Horizontal Scaling of a Presto K8s Cluster</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#horizontal-pod-scaling">Horizontal pod scaling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cluster-scaling">Cluster scaling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#horizontal-pod-scaling">Horizontal Pod Scaling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cluster-scaling">Cluster Scaling</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#google-kubernetes-engine">Google Kubernetes Engine</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#on-prem-kubernetes-cluster">On-prem Kubernetes cluster</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#on-prem-kubernetes-cluster">On-prem Kubernetes Cluster</a></li>
 </ul>
 </li>
 </ul>
@@ -170,10 +170,12 @@
 <h1>5.9. Horizontal Scaling of a Presto K8s Cluster<a class="headerlink" href="#horizontal-scaling-of-a-presto-k8s-cluster" title="Permalink to this headline">#</a></h1>
 <p>Kubernetes allows scaling Presto using <a class="reference external" href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Horizontal Pod Autoscaler</a>.</p>
 <div class="section" id="horizontal-pod-scaling">
-<h2>Horizontal pod scaling<a class="headerlink" href="#horizontal-pod-scaling" title="Permalink to this headline">#</a></h2>
-<p>HPA continously monitors Presto worker metrics and creates/terminates worker pods as needed
-to ensure there are enough worker pods to handle incoming queries.</p>
-<p>HPA can be enabled in the <code class="docutils literal"><span class="pre">worker</span></code> section of the Presto operator configuration file:</p>
+<h2>Horizontal Pod Scaling<a class="headerlink" href="#horizontal-pod-scaling" title="Permalink to this headline">#</a></h2>
+<p>HPA continuously monitors Presto worker metrics and creates/terminates worker
+pods as needed to ensure there are enough worker pods to handle incoming
+queries.</p>
+<p>HPA can be enabled in the <code class="docutils literal"><span class="pre">worker</span></code> section of the Presto operator
+configuration file:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">worker</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">count</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
   <span class="l l-Scalar l-Scalar-Plain">autoscaling</span><span class="p p-Indicator">:</span>
@@ -185,25 +187,34 @@ to ensure there are enough worker pods to handle incoming queries.</p>
   <span class="l l-Scalar l-Scalar-Plain">cpuRequest</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
 </pre></div>
 </div>
-<p>This configuration allows controlling the number of pods, as well as sets the target CPU usage the HPA will try to achieve.</p>
-<p>Note that for HPA to work, worker CPU limit must also be set, otherwise Kubernetes won’t monitor CPU usage and HPA won’t have any useful metrics to work on.
-Please set the CPU limit and CPU request to the same value when using HPA, preferably to <code class="docutils literal"><span class="pre">number</span> <span class="pre">of</span> <span class="pre">node</span> <span class="pre">cores</span> <span class="pre">-</span> <span class="pre">1</span></code> for dedicated Presto nodes.
-Setting both of these to the same value is important because CPU utilization percentage is calculated as <code class="docutils literal"><span class="pre">cpuUsage/cpuRequest</span></code>, but is limited by <code class="docutils literal"><span class="pre">cpuLimit</span></code>.
-If <code class="docutils literal"><span class="pre">cpuRequest</span></code> is smaller than <code class="docutils literal"><span class="pre">cpuLimit</span></code>, CPU utilization can be greater than 100%, and this can lead to huge spikes in the number of pods.</p>
+<p>This configuration allows controlling the number of pods, as well as sets the
+target CPU usage the HPA will try to achieve.</p>
+<p>Note that for HPA to work, worker CPU limit must also be set, otherwise
+Kubernetes won’t monitor CPU usage and HPA won’t have any useful metrics to work
+on. Please set the CPU limit and CPU request to the same value when using HPA,
+preferably to <code class="docutils literal"><span class="pre">number</span> <span class="pre">of</span> <span class="pre">node</span> <span class="pre">cores</span> <span class="pre">-</span> <span class="pre">1</span></code> for dedicated Presto nodes. Setting
+both of these to the same value is important because CPU utilization percentage
+is calculated as <code class="docutils literal"><span class="pre">cpuUsage/cpuRequest</span></code>, but is limited by <code class="docutils literal"><span class="pre">cpuLimit</span></code>. If
+<code class="docutils literal"><span class="pre">cpuRequest</span></code> is smaller than <code class="docutils literal"><span class="pre">cpuLimit</span></code>, CPU utilization can be greater than
+100%, and this can lead to huge spikes in the number of pods.</p>
 </div>
 <div class="section" id="cluster-scaling">
-<h2>Cluster scaling<a class="headerlink" href="#cluster-scaling" title="Permalink to this headline">#</a></h2>
+<h2>Cluster Scaling<a class="headerlink" href="#cluster-scaling" title="Permalink to this headline">#</a></h2>
 <p>HPA schedules new pods to be started, but the pods still need nodes to run on.
 They can be provisioned on demand or taken from a large global pool.</p>
 <div class="section" id="google-kubernetes-engine">
 <h3>Google Kubernetes Engine<a class="headerlink" href="#google-kubernetes-engine" title="Permalink to this headline">#</a></h3>
-<p>On GKE it’s possible for a Kubernetes cluster to autoscale the number of nodes according to the resources required by pods (see <a class="reference external" href="https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler?hl=en_US">Cluster autoscaler</a>).
-Combined with HPA these two mechanisms allow you to minimize the cost of running an efficient Presto cluster.</p>
+<p>On GKE it’s possible for a Kubernetes cluster to autoscale the number of nodes
+according to the resources required by pods (see <a class="reference external" href="https://cloud.google.com/kubernetes-engine/docs/concepts/cluster-autoscaler?hl=en_US">Cluster autoscaler</a>).
+Combined with HPA these two mechanisms allow you to minimize the cost of running
+an efficient Presto cluster.</p>
 </div>
 <div class="section" id="on-prem-kubernetes-cluster">
-<h3>On-prem Kubernetes cluster<a class="headerlink" href="#on-prem-kubernetes-cluster" title="Permalink to this headline">#</a></h3>
-<p>An on-prem cluster typically pools all machines available, with resources shared between different services in separate namespaces.
-While the total number of nodes is constant in this scenario, the amount of resources dedicated to Presto still matches the demand thanks to pod creation/termination by the HPA.</p>
+<h3>On-prem Kubernetes Cluster<a class="headerlink" href="#on-prem-kubernetes-cluster" title="Permalink to this headline">#</a></h3>
+<p>An on-prem cluster typically pools all machines available, with resources shared
+between different services in separate namespaces. While the total number of
+nodes is constant in this scenario, the amount of resources dedicated to Presto
+still matches the demand thanks to pod creation/termination by the HPA.</p>
 </div>
 </div>
 </div>
