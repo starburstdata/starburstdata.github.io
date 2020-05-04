@@ -83,7 +83,10 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../mission-control.html">3. Mission Control</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">3.1. Installation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#installation-on-aws">Installation on AWS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation-on-aws">Installation on AWS</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cloudformation-parameters">CloudFormation Parameters</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#installation-on-kubernetes">Installation on Kubernetes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#server-configuration-in-config-properties">Server Configuration in <code class="docutils literal"><span class="pre">config.properties</span></code></a></li>
@@ -170,11 +173,14 @@
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><a class="reference internal" href="#overview" id="id1">Overview</a></li>
-<li><a class="reference internal" href="#installation-on-aws" id="id2">Installation on AWS</a></li>
-<li><a class="reference internal" href="#installation-on-kubernetes" id="id3">Installation on Kubernetes</a></li>
-<li><a class="reference internal" href="#configuration" id="id4">Configuration</a><ul>
-<li><a class="reference internal" href="#server-configuration-in-config-properties" id="id5">Server Configuration in <code class="docutils literal"><span class="pre">config.properties</span></code></a></li>
-<li><a class="reference internal" href="#java-runtime-configuration-in-jvm-config" id="id6">Java Runtime Configuration in <code class="docutils literal"><span class="pre">jvm.config</span></code></a></li>
+<li><a class="reference internal" href="#installation-on-aws" id="id2">Installation on AWS</a><ul>
+<li><a class="reference internal" href="#cloudformation-parameters" id="id3">CloudFormation Parameters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#installation-on-kubernetes" id="id4">Installation on Kubernetes</a></li>
+<li><a class="reference internal" href="#configuration" id="id5">Configuration</a><ul>
+<li><a class="reference internal" href="#server-configuration-in-config-properties" id="id6">Server Configuration in <code class="docutils literal"><span class="pre">config.properties</span></code></a></li>
+<li><a class="reference internal" href="#java-runtime-configuration-in-jvm-config" id="id7">Java Runtime Configuration in <code class="docutils literal"><span class="pre">jvm.config</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -198,11 +204,12 @@ of Mission Control, as well as the overall Presto deployment with coordinator
 and workers running in one or more clusters.</li>
 <li>Instance type of <code class="docutils literal"><span class="pre">t2.small</span></code> is sufficient.</li>
 </ul>
-<p>Alternatively you can use our Cloud Formation template file <code class="docutils literal"><span class="pre">cft.yml</span></code> and
-create the stack in the web interface or from the command line:</p>
+<p>Alternatively you can use our CloudFormation template file
+<code class="docutils literal"><span class="pre">Mission-Control-&lt;release-version&gt;.yml</span></code> and create the stack in the web
+interface or from the command line:</p>
 <div class="highlight-none"><div class="highlight"><pre><span></span>aws cloudformation create-stack \
 --stack-name &quot;mission-control&quot; \
---template-body &quot;file://cft.yaml&quot; \
+--template-body &quot;file://Mission-Control-&lt;release-version&gt;.yml&quot; \
 --parameters \
     ParameterKey=Vpc,ParameterValue=&quot;vpc-123&quot; \
     ParameterKey=Subnet,ParameterValue=&quot;subnet-456&quot; \
@@ -215,17 +222,213 @@ create the stack in the web interface or from the command line:</p>
 --capabilities CAPABILITY_IAM
 </pre></div>
 </div>
+<div class="section" id="cloudformation-parameters">
+<h3><a class="toc-backref" href="#id3">CloudFormation Parameters</a><a class="headerlink" href="#cloudformation-parameters" title="Permalink to this headline">#</a></h3>
+<p>The network configuration parameters for the Mission Control EC2 instance are
+necessary to determine location and access:</p>
+<table border="1" class="colwidths-given docutils" id="cft-network-properties">
+<caption><span class="caption-text">Network Configuration Parameters</span><a class="headerlink" href="#cft-network-properties" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="70%" />
+<col width="15%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter key</th>
+<th class="head">Description</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Vpc</td>
+<td>VPC ID</td>
+<td>vpc-12345</td>
+</tr>
+<tr class="row-odd"><td>Subnet</td>
+<td>Subnet for the Mission Control instance</td>
+<td>subnet-45678</td>
+</tr>
+<tr class="row-even"><td>SecurityGroups</td>
+<td>Security groups for Mission Control</td>
+<td>sg-xyz</td>
+</tr>
+<tr class="row-odd"><td>KeyName</td>
+<td>Name of an EC2 KeyPair to enable SSH access to the instance</td>
+<td>MyMCKey</td>
+</tr>
+<tr class="row-even"><td>AppInstanceType</td>
+<td>EC2 instance type to use for the Mission Control server</td>
+<td>t2.small</td>
+</tr>
+</tbody>
+</table>
+<p>To enable TLS/SSL for the Mission Control server, use the <code class="docutils literal"><span class="pre">HTTPS</span>
+<span class="pre">Configuration</span></code> parameters:</p>
+<table border="1" class="colwidths-given docutils" id="cft-https-properties">
+<caption><span class="caption-text">HTTPS Configuration Parameters</span><a class="headerlink" href="#cft-https-properties" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="65%" />
+<col width="10%" />
+<col width="10%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter key</th>
+<th class="head">Description</th>
+<th class="head">Default</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>HttpsEnabled</td>
+<td>Enable HTTPS for Mission Control</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr class="row-odd"><td>HttpsPort</td>
+<td>Port to use for HTTPS to access Mission Control</td>
+<td>5043</td>
+<td>5044</td>
+</tr>
+<tr class="row-even"><td>HttpsCertificateUrl</td>
+<td>S3 URL of the TLS certificate for HTTPS.</td>
+<td>&#160;</td>
+<td>s3:://bucket_name/key_name/mc.crt</td>
+</tr>
+<tr class="row-odd"><td>HttpsCertificatePassword</td>
+<td>The password for the TLS certificate.</td>
+<td>&#160;</td>
+<td>9308kja=nasdfjba-23f%</td>
+</tr>
+</tbody>
+</table>
+<p>Mission Control supports three types of authentication mechanisms, with can be
+configured with the following authentication parameters. More information can be
+found in the <a class="reference internal" href="security.html"><span class="doc">security section</span></a>.</p>
+<table border="1" class="colwidths-given docutils" id="cft-authentication-properties">
+<caption><span class="caption-text">Authentication Parameters</span><a class="headerlink" href="#cft-authentication-properties" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="65%" />
+<col width="10%" />
+<col width="10%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter key</th>
+<th class="head">Description</th>
+<th class="head">Default</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>AuthenticationTypes</td>
+<td>Comma delimited list of authentication types in the App. Allowed values
+are <code class="docutils literal"><span class="pre">LDAP</span></code>, <code class="docutils literal"><span class="pre">INTERNAL</span></code>, and <code class="docutils literal"><span class="pre">GOOGLE</span></code>.</td>
+<td>INTERNAL</td>
+<td>LDAP</td>
+</tr>
+<tr class="row-odd"><td>LdapServerHost</td>
+<td>IP of the LDAP Server. Required only for <code class="docutils literal"><span class="pre">LDAP</span></code> authentication.
+This must be a valid IP address of the form x.x.x.x</td>
+<td>&#160;</td>
+<td><code class="docutils literal"><span class="pre">172.8.9.10</span></code></td>
+</tr>
+<tr class="row-even"><td>LdapServerPort</td>
+<td>The port of the LDAP Server. Required only for <code class="docutils literal"><span class="pre">LDAP</span></code> authentication</td>
+<td>636</td>
+<td>389</td>
+</tr>
+<tr class="row-odd"><td>LdapsEnabled</td>
+<td>Enable if the LDAP Server is secured (<code class="docutils literal"><span class="pre">ldaps</span></code>). Required only for
+<code class="docutils literal"><span class="pre">LDAP</span></code> authentication.</td>
+<td>yes</td>
+<td>no</td>
+</tr>
+<tr class="row-even"><td>LdapUserBindPattern</td>
+<td>Custom user bind pattern</td>
+<td>&#160;</td>
+<td><a class="reference external" href="mailto:${USER}&#37;&#52;&#48;example&#46;com">${USER}<span>&#64;</span>example<span>&#46;</span>com</a></td>
+</tr>
+<tr class="row-odd"><td>GoogleClientId</td>
+<td>Client ID from Google API console. Required only for <code class="docutils literal"><span class="pre">GOOGLE</span></code>
+authentication.</td>
+<td>&#160;</td>
+<td>1234567890</td>
+</tr>
+<tr class="row-even"><td>GoogleClientSecret</td>
+<td>Client secret from Google API console. Required only for <code class="docutils literal"><span class="pre">GOOGLE</span></code>
+authentication.</td>
+<td>&#160;</td>
+<td>mygooglesecret</td>
+</tr>
+<tr class="row-odd"><td>GoogleHostedDomain</td>
+<td>Organization domain name hosted by Google. Required only for <code class="docutils literal"><span class="pre">GOOGLE</span></code>
+authentication.</td>
+<td>&#160;</td>
+<td>example.com</td>
+</tr>
+</tbody>
+</table>
+<p>The configuration for a PostgreSQL database as Amazon RDS instance used by
+Mission Control is required:</p>
+<table border="1" class="colwidths-given docutils" id="cft-database-properties">
+<caption><span class="caption-text">Database Configuration Parameters</span><a class="headerlink" href="#cft-database-properties" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col width="15%" />
+<col width="65%" />
+<col width="10%" />
+<col width="10%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Parameter key</th>
+<th class="head">Description</th>
+<th class="head">Default</th>
+<th class="head">Example</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>DatabaseSubnetGroup</td>
+<td>The DB Subnet Group for Mission Control’s RDS database. See
+documentation on <a class="reference external" href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_VPC.WorkingWithRDSInstanceinaVPC.html">DB Subnet Group</a>
+for more information.</td>
+<td><code class="docutils literal"><span class="pre">default</span></code></td>
+<td><code class="docutils literal"><span class="pre">default</span></code></td>
+</tr>
+<tr class="row-odd"><td>DBInstanceClass</td>
+<td>The DB Instance Class for Mission Control’s RDS database. See
+documentation on <a class="reference external" href="https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.DBInstanceClass.html">DB Instance Class</a>
+for information about possible values.</td>
+<td>db.m5.large</td>
+<td>db.m1.medium</td>
+</tr>
+<tr class="row-even"><td>DBSnapshotIdentifier</td>
+<td>Optional parameter for the name or Amazon Resource Name (ARN) of the
+DB snapshot that will be used to restore the App’s backing RDS
+database instance.</td>
+<td>&#160;</td>
+<td>my-snapshot-id</td>
+</tr>
+<tr class="row-odd"><td>EphemeralDatabase</td>
+<td>When enabled Mission Control will use an embedded database on local
+storage instead of an RDS instance. Strongly discouraged for production
+use.</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
 <p>Once your Mission Control instance is up and running, note down the fully
-qualified domain name (host name) and navigate to it in a browser at port 5042 -
-<a class="reference external" href="http://hostname:5042">http://hostname:5042</a>. Now you are ready to <a class="reference internal" href="getting-started.html"><span class="doc">proceed to log in and get
-started</span></a>.</p>
+qualified domain name (host name) and navigate to it in a browser at port 5042,
+or 5043 if using HTTPS - <a class="reference external" href="http://hostname:5042">http://hostname:5042</a>. Now you are ready to
+<a class="reference internal" href="getting-started.html"><span class="doc">proceed to log in and get started</span></a>.</p>
 <p>Mission Control can now manage your data sources and clusters, which replaces
 the traditional management with configuration files.  Our <a class="reference internal" href="../aws.html"><span class="doc">Presto AWS
 documentation</span></a> contains more detailed information about connecting to the
 Presto dashboard and other aspects.</p>
 </div>
+</div>
 <div class="section" id="installation-on-kubernetes">
-<h2><a class="toc-backref" href="#id3">Installation on Kubernetes</a><a class="headerlink" href="#installation-on-kubernetes" title="Permalink to this headline">#</a></h2>
+<h2><a class="toc-backref" href="#id4">Installation on Kubernetes</a><a class="headerlink" href="#installation-on-kubernetes" title="Permalink to this headline">#</a></h2>
 <p>Mission Control can be run on any Kubernetes cluster, including Azure Kubernetes
 Service AKS and Google Kubernetes Engine GKE. It can also be run on other
 Kubernetes deployments run and managed by your infrastructure team or from other
@@ -237,6 +440,10 @@ Docker containers, helm charts and other resources.</p>
 <li><code class="docutils literal"><span class="pre">postgres.yaml</span></code></li>
 <li><code class="docutils literal"><span class="pre">missioncontrol.yaml</span></code></li>
 </ul>
+<p>To add your custom configuration to Mission Control, you can modify the
+<code class="docutils literal"><span class="pre">mission-control-config</span></code> secret configuration in <code class="docutils literal"><span class="pre">missioncontrol.yaml</span></code>.
+Refer to <a class="reference internal" href="#mc-configuration"><span class="std std-ref">configuration</span></a> section for the supported
+configuration properties.</p>
 <p>Now start your Kubernetes cluster, which you want to use for Mission Control
 and your Presto deployment and connect to it with kubectl.</p>
 <p>Deploy and start the PostgreSQL backend database.</p>
@@ -260,7 +467,7 @@ documentation</span></a> contains contains more detailed information about
 connecting to the Presto dashboard and other aspects.</p>
 </div>
 <div class="section" id="configuration">
-<span id="mc-configuration"></span><h2><a class="toc-backref" href="#id4">Configuration</a><a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
+<span id="mc-configuration"></span><h2><a class="toc-backref" href="#id5">Configuration</a><a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
 <p>The Mission Control application is automatically configured with reasonable
 default values, as part of the installation process on AWS and Kubernetes.</p>
 <p>The configuration can be updated, and is controlled in two separate files:</p>
@@ -269,9 +476,18 @@ default values, as part of the installation process on AWS and Kubernetes.</p>
 <li>Java runtime configuration in <code class="docutils literal"><span class="pre">etc/jvm.properties</span></code></li>
 </ul>
 <div class="section" id="server-configuration-in-config-properties">
-<h3><a class="toc-backref" href="#id5">Server Configuration in <code class="docutils literal"><span class="pre">config.properties</span></code></a><a class="headerlink" href="#server-configuration-in-config-properties" title="Permalink to this headline">#</a></h3>
+<h3><a class="toc-backref" href="#id6">Server Configuration in <code class="docutils literal"><span class="pre">config.properties</span></code></a><a class="headerlink" href="#server-configuration-in-config-properties" title="Permalink to this headline">#</a></h3>
 <p>The installation methods for Mission Control automatically include a suitable
-configuration file. Following is list of used properties.</p>
+configuration file.</p>
+<p>If you are using the Mission Control CFT for deployment, the following
+properties are available as CFT parameters. For Kubernetes deployments, update
+the <code class="docutils literal"><span class="pre">mission-control-config</span></code> secret configuration in <code class="docutils literal"><span class="pre">missioncontrol.yaml</span></code>
+with the required properties.</p>
+<p><code class="docutils literal"><span class="pre">environment.type</span></code>:</p>
+<blockquote>
+<div>Determines the environment used for the Presto deployment. Currently needs
+<code class="docutils literal"><span class="pre">KUBERNETES</span></code> for Kubernetes-based systems and can be omitted for AWS
+deployments.</div></blockquote>
 <p><code class="docutils literal"><span class="pre">aws.*</span></code></p>
 <blockquote>
 <div><p>The AWS parameters define the AWS system to use.</p>
@@ -290,19 +506,21 @@ Control for configuration and other storage.</div></blockquote>
 <div>The sequence of authentication and authorization systems to use. Possible
 values are <code class="docutils literal"><span class="pre">INTERNAL</span></code>, <code class="docutils literal"><span class="pre">LDAP</span></code> and <code class="docutils literal"><span class="pre">GOOGLE</span></code>. More information can be
 found in the <a class="reference internal" href="security.html"><span class="doc">security section</span></a>.</div></blockquote>
-<p><code class="docutils literal"><span class="pre">environment.type</span></code>:</p>
-<blockquote>
-<div>Determines the environment used for the Presto deployment. Currently needs
-<code class="docutils literal"><span class="pre">KUBERNETES</span></code> for Kubernetes-based systems and can be omitted for AWS
-deployments.</div></blockquote>
-<p><code class="docutils literal"><span class="pre">LdapServerHost</span></code>, <code class="docutils literal"><span class="pre">LdapServerPort</span></code>, <code class="docutils literal"><span class="pre">LdapsEnabled</span></code> and
-<code class="docutils literal"><span class="pre">LdapUserBindPattern</span></code>:</p>
+<p><code class="docutils literal"><span class="pre">ldap.url</span></code>, <code class="docutils literal"><span class="pre">ldap.user-bind-pattern</span></code>:</p>
 <blockquote>
 <div>Parameters to define the LDAP server connection to use for LDAP authentication
 and authorization.</div></blockquote>
+<p><code class="docutils literal"><span class="pre">authentication.google.client-id</span></code>, <code class="docutils literal"><span class="pre">authentication.google.secret</span></code> and
+<code class="docutils literal"><span class="pre">authentication.google.hosted-domain</span></code>:</p>
+<blockquote>
+<div>Parameters to enable GOOGLE authentication for Mission control.</div></blockquote>
+<p><code class="docutils literal"><span class="pre">http-server.https.enabled</span></code>, <code class="docutils literal"><span class="pre">http-server.https.keystore.path</span></code>,
+<code class="docutils literal"><span class="pre">http-server.https.keystore.key</span></code> and <code class="docutils literal"><span class="pre">http-server.https.port</span></code>:</p>
+<blockquote>
+<div>Parameters to enable TLS/SSL for Mission Control server.</div></blockquote>
 </div>
 <div class="section" id="java-runtime-configuration-in-jvm-config">
-<h3><a class="toc-backref" href="#id6">Java Runtime Configuration in <code class="docutils literal"><span class="pre">jvm.config</span></code></a><a class="headerlink" href="#java-runtime-configuration-in-jvm-config" title="Permalink to this headline">#</a></h3>
+<h3><a class="toc-backref" href="#id7">Java Runtime Configuration in <code class="docutils literal"><span class="pre">jvm.config</span></code></a><a class="headerlink" href="#java-runtime-configuration-in-jvm-config" title="Permalink to this headline">#</a></h3>
 <p>The default configuration for the Java Virtual Machine running the Mission
 Control backend is sufficient. If desired it can be adjusted. Changes require a
 restart of the application.</p>
@@ -314,7 +532,7 @@ restart of the application.</p>
 -Djdk.attach.allowAttachSelf=true
 </pre></div>
 </div>
-</div>
+<span class="target" id="mc-tls"></span></div>
 </div>
 </div>
 
