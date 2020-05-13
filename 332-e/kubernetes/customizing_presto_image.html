@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>5.6. Customizing The Presto Docker Images &mdash; Starburst Enterprise Presto</title>
+  <title>5.6. Customizing Presto Docker Images &mdash; Starburst Enterprise Presto</title>
   
 
   
@@ -88,7 +88,7 @@
 <li class="toctree-l2"><a class="reference internal" href="deployment.html">5.3. Deployment of Presto on Kubernetes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="presto_resource.html">5.4. Presto Kubernetes Resource</a></li>
 <li class="toctree-l2"><a class="reference internal" href="query.html">5.5. Querying Presto</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">5.6. Customizing The Presto Docker Images</a><ul>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">5.6. Customizing Presto Docker Images</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#custom-bootstrap-script">Custom Bootstrap Script</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#building-custom-presto-docker-images">Building Custom Presto Docker Images</a></li>
 </ul>
@@ -155,7 +155,7 @@
       
         <li><a href="../kubernetes.html">5. Kubernetes</a> &raquo;</li>
       
-    <li>5.6. Customizing The Presto Docker Images</li>
+    <li>5.6. Customizing Presto Docker Images</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -164,57 +164,57 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="customizing-the-presto-docker-images">
-<h1>5.6. Customizing The Presto Docker Images<a class="headerlink" href="#customizing-the-presto-docker-images" title="Permalink to this headline">#</a></h1>
+  <div class="section" id="customizing-presto-docker-images">
+<h1>5.6. Customizing Presto Docker Images<a class="headerlink" href="#customizing-presto-docker-images" title="Permalink to this headline">#</a></h1>
 <div class="section" id="custom-bootstrap-script">
 <span id="k8s-custom-bootstrap"></span><h2>Custom Bootstrap Script<a class="headerlink" href="#custom-bootstrap-script" title="Permalink to this headline">#</a></h2>
-<p>Starburst Kubernetes integration allows adding a bootstrap script to the Presto
-Kubernetes pods. This additional bootstrap script support is available to allow
-user defined actions to be performed on the Presto nodes (coordinators and
-workers) upon node startup. The script is executed after Presto configuration
-setup, but before starting the Presto server.</p>
+<p>Adding a bootstrap script to the Presto pods allows you to perform custom
+actions prior to the Presto startup. The script is executed after Presto
+configuration setup, but before starting the Presto server.</p>
 <p>The custom bootstrap script is added via the <code class="docutils literal"><span class="pre">additionalBootstrapScriptVolume</span></code>
-property in <code class="code docutils literal"><span class="pre">spec</span></code> section of Presto Kubernetes resource YAML (see
-<a class="reference internal" href="presto_resource.html"><span class="doc">Presto Kubernetes Resource</span></a>). This property should be a YAML fragment which defines a
-volume. Any volume type can be used, see the list of <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/">Kubernetes Volumes</a> The volume is required
-to have a <code class="docutils literal"><span class="pre">bootstrap.sh</span></code> file, additional files are allowed in that volume.
-This volume will be mounted in all the Presto pods. If <code class="docutils literal"><span class="pre">bootstrap.sh</span></code> script
-exists, prior to Presto server startup, this script will be executed with the
-node role as parameter (string literal <code class="docutils literal"><span class="pre">worker</span></code> or <code class="docutils literal"><span class="pre">coordinator</span></code>).</p>
-<p>For example, the <code class="docutils literal"><span class="pre">additionalBootstrapScriptVolume</span></code> could be specified as a
-ConfigMap volume by configuring the Presto Kubernetes resource like this:</p>
-<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">additionalBootstrapScriptVolume</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">configMap</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script</span>
+in the <a class="reference internal" href="presto_resource.html#k8s-general"><span class="std std-ref">Presto resource</span></a>. The property needs to be a YAML
+fragment that defines a volume. Any <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/">Kubernetes volume type</a>.</p>
+<p>The volume is required to have a <code class="docutils literal"><span class="pre">bootstrap.sh</span></code> file, and additional files are
+allowed and provide further resources. The volume is  mounted in all the Presto
+pods.</p>
+<p>The script is passed the string literal <code class="docutils literal"><span class="pre">coordinator</span></code> or <code class="docutils literal"><span class="pre">worker</span></code> when
+executed. This allows you to use the same script to program different behavior:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="o">[</span> <span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;coordinator&quot;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="nb">echo</span> <span class="s2">&quot;Bootstrapping coordinator&quot;</span>
+
+<span class="k">elif</span> <span class="o">[</span> <span class="s2">&quot;</span><span class="nv">$1</span><span class="s2">&quot;</span> <span class="o">=</span> <span class="s2">&quot;worker&quot;</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="nb">echo</span> <span class="s2">&quot;Bootstrapping worker&quot;</span>
+
+<span class="k">fi</span>
 </pre></div>
 </div>
-<p>This assumes the ConfigMap already exists. It could be as simple as creating
-this Kubernetes resource:</p>
+<p>For example, the <code class="docutils literal"><span class="pre">additionalBootstrapScriptVolume</span></code> can be specified as a
+ConfigMap volume:</p>
+<div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">additionalBootstrapScriptVolume</span><span class="p p-Indicator">:</span>
+  <span class="l l-Scalar l-Scalar-Plain">configMap</span><span class="p p-Indicator">:</span>
+    <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-volume</span>
+</pre></div>
+</div>
+<p>You can add the <a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/">ConfigMap</a>
+to the Kubernetes resource. The following example contains the bootstrap.sh
+script inlined in the YAML syntax as multi-line string.</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">kind</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
 <span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="l l-Scalar l-Scalar-Plain">metadata</span><span class="p p-Indicator">:</span>
-  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script</span>
+  <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-volume</span>
   <span class="l l-Scalar l-Scalar-Plain">namespace</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;my-namespace&gt;</span>
 <span class="l l-Scalar l-Scalar-Plain">data</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">bootstrap.sh</span><span class="p p-Indicator">:</span> <span class="p p-Indicator">|-</span>
     <span class="no">echo &quot;Hello World.&quot; &gt; /tmp/hello.txt</span>
 </pre></div>
 </div>
-<p>For more information on ConfigMap refer to <a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/">Kubernetes ConfigMap documentation</a></p>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The custom bootstrap script volume, can be <em>any volume type supported by
-Kubernetes</em>, the ConfigMap mentioned above is just an example use case.</p>
-</div>
 <p>Note that it is also possible to mount multiple bootstrap script volumes via the
-<code class="docutils literal"><span class="pre">additionalBootstrapScriptVolumes</span></code> property. For example, the
-<code class="docutils literal"><span class="pre">additionalBootstrapScriptVolumes</span></code> could list multiple ConfigMaps volumes like
-this:</p>
+<code class="docutils literal"><span class="pre">additionalBootstrapScriptVolumes</span></code> property:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">additionalBootstrapScriptVolumes</span><span class="p p-Indicator">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">configMap</span><span class="p p-Indicator">:</span>
-      <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-1</span>
+      <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-volume-1</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">configMap</span><span class="p p-Indicator">:</span>
-      <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-2</span>
+      <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">my-bootstrap-script-volume-2</span>
 </pre></div>
 </div>
 <p>Bootstrap scripts are applied in the order they are defined in
@@ -227,35 +227,35 @@ bootstrap script is applied before any of the scripts defined in
 <p>The <a class="reference internal" href="#k8s-custom-bootstrap"><span class="std std-ref">Custom Bootstrap Script</span></a> script mechanism, is a lighter, built-in way to
 customize the default Presto pod, without the need to build a separate custom
 Presto Docker image, it should suffice for most extension needs.</p>
-<p>However if you need to do more extensive changes to the underlying node, it is
+<p>If you need to do more extensive changes to the underlying node, it is
 possible to build custom Presto Docker images used by Presto cluster. This
 allows you to to extend Presto with additional features, which are not supported
 by default, or otherwise modify the Presto nodes.</p>
-<p>In order to build custom Presto Docker images you must create a Docker image
+<p>In order to build a custom Presto Docker image you must create a Docker image
 that is based on the Starburst Enterprise Presto Kubernetes Docker image, e.g.</p>
-<div class="highlight-text"><div class="highlight"><pre><span></span>FROM starburstdata/presto:323-e.1-k8s-0.18
+<div class="highlight-text"><div class="highlight"><pre><span></span>FROM starburstdata/presto:332-e.2-k8s-0.25
 LABEL maintainer=&quot;...&quot;
 
 # Your custom Docker image steps
 </pre></div>
 </div>
-<p>You might also want to modify <code class="code docutils literal"><span class="pre">/usr/local/bin/entrypoint.sh</span></code> script which
-is responsible for autoconfiguring and launching Presto. Your custom steps
-should be executed after Presto is autoconfigured by
-<code class="code docutils literal"><span class="pre">presto-autoconfigure</span></code> program, in addition to (or instead of) the
+<p>Modify the <code class="docutils literal"><span class="pre">/usr/local/bin/entrypoint.sh</span></code> script, which is responsible for
+autoconfiguring and launching Presto, if you need changes to the startup. Your
+custom steps should be executed after Presto is autoconfigured by
+<code class="code docutils literal"><span class="pre">presto-autoconfigure</span></code> program, in addition to, or instead of, the
 additional bootstrap script handling.</p>
-<p>Once you have built your custom Presto Docker image, you can use it within
-Presto cluster by specifying <code class="code docutils literal"><span class="pre">image</span></code> section of Presto Kubernetes
-resource, e.g.</p>
+<p>Once you have built your custom Presto Docker image and published it to your
+container registry, you can use it within the cluster by updating the <code class="docutils literal"><span class="pre">image</span></code>
+section of resource:</p>
 <div class="highlight-yaml"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">apiVersion</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">starburstdata.com/v1</span>
 <span class="l l-Scalar l-Scalar-Plain">kind</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">Presto</span>
 <span class="l l-Scalar l-Scalar-Plain">metadata</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">presto-cluster-name</span>
 <span class="l l-Scalar l-Scalar-Plain">spec</span><span class="p p-Indicator">:</span>
   <span class="l l-Scalar l-Scalar-Plain">image</span><span class="p p-Indicator">:</span>
-    <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-presto-image</span>
+    <span class="l l-Scalar l-Scalar-Plain">name</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-org/custom-presto-image</span>
     <span class="l l-Scalar l-Scalar-Plain">pullPolicy</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">IfNotPresent</span>
-    <span class="l l-Scalar l-Scalar-Plain">tag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">0.1</span>
+    <span class="l l-Scalar l-Scalar-Plain">tag</span><span class="p p-Indicator">:</span> <span class="l l-Scalar l-Scalar-Plain">custom-tag</span>
   <span class="l l-Scalar l-Scalar-Plain">...</span>
 </pre></div>
 </div>
