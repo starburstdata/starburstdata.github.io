@@ -88,12 +88,12 @@
 <li class="toctree-l2"><a class="reference internal" href="deployment.html">5.3. Deployment of Presto on Kubernetes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="presto_resource.html">5.4. Presto Kubernetes Resource</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">5.5. Querying Presto</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#cli">CLI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#odbc-jdbc-drivers">ODBC &amp; JDBC Drivers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#jdbc-driver-odbc-driver-and-other-clients">JDBC Driver, ODBC Driver and Other Clients</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#presto-cli">Presto CLI</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="customizing_presto_image.html">5.6. Customizing Presto Docker Images</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hpa.html">5.7. Horizontal Scaling of a Presto K8s Cluster</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hpa.html">5.7. Horizontal Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="eks.html">5.8. Using Amazon Elastic Kubernetes Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gke.html">5.9. Using Google Kubernetes Engine</a></li>
 <li class="toctree-l2"><a class="reference internal" href="aks.html">5.10. Using Microsoft Azure Kubernetes Service</a></li>
@@ -166,15 +166,22 @@
             
   <div class="section" id="querying-presto">
 <h1>5.5. Querying Presto<a class="headerlink" href="#querying-presto" title="Permalink to this headline">#</a></h1>
-<p>The Presto Coordinator pod is reachable via the Kubernetes Service. By default,
-the service is only available within the Kubernetes Cluster at
-<code class="code docutils literal"><span class="pre">http://presto-coordinator-service-CLUSTER_NAME_UUID.NAMESPACE.svc.cluster.local:8080</span></code>,
-where <code class="code docutils literal"><span class="pre">NAMESPACE</span></code> is the Kubernetes namespace where the given Presto
-cluster is deployed and <code class="code docutils literal"><span class="pre">CLUSTER_NAME_UUID</span></code> is the unique service name.</p>
-<p>You can adjust the endpoint name using <code class="code docutils literal"><span class="pre">service.name</span></code> parameter. Please
-refer to <a class="reference internal" href="presto_resource.html#k8s-service"><span class="std std-ref">Service properties</span></a> for more information.</p>
-<div class="section" id="cli">
-<h2>CLI<a class="headerlink" href="#cli" title="Permalink to this headline">#</a></h2>
+<p>The coordinator pod is reachable via the Kubernetes Service. By default, the
+service is only available within the Kubernetes Cluster at
+<code class="docutils literal"><span class="pre">http://presto-coordinator-service-CLUSTER_NAME_UUID.NAMESPACE.svc.cluster.local:8080</span></code>,
+where <code class="docutils literal"><span class="pre">NAMESPACE</span></code> is the Kubernetes namespace where the given cluster is
+deployed and <code class="docutils literal"><span class="pre">CLUSTER_NAME_UUID</span></code> is the unique service name.</p>
+<p>You can adjust the endpoint name using <code class="docutils literal"><span class="pre">service.name</span></code> parameter. Refer to
+<a class="reference internal" href="presto_resource.html#k8s-service"><span class="std std-ref">service properties</span></a> for more information.</p>
+<div class="section" id="jdbc-driver-odbc-driver-and-other-clients">
+<h2>JDBC Driver, ODBC Driver and Other Clients<a class="headerlink" href="#jdbc-driver-odbc-driver-and-other-clients" title="Permalink to this headline">#</a></h2>
+<p>Once you have determined the URL of the coordinator, you can use <a class="reference internal" href="../installation.html#client-tools"><span class="std std-ref">any
+client or driver supported by Presto to connect and query</span></a>.</p>
+</div>
+<div class="section" id="presto-cli">
+<h2>Presto CLI<a class="headerlink" href="#presto-cli" title="Permalink to this headline">#</a></h2>
+<p>You can use the <a class="reference internal" href="../installation/cli.html"><span class="doc">Presto CLI</span></a> from your local
+workstation, or run it a container in the cluster:</p>
 <dl class="docutils">
 <dt><strong>1. Launch Presto CLI pod in interactive mode</strong></dt>
 <dd>In your console, type the following command to launch Presto CLI pod. Your
@@ -188,11 +195,11 @@ cursor will skip to the next line, prefixed with a Presto prompt: <code class="d
 <p>where <code class="code docutils literal"><span class="pre">IMAGE_REPOSITORY</span></code> is your Docker registry address (if present).</p>
 <dl class="docutils">
 <dt><strong>2. Show Catalogs and Schemas</strong></dt>
-<dd>View your catalogs and schemas by running the following commands. Note:
-replace <code class="docutils literal"><span class="pre">tpch</span></code> with your desired catalog.</dd>
+<dd>View your catalogs and schemas by running the following commands. Replace
+<code class="docutils literal"><span class="pre">tpch</span></code> with your desired catalog.</dd>
 </dl>
-<div class="highlight-RST"><div class="highlight"><pre><span></span>show catalogs;
-show schemas in tpch;
+<div class="highlight-RST"><div class="highlight"><pre><span></span>SHOW CATALOGS;
+SHOW SCHEMAS IN tpch;
 </pre></div>
 </div>
 <dl class="docutils">
@@ -200,7 +207,7 @@ show schemas in tpch;
 <dd>Type your SQL query into the Presto CLI. For reference, view the SQL SELECT
 statement below.</dd>
 </dl>
-<div class="highlight-RST"><div class="highlight"><pre><span></span>select * from tpch.sf1.nation;
+<div class="highlight-RST"><div class="highlight"><pre><span></span>SELECT * FROM tpch.sf1.nation;
 </pre></div>
 </div>
 <dl class="docutils">
@@ -208,17 +215,9 @@ statement below.</dd>
 <dd>Press &lt;Enter&gt; to execute your query. Query progress is displayed live in the
 Presto CLI console.</dd>
 <dt><strong>5. View Query Results</strong></dt>
-<dd>When Presto finishes processing the query, you will be presented with the
-results of your query within the Presto CLI console.</dd>
+<dd>When Presto finishes processing the query, you are presented with the results
+of your query within the Presto CLI console.</dd>
 </dl>
-</div>
-<div class="section" id="odbc-jdbc-drivers">
-<h2>ODBC &amp; JDBC Drivers<a class="headerlink" href="#odbc-jdbc-drivers" title="Permalink to this headline">#</a></h2>
-<p>The open source Presto JDBC driver can be used with Presto on AWS. It can be
-downloaded from Starburst’s download page. Additionally, Starburst provides
-Enterprise ODBC and JDBC drivers, available for Windows, Mac, and Linux
-platforms for its Enterprise customers. Please refer to the following link for
-<a class="reference external" href="https://www.starburstdata.com/download-starburst-enterprise-distribution-of-presto/">both</a>.</p>
 </div>
 </div>
 
