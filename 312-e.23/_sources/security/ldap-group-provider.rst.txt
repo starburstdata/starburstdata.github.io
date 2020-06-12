@@ -1,0 +1,116 @@
+===================
+LDAP group provider
+===================
+
+Presto can be configured to map user names to groups using an LDAP server.
+
+To enable LDAP group mapping for Presto, configuration changes are made on
+the Presto coordinator. No changes are required to the worker configuration.
+
+Presto Server Configuration
+---------------------------
+
+Environment Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The LDAP server should use SSL, for details on how to set it up see :doc:`/security/ldap`
+
+LDAP Group Provider Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Group provider needs to be configured to use LDAP. Create an
+``etc/group-provider.properties`` file on the coordinator. Example:
+
+.. code-block:: none
+
+    group-provider.name=ldap
+    ldap.ssl=true
+    ldap.ssl.keystore.path=PATH_TO_KEYSTORE
+    ldap.ssl.keystore.password-file=KEYSTORE_PASSWORD_FILE
+    ldap.url=ldaps://ldap-server:636
+    ldap.user=cn=admin,dc=presto,dc=testldap,dc=com
+    ldap.password=admin
+    ldap.search-base=dc=presto,dc=testldap,dc=com
+    ldap.group.search-filter=(objectClass=groupOfNames)
+    ldap.group.member-attribute=member
+    ldap.group.name-attribute=cn
+    ldap.user.member-of-attribute=memberOf
+    ldap.user.search-filter=(&(objectClass=inetOrgPerson)(uid={0}))
+    ldap.cache-ttl=10s
+    ldap.negative-cache-ttl=30s
+
+
+======================================================= ======================================================
+Property                                                Description
+======================================================= ======================================================
+``ldap.ssl``                                            Should the connection be SSL-encrypted.
+``ldap.ssl.keystore.path``                              Path to the keystore with the SSL certificate.
+``ldap.ssl.keystore.password``                          Keystore password.
+``ldap.ssl.keystore.password-file``                     Path to the file containing the keystore password.
+``ldap.ssl.truststore.path``                            Path to the truststore with the SSL certificate.
+``ldap.ssl.truststore.password``                        Truststore password.
+``ldap.ssl.truststore.password-file``                   Path to the file containing the truststore password.
+``ldap.url``                                            The url to the LDAP server.
+``ldap.user``                                           This property can be used to specify the LDAP user
+                                                        bind string for group resolution.
+``ldap.password``                                       Password used to connect to LDAP server.
+``ldap.search-base``                                    Which subtree of the LDAP hierarchy to query.
+``ldap.group.search-filter``                            Filter used to find group objects.
+``ldap.group.member-attribute``                         Attribute of a group object containing it's members.
+``ldap.group.name-attribute``                           Attribute of a group object containing it's name.
+``ldap.group.hierarchy-level``                          How many levels of the group hierarchy to traverse.
+``ldap.user.member-of-attribute``                       Attribute of a user object containing it's group memberships.
+``ldap.user.search-filter``                             Filter used to find user objects.
+``ldap.timeout.directory-search``                       Timeout for directory search operations.
+``ldap.timeout.connection``                             Timeout for establishing an LDAP connection.
+``ldap.timeout.read``                                   Timeout for reading data from an LDAP connection.
+``ldap.cache-ttl``                                      Duration of caching user group lookups.
+``ldap.negative-cache-ttl``                             Duration of caching user not found results.
+``ldap.config.resources``                               A comma-separated list of Hadoop XML config files,
+                                                        useful if Hadoop was already configured to use LDAP groups.
+======================================================= ======================================================
+
+Based on the LDAP server implementation type, the properties can be set as described below.
+
+Active Directory
+****************
+
+.. code-block:: none
+
+    ldap.user=${USER}@<domain_name_of_the_server>
+    ldap.user-search-filter=(&(objectClass=<objectclass_of_user>)(sAMAccountName=${0}))
+
+Example:
+
+.. code-block:: none
+
+    ldap.user=admin@corp.example.com
+    ldap.user-search-filter=(&(objectClass=person)(sAMAccountName=${0}))
+
+OpenLDAP
+********
+
+.. code-block:: none
+
+    ldap.user=cn=${USER},<distinguished_name_of_the_user>
+    ldap.user-search-filter=(&(objectClass=<objectclass_of_user>)(uid=${0}))
+
+Example:
+
+.. code-block:: none
+
+    ldap.user=cn=admin,OU=America,DC=corp,DC=example,DC=com
+    ldap.user-search-filter=(&(objectClass=inetOrgPerson)(uid=${0}))
+
+The LDAP group provider implementation first tries to use a ``memberOf`` user attribute
+to get a set of groups, and if that attribute isn't available, traverses the hierarchy
+of group objects looking if the user is in each one of them.
+
+This means OpenLDAP query latency can be reduced by enabling the
+``memberOf`` `overlay <http://www.openldap.org/doc/admin24/overlays.html>`_.
+Active Directory servers typically have this attribute enabled.
+
+Troubleshooting
+---------------
+
+Please consult Presto :doc:`/security/ldap` for tips on troubleshooting.
