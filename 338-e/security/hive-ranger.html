@@ -100,16 +100,16 @@
 <li class="toctree-l2"><a class="reference internal" href="rbac.html">7.13. Role Based Access Control</a></li>
 <li class="toctree-l2"><a class="reference internal" href="system-ranger.html">7.14. System Level Security with Apache Ranger</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">7.15. Hive Level Security with Apache Ranger</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#before-you-begin">Before You Begin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#before-to-begin">Before to begin</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#architecture">Architecture</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuring-presto-with-apache-ranger">Configuring Presto with Apache Ranger</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#apache-ranger-configuration">Apache Ranger Configuration</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#presto-configuration-for-apache-ranger">Presto Configuration for Apache Ranger</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#presto-configuration-for-apache-ranger">Presto configuration for Apache Ranger</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#apache-ranger-based-authorization">Apache Ranger Based Authorization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#additional-features">Additional Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apache-ranger-based-authorization">Apache Ranger based authorization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger-policy-management-with-sql">Ranger policy management with SQL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-features">Additional features</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
 </li>
@@ -199,26 +199,37 @@
             
   <div class="section" id="hive-level-security-with-apache-ranger">
 <h1>7.15. Hive Level Security with Apache Ranger<a class="headerlink" href="#hive-level-security-with-apache-ranger" title="Permalink to this headline">#</a></h1>
-<div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h2>
 <p>Apache Ranger offers comprehensive security for Hadoop. Using the Apache Ranger
 web console, you can manage policies for access to data for authenticated users
 and applications such as Presto.</p>
 <p>SEP can use Apache Ranger for <a class="reference internal" href="rbac.html"><span class="doc">role-base access control</span></a> enforcing
-the same and existing privileges granted on Hive objects. Presto will enforce
-privileges assigned to Hive Databases, Tables, and Columns. If a user does not
-have a privilege to query an object, the query will fail and an error will be
-returned.</p>
+the same and existing privileges granted on Hive objects. Presto enforces
+privileges assigned to Hive databases, tables, and columns. If a user does not
+have a privilege to query an object, the query fails and an error is returned.</p>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#before-to-begin" id="id1">Before to begin</a></li>
+<li><a class="reference internal" href="#architecture" id="id2">Architecture</a></li>
+<li><a class="reference internal" href="#configuring-presto-with-apache-ranger" id="id3">Configuring Presto with Apache Ranger</a><ul>
+<li><a class="reference internal" href="#apache-ranger-configuration" id="id4">Apache Ranger Configuration</a></li>
+<li><a class="reference internal" href="#presto-configuration-for-apache-ranger" id="id5">Presto configuration for Apache Ranger</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#apache-ranger-based-authorization" id="id6">Apache Ranger based authorization</a></li>
+<li><a class="reference internal" href="#ranger-policy-management-with-sql" id="id7">Ranger policy management with SQL</a></li>
+<li><a class="reference internal" href="#additional-features" id="id8">Additional features</a></li>
+<li><a class="reference internal" href="#limitations" id="id9">Limitations</a></li>
+</ul>
+</div>
 <div class="admonition warning">
 <p class="first admonition-title">Warning</p>
 <p class="last">The Hive level security for Apache Ranger is limited to usage with the
-<a class="reference internal" href="../connector/starburst-hive.html"><span class="doc">Hive connector only</span></a>. We suggest to replace it with
-the more powerful <a class="reference internal" href="system-ranger.html"><span class="doc">system level security</span></a>. It is
-capable of securing catalogs using other connectors and many other aspects.</p>
+<a class="reference internal" href="../connector/starburst-hive.html"><span class="doc">Hive connector only</span></a>. We suggest to replace
+it with the more powerful <a class="reference internal" href="system-ranger.html"><span class="doc">system level security</span></a>. It
+is capable of securing catalogs using other connectors and many other aspects.</p>
 </div>
-</div>
-<div class="section" id="before-you-begin">
-<h2>Before You Begin<a class="headerlink" href="#before-you-begin" title="Permalink to this headline">#</a></h2>
+<div class="section" id="before-to-begin">
+<h2>Before to begin<a class="headerlink" href="#before-to-begin" title="Permalink to this headline">#</a></h2>
 <p>Before you configure Presto with Apache Ranger, verify the following prerequisites:</p>
 <ul class="simple">
 <li>Hortonworks Data Platform (HDP) 2.6+ with Apache Ranger and Apache Hive
@@ -228,11 +239,8 @@ installed.</li>
 communicate with the Apache Ranger Service. Typically this is port 6080 or
 6182, if SSL is used.</li>
 </ul>
-<p>If you are new to Apache Ranger, Hortonworks provides excellent documentation
-for installing and configuring Apache Ranger:</p>
-<ul class="simple">
-<li><a class="reference external" href="https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.5/bk_security/content/overview_ranger_ambari_install.html">https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.5/bk_security/content/overview_ranger_ambari_install.html</a>&gt;</li>
-</ul>
+<p>If you are new to Apache Ranger, Hortonworks provides <a class="reference external" href="https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.5/bk_security/content/overview_ranger_ambari_install.html">excellent documentation</a>
+for installing and configuring Apache Ranger.</p>
 </div>
 <div class="section" id="architecture">
 <h2>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">#</a></h2>
@@ -256,7 +264,7 @@ plugin username <code class="docutils literal"><span class="pre">ranger.presto-p
 <code class="docutils literal"><span class="pre">auth-to-local</span></code> hadoop rules from <code class="docutils literal"><span class="pre">core-site.xml</span></code>.</p>
 </div>
 <div class="section" id="presto-configuration-for-apache-ranger">
-<h3>Presto Configuration for Apache Ranger<a class="headerlink" href="#presto-configuration-for-apache-ranger" title="Permalink to this headline">#</a></h3>
+<h3>Presto configuration for Apache Ranger<a class="headerlink" href="#presto-configuration-for-apache-ranger" title="Permalink to this headline">#</a></h3>
 <p>SEP must be configured to enable Presto to communicate with the Apache Ranger
 service. To enable set the following property in the Hive connector
 configuration.</p>
@@ -268,12 +276,70 @@ optional properties to further configure.</p>
 </div>
 </div>
 <div class="section" id="apache-ranger-based-authorization">
-<h2>Apache Ranger Based Authorization<a class="headerlink" href="#apache-ranger-based-authorization" title="Permalink to this headline">#</a></h2>
+<h2>Apache Ranger based authorization<a class="headerlink" href="#apache-ranger-based-authorization" title="Permalink to this headline">#</a></h2>
 <p>Find more information about the necessary configuration properties in
 <a class="reference internal" href="../connector/starburst-hive-security.html#hive-ranger-authorization"><span class="std std-ref">Apache Ranger Based Authorization</span></a>.</p>
 </div>
+<div class="section" id="ranger-policy-management-with-sql">
+<span id="hive-ranger-sql"></span><h2>Ranger policy management with SQL<a class="headerlink" href="#ranger-policy-management-with-sql" title="Permalink to this headline">#</a></h2>
+<p>SEP allows managing Hive policies using the SQL <a class="reference internal" href="../sql/grant.html"><span class="doc">GRANT</span></a> and
+<a class="reference internal" href="../sql/revoke.html"><span class="doc">REVOKE</span></a> statements.</p>
+<p>Ranger Hive service definitions use a limited access type model compared to
+Presto. This limits the granularity of grant and revoke operations.</p>
+<p>SEP defines the following mapping from the Hive access type model to the Presto
+privileges model:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Hive access type</th>
+<th class="head">Presto privilege</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">SELECT</span></code></td>
+<td><code class="docutils literal"><span class="pre">SELECT</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">UPDATE</span></code></td>
+<td><code class="docutils literal"><span class="pre">INSERT</span></code> and <code class="docutils literal"><span class="pre">UPDATE</span></code> and <code class="docutils literal"><span class="pre">DELETE</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>and the other way around:</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="31%" />
+<col width="69%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Presto privilege</th>
+<th class="head">Hive access type</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">SELECT</span></code></td>
+<td><code class="docutils literal"><span class="pre">SELECT</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">INSERT</span></code></td>
+<td>Unsupported, use <code class="docutils literal"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">UPDATE</span></code></td>
+<td>Unsupported, use <code class="docutils literal"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">DELETE</span></code></td>
+<td>Unsupported, use <code class="docutils literal"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code></td>
+<td><code class="docutils literal"><span class="pre">SELECT</span></code> and <code class="docutils literal"><span class="pre">UPDATE</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Only managing policies for users is currently supported.</p>
+</div>
 <div class="section" id="additional-features">
-<h2>Additional Features<a class="headerlink" href="#additional-features" title="Permalink to this headline">#</a></h2>
+<h2>Additional features<a class="headerlink" href="#additional-features" title="Permalink to this headline">#</a></h2>
 <p>In addition to enforcing the policies in Apache Ranger, Presto also integrates
 with:</p>
 <ul class="simple">
@@ -286,10 +352,6 @@ with:</p>
 </div>
 <div class="section" id="limitations">
 <h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
-<p>Presto only enforces the Apache Ranger policies. Presto does not support any
-modification of authorization policies in Ranger. This includes commands like
-CREATE ROLE, GRANT, or REVOKE. If you need to modify the roles and privileges,
-that must be done via Apache Ranger UI.</p>
 <p>Authorization information cannot be accessed by querying the following tables
 such as <code class="docutils literal"><span class="pre">information_schema.roles</span></code>, <code class="docutils literal"><span class="pre">information_schema.applicable_roles</span></code>,
 <code class="docutils literal"><span class="pre">information_schema.enabled_roles</span></code>, and
