@@ -106,6 +106,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#query-management-properties">Query Management Properties</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#query-max-execution-time"><code class="docutils literal"><span class="pre">query.max-execution-time</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#query-max-run-time"><code class="docutils literal"><span class="pre">query.max-run-time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#query-max-stage-count"><code class="docutils literal"><span class="pre">query.max-stage-count</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#query-max-history"><code class="docutils literal"><span class="pre">query.max-history</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#query-min-expire-age"><code class="docutils literal"><span class="pre">query.min-expire-age</span></code></a></li>
 </ul>
@@ -127,6 +128,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#exchange-properties">Exchange Properties</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#exchange-client-threads"><code class="docutils literal"><span class="pre">exchange.client-threads</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#exchange-concurrent-request-multiplier"><code class="docutils literal"><span class="pre">exchange.concurrent-request-multiplier</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exchange-data-integrity-verification"><code class="docutils literal"><span class="pre">exchange.data-integrity-verification</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#exchange-max-buffer-size"><code class="docutils literal"><span class="pre">exchange.max-buffer-size</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#exchange-max-response-size"><code class="docutils literal"><span class="pre">exchange.max-response-size</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sink-max-buffer-size"><code class="docutils literal"><span class="pre">sink.max-buffer-size</span></code></a></li>
@@ -447,6 +449,27 @@ time spend in a queue waiting, so essentially this is the time allowed for a
 query to exist since creation.</p>
 </div></blockquote>
 </div>
+<div class="section" id="query-max-stage-count">
+<h3><code class="docutils literal"><span class="pre">query.max-stage-count</span></code><a class="headerlink" href="#query-max-stage-count" title="Permalink to this headline">#</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Type:</strong> <code class="docutils literal"><span class="pre">integer</span></code></li>
+<li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">100</span></code></li>
+<li><strong>Minimum value:</strong> <code class="docutils literal"><span class="pre">1</span></code></li>
+</ul>
+<p>The maximum number of stages allowed to be generated per query. If a query
+generates more stages than this it will get killed with error
+<code class="docutils literal"><span class="pre">QUERY_HAS_TOO_MANY_STAGES</span></code>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Setting this to a high value can cause queries with large
+number of stages to introduce instability in the cluster
+causing unrelated queries to get killed with
+<code class="docutils literal"><span class="pre">REMOTE_TASK_ERROR</span></code> and the message <code class="docutils literal"><span class="pre">Max</span> <span class="pre">requests</span> <span class="pre">queued</span>
+<span class="pre">per</span> <span class="pre">destination</span> <span class="pre">exceeded</span> <span class="pre">for</span> <span class="pre">HttpDestination</span> <span class="pre">...</span></code></p>
+</div>
+</div></blockquote>
+</div>
 <div class="section" id="query-max-history">
 <h3><code class="docutils literal"><span class="pre">query.max-history</span></code><a class="headerlink" href="#query-max-history" title="Permalink to this headline">#</a></h3>
 <blockquote>
@@ -639,6 +662,21 @@ the maximum number of clients is
 <code class="docutils literal"><span class="pre">multiplier</span> <span class="pre">*</span> <span class="pre">((32MB</span> <span class="pre">-</span> <span class="pre">20MB)</span> <span class="pre">/</span> <span class="pre">2MB)</span> <span class="pre">=</span> <span class="pre">multiplier</span> <span class="pre">*</span> <span class="pre">6</span></code>. Tuning this
 value adjusts the heuristic, which may increase concurrency and improve
 network utilization.</p>
+</div></blockquote>
+</div>
+<div class="section" id="exchange-data-integrity-verification">
+<h3><code class="docutils literal"><span class="pre">exchange.data-integrity-verification</span></code><a class="headerlink" href="#exchange-data-integrity-verification" title="Permalink to this headline">#</a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><strong>Type:</strong> <code class="docutils literal"><span class="pre">string</span></code></li>
+<li><strong>Allowed values:</strong> <code class="docutils literal"><span class="pre">NONE</span></code>, <code class="docutils literal"><span class="pre">ABORT</span></code>, <code class="docutils literal"><span class="pre">RETRY</span></code></li>
+<li><strong>Default value:</strong> <code class="docutils literal"><span class="pre">ABORT</span></code></li>
+</ul>
+<p>Configure the resulting behavior of data integrity issues. By default,
+<code class="docutils literal"><span class="pre">ABORT</span></code> causes queries to be aborted when data integrity issues are
+detected as part of the built-in verification. Setting the property to
+<code class="docutils literal"><span class="pre">NONE</span></code> disables the verification. <code class="docutils literal"><span class="pre">RETRY</span></code> causes the data exchange to be
+repeated when integrity issues are detected.</p>
 </div></blockquote>
 </div>
 <div class="section" id="exchange-max-buffer-size">
@@ -1329,7 +1367,7 @@ session times out, which forces an automatic log-out.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'338-SNAPSHOT',
+            VERSION:'338',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  false
