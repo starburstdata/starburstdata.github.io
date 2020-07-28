@@ -1,0 +1,542 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>7.14. System level security with Apache Ranger &mdash; Starburst Enterprise Presto</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
+        <link rel="up" title="7. Security" href="../security.html"/>
+        <link rel="next" title="7.15. Hive level security with Apache Ranger" href="hive-ranger.html"/>
+        <link rel="prev" title="7.13. Role Based Access Control" href="rbac.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Enterprise Presto
+          
+
+          
+          </a>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">3. Clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mission-control.html">4. Mission Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Kubernetes</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../security.html">7. Security</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="server.html">7.1. Coordinator Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cli.html">7.2. CLI Kerberos Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ldap.html">7.3. LDAP Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="password-file.html">7.4. Password File Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="user-mapping.html">7.5. User Mapping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tls.html">7.6. Java Keystores and Truststores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="built-in-system-access-control.html">7.7. Built-in System Access Control</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ldap-group-provider.html">7.8. LDAP group provider</a></li>
+<li class="toctree-l2"><a class="reference internal" href="secrets.html">7.9. Secrets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="internal-communication.html">7.10. Secure Internal Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="audit.html">7.11. Query audit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="event-logger.html">7.12. Event Logger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rbac.html">7.13. Role Based Access Control</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">7.14. System level security with Apache Ranger</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger-installation-and-configuration">Ranger installation and configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger-plugin-configuration">Ranger plugin configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#audit">Audit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-groups-and-roles">User, groups and roles</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#policies">Policies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resource-sets">Resource sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#privilege-sets">Privilege sets</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="hive-ranger.html">7.15. Hive level security with Apache Ranger</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hive-sentry.html">7.16. Hive level security with Apache Sentry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="impersonation.html">7.17. User Impersonation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="credential-passthrough.html">7.18. Kerberos Credential Passthrough</a></li>
+<li class="toctree-l2"><a class="reference internal" href="okta-authentication.html">7.19. Okta authentication</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">8. Administration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">9. Query Optimizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">10. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">11. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">12. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">13. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">14. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">16. Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">17. Release Notes</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../404.html">404 - Nothing to See Here</a></li>
+</ul>
+
+            
+          
+
+        </div>
+        <div style="margin-top: 1em; margin-left: 2em;">
+          Version <a href="../versions.html">340-e STS and others</a>
+          <br><br>
+        <span>
+  <select name="versions" id="versions" onChange="window.location.href=this.value">
+    <option value="./">Choose another version</option>
+    <option value="/338-e/">Latest LTS (338-e)</option>
+    <option value="/332-e/">332-e LTS</option>
+    <option value="/323-e/">323-e LTS</option>
+    <option value="/340-e/">Latest STS (340-e)</option>
+    <option value="/339-e/">339-e STS </option>
+  </select>
+</span>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="https://www.starburstdata.com/">
+          <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px;"
+          src="../_static/img/starburst-darkbg.png"/></a>
+        <span class="optional">
+          <a href="../index.html">Starburst Enterprise Presto</a>
+          <a href="../versions.html" style="font-size: small;margin-left: 0.5em;">340-e STS and others</a>
+          <a href="https://www.starburstdata.com/oreilly-presto-guide-download/?utm_campaign=O%27Reilly%20Presto%20Book&utm_source=starburst&utm_medium=docs">
+            <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px; margin-left: 0.5em;"
+          src="../_static/img/ptdg-banner.png"/></a>
+          </span>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../security.html"><span class="section-number">7. </span>Security</a> &raquo;</li>
+      
+    <li><span class="section-number">7.14. </span>System level security with Apache Ranger</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="system-level-security-with-apache-ranger">
+<h1><span class="section-number">7.14. </span>System level security with Apache Ranger<a class="headerlink" href="#system-level-security-with-apache-ranger" title="Permalink to this headline">#</a></h1>
+<p>The integration of <a class="reference external" href="https://ranger.apache.org/">Apache Ranger</a> with Starburst
+Enterprise Presto enables a <a class="reference internal" href="rbac.html"><span class="doc">global role-based access control</span></a> and
+authorization model at the Presto system level.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>System level security with Apache Ranger requires a valid
+<a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise Presto license</span></a>.</p>
+</div>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#overview" id="id2">Overview</a></p></li>
+<li><p><a class="reference internal" href="#ranger-installation-and-configuration" id="id3">Ranger installation and configuration</a></p></li>
+<li><p><a class="reference internal" href="#ranger-plugin-configuration" id="id4">Ranger plugin configuration</a></p></li>
+<li><p><a class="reference internal" href="#audit" id="id5">Audit</a></p></li>
+<li><p><a class="reference internal" href="#user-groups-and-roles" id="id6">User, groups and roles</a></p></li>
+<li><p><a class="reference internal" href="#policies" id="id7">Policies</a></p></li>
+<li><p><a class="reference internal" href="#resource-sets" id="id8">Resource sets</a></p></li>
+<li><p><a class="reference internal" href="#privilege-sets" id="id9">Privilege sets</a></p></li>
+</ul>
+</div>
+<div class="section" id="overview">
+<h2><a class="toc-backref" href="#id2">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h2>
+<p>Policies in Ranger are created with the Ranger user interface and define access
+and authorization. Each policy combines user and group information with a
+resource and access rights to the resource. Ranger is configured to your
+organization’s LDAP system for user and group information. Ranger usage requires
+the installation of the Presto Ranger plugin. It creates the Starburst
+Enterprise Presto <code class="docutils literal notranslate"><span class="pre">starburst-enterprise-presto</span></code> service type, or service
+definition, in Ranger. This encompasses a Presto-specific set of resources that
+include catalog, schema, table, column, and more, so access rules for there
+resources can be configured in Ranger.</p>
+<p>The Ranger Presto plugin is responsible for connecting to Ranger from Presto and
+using the defined policies for Presto resources. Any user action in Presto, such
+as submitting a query, is validated against the policies from Ranger and
+potentially prevented.</p>
+<p>For example, a query is parsed and analyzed to determine all involved resources
+such as schemas and tables. Once a list is created, all policies are analyzed in
+Presto to determine if the user initiating the query has all necessary access
+rights. Processing only continues if all rights are granted.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Contrary to the <a class="reference internal" href="hive-ranger.html"><span class="doc">Hive level security</span></a>, the system level
+Ranger integration is suitable to define role-based access to catalogs using
+any connector as well as a number of other system resources.</p>
+</div>
+<p>Starting to use of Ranger for role-based access control can be summarized into a
+few steps:</p>
+<ul class="simple">
+<li><p>Install Ranger and add the Presto Ranger plugin</p></li>
+<li><p>Configure Ranger for user and group information from LDAP</p></li>
+<li><p>Configure Presto to use Ranger</p></li>
+<li><p>Define policies with the Ranger user interface</p></li>
+<li><p>Enjoy the access control for catalogs, schema, tables and more for all users</p></li>
+</ul>
+<p>Details for all these steps and more are documented in the following sections.</p>
+</div>
+<div class="section" id="ranger-installation-and-configuration">
+<h2><a class="toc-backref" href="#id3">Ranger installation and configuration</a><a class="headerlink" href="#ranger-installation-and-configuration" title="Permalink to this headline">#</a></h2>
+<p>Your first important step is the installation and configuration of
+Ranger, which can be summarized to the following steps:</p>
+<ul class="simple">
+<li><p>Install Ranger 2.0.0 or higher</p></li>
+<li><p>Configure Ranger to access your LDAP system for user, group and role
+information</p></li>
+<li><p>Add Presto Ranger plugin to Ranger</p></li>
+</ul>
+<p><strong>Installation</strong></p>
+<p>AWS CloudFoundation deployment</p>
+<blockquote>
+<div><p>The Starburst support for Amazon CFT-based installation includes installation
+of Apache Ranger and all relevant configuration. Detailed information is
+available in the <a class="reference internal" href="../aws/deploy.html#cft-ranger-configuration"><span class="std std-ref">AWS documentation</span></a>.</p>
+</div></blockquote>
+<p>K8s deployment</p>
+<blockquote>
+<div><p>The Starburst support for Kubernetes-based installation includes installation
+of Apache Ranger and all relevant configuration. Detailed information is
+available in the <a class="reference internal" href="../kubernetes/ranger.html"><span class="doc">Kubernetes documentation</span></a>.</p>
+</div></blockquote>
+<p>Connect existing Ranger</p>
+<blockquote>
+<div><p>Using an existing Ranger 2.0.0 or higher is supported. You just have to make
+sure that the coordinator has network access to Ranger and LDAP is configured,
+so that all relevant users, groups and roles are available. As a next step you
+need install the Presto Ranger Plugin.</p>
+</div></blockquote>
+<p>Manual Ranger installation</p>
+<blockquote>
+<div><p>If you are running Presto on-premise or some other custom deployment, you need
+to install Ranger 2.0.0 or higher following the documentation from the Ranger
+project.</p>
+</div></blockquote>
+<p><strong>Connect Ranger to LDAP</strong></p>
+<p>Ranger needs to access the information about your users, groups and roles in
+your LDAP system. With the K8s and AWS installation methods, all details are
+already configured. For existing Ranger usage or manual installation, you need
+to ensure that Ranger is connected to your LDAP directory provider and a
+synchronization process is in place. The process varies based on your LDAP
+system and documented in the Ranger documentation.</p>
+<p><strong>Presto Ranger plugin</strong></p>
+<p>The Presto Ranger plugin is automatically installed with Ranger, when using the
+AWS CFT and Kubernetes installations. For existing Ranger instances or custom
+Ranger installation, you need follow these steps:</p>
+<ul class="simple">
+<li><p>Locate the directory  in your SEP distribution</p></li>
+<li><p>Copy JAR files <code class="docutils literal notranslate"><span class="pre">presto-ranger-plugin.jar</span></code> and <code class="docutils literal notranslate"><span class="pre">presto-jdbc.jar</span></code> to your
+Ranger installation into the directory
+<code class="docutils literal notranslate"><span class="pre">${RANGER_HOME}/ews/webapp/WEB-INF/lib</span></code></p></li>
+<li><p>Restart Ranger. The Presto Ranger plugin automatically creates the service
+type definition for Presto in Ranger.</p></li>
+<li><p>Access the Ranger user interface and confirm that you can find the
+<em>Starburst Enterprise Presto</em> service type</p></li>
+</ul>
+<p>With the Presto Ranger plugin installed in Ranger, you can create one or
+multiple services with the SEP. This allows you to have separate services for
+different Presto clusters.</p>
+</div>
+<div class="section" id="ranger-plugin-configuration">
+<span id="ranger-system-plugin-configuration"></span><h2><a class="toc-backref" href="#id4">Ranger plugin configuration</a><a class="headerlink" href="#ranger-plugin-configuration" title="Permalink to this headline">#</a></h2>
+<p>With Ranger installed and configured you are now ready to configure Ranger as
+the activated <a class="reference internal" href="built-in-system-access-control.html"><span class="doc">access control system</span></a>. Update <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>
+and set the path to your Ranger access control configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">access-control.config-files</span><span class="o">=</span><span class="s">etc/access-control-ranger.properties</span>
+</pre></div>
+</div>
+<p>Subsequently configure details in the file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">access-control.name</span><span class="o">=</span><span class="s">ranger</span>
+<span class="na">ranger.policy-rest-url</span><span class="o">=</span><span class="s">http://ranger.example.com:6080</span>
+<span class="na">ranger.service-name</span><span class="o">=</span><span class="s">presto-production</span>
+<span class="na">ranger.presto-plugin-username</span><span class="o">=</span><span class="s">&lt;username&gt;</span>
+<span class="na">ranger.presto-plugin-password</span><span class="o">=</span><span class="s">&lt;password&gt;</span>
+<span class="na">ranger.policy-refresh-interval</span><span class="o">=</span><span class="s">30s</span>
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-text">Ranger configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 80%" />
+<col style="width: 5%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">access-control.name</span></code></p></td>
+<td><p>Set the name of the access control system to <code class="docutils literal notranslate"><span class="pre">ranger</span></code> to activate the
+Ranger plugin.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.policy-rest-url</span></code></p></td>
+<td><p>The URL to the Ranger server</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.service-name</span></code></p></td>
+<td><p>Name of the service defined in Ranger for this Presto cluster</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.authentication-type</span></code></p></td>
+<td><p>Authentication type for Presto connecting to Ranger, currently only
+<code class="docutils literal notranslate"><span class="pre">BASIC</span></code> is supported, <code class="docutils literal notranslate"><span class="pre">KERBEROS</span></code> is planned for a future release</p></td>
+<td><p>BASIC</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.presto-plugin-username</span></code></p></td>
+<td><p>Username for the Ranger Presto plugin to use to connect to Ranger with
+BASIC authentication</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.presto-plugin-password</span></code></p></td>
+<td><p>Password for the Ranger Presto plugin to use to connect to Ranger with
+BASIC authentication</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.plugin-policy-ssl-config-file</span></code></p></td>
+<td><p>Path to Ranger plugin SSL configuration</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.policy-cache-dir</span></code></p></td>
+<td><p>Ranger’s client persistent cache for policies</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.policy-refresh-interval</span></code></p></td>
+<td><p>Interval to refresh policies from Ranger</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30s</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.policy-connection-timeout</span></code></p></td>
+<td><p>Timeout to use when connecting to Ranger</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">120s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.policy-read-timeout</span></code></p></td>
+<td><p>Timeout to use when reading policies from Ranger</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30s</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="audit">
+<span id="system-ranger-audit"></span><h2><a class="toc-backref" href="#id5">Audit</a><a class="headerlink" href="#audit" title="Permalink to this headline">#</a></h2>
+<p>System level security can be <a class="reference internal" href="../connector/starburst-hive-security.html#ranger-audit"><span class="std std-ref">configured to use Ranger audit</span></a>. It automatically verifies, if a user can access queries from
+other users. Technically this is performed by accessing the internal table
+<code class="docutils literal notranslate"><span class="pre">system.runtime.queries</span></code>. Any access to the table is logged.</p>
+<p>The property <code class="docutils literal notranslate"><span class="pre">ranger.audit.system-runtime-queries.enabled</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>
+by default and controls this logging behavior.</p>
+<p>The <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a> makes heavy use of the queries table. As a
+result using the web interface causes a flood of audit events. Setting the
+property to <code class="docutils literal notranslate"><span class="pre">false</span></code> disables this audit logging.</p>
+</div>
+<div class="section" id="user-groups-and-roles">
+<h2><a class="toc-backref" href="#id6">User, groups and roles</a><a class="headerlink" href="#user-groups-and-roles" title="Permalink to this headline">#</a></h2>
+<p>User, groups and roles are sourced from your connected LDAP directory and are
+used the target users for each policy.</p>
+</div>
+<div class="section" id="policies">
+<h2><a class="toc-backref" href="#id7">Policies</a><a class="headerlink" href="#policies" title="Permalink to this headline">#</a></h2>
+<p>Policy creation and management is performed with the Ranger user interface, or
+optionally with the Ranger REST API.</p>
+<p>A policy is a combination of set of resources and the associated privileges.
+Specific user interface elements with drop down and auto-completion are
+available for all resources.</p>
+</div>
+<div class="section" id="resource-sets">
+<h2><a class="toc-backref" href="#id8">Resource sets</a><a class="headerlink" href="#resource-sets" title="Permalink to this headline">#</a></h2>
+<p>A resource set includes one or more resources of different resource types.
+Wildcard characters are supported to select a number of resources based on a
+pattern.</p>
+<ul class="simple">
+<li><p>catalog</p></li>
+<li><p>catalog - schema</p></li>
+<li><p>catalog - schema - table</p></li>
+<li><p>catalog - schema - table - column</p></li>
+<li><p>catalog - schema - procedure</p></li>
+<li><p>catalog - session property</p></li>
+<li><p>function</p></li>
+<li><p>system session property</p></li>
+<li><p>query</p></li>
+</ul>
+<p>As you can see from the list above, some resources are hierarchically organized
+within a catalog and below. This allows you for example to restrict access to a
+complete catalog, a specific schema, or table or even down to a column or a
+procedure within a schema.</p>
+<p>For example, if you can define a set of resources, that allows you to restrict
+access to all the two tables <code class="docutils literal notranslate"><span class="pre">credit-info</span></code> and <code class="docutils literal notranslate"><span class="pre">cards-info</span></code> in all schemas
+in the <code class="docutils literal notranslate"><span class="pre">hdfs</span></code> catalog.</p>
+<ul class="simple">
+<li><p>Catalog: hdfs</p></li>
+<li><p>Schema: *</p></li>
+<li><p>Table: credit-info, cards-info</p></li>
+</ul>
+<p>A set of resource works as a primary key for a policy. It needs to be unique.
+Multiple policies however may cover a single resource because of the wildcard.</p>
+</div>
+<div class="section" id="privilege-sets">
+<h2><a class="toc-backref" href="#id9">Privilege sets</a><a class="headerlink" href="#privilege-sets" title="Permalink to this headline">#</a></h2>
+<p>A set of privileges consists of one or more user groups, roles and users, and a
+set of access types for the specified resource set. Privileges can allow or deny operations.</p>
+<p>The catalog, schema, table and column resources, which grant access to resources
+for queries, have the following access types.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code> to read data from the resource.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">INSERT</span></code> to add data to the resource.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> to change data in the resource.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETE</span></code> to remove data from the resource.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">OWNERSHIP</span></code> to claim ownership of the resource, which provides complete
+access.</p></li>
+</ul>
+<p>In addition there are privileges that determine access to queries and their
+usage, and are therefore of a more general nature.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code> to list queries.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EXECUTE</span></code> to initiate processing of any query. Without this privilege user
+action is extremely limited.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">KILL</span></code> to stop processing of any query.</p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="hive-ranger.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="7.15. Hive level security with Apache Ranger" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="rbac.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="7.13. Role Based Access Control" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'340',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  false
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
