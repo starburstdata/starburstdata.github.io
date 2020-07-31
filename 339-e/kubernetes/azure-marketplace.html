@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>6.7. Horizontal Scaling &mdash; Starburst Enterprise Presto</title>
+  <title>6.13. Azure Marketplace &mdash; Starburst Enterprise Presto</title>
   
 
   
@@ -35,8 +35,8 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
         <link rel="up" title="6. Kubernetes" href="../kubernetes.html"/>
-        <link rel="next" title="6.8. Secrets" href="secrets.html"/>
-        <link rel="prev" title="6.6. Customizing Presto Docker Images" href="customizing_presto_image.html"/> 
+        <link rel="next" title="6.14. Using Microsoft Azure Kubernetes Service" href="aks.html"/>
+        <link rel="prev" title="6.12. Using Google Kubernetes Engine" href="gke.html"/> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -90,17 +90,13 @@
 <li class="toctree-l2"><a class="reference internal" href="presto_resource.html">6.4. Presto Kubernetes Resource</a></li>
 <li class="toctree-l2"><a class="reference internal" href="query.html">6.5. Querying Presto</a></li>
 <li class="toctree-l2"><a class="reference internal" href="customizing_presto_image.html">6.6. Customizing Presto Docker Images</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">6.7. Horizontal Scaling</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#horizontal-pod-scaling">Horizontal Pod Scaling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#cluster-scaling">Cluster Scaling</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="hpa.html">6.7. Horizontal Scaling</a></li>
 <li class="toctree-l2"><a class="reference internal" href="secrets.html">6.8. Secrets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ranger.html">6.9. Ranger</a></li>
 <li class="toctree-l2"><a class="reference internal" href="eks.html">6.10. Using Amazon Elastic Kubernetes Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gcp-marketplace.html">6.11. GCP Marketplace</a></li>
 <li class="toctree-l2"><a class="reference internal" href="gke.html">6.12. Using Google Kubernetes Engine</a></li>
-<li class="toctree-l2"><a class="reference internal" href="azure-marketplace.html">6.13. Azure Marketplace</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">6.13. Azure Marketplace</a></li>
 <li class="toctree-l2"><a class="reference internal" href="aks.html">6.14. Using Microsoft Azure Kubernetes Service</a></li>
 <li class="toctree-l2"><a class="reference internal" href="openshift.html">6.15. Using Red Hat OpenShift</a></li>
 <li class="toctree-l2"><a class="reference internal" href="release_notes.html">6.16. Kubernetes Resources Release Notes</a></li>
@@ -175,7 +171,7 @@
       
         <li><a href="../kubernetes.html"><span class="section-number">6. </span>Kubernetes</a> &raquo;</li>
       
-    <li><span class="section-number">6.7. </span>Horizontal Scaling</li>
+    <li><span class="section-number">6.13. </span>Azure Marketplace</li>
     <li class="wy-breadcrumbs-aside">
     </li>
   </ul>
@@ -184,58 +180,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="horizontal-scaling">
-<h1><span class="section-number">6.7. </span>Horizontal Scaling<a class="headerlink" href="#horizontal-scaling" title="Permalink to this headline">#</a></h1>
-<p>Presto is designed to scale horizontally. You can higher performance and can
-support larger workloads by adding more workers to the cluster. Kubernetes has
-built-in support for this horizontal scaling, which can greatly improve
-benefits, while at the same time reducing resource waste and therefore operating
-costs.</p>
-<div class="contents local topic" id="contents">
-<ul class="simple">
-<li><p><a class="reference internal" href="#horizontal-pod-scaling" id="id1">Horizontal Pod Scaling</a></p></li>
-<li><p><a class="reference internal" href="#cluster-scaling" id="id2">Cluster Scaling</a></p></li>
-</ul>
-</div>
-<div class="section" id="horizontal-pod-scaling">
-<h2><a class="toc-backref" href="#id1">Horizontal Pod Scaling</a><a class="headerlink" href="#horizontal-pod-scaling" title="Permalink to this headline">#</a></h2>
-<p>Kubernetes allows scaling your Presto cluster using the <a class="reference external" href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Horizontal Pod
-Autoscaler</a>.
-HPA continuously monitors worker metrics and creates/terminates worker pods as
-needed to ensure there are enough worker pods to handle incoming queries.</p>
-<p>HPA can be enabled and configured in the <a class="reference internal" href="presto_resource.html#k8s-worker"><span class="std std-ref">worker section</span></a>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">worker</span><span class="p">:</span>
-  <span class="nt">count</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
-  <span class="nt">autoscaling</span><span class="p">:</span>
-    <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-    <span class="nt">minReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
-    <span class="nt">maxReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
-    <span class="nt">targetCPUUtilizationPercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
-  <span class="nt">cpuLimit</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
-  <span class="nt">cpuRequest</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
-</pre></div>
-</div>
-<p>This configuration controls the number of pods and sets the target CPU usage the
-HPA tries to achieve.</p>
-<p>Note that for HPA to work, worker CPU limit must also be set, otherwise
-Kubernetes does not monitor CPU usage and HPA lacks metrics to use. Set the CPU
-limit and CPU request to the same value when using HPA, preferably to <code class="docutils literal notranslate"><span class="pre">number</span>
-<span class="pre">of</span> <span class="pre">node</span> <span class="pre">cores</span> <span class="pre">-</span> <span class="pre">1</span></code> for dedicated Presto nodes. Setting both of these to the
-same value is important because CPU utilization percentage is calculated as
-<code class="docutils literal notranslate"><span class="pre">cpuUsage/cpuRequest</span></code>, but is limited by <code class="docutils literal notranslate"><span class="pre">cpuLimit</span></code>. If <code class="docutils literal notranslate"><span class="pre">cpuRequest</span></code> is
-smaller than <code class="docutils literal notranslate"><span class="pre">cpuLimit</span></code>, CPU utilization can be greater than 100%, and this
-can lead to huge spikes in the number of pods.</p>
-</div>
-<div class="section" id="cluster-scaling">
-<h2><a class="toc-backref" href="#id2">Cluster Scaling</a><a class="headerlink" href="#cluster-scaling" title="Permalink to this headline">#</a></h2>
-<p>HPA schedules new pods to be started, but the pods still need nodes to run on.
-They can be provisioned on demand or taken from a large global pool.</p>
-<p>An on-prem cluster typically pools all machines available, with resources shared
-between different services in separate namespaces. While the total number of
-nodes is constant in this scenario, the amount of resources dedicated to Presto
-still matches the demand thanks to pod creation/termination by the HPA.</p>
-<p>On GKE you can <a class="reference internal" href="gke.html#gke-cluster-autoscaler"><span class="std std-ref">use the cluster autoscaler</span></a>.</p>
-</div>
+  <div class="section" id="azure-marketplace">
+<h1><span class="section-number">6.13. </span>Azure Marketplace<a class="headerlink" href="#azure-marketplace" title="Permalink to this headline">#</a></h1>
+<p>Starburst Enterprise Presto is available on the Azure Marketplace.</p>
+<p>The offering is listed in the Azure Marketplace
+<a class="reference external" href="https://azuremarketplace.microsoft.com/en-us/marketplace/apps/starburstdatainc1582306810515.starburst-enterprise-presto?tab=Overview">Applications</a></p>
+<p>The marketplace offers the latest long term support version of Starburst
+Enterprise Presto and refer to the <a class="reference internal" href="aks.html"><span class="doc">documentation to get started</span></a>.</p>
 </div>
 
 
@@ -245,10 +196,10 @@ still matches the demand thanks to pod creation/termination by the HPA.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="secrets.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.8. Secrets" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="aks.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.14. Using Microsoft Azure Kubernetes Service" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="customizing_presto_image.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="6.6. Customizing Presto Docker Images" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="gke.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="6.12. Using Google Kubernetes Engine" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
