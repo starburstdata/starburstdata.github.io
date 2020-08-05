@@ -85,7 +85,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#mc-installation">Installation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#properties">Properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memory-allocation-and-additional-jvm-properties">Memory allocation and additional JVM properties</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#registry-credentials">Registry credentials</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#database">Database</a></li>
 </ul>
 </li>
 </ul>
@@ -187,14 +190,10 @@
 <li><p><a class="reference internal" href="#mc-installation" id="id3">Installation</a></p></li>
 <li><p><a class="reference internal" href="#configuration" id="id4">Configuration</a></p>
 <ul>
-<li><p><a class="reference internal" href="#properties" id="id5">Properties</a></p>
-<ul>
-<li><p><a class="reference internal" href="#memory-allocation-specific-jvm-properties" id="id6">Memory allocation/specific JVM properties</a></p></li>
-<li><p><a class="reference internal" href="#authentication" id="id7">Authentication</a></p></li>
-<li><p><a class="reference internal" href="#registry-credentials" id="id8">Registry credentials</a></p></li>
-<li><p><a class="reference internal" href="#database" id="id9">Database</a></p></li>
-</ul>
-</li>
+<li><p><a class="reference internal" href="#memory-allocation-and-additional-jvm-properties" id="id5">Memory allocation and additional JVM properties</a></p></li>
+<li><p><a class="reference internal" href="#authentication" id="id6">Authentication</a></p></li>
+<li><p><a class="reference internal" href="#registry-credentials" id="id7">Registry credentials</a></p></li>
+<li><p><a class="reference internal" href="#database" id="id8">Database</a></p></li>
 </ul>
 </li>
 </ul>
@@ -203,30 +202,30 @@
 <h2><a class="toc-backref" href="#id2">Overview</a><a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h2>
 <p>Mission Control consists of a Java backend server accessed via a web front end.
 Data is stored in a PostgreSQL database. Mission Control has to run on the same
-cluster and infrastructure used for the SEP installation it controls.</p>
+cluster and infrastructure used for the Starburst Enterprise Presto (SEP)
+installation it controls.</p>
 </div>
 <div class="section" id="mc-installation">
 <span id="id1"></span><h2><a class="toc-backref" href="#id3">Installation</a><a class="headerlink" href="#mc-installation" title="Permalink to this headline">#</a></h2>
 <p>Mission Control can be run on any Kubernetes cluster, including Azure Kubernetes
-Service AKS and Google Kubernetes Engine GKE. It can also be run on other
-Kubernetes deployments run and managed by your infrastructure team or from other
-public providers.</p>
-<p>The installation uses a Helm chart and requiring Helm 3. The chart includes
-references to the necessary Docker containers and other resources.</p>
+Service AKS, Google Kubernetes Engine GKE and Amazon AWS EKS. It can also be run
+on other Kubernetes deployments and managed by your infrastructure team or
+from other public providers.</p>
+<p>The installation uses a Helm 3 chart. The chart includes references to the
+necessary Docker containers and other resources.</p>
 <p>Ensure you have access to the <code class="docutils literal notranslate"><span class="pre">starburst-mission-control</span></code> chart on the
 <a class="reference external" href="https://harbor.starburstdata.net/harbor/projects/2/helm-charts">Starburst Helm chart repository</a>.</p>
-<p>To add your custom configuration to Mission Control, you can specify the
-properties in <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> exposed by the Helm chart.
-Refer to <a class="reference internal" href="#mc-configuration"><span class="std std-ref">configuration</span></a> section for the supported
-configuration properties.</p>
+<p>To configure Mission Control, specify the properties in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file
+exposed by the Helm chart. Refer to the <a class="reference internal" href="#mc-configuration"><span class="std std-ref">configuration</span></a>
+section for the supported configuration properties.</p>
 <p>Now start your Kubernetes cluster, which you want to use for Mission Control
 and your Presto deployment and connect to it with <code class="docutils literal notranslate"><span class="pre">kubectl</span></code>.</p>
-<p>Deploy and start the Presto operator.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>helm install --version 338.0.0 --generate-name starburstdata/starburst-presto-operator
+<p>Deploy and start the Presto operator:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm install --version <span class="m">338</span>.0.0 --generate-name starburstdata/starburst-presto-operator
 </pre></div>
 </div>
 <p>Deploy and start the Mission Control server:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>helm install --version 338.0.0 --generate-name starburstdata/starburst-mission-control
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm install --version <span class="m">338</span>.0.0 --generate-name starburstdata/starburst-mission-control
 </pre></div>
 </div>
 <p>After a short while everything is up and running. Confirm the details of the
@@ -236,21 +235,19 @@ service with <code class="docutils literal notranslate"><span class="pre">kubect
 </div>
 <p>Once the server is up and running, take note of the server URL or IP, and
 <a class="reference internal" href="getting-started.html"><span class="doc">proceed to log in and get started</span></a>.</p>
-<p>Mission Control can now manage your data sources and clusters, which replaces
-the traditional management with configuration files.</p>
+<p>Mission Control can now manage your data sources and clusters. It replaces
+the traditional management of configuration files.</p>
 </div>
 <div class="section" id="configuration">
 <span id="mc-configuration"></span><h2><a class="toc-backref" href="#id4">Configuration</a><a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
-<p>The Mission Control application is automatically configured with reasonable
-default values, as part of the installation process on Kubernetes.</p>
-<div class="section" id="properties">
-<h3><a class="toc-backref" href="#id5">Properties</a><a class="headerlink" href="#properties" title="Permalink to this headline">#</a></h3>
-<p>If you need any advanced configuration then you can set those specifically in
-the Helm chart <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file. More details on these configurations are
+<p>Mission Control is automatically configured with reasonable default values
+as part of the installation process on Kubernetes.</p>
+<p>Override default values or set advanced configuration properties in the
+<code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file in the Helm chart. More details on these properties are
 outlined in the following sub-sections.</p>
-<p>Any changes you make require a restart of the Mission Control.</p>
-<div class="section" id="memory-allocation-specific-jvm-properties">
-<h4><a class="toc-backref" href="#id6">Memory allocation/specific JVM properties</a><a class="headerlink" href="#memory-allocation-specific-jvm-properties" title="Permalink to this headline">#</a></h4>
+<p>Any changes you make require a restart of Mission Control.</p>
+<div class="section" id="memory-allocation-and-additional-jvm-properties">
+<h3><a class="toc-backref" href="#id5">Memory allocation and additional JVM properties</a><a class="headerlink" href="#memory-allocation-and-additional-jvm-properties" title="Permalink to this headline">#</a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">missioncontrol</span><span class="p">:</span>
   <span class="nt">memoryAllocation</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1G</span>
   <span class="nt">additionalJvmConfig</span><span class="p">:</span> <span class="p p-Indicator">|</span>
@@ -261,17 +258,16 @@ outlined in the following sub-sections.</p>
 </div>
 </div>
 <div class="section" id="authentication">
-<h4><a class="toc-backref" href="#id7">Authentication</a><a class="headerlink" href="#authentication" title="Permalink to this headline">#</a></h4>
+<h3><a class="toc-backref" href="#id6">Authentication</a><a class="headerlink" href="#authentication" title="Permalink to this headline">#</a></h3>
 <p>For authentication you can choose one of the following:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code> - this configures Mission Control to use internal authentication, i.e. where it manages its own users</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">google</span></code> - this configures Mission Control to integrate with Google authentication</p></li>
-</ul>
-<p>Examples of each are shown below:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">none</span></code> - Mission Control manages its own users</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>authentication:
   type: none
 </pre></div>
 </div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">google</span></code> - Mission Control integrates with Google authentication</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>authentication:
   google:
     clientId: 1234567890-example.apps.googleusercontent.com
@@ -279,9 +275,11 @@ outlined in the following sub-sections.</p>
     hostedDomain: starburstdata.com
 </pre></div>
 </div>
+</li>
+</ul>
 </div>
 <div class="section" id="registry-credentials">
-<h4><a class="toc-backref" href="#id8">Registry credentials</a><a class="headerlink" href="#registry-credentials" title="Permalink to this headline">#</a></h4>
+<h3><a class="toc-backref" href="#id7">Registry credentials</a><a class="headerlink" href="#registry-credentials" title="Permalink to this headline">#</a></h3>
 <p>Use this section to provide your credentials to connect to an authenticated
 Docker registry.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>registryCredentials:
@@ -293,20 +291,12 @@ Docker registry.</p>
 </div>
 </div>
 <div class="section" id="database">
-<h4><a class="toc-backref" href="#id9">Database</a><a class="headerlink" href="#database" title="Permalink to this headline">#</a></h4>
+<h3><a class="toc-backref" href="#id8">Database</a><a class="headerlink" href="#database" title="Permalink to this headline">#</a></h3>
 <p>Use this section to configure the database backend for Mission Control.</p>
 <p>There are three types of databases available:</p>
-<ul class="simple">
+<ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">embedded</span></code> - use an in-memory database. It is destroyed when Mission
-Control is shut down. This makes it suitable just for quick demo/trial scenarios.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">internal</span></code> - use a PostgreSQL database in the cluster. You can provide
-either an existing or a specification for a new persistent volume claim for
-storing the data.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">external</span></code> - use an external PostgreSQL database. This is typically used
-for normal day to day usage. This option only requires the connection details
-for the database.</p></li>
-</ul>
-<p>Examples of all three are shown below:</p>
+Control is shut down. This makes it suitable for quick demo/trial scenarios.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>database:
   type: &quot;embedded&quot;
   embedded:
@@ -314,6 +304,10 @@ for the database.</p></li>
     password: &quot;na&quot;
 </pre></div>
 </div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">internal</span></code> - provisions a PostgreSQL database in the cluster. You can
+provide either an existing persistent volume claim or a specification for a
+new persistent volume claim for storing the data.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>database:
   type: &quot;internal&quot;
   internal:
@@ -342,6 +336,10 @@ for the database.</p></li>
     password: McPass123
 </pre></div>
 </div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">external</span></code> - use an external PostgreSQL database. This is typically used
+for normal day to day usage. This option only requires the connection details
+for the database.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>database:
   type: &quot;external&quot;
   external:
@@ -352,7 +350,8 @@ for the database.</p></li>
     password: SuperSecurePassword
 </pre></div>
 </div>
-</div>
+</li>
+</ul>
 </div>
 </div>
 </div>
