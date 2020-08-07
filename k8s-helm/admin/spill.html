@@ -1,0 +1,383 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>8.5. Spill to Disk &mdash; Starburst Enterprise Presto</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
+        <link rel="up" title="8. Administration" href="../admin.html"/>
+        <link rel="next" title="8.6. Resource Groups" href="resource-groups.html"/>
+        <link rel="prev" title="8.4. Properties Reference" href="properties.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Enterprise Presto
+          
+
+          
+          </a>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">3. Clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mission-control.html">4. Mission Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">7. Security</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../admin.html">8. Administration</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="web-interface.html">8.1. Web UI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tuning.html">8.2. Tuning Presto</a></li>
+<li class="toctree-l2"><a class="reference internal" href="jmx.html">8.3. Monitoring with JMX</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">8.4. Properties Reference</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">8.5. Spill to Disk</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#memory-management-and-spill">Memory Management and Spill</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spill-disk-space">Spill Disk Space</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spill-compression">Spill Compression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spill-encryption">Spill Encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#supported-operations">Supported Operations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#joins">Joins</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#aggregations">Aggregations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#order-by">Order By</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#window-functions">Window Functions</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="resource-groups.html">8.6. Resource Groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="session-property-managers.html">8.7. Session Property Managers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dist-sort.html">8.8. Distributed Sort</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage-metrics.html">8.9. Usage Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../optimizer.html">9. Query Optimizer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">10. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">11. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">12. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">13. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">14. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">16. Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">17. Release Notes</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../404.html">404 - Nothing to See Here</a></li>
+</ul>
+
+            
+          
+
+        </div>
+        <div style="margin-top: 1em; margin-left: 2em;">
+          Version <a href="../versions.html">338-e.0 LTS and others</a>
+          <br><br>
+        <span>
+  <select name="versions" id="versions" onChange="window.location.href=this.value">
+    <option value="./">Choose another version</option>
+    <option value="/338-e/">Latest LTS (338-e)</option>
+    <option value="/332-e/">332-e LTS</option>
+    <option value="/323-e/">323-e LTS</option>
+    <option value="/339-e/">Latest STS (339-e)</option>
+    <option value="/336-e/">336-e STS</option>
+    <option value="/334-e/">334-e STS</option>
+  </select>
+</span>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="https://www.starburstdata.com/">
+          <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px;"
+          src="../_static/img/starburst-darkbg.png"/></a>
+        <span class="optional">
+          <a href="../index.html">Starburst Enterprise Presto</a>
+          <a href="../versions.html" style="font-size: small;margin-left: 0.5em;">338-e.0 LTS and others</a>
+          <a href="https://www.starburstdata.com/oreilly-presto-guide-download/?utm_campaign=O%27Reilly%20Presto%20Book&utm_source=starburst&utm_medium=docs">
+            <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px; margin-left: 0.5em;"
+          src="../_static/img/ptdg-banner.png"/></a>
+          </span>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../admin.html"><span class="section-number">8. </span>Administration</a> &raquo;</li>
+      
+    <li><span class="section-number">8.5. </span>Spill to Disk</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="spill-to-disk">
+<h1><span class="section-number">8.5. </span>Spill to Disk<a class="headerlink" href="#spill-to-disk" title="Permalink to this headline">#</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#overview" id="id1">Overview</a></p></li>
+<li><p><a class="reference internal" href="#memory-management-and-spill" id="id2">Memory Management and Spill</a></p></li>
+<li><p><a class="reference internal" href="#spill-disk-space" id="id3">Spill Disk Space</a></p></li>
+<li><p><a class="reference internal" href="#spill-compression" id="id4">Spill Compression</a></p></li>
+<li><p><a class="reference internal" href="#spill-encryption" id="id5">Spill Encryption</a></p></li>
+<li><p><a class="reference internal" href="#supported-operations" id="id6">Supported Operations</a></p></li>
+</ul>
+</div>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h2>
+<p>In the case of memory intensive operations, Presto allows offloading
+intermediate operation results to disk. The goal of this mechanism is to
+enable execution of queries that require amounts of memory exceeding per query
+or per node limits.</p>
+<p>The mechanism is similar to OS level page swapping. However, it is
+implemented on the application level to address specific needs of Presto.</p>
+<p>Properties related to spilling are described in <a class="reference internal" href="properties.html#tuning-spilling"><span class="std std-ref">Spilling Properties</span></a>.</p>
+</div>
+<div class="section" id="memory-management-and-spill">
+<h2>Memory Management and Spill<a class="headerlink" href="#memory-management-and-spill" title="Permalink to this headline">#</a></h2>
+<p>By default, Presto kills queries, if the memory requested by the query execution
+exceeds session properties <code class="docutils literal notranslate"><span class="pre">query_max_memory</span></code> or
+<code class="docutils literal notranslate"><span class="pre">query_max_memory_per_node</span></code>. This mechanism ensures fairness in allocation
+of memory to queries, and prevents deadlock caused by memory allocation.
+It is efficient when there is a lot of small queries in the cluster, but
+leads to killing large queries that don’t stay within the limits.</p>
+<p>To overcome this inefficiency, the concept of revocable memory was introduced. A
+query can request memory that does not count toward the limits, but this memory
+can be revoked by the memory manager at any time. When memory is revoked, the
+query runner spills intermediate data from memory to disk and continues to
+process it later.</p>
+<p>In practice, when the cluster is idle, and all memory is available, a memory
+intensive query may use all of the memory in the cluster. On the other hand,
+when the cluster does not have much free memory, the same query may be forced to
+use disk as storage for intermediate data. A query, that is forced to spill to
+disk, may have a longer execution time by orders of magnitude than a query that
+runs completely in memory.</p>
+<p>Please note that enabling spill-to-disk does not guarantee execution of all
+memory intensive queries. It is still possible that the query runner fails
+to divide intermediate data into chunks small enough so that every chunk fits into
+memory, leading to <code class="docutils literal notranslate"><span class="pre">Out</span> <span class="pre">of</span> <span class="pre">memory</span></code> errors while loading the data from disk.</p>
+</div>
+<div class="section" id="spill-disk-space">
+<h2>Spill Disk Space<a class="headerlink" href="#spill-disk-space" title="Permalink to this headline">#</a></h2>
+<p>Spilling intermediate results to disk, and retrieving them back, is expensive
+in terms of IO operations. Thus, queries that use spill likely become
+throttled by disk. To increase query performance, it is recommended to
+provide multiple paths on separate local devices for spill (property
+<code class="docutils literal notranslate"><span class="pre">spiller-spill-path</span></code> in <a class="reference internal" href="properties.html#tuning-spilling"><span class="std std-ref">Spilling Properties</span></a>).</p>
+<p>The system drive should not be used for spilling, especially not to the drive where the JVM
+is running and writing logs. Doing so may lead to cluster instability. Additionally,
+it is recommended to monitor the disk saturation of the configured spill paths.</p>
+<p>Presto treats spill paths as independent disks (see <a class="reference external" href="https://en.wikipedia.org/wiki/Non-RAID_drive_architectures#JBOD">JBOD</a>), so
+there is no need to use RAID for spill.</p>
+</div>
+<div class="section" id="spill-compression">
+<h2>Spill Compression<a class="headerlink" href="#spill-compression" title="Permalink to this headline">#</a></h2>
+<p>When spill compression is enabled (<code class="docutils literal notranslate"><span class="pre">spill-compression-enabled</span></code> property in
+<a class="reference internal" href="properties.html#tuning-spilling"><span class="std std-ref">Spilling Properties</span></a>), spilled pages are compressed, before being
+written to disk. Enabling this feature can reduce disk IO at the cost
+of extra CPU load to compress and decompress spilled pages.</p>
+</div>
+<div class="section" id="spill-encryption">
+<h2>Spill Encryption<a class="headerlink" href="#spill-encryption" title="Permalink to this headline">#</a></h2>
+<p>When spill encryption is enabled (<code class="docutils literal notranslate"><span class="pre">spill-encryption-enabled</span></code> property in
+<a class="reference internal" href="properties.html#tuning-spilling"><span class="std std-ref">Spilling Properties</span></a>), spill contents are encrypted with a randomly generated
+(per spill file) secret key. Enabling this increases CPU load and reduces throughput
+of spilling to disk, but can protect spilled data from being recovered from spill files.
+Consider reducing the value of <code class="docutils literal notranslate"><span class="pre">memory-revoking-threshold</span></code> when spill
+encryption is enabled, to account for the increase in latency of spilling.</p>
+</div>
+<div class="section" id="supported-operations">
+<h2>Supported Operations<a class="headerlink" href="#supported-operations" title="Permalink to this headline">#</a></h2>
+<p>Not all operations support spilling to disk, and each handles spilling
+differently. Currently, the mechanism is implemented for the following
+operations.</p>
+<div class="section" id="joins">
+<h3>Joins<a class="headerlink" href="#joins" title="Permalink to this headline">#</a></h3>
+<p>During the join operation, one of the tables being joined is stored in memory.
+This table is called the build table. The rows from the other table stream
+through and are passed onto the next operation, if they match rows in the build
+table. The most memory-intensive part of the join is this build table.</p>
+<p>When the task concurrency is greater than one, the build table is partitioned.
+The number of partitions is equal to the value of the <code class="docutils literal notranslate"><span class="pre">task.concurrency</span></code>
+configuration parameter (see <a class="reference internal" href="properties.html#task-properties"><span class="std std-ref">Task Properties</span></a>).</p>
+<p>When the build table is partitioned, the spill-to-disk mechanism can decrease
+the peak memory usage needed by the join operation. When a query approaches the
+memory limit, a subset of the partitions of the build table gets spilled to disk,
+along with rows from the other table that fall into those same partitions. The
+number of partitions, that get spilled, influences the amount of disk space needed.</p>
+<p>Afterward, the spilled partitions are read back one-by-one to finish the join
+operation.</p>
+<p>With this mechanism, the peak memory used by the join operator can be decreased
+to the size of the largest build table partition. Assuming no data skew, this
+is <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">task.concurrency</span></code> times the size of the whole build table.</p>
+</div>
+<div class="section" id="aggregations">
+<h3>Aggregations<a class="headerlink" href="#aggregations" title="Permalink to this headline">#</a></h3>
+<p>Aggregation functions perform an operation on a group of values and return one
+value. If the number of groups you’re aggregating over is large, a significant
+amount of memory may be needed. When spill-to-disk is enabled, if there is not
+enough memory, intermediate cumulated aggregation results are written to disk.
+They are loaded back and merged with a lower memory footprint.</p>
+</div>
+<div class="section" id="order-by">
+<h3>Order By<a class="headerlink" href="#order-by" title="Permalink to this headline">#</a></h3>
+<p>If your trying to sort a larger amount of data, a significant amount of memory
+may be needed. When spill to disk for <code class="docutils literal notranslate"><span class="pre">order</span> <span class="pre">by</span></code> is enabled, if there is not enough
+memory, intermediate sorted results are written to disk. They are loaded back and
+merged with a lower memory footprint.</p>
+</div>
+<div class="section" id="window-functions">
+<h3>Window Functions<a class="headerlink" href="#window-functions" title="Permalink to this headline">#</a></h3>
+<p>Window functions perform an operator over a window of rows, and return one value
+for each row. If this window of rows is large, a significant amount of memory may
+be needed. When spill to disk for window functions is enabled, if there is not enough
+memory, intermediate sorted results are written to disk. They are loaded back and
+merged when memory is available. There is a current limitation that spill does not work
+in all cases, such as when a single window is very large.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="resource-groups.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="8.6. Resource Groups" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="properties.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="8.4. Properties Reference" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'338',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  false
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

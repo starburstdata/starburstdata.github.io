@@ -1,0 +1,330 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>9.3. Cost based optimizations &mdash; Starburst Enterprise Presto</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
+        <link rel="up" title="9. Query Optimizer" href="../optimizer.html"/>
+        <link rel="next" title="10. Connectors" href="../connector.html"/>
+        <link rel="prev" title="9.2. Cost in EXPLAIN" href="cost-in-explain.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Enterprise Presto
+          
+
+          
+          </a>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">3. Clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mission-control.html">4. Mission Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">7. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">8. Administration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../optimizer.html">9. Query Optimizer</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="statistics.html">9.1. Table Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cost-in-explain.html">9.2. Cost in EXPLAIN</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">9.3. Cost based optimizations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#join-enumeration">Join Enumeration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#join-distribution-selection">Join Distribution Selection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#capping-replicated-table-size">Capping replicated table size</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#connector-implementations">Connector Implementations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">10. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">11. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">12. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">13. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">14. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">16. Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">17. Release Notes</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../404.html">404 - Nothing to See Here</a></li>
+</ul>
+
+            
+          
+
+        </div>
+        <div style="margin-top: 1em; margin-left: 2em;">
+          Version <a href="../versions.html">338-e.0 LTS and others</a>
+          <br><br>
+        <span>
+  <select name="versions" id="versions" onChange="window.location.href=this.value">
+    <option value="./">Choose another version</option>
+    <option value="/338-e/">Latest LTS (338-e)</option>
+    <option value="/332-e/">332-e LTS</option>
+    <option value="/323-e/">323-e LTS</option>
+    <option value="/339-e/">Latest STS (339-e)</option>
+    <option value="/336-e/">336-e STS</option>
+    <option value="/334-e/">334-e STS</option>
+  </select>
+</span>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="https://www.starburstdata.com/">
+          <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px;"
+          src="../_static/img/starburst-darkbg.png"/></a>
+        <span class="optional">
+          <a href="../index.html">Starburst Enterprise Presto</a>
+          <a href="../versions.html" style="font-size: small;margin-left: 0.5em;">338-e.0 LTS and others</a>
+          <a href="https://www.starburstdata.com/oreilly-presto-guide-download/?utm_campaign=O%27Reilly%20Presto%20Book&utm_source=starburst&utm_medium=docs">
+            <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px; margin-left: 0.5em;"
+          src="../_static/img/ptdg-banner.png"/></a>
+          </span>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../optimizer.html"><span class="section-number">9. </span>Query Optimizer</a> &raquo;</li>
+      
+    <li><span class="section-number">9.3. </span>Cost based optimizations</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="cost-based-optimizations">
+<h1><span class="section-number">9.3. </span>Cost based optimizations<a class="headerlink" href="#cost-based-optimizations" title="Permalink to this headline">#</a></h1>
+<p>Presto supports several cost based optimizations, described below.</p>
+<div class="section" id="join-enumeration">
+<h2>Join Enumeration<a class="headerlink" href="#join-enumeration" title="Permalink to this headline">#</a></h2>
+<p>The order in which joins are executed in a query can have a significant impact
+on the query’s performance. The aspect of join ordering that has the largest
+impact on performance is the size of the data being processed and transferred
+over the network. If a join, that produces a lot of data, is performed early in
+the execution, then subsequent stages need to process large amounts of
+data for longer than necessary, increasing the time and resources needed for
+the query.</p>
+<p>With cost based join enumeration, Presto uses
+<a class="reference internal" href="statistics.html"><span class="doc">Table Statistics</span></a> provided by connectors to estimate
+the costs for different join orders and automatically picks the
+join order with the lowest computed costs.</p>
+<p>The join enumeration strategy is governed by the <code class="docutils literal notranslate"><span class="pre">join_reordering_strategy</span></code>
+session property, with the <code class="docutils literal notranslate"><span class="pre">optimizer.join-reordering-strategy</span></code>
+configuration property providing the default value.</p>
+<dl class="simple">
+<dt>The valid values are:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> (default) - full automatic join enumeration enabled</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ELIMINATE_CROSS_JOINS</span></code> - eliminate unnecessary cross joins</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NONE</span></code> - purely syntactic join order</p></li>
+</ul>
+</dd>
+</dl>
+<p>If using <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> and statistics are not available, or if for any other
+reason a cost could not be computed, the <code class="docutils literal notranslate"><span class="pre">ELIMINATE_CROSS_JOINS</span></code> strategy is
+used instead.</p>
+</div>
+<div class="section" id="join-distribution-selection">
+<h2>Join Distribution Selection<a class="headerlink" href="#join-distribution-selection" title="Permalink to this headline">#</a></h2>
+<p>Presto uses a hash based join algorithm. That implies that for each join
+operator a hash table must be created from one join input, called build side.
+The other input, called probe side, is then iterated, and for each row the hash table is
+queried to find matching rows.</p>
+<dl class="simple">
+<dt>There are two types of join distributions:</dt><dd><ul class="simple">
+<li><p>Partitioned: each node participating in the query builds a hash table
+from only fraction of the data</p></li>
+<li><p>Broadcast: each node participating in the query builds a hash table
+from all of the data (data is replicated to each node)</p></li>
+</ul>
+</dd>
+</dl>
+<p>Each type have their trade offs. Partitioned joins require redistributing both
+tables using a hash of the join key. This can be slower, sometimes
+substantially slower, than broadcast joins, but allows much larger joins. In
+particular, broadcast joins are faster if the build side is much smaller
+than the probe side. However, broadcast joins require that the tables on the
+build side of the join after filtering fit in memory on each node, whereas
+distributed joins only need to fit in distributed memory across all nodes.</p>
+<p>With cost based join distribution selection, Presto automatically chooses to
+use a partitioned or broadcast join. With cost based join enumeration, Presto
+automatically chooses which side is the probe and which is the build.</p>
+<p>The join distribution strategy is governed by the <code class="docutils literal notranslate"><span class="pre">join_distribution_type</span></code>
+session property, with the <code class="docutils literal notranslate"><span class="pre">join-distribution-type</span></code> configuration property
+providing the default value.</p>
+<dl class="simple">
+<dt>The valid values are:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> (default) - join distribution type is determined automatically
+for each join</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BROADCAST</span></code> - broadcast join distribution is used for all joins</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PARTITIONED</span></code> - partitioned join distribution is used for all join</p></li>
+</ul>
+</dd>
+</dl>
+<div class="section" id="capping-replicated-table-size">
+<h3>Capping replicated table size<a class="headerlink" href="#capping-replicated-table-size" title="Permalink to this headline">#</a></h3>
+<p>Join distribution type will be chosen automatically when join reordering strategy
+is set to <code class="docutils literal notranslate"><span class="pre">COST_BASED</span></code> or when join distribution type is set to <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code>.
+In such case it is possible to cap the maximum size of replicated table via
+<code class="docutils literal notranslate"><span class="pre">join-max-broadcast-table-size</span></code> config property (e.g. <code class="docutils literal notranslate"><span class="pre">join-max-broadcast-table-size=100MB</span></code>)
+or via <code class="docutils literal notranslate"><span class="pre">join_max_broadcast_table_size</span></code> session property (e.g. <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">session</span> <span class="pre">join_max_broadcast_table_size='100MB';</span></code>)
+This allows to improve cluster concurrency and to prevent bad plans when CBO misestimates size of joined tables.</p>
+<p>By default replicated table size is capped to 100MB.</p>
+</div>
+</div>
+<div class="section" id="connector-implementations">
+<h2>Connector Implementations<a class="headerlink" href="#connector-implementations" title="Permalink to this headline">#</a></h2>
+<p>In order for the Presto optimizer to use the cost based strategies,
+the connector implementation must provide <a class="reference internal" href="statistics.html"><span class="doc">Table Statistics</span></a>.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../connector.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="10. Connectors" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="cost-in-explain.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="9.2. Cost in EXPLAIN" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'338',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  false
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
