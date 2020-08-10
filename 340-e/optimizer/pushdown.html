@@ -1,0 +1,373 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>9.4. Pushdown &mdash; Starburst Enterprise Presto</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/starburst.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
+        <link rel="up" title="9. Query Optimizer" href="../optimizer.html"/>
+        <link rel="next" title="10. Connectors" href="../connector.html"/>
+        <link rel="prev" title="9.3. Cost based optimizations" href="cost-based-optimizations.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Starburst Enterprise Presto
+          
+
+          
+          </a>
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../overview.html">1. Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../client.html">3. Clients</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mission-control.html">4. Mission Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Amazon Web Services</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">6. Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../security.html">7. Security</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../admin.html">8. Administration</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../optimizer.html">9. Query Optimizer</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="statistics.html">9.1. Table Statistics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cost-in-explain.html">9.2. Cost in EXPLAIN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cost-based-optimizations.html">9.3. Cost based optimizations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">9.4. Pushdown</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#analysis-and-confirmation">Analysis and Confirmation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../connector.html">10. Connectors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../functions.html">11. Functions and Operators</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../language.html">12. SQL Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../sql.html">13. SQL Statement Syntax</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../migration.html">14. Migration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../develop.html">15. Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../versions.html">16. Versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../release.html">17. Release Notes</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../404.html">404 - Nothing to See Here</a></li>
+</ul>
+
+            
+          
+
+        </div>
+        <div style="margin-top: 1em; margin-left: 2em;">
+          Version <a href="../versions.html">340-e STS and others</a>
+          <br><br>
+        <span>
+  <select name="versions" id="versions" onChange="window.location.href=this.value">
+    <option value="./">Choose another version</option>
+    <option value="/338-e/">Latest LTS (338-e)</option>
+    <option value="/332-e/">332-e LTS</option>
+    <option value="/323-e/">323-e LTS</option>
+    <option value="/340-e/">Latest STS (340-e)</option>
+    <option value="/339-e/">339-e STS </option>
+  </select>
+</span>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="https://www.starburstdata.com/">
+          <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px;"
+          src="../_static/img/starburst-darkbg.png"/></a>
+        <span class="optional">
+          <a href="../index.html">Starburst Enterprise Presto</a>
+          <a href="../versions.html" style="font-size: small;margin-left: 0.5em;">340-e STS and others</a>
+          <a href="https://www.starburstdata.com/oreilly-presto-guide-download/?utm_campaign=O%27Reilly%20Presto%20Book&utm_source=starburst&utm_medium=docs">
+            <img class="logo"style="background-color: transparent; border-radius: 0%; width: auto; height: auto ;padding: 0px; margin-left: 0.5em;"
+          src="../_static/img/ptdg-banner.png"/></a>
+          </span>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../optimizer.html"><span class="section-number">9. </span>Query Optimizer</a> &raquo;</li>
+      
+    <li><span class="section-number">9.4. </span>Pushdown</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="pushdown">
+<h1><span class="section-number">9.4. </span>Pushdown<a class="headerlink" href="#pushdown" title="Permalink to this headline">#</a></h1>
+<p>Presto can push down the processing of queries, or parts of queries, into the
+connected data source. This means that a specific function, or other operation,
+is passed through to the underlying database or storage system for processing.</p>
+<p>The results of this pushdown can include the following benefits:</p>
+<ul class="simple">
+<li><p>improved overall query performance</p></li>
+<li><p>reduced network traffic between Presto and the data source</p></li>
+<li><p>reduced load on the remote data source</p></li>
+</ul>
+<p>Support for pushdown is specific to each connector and the relevant underlying
+database or storage system.</p>
+<div class="section" id="analysis-and-confirmation">
+<h2>Analysis and Confirmation<a class="headerlink" href="#analysis-and-confirmation" title="Permalink to this headline">#</a></h2>
+<p>Pushdown depends on a number of factors:</p>
+<ul class="simple">
+<li><p>generic support for pushdown for that function in Presto</p></li>
+<li><p>function or operation specific support for pushdown in the connector</p></li>
+<li><p>query that allows the detection of the function to push down</p></li>
+<li><p>function needs to exist in the underlying system so it can process the
+pushdown</p></li>
+</ul>
+<p>The best way to analyze if pushdown for a specific query is performed is to
+take a closer look at the <a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN plan</span></a> of the query. If an
+operation such as an aggregate function is successfully pushed down to the
+connector, the explain plan does <strong>not</strong> show that operator. The explain plan
+only shows the operations that are performed by Presto.</p>
+<p>As an example, we loaded the TPCH data set into a PostgreSQL database and then
+queried it using the PostgreSQL connector:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regionkey</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">nation</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">regionkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>You can get the explain plan by prepending the above query with <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span>
+<span class="k">SELECT</span> <span class="n">regionkey</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">nation</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">regionkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The explain plan for this query does not show any <code class="docutils literal notranslate"><span class="pre">Aggregate</span></code> operator with
+the <code class="docutils literal notranslate"><span class="pre">count</span></code> function, as this operation is now performed by the connector. You
+can see the <code class="docutils literal notranslate"><span class="pre">count(*)</span></code> function as part of the PostgreSQL <code class="docutils literal notranslate"><span class="pre">TableScan</span></code>
+operator. This shows you that the pushdown was successful.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
+    Output layout: [regionkey_0, _presto_generated_1]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    Output[regionkey, _col1]
+    │   Layout: [regionkey_0:bigint, _presto_generated_1:bigint]
+    │   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: ?}
+    │   regionkey := regionkey_0
+    │   _col1 := _presto_generated_1
+    └─ RemoteSource[1]
+            Layout: [regionkey_0:bigint, _presto_generated_1:bigint]
+
+Fragment 1 [SOURCE]
+    Output layout: [regionkey_0, _presto_generated_1]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    TableScan[postgresql:tpch.nation tpch.nation columns=[regionkey:bigint:int8, count(*):_presto_generated_1:bigint:bigint] groupingSets=[[regionkey:bigint:int8]], gro
+        Layout: [regionkey_0:bigint, _presto_generated_1:bigint]
+        Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}
+        _presto_generated_1 := count(*):_presto_generated_1:bigint:bigint
+        regionkey_0 := regionkey:bigint:int8
+</pre></div>
+</div>
+<p>A number of factors can prevent a push down:</p>
+<ul class="simple">
+<li><p>adding a condition to the query</p></li>
+<li><p>using a different aggregate function without pushdown support in Presto</p></li>
+<li><p>using a function that has no native equivalent in the underlying data source</p></li>
+<li><p>using a connector without pushdown support for the specific function</p></li>
+</ul>
+<p>As a result, the explain plan shows the <code class="docutils literal notranslate"><span class="pre">Aggregate</span></code> operation being performed
+by Presto. This is a clear sign that now pushdown to the database is not
+performed, and instead Presto performs the aggregate processing.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
+    Output layout: [regionkey, count]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    Output[regionkey, _col1]
+    │   Layout: [regionkey:bigint, count:bigint]
+    │   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: ?}
+    │   _col1 := count
+    └─ RemoteSource[1]
+           Layout: [regionkey:bigint, count:bigint]
+
+Fragment 1 [HASH]
+    Output layout: [regionkey, count]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    Aggregate(FINAL)[regionkey]
+    │   Layout: [regionkey:bigint, count:bigint]
+    │   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: ?}
+    │   count := count(&quot;count_0&quot;)
+    └─ LocalExchange[HASH][$hashvalue] (&quot;regionkey&quot;)
+       │   Layout: [regionkey:bigint, count_0:bigint, $hashvalue:bigint]
+       │   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: ?}
+       └─ RemoteSource[2]
+              Layout: [regionkey:bigint, count_0:bigint, $hashvalue_1:bigint]
+
+Fragment 2 [SOURCE]
+    Output layout: [regionkey, count_0, $hashvalue_2]
+    Output partitioning: HASH [regionkey][$hashvalue_2]
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    Project[]
+    │   Layout: [regionkey:bigint, count_0:bigint, $hashvalue_2:bigint]
+    │   Estimates: {rows: ? (?), cpu: ?, memory: ?, network: ?}
+    │   $hashvalue_2 := combine_hash(bigint &#39;0&#39;, COALESCE(&quot;$operator$hash_code&quot;(&quot;regionkey&quot;), 0))
+    └─ Aggregate(PARTIAL)[regionkey]
+       │   Layout: [regionkey:bigint, count_0:bigint]
+       │   count_0 := count(*)
+       └─ TableScan[tpch:nation:sf0.01, grouped = false]
+              Layout: [regionkey:bigint]
+              Estimates: {rows: 25 (225B), cpu: 225, memory: 0B, network: 0B}
+              regionkey := tpch:regionkey
+</pre></div>
+</div>
+</div>
+<div class="section" id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
+<p>Pushdown does not support a number of more complex statements:</p>
+<ul class="simple">
+<li><p>complex grouping operations such as <code class="docutils literal notranslate"><span class="pre">ROLLUP</span></code>, <code class="docutils literal notranslate"><span class="pre">CUBE</span></code>, or <code class="docutils literal notranslate"><span class="pre">GROUPING</span> <span class="pre">SETS</span></code></p></li>
+<li><p>expressions inside the aggregation function call: <code class="docutils literal notranslate"><span class="pre">sum(a</span> <span class="pre">*</span> <span class="pre">b)</span></code></p></li>
+<li><p>coercions: <code class="docutils literal notranslate"><span class="pre">sum(integer_column)</span></code></p></li>
+</ul>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../connector.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="10. Connectors" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="cost-based-optimizations.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="9.3. Cost based optimizations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'340',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  false
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

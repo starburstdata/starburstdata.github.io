@@ -129,7 +129,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#kafka-table-names"><code class="docutils literal notranslate"><span class="pre">kafka.table-names</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kafka-default-schema"><code class="docutils literal notranslate"><span class="pre">kafka.default-schema</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kafka-nodes"><code class="docutils literal notranslate"><span class="pre">kafka.nodes</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#kafka-connect-timeout"><code class="docutils literal notranslate"><span class="pre">kafka.connect-timeout</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kafka-buffer-size"><code class="docutils literal notranslate"><span class="pre">kafka.buffer-size</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kafka-table-description-dir"><code class="docutils literal notranslate"><span class="pre">kafka.table-description-dir</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kafka-hide-internal-columns"><code class="docutils literal notranslate"><span class="pre">kafka.hide-internal-columns</span></code></a></li>
@@ -138,6 +137,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#internal-columns">Internal Columns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#table-definition-files">Table Definition Files</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#key-and-message-in-kafka">Key and Message in Kafka</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kafka-inserts">Kafka Inserts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#row-encoding">Row Encoding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#raw-encoder">Raw Encoder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#csv-encoder">CSV Encoder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#json-encoder">JSON Encoder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#avro-encoder">Avro Encoder</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#row-decoding">Row Decoding</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#raw-decoder"><code class="docutils literal notranslate"><span class="pre">raw</span></code> Decoder</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#csv-decoder"><code class="docutils literal notranslate"><span class="pre">csv</span></code> Decoder</a></li>
@@ -256,8 +263,8 @@ topics as tables in Presto. Each message is presented as a row in Presto.</p>
 <p>Topics can be live. Rows appear as data arrives, and disappear as
 segments get dropped. This can result in strange behavior if accessing the
 same table multiple times in a single query (e.g., performing a self join).</p>
-<p>The connector reads message data from Kafka topics in parallel across workers to
-achieve a significant performance gain. The size of data sets for this
+<p>The connector reads and writes message data from Kafka topics in parallel across
+workers to achieve a significant performance gain. The size of data sets for this
 parallelization is configurable and can therefore be adapted to your specific
 needs.</p>
 <p>See the <a class="reference internal" href="kafka-tutorial.html"><span class="doc">Kafka Connector Tutorial</span></a>.</p>
@@ -308,19 +315,16 @@ creates a catalog named <code class="docutils literal notranslate"><span class="
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.nodes</span></code></p></td>
 <td><p>List of nodes in the Kafka cluster</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.connect-timeout</span></code></p></td>
-<td><p>Timeout for connecting to the Kafka cluster</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.buffer-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.buffer-size</span></code></p></td>
 <td><p>Kafka read buffer size</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.table-description-dir</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.table-description-dir</span></code></p></td>
 <td><p>Directory containing topic description files</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.hide-internal-columns</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.hide-internal-columns</span></code></p></td>
 <td><p>Controls whether internal columns are part of the table schema or not</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.messages-per-split</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.messages-per-split</span></code></p></td>
 <td><p>Number of messages that are processed by each Presto split, defaults to 100000</p></td>
 </tr>
 </tbody>
@@ -353,13 +357,6 @@ a qualifying schema name.</p>
 even if only a subset is specified here as segment files may be
 located only on a specific node.</p>
 </div>
-</div>
-<div class="section" id="kafka-connect-timeout">
-<h3><code class="docutils literal notranslate"><span class="pre">kafka.connect-timeout</span></code><a class="headerlink" href="#kafka-connect-timeout" title="Permalink to this headline">#</a></h3>
-<p>Timeout for connecting to a data node. A busy Kafka cluster may take quite
-some time before accepting a connection; when seeing failed queries due to
-timeouts, increasing this value is a good strategy.</p>
-<p>This property is optional; the default is 10 seconds (<code class="docutils literal notranslate"><span class="pre">10s</span></code>).</p>
 </div>
 <div class="section" id="kafka-buffer-size">
 <h3><code class="docutils literal notranslate"><span class="pre">kafka.buffer-size</span></code><a class="headerlink" href="#kafka-buffer-size" title="Permalink to this headline">#</a></h3>
@@ -459,10 +456,13 @@ this data must be mapped into columns to allow queries against the data.</p>
 use any table definition files, but instead use the Presto
 <a class="reference internal" href="../functions/json.html"><span class="doc">JSON Functions and Operators</span></a> to parse the <code class="docutils literal notranslate"><span class="pre">_message</span></code> column which contains
 the bytes mapped into an UTF-8 string. This is, however, pretty
-cumbersome and makes it difficult to write SQL queries.</p>
+cumbersome and makes it difficult to write SQL queries. This only works
+when reading data.</p>
 </div>
 <p>A table definition file consists of a JSON definition for a table. The
-name of the file can be arbitrary but must end in <code class="docutils literal notranslate"><span class="pre">.json</span></code>.</p>
+name of the file can be arbitrary but must end in <code class="docutils literal notranslate"><span class="pre">.json</span></code>. Place the
+file in the directory configured with the <code class="docutils literal notranslate"><span class="pre">kafka.table-description-dir</span></code>
+property. The table definition file must be accessible from all Presto nodes.</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>{
     &quot;tableName&quot;: ...,
     &quot;schemaName&quot;: ...,
@@ -630,6 +630,435 @@ JSON object that must contain two fields:</p>
 </table>
 <p>There is no limit on field descriptions for either key or message.</p>
 </div>
+<div class="section" id="kafka-inserts">
+<h2>Kafka Inserts<a class="headerlink" href="#kafka-inserts" title="Permalink to this headline">#</a></h2>
+<p>The Kafka connector supports the use of <a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a> statements to write
+data to a Kafka topic. Table column data is mapped to Kafka messages as defined
+in the <a class="reference external" href="#table-definition-files">table definition file</a>. There are
+four supported data formats for key and message encoding:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="#raw-encoder">raw format</a></p></li>
+<li><p><a class="reference external" href="#csv-encoder">CSV format</a></p></li>
+<li><p><a class="reference external" href="#json-encoder">JSON format</a></p></li>
+<li><p><a class="reference external" href="#avro-encoder">Avro format</a></p></li>
+</ul>
+<p>These data formats each have an encoder that maps column values into bytes to be
+sent to a Kafka topic.</p>
+<p>Presto supports at-least-once delivery for Kafka producers. This means that
+messages are guaranteed to be sent to Kafka topics at least once. If a producer
+acknowledgement times out or if the producer receives an error, it might retry
+sending the message. This could result in a duplicate message being sent to the
+Kafka topic.</p>
+<p>The Kafka connector does not allow the user to define which partition will be
+used as the target for a message. If a message includes a key, the producer will
+use a hash algorithm to choose the target partition for the message. The same
+key will always be assigned the same partition.</p>
+</div>
+<div class="section" id="row-encoding">
+<h2>Row Encoding<a class="headerlink" href="#row-encoding" title="Permalink to this headline">#</a></h2>
+<p>Encoding is required to allow writing data and defines how table columns in
+Presto map to Kafka keys and message data.</p>
+<p>The Kafka connector contains the following encoders:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="#raw-encoder">raw encoder</a> - Table columns are mapped to a Kafka
+message as raw bytes</p></li>
+<li><p><a class="reference external" href="#csv-encoder">CSV encoder</a> - Kafka message is formatted as comma
+separated value</p></li>
+<li><p><a class="reference external" href="#json-encoder">JSON encoder</a> - Table columns are mapped to JSON
+fields</p></li>
+<li><p><a class="reference external" href="#avro-encoder">Avro encoder</a> - Table columns are mapped to Avro
+fields based on an Avro schema</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <a class="reference external" href="#table-definition-files">table definition file</a> must be defined
+for the encoder to work.</p>
+</div>
+<div class="section" id="raw-encoder">
+<h3>Raw Encoder<a class="headerlink" href="#raw-encoder" title="Permalink to this headline">#</a></h3>
+<p>The raw encoder formats the table columns as raw bytes using the mapping
+information specified in the
+<a class="reference external" href="#table-definition-files">table definition file</a>.</p>
+<p>The following field attributes are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> - Specifies the width of the column data type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> - Presto data type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mapping</span></code> - start and optional end position of bytes to convert
+(specified as <code class="docutils literal notranslate"><span class="pre">start</span></code> or <code class="docutils literal notranslate"><span class="pre">start:end</span></code>)</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> attribute selects the number of bytes converted.
+If absent, <code class="docutils literal notranslate"><span class="pre">BYTE</span></code> is assumed. All values are signed.</p>
+<p>Supported values:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code> - one byte</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SHORT</span></code> - two bytes (big-endian)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">INT</span></code> - four bytes (big-endian)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LONG</span></code> - eight bytes (big-endian)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code> - four bytes (IEEE 754 format, big-endian)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> - eight bytes (IEEE 754 format, big-endian)</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">type</span></code> attribute defines the Presto data type.</p>
+<p>Different values of <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> are supported, depending on the Presto data
+type:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Presto data type</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> values</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code>, <code class="docutils literal notranslate"><span class="pre">SHORT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">LONG</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code>, <code class="docutils literal notranslate"><span class="pre">SHORT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code>, <code class="docutils literal notranslate"><span class="pre">SHORT</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code>, <code class="docutils literal notranslate"><span class="pre">SHORT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">LONG</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> / <code class="docutils literal notranslate"><span class="pre">VARCHAR(x)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTE</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">mapping</span></code> attribute specifies the range of bytes in a key or
+message used for encoding.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both a start and end position must be defined for <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> types.
+Otherwise, there is no way to know how many bytes the message contains. The
+raw format mapping information is static and cannot be dynamically changed
+to fit the variable width of some Presto data types.</p>
+</div>
+<p>If only a start position is given:</p>
+<ul class="simple">
+<li><p>For fixed width types, the appropriate number of bytes are used for the
+specified <code class="docutils literal notranslate"><span class="pre">dateFormat</span></code> (see above).</p></li>
+</ul>
+<p>If both a start and end position are given, then:</p>
+<ul class="simple">
+<li><p>For fixed width types, the size must be equal to number of bytes used by
+specified <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code>.</p></li>
+<li><p>All bytes between start (inclusive) and end (exclusive) are used.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All mappings must include a start position for encoding to work.</p>
+</div>
+<p>The encoding for numeric data types (<code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>) is straightforward. All numeric types use
+big-endian. Floating point types use IEEE 754 format.</p>
+<p>Example raw field definition in a <a class="reference external" href="#table-definition-files">table definition file</a>
+for a Kafka message:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;tableName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-table-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;schemaName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-schema-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;topicName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-topic-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;key&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;...&quot;</span> <span class="p">},</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;raw&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;LONG&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;INTEGER&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;INT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;8&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SMALLINT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;LONG&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;12&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field4&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;VARCHAR(6)&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;BYTE&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;20:26&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Columns should be defined in the same order they are mapped. There can be no
+gaps or overlaps between column mappings. The width of the column as defined by
+the column mapping must be equivalent to the width of the <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> for all
+types except for variable width types.</p>
+<p>Example insert query for the above table definition:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">example_raw_table</span> <span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">field3</span><span class="p">,</span> <span class="n">field4</span><span class="p">)</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="mi">123456</span><span class="p">,</span> <span class="mi">1234</span><span class="p">,</span> <span class="s1">&#39;abcdef&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>When inserting variable width types, the value must be exactly equal to the
+width defined in the table definition file. If the inserted value is longer it
+gets truncated, resulting in data loss. If the inserted value is shorter the
+decoder will not be able to properly read the value because there is no defined
+padding character. Due to these constraints the encoder fails if the width of
+the inserted value is not equal to the mapping width.</p>
+</div>
+<div class="section" id="csv-encoder">
+<h3>CSV Encoder<a class="headerlink" href="#csv-encoder" title="Permalink to this headline">#</a></h3>
+<p>The CSV encoder formats the values for each row as a line of
+comma-separated-values (CSV) using UTF-8 encoding. The CSV line is formatted
+with a comma ‘,’ as the column delimiter.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">type</span></code> and <code class="docutils literal notranslate"><span class="pre">mapping</span></code> attributes must be defined for each field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> - Presto data type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mapping</span></code> - The integer index of the column in the CSV line (the first
+column is 0, the second is 1, and so on)</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> and <code class="docutils literal notranslate"><span class="pre">formatHint</span></code> are not supported and must be omitted.</p>
+<p>The following Presto data types are supported by the CSV encoder:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> / <code class="docutils literal notranslate"><span class="pre">VARCHAR(x)</span></code></p></li>
+</ul>
+<p>Column values are converted to strings before they are formatted as a CSV line.</p>
+<p>Example CSV field definition in a <a class="reference external" href="#table-definition-files">table definition file</a>
+for a Kafka message:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;tableName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-table-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;schemaName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-schema-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;topicName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-topic-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;key&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;...&quot;</span> <span class="p">},</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;csv&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;0&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;VARCHAR&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BOOLEAN&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;2&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example insert query for the above table definition:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">example_csv_table</span> <span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">field3</span><span class="p">)</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="s1">&#39;example text&#39;</span><span class="p">,</span> <span class="k">TRUE</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="json-encoder">
+<h3>JSON Encoder<a class="headerlink" href="#json-encoder" title="Permalink to this headline">#</a></h3>
+<p>The JSON encoder maps table columns to JSON fields defined in the
+<a class="reference external" href="#table-definition-files">table definition file</a> according to
+<span class="target" id="index-0"></span><a class="rfc reference external" href="https://tools.ietf.org/html/rfc4627.html"><strong>RFC 4627</strong></a>.</p>
+<p>For fields, the following attributes are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> - Presto type of column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mapping</span></code> - slash-separated list of field names to select a field from the
+JSON object</p></li>
+</ul>
+<p>The following Presto data types are supported by the JSON encoder</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></li>
+</ul>
+<p>Example JSON field definition in a <a class="reference external" href="#table-definition-files">table definition file</a>
+for a Kafka message:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;tableName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-table-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;schemaName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-schema-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;topicName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-topic-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;key&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;...&quot;</span> <span class="p">},</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fields&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;VARCHAR&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BOOLEAN&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example insert query for the above table definition:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">example_json_table</span> <span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">field3</span><span class="p">)</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="s1">&#39;example text&#39;</span><span class="p">,</span> <span class="k">TRUE</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="avro-encoder">
+<h3>Avro Encoder<a class="headerlink" href="#avro-encoder" title="Permalink to this headline">#</a></h3>
+<p>The Avro encoder serializes rows to Avro records as defined by the
+<a class="reference external" href="https://avro.apache.org/docs/current/">Avro schema</a>.
+Presto does not support schema-less Avro encoding.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Avro schema is encoded with the table column values in each Kafka message</p>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">dataSchema</span></code> must be defined in the table definition file to use the Avro
+encoder. It points to the location of the Avro schema file for the key or message</p>
+<p>Avro schema files can be retrieved via HTTP or HTTPS from remote server with the
+syntax:</p>
+<p><code class="docutils literal notranslate"><span class="pre">&quot;dataSchema&quot;:</span> <span class="pre">&quot;http://example.org/schema/avro_data.avsc&quot;</span></code></p>
+<p>Local files need to be available on all Presto nodes and use an absolute path in
+the syntax, for example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">&quot;dataSchema&quot;:</span> <span class="pre">&quot;/usr/local/schema/avro_data.avsc&quot;</span></code></p>
+<p>The following field attributes are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code> - Name of the column in the Presto table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> - Presto type of column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mapping</span></code> - slash-separated list of field names to select a field from the
+Avro schema. If the field specified in <code class="docutils literal notranslate"><span class="pre">mapping</span></code> does not exist
+in the original Avro schema, then a write operation fails.</p></li>
+</ul>
+<p>The following table lists supported Presto types, which can be used in <code class="docutils literal notranslate"><span class="pre">type</span></code>
+for the equivalent Avro field type.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 49%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Presto data type</p></th>
+<th class="head"><p>Avro data type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">LONG</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> / <code class="docutils literal notranslate"><span class="pre">VARCHAR(x)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">STRING</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Example Avro field definition in a <a class="reference external" href="#table-definition-files">table definition file</a>
+for a Kafka message:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;tableName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-table-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;schemaName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-schema-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;topicName&quot;</span><span class="p">:</span> <span class="s2">&quot;your-topic-name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;key&quot;</span><span class="p">:</span> <span class="p">{</span> <span class="nt">&quot;...&quot;</span> <span class="p">},</span>
+  <span class="nt">&quot;message&quot;</span><span class="p">:</span>
+  <span class="p">{</span>
+    <span class="nt">&quot;dataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;avro&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;dataSchema&quot;</span><span class="p">:</span> <span class="s2">&quot;/avro_message_schema.avsc&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fields&quot;</span><span class="p">:</span>
+    <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BIGINT&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field1&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;VARCHAR&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;BOOLEAN&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;mapping&quot;</span><span class="p">:</span> <span class="s2">&quot;field3&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example Avro schema definition for the above table definition:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;type&quot;</span> <span class="p">:</span> <span class="s2">&quot;record&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;example_avro_message&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;namespace&quot;</span> <span class="p">:</span> <span class="s2">&quot;io.prestosql.plugin.kafka&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;fields&quot;</span> <span class="p">:</span>
+  <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;field1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:[</span><span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;long&quot;</span><span class="p">],</span>
+      <span class="nt">&quot;default&quot;</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;field2&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:[</span><span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;string&quot;</span><span class="p">],</span>
+      <span class="nt">&quot;default&quot;</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;field3&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:[</span><span class="s2">&quot;null&quot;</span><span class="p">,</span> <span class="s2">&quot;boolean&quot;</span><span class="p">],</span>
+      <span class="nt">&quot;default&quot;</span><span class="p">:</span> <span class="kc">null</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;doc:&quot;</span> <span class="p">:</span> <span class="s2">&quot;A basic avro schema&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Example insert query for the above table definition:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">example_avro_table</span> <span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">field3</span><span class="p">)</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="s1">&#39;example text&#39;</span><span class="p">,</span> <span class="k">FALSE</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
 <div class="section" id="row-decoding">
 <h2>Row Decoding<a class="headerlink" href="#row-decoding" title="Permalink to this headline">#</a></h2>
 <p>For key and message, a decoder is used to map message and key data onto table columns.</p>
@@ -772,7 +1201,7 @@ Other character sequences map to <code class="docutils literal notranslate"><spa
 <div class="section" id="json-decoder">
 <h3><code class="docutils literal notranslate"><span class="pre">json</span></code> Decoder<a class="headerlink" href="#json-decoder" title="Permalink to this headline">#</a></h3>
 <p>The JSON decoder converts the bytes representing a message or key into a
-JSON according to <span class="target" id="index-0"></span><a class="rfc reference external" href="https://tools.ietf.org/html/rfc4627.html"><strong>RFC 4627</strong></a>. Note that the message or key <em>MUST</em> convert
+JSON according to <span class="target" id="index-1"></span><a class="rfc reference external" href="https://tools.ietf.org/html/rfc4627.html"><strong>RFC 4627</strong></a>. Note that the message or key <em>MUST</em> convert
 into a JSON object, not an array or simple type.</p>
 <p>For fields, the following attributes are supported:</p>
 <ul class="simple">
@@ -840,7 +1269,7 @@ this decoder should be used.</p>
 <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> attribute of a field definition.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">iso8601</span></code> - text based, parses a text field as an ISO 8601 timestamp.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">rfc2822</span></code> - text based, parses a text field as an <span class="target" id="index-1"></span><a class="rfc reference external" href="https://tools.ietf.org/html/rfc2822.html"><strong>RFC 2822</strong></a> timestamp.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rfc2822</span></code> - text based, parses a text field as an <span class="target" id="index-2"></span><a class="rfc reference external" href="https://tools.ietf.org/html/rfc2822.html"><strong>RFC 2822</strong></a> timestamp.</p></li>
 <li><dl class="simple">
 <dt><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code> - text based, parses a text field according to Joda format pattern</dt><dd><p>specified via <code class="docutils literal notranslate"><span class="pre">formatHint</span></code> attribute. Format pattern should conform
 to <a class="reference external" href="https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">https://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>.</p>

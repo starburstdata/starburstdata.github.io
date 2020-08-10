@@ -220,7 +220,7 @@ about functions, including name, description, return type and parameter
 types. Below is a sample function which implements <code class="docutils literal notranslate"><span class="pre">is_null</span></code>:</p>
 <div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleNullFunction</span>
 <span class="p">{</span>
-    <span class="nd">@ScalarFunction</span><span class="p">(</span><span class="s">&quot;is_null&quot;</span><span class="p">)</span>
+    <span class="nd">@ScalarFunction</span><span class="p">(</span><span class="s">&quot;is_null&quot;</span><span class="p">,</span> <span class="n">deterministic</span> <span class="o">=</span> <span class="kc">true</span><span class="p">)</span>
     <span class="nd">@Description</span><span class="p">(</span><span class="s">&quot;Returns TRUE if the argument is NULL&quot;</span><span class="p">)</span>
     <span class="nd">@SqlType</span><span class="p">(</span><span class="n">StandardTypes</span><span class="p">.</span><span class="na">BOOLEAN</span><span class="p">)</span>
     <span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">isNull</span><span class="p">(</span>
@@ -235,6 +235,17 @@ types. Below is a sample function which implements <code class="docutils literal
 <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code> indicating if the argument was <code class="docutils literal notranslate"><span class="pre">NULL</span></code>. Note that the argument to
 the function is of type <code class="docutils literal notranslate"><span class="pre">Slice</span></code>. <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> uses <code class="docutils literal notranslate"><span class="pre">Slice</span></code>, which is essentially
 a wrapper around <code class="docutils literal notranslate"><span class="pre">byte[]</span></code>, rather than <code class="docutils literal notranslate"><span class="pre">String</span></code> for its native container type.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">deterministic</span></code> argument indicates that a function has no side effects and,
+for subsequent calls with the same argument(s), the function returns the exact
+same value(s).</p>
+<p>In Presto, deterministic functions don’t rely on any changing state
+and don’t modify any state. The <code class="docutils literal notranslate"><span class="pre">deterministic</span></code> flag is optional and defaults
+to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<p>For example, the function <a class="reference internal" href="../functions/array.html#shuffle" title="shuffle"><code class="xref py py-func docutils literal notranslate"><span class="pre">shuffle()</span></code></a> is non-deterministic, since it uses random
+values. On the other hand, <a class="reference internal" href="../functions/datetime.html#now" title="now"><code class="xref py py-func docutils literal notranslate"><span class="pre">now()</span></code></a> is deterministic, because subsequent calls in a
+single query return the same timestamp.</p>
+<p>Any function with non-deterministic behavior is required to set <code class="docutils literal notranslate"><span class="pre">deterministic</span> <span class="pre">=</span> <span class="pre">false</span></code>
+to avoid unexpected results.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">&#64;SqlType</span></code>:</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">&#64;SqlType</span></code> annotation is used to declare the return type and the argument
