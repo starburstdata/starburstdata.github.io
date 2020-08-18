@@ -167,9 +167,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../aws.html"><span class="section-number">5. </span>Presto on Amazon Web Services</a> &raquo;</li>
+        <li><a href="../aws.html">5. Presto on Amazon Web Services</a> &raquo;</li>
       
-    <li><span class="section-number">5.15. </span>Presto Coordinator High Availability</li>
+    <li>5.15. Presto Coordinator High Availability</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -184,7 +184,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="presto-coordinator-high-availability">
-<h1><span class="section-number">5.15. </span>Presto Coordinator High Availability</h1>
+<h1>5.15. Presto Coordinator High Availability</h1>
 <p>Starburst Presto offers the ability to enable Presto Coordinator high availability (HA).
 In the event the Coordinator becomes unavailable, this allows your Presto cluster to automatically switch over to a new Coordinator and continue to accept new queries.</p>
 <div class="section" id="configuring-presto-coordinator-ha">
@@ -209,23 +209,23 @@ After you launch the Starburst CloudFormation cluster stack, note the <code clas
 <h2>Fail Over Scenario(s)</h2>
 <p>In general in the event of a failure of the current Presto Coordinator the HA mechanism will kick in and perform the following steps:</p>
 <ol class="arabic simple">
-<li><p>Terminate the old/failed Coordinator EC2 instance</p></li>
+<li>Terminate the old/failed Coordinator EC2 instance</li>
 </ol>
 <ol class="arabic simple" start="3">
-<li><p>Attach Elastic Network Interface to the new Coordinator</p></li>
+<li>Attach Elastic Network Interface to the new Coordinator</li>
 </ol>
 <ol class="arabic simple" start="3">
-<li><p>Launch a new stand-by coordinator (within a couple minutes)</p></li>
+<li>Launch a new stand-by coordinator (within a couple minutes)</li>
 </ol>
 <p>The core fail-over process (steps 1 and 2) should complete in under a minute, from the time when the Coordinator started failing to respond.
 It is a matter of seconds once the Coordinator is identified to be in a failed state, but there is some built-in time buffer so that we don’t act on a false alarm.
 When Elastic Network Interface is attached to the new coordinator it is almost immediately available to clients.</p>
 <p><strong>In real life it may happen that a Coordinator “dies” because one of the following:</strong></p>
 <ul class="simple">
-<li><p>The node becomes unresponsive (e.g. hardware issues, OS level and network issues).</p></li>
-<li><p>The node disappears, might be terminated by some account admin or by AWS.</p></li>
-<li><p>The Presto process may exit because of an fatal error.</p></li>
-<li><p>The Presto process may become unresponsive, e.g. because of a long full garbage collection taking place.</p></li>
+<li>The node becomes unresponsive (e.g. hardware issues, OS level and network issues).</li>
+<li>The node disappears, might be terminated by some account admin or by AWS.</li>
+<li>The Presto process may exit because of an fatal error.</li>
+<li>The Presto process may become unresponsive, e.g. because of a long full garbage collection taking place.</li>
 </ul>
 <p>In all those scenarios, after a short grace period, the failed Coordinator, if still exists, is terminated.
 Then a new Coordinator is chosen among the hot standby instances and has Coordinator ENI attached to it.
@@ -235,16 +235,16 @@ A new hot standby coordinator is launched in the background to take place of the
 <div class="section" id="high-availability-considerations">
 <span id="ha-considerations"></span><h2>High-Availability Considerations</h2>
 <ul class="simple">
-<li><p>When Presto is deployed in a custom setup (e.g. with a bootstrap script which sets up security) make sure the Presto HTTP port (unsecured) is open and accessible from localhost.
+<li>When Presto is deployed in a custom setup (e.g. with a bootstrap script which sets up security) make sure the Presto HTTP port (unsecured) is open and accessible from localhost.
 You may want to restrict access to it by binding it to localhost only or otherwise securing external access e.g. via the AWS Security Group assigned to the cluster.
-See <a class="reference internal" href="#aws-ha-with-https"><span class="std std-ref">HA with Presto HTTPS enabled</span></a> for more information.</p></li>
-<li><p>Coordinator ENI has private IP address which is accessible only within the same VPC as the Starburst Presto cluster stack.
-This means in order to connect to Presto’s Coordinator you need to initiate the connection from a client either on EC2 machine deployed in the same VPC or connected to the VPC via a VPN.</p></li>
-<li><p>Please note that all queries that were running when the Coordinator failed, will also fail to complete. You will need to restart these queries on the new Coordinator.
-Similarly the SSH connections to the old Coordinator will need to be re-established after the fail-over.</p></li>
-<li><p>When connecting via SSH, depending on your SSH configuration you may see login issues like <code class="docutils literal notranslate"><span class="pre">REMOTE</span> <span class="pre">HOST</span> <span class="pre">IDENTIFICATION</span> <span class="pre">HAS</span> <span class="pre">CHANGED</span></code> etc, due to the fact that the underlying host
+See <a class="reference internal" href="#aws-ha-with-https"><span class="std std-ref">HA with Presto HTTPS enabled</span></a> for more information.</li>
+<li>Coordinator ENI has private IP address which is accessible only within the same VPC as the Starburst Presto cluster stack.
+This means in order to connect to Presto’s Coordinator you need to initiate the connection from a client either on EC2 machine deployed in the same VPC or connected to the VPC via a VPN.</li>
+<li>Please note that all queries that were running when the Coordinator failed, will also fail to complete. You will need to restart these queries on the new Coordinator.
+Similarly the SSH connections to the old Coordinator will need to be re-established after the fail-over.</li>
+<li>When connecting via SSH, depending on your SSH configuration you may see login issues like <code class="docutils literal notranslate"><span class="pre">REMOTE</span> <span class="pre">HOST</span> <span class="pre">IDENTIFICATION</span> <span class="pre">HAS</span> <span class="pre">CHANGED</span></code> etc, due to the fact that the underlying host
 has changed, and the key’s fingerprint that was previously accepted has changed. You may want to not verify the host keys at all,
-by adding <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">StrictHostKeyChecking=no</span></code> to the SSH command or deleting the key from your <code class="docutils literal notranslate"><span class="pre">known_hosts</span></code> file and accepting the new one.</p></li>
+by adding <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">StrictHostKeyChecking=no</span></code> to the SSH command or deleting the key from your <code class="docutils literal notranslate"><span class="pre">known_hosts</span></code> file and accepting the new one.</li>
 </ul>
 </div>
 <div class="section" id="ha-with-presto-https-enabled">
@@ -315,7 +315,6 @@ http-server.https.enabled=true
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="../_static/language_data.js"></script>
 
   
 
