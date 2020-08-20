@@ -88,13 +88,35 @@
 <li class="toctree-l2"><a class="reference internal" href="requirements.html">6.2. Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">6.3. Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="configuration.html">6.4. Configuration</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">6.5. SEP configuration</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">6.5. SEP configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#docker-image-and-registry">Docker image and registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#internal-communication">Internal communication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#exposing-the-cluster-to-outside-network">Exposing the cluster to outside network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#coordinator">Coordinator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#workers">Workers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-settings-for-coordinator-and-workers">Common settings for coordinator and workers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger">Ranger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query-memory-usage-control">Query memory usage control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spilling">Spilling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-connector-storage-caching">Hive connector storage caching</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#catalogs">Catalogs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-volumes">Additional volumes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage-metrics">Usage Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prometheus">Prometheus</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#license">License</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="hms-configuration.html">6.6. Hive metastore configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ranger-configuration.html">6.7. Ranger configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="operation.html">6.8. Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eks.html">6.9. Amazon Elastic Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gke.html">6.10. Google Kubernetes Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aks.html">6.11. Microsoft Azure Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="openshift.html">6.12. Red Hat OpenShift</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Kubernetes (Legacy)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../security.html">8. Security</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../admin.html">9. Administration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">10. Query Optimizer</a></li>
@@ -179,6 +201,321 @@
 <p>intro</p>
 <p>Document all things in
 <a class="reference external" href="https://github.com/starburstdata/starburst-platform-charts/blob/master/starburst-presto/values.yaml">https://github.com/starburstdata/starburst-platform-charts/blob/master/starburst-presto/values.yaml</a></p>
+<div class="section" id="docker-image-and-registry">
+<h2>Docker image and registry<a class="headerlink" href="#docker-image-and-registry" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">image</span><span class="p">:</span>
+  <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;harbor.starburstdata.net/starburstdata&quot;</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;presto&quot;</span>
+  <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;338-e.0&quot;</span>
+  <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">&quot;IfNotPresent&quot;</span>
+
+<span class="c1">## registryCredentials set access to container images</span>
+<span class="nt">registryCredentials</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="c1"># Replace this with Docker Registry that you use</span>
+  <span class="nt">registry</span><span class="p">:</span>
+  <span class="nt">username</span><span class="p">:</span>
+  <span class="nt">password</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="internal-communication">
+<h2>Internal communication<a class="headerlink" href="#internal-communication" title="Permalink to this headline">#</a></h2>
+<p>Shared secret for internal communication. Set it to long and unique value. If
+not set, node.environment value is used from node.properties file.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">sharedSecret</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">aLongSecretStrin</span>
+</pre></div>
+</div>
+<p># Environment id; used for generating internal communication token if sharedSecret
+#  is not provided. If empty, default value is generated based on Helm release name.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exposing-the-cluster-to-outside-network">
+<h2>Exposing the cluster to outside network<a class="headerlink" href="#exposing-the-cluster-to-outside-network" title="Permalink to this headline">#</a></h2>
+<p># ——————————————————————————
+# Coordinator service
+# Modelled after <a class="reference external" href="https://github.com/goharbor/harbor-helm/blob/55598b1f1ccba2bc1c12e94a2622840cae148eb8/values.yaml#L1">https://github.com/goharbor/harbor-helm/blob/55598b1f1ccba2bc1c12e94a2622840cae148eb8/values.yaml#L1</a>
+# ——————————————————————————</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">expose</span><span class="p">:</span>
+  <span class="c1"># one of: nodePort, clusterIp, loadBalancer, ingress</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;clusterIp&quot;</span>
+  <span class="nt">clusterIp</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;presto&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+  <span class="nt">nodePort</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;presto&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+        <span class="nt">nodePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30080</span>
+  <span class="nt">loadBalancer</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;presto&quot;</span>
+    <span class="nt">IP</span><span class="p">:</span> <span class="s">&quot;&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">annotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+    <span class="nt">sourceRanges</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+  <span class="nt">ingress</span><span class="p">:</span>
+    <span class="nt">serviceName</span><span class="p">:</span> <span class="s">&quot;presto&quot;</span>
+    <span class="nt">servicePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">tls</span><span class="p">:</span>
+      <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">secretName</span><span class="p">:</span>
+    <span class="nt">host</span><span class="p">:</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="s">&quot;/&quot;</span>
+    <span class="nt">annotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="coordinator">
+<h2>Coordinator<a class="headerlink" href="#coordinator" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">resources</span><span class="p">:</span>
+    <span class="nt">requests</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;60Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">16</span>
+    <span class="nt">limits</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;60Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">16</span>
+  <span class="c1"># size of container memory headroom, needs to be less than resource allocation limit for memory</span>
+  <span class="nt">nodeMemoryHeadroom</span><span class="p">:</span> <span class="s">&quot;2Gi&quot;</span>
+  <span class="c1"># Percentage of container memory reduced with headroom assigned to Java heap, must be less than 100</span>
+  <span class="nt">heapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">90</span>
+  <span class="c1"># Headroom of Java heap memory not tracked by Presto during query execution, must be less than 100</span>
+  <span class="nt">heapHeadroomPercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+  <span class="nt">additionalProperties</span><span class="p">:</span> <span class="s">&quot;&quot;</span>
+  <span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="workers">
+<h2>Workers<a class="headerlink" href="#workers" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">worker</span><span class="p">:</span>
+  <span class="nt">count</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+  <span class="nt">autoscaling</span><span class="p">:</span>
+    <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="nt">minReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">maxReplicas</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">100</span>
+    <span class="nt">targetCPUUtilizationPercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
+  <span class="nt">deploymentTerminationGracePeriodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">7320</span> <span class="c1"># 2 hours 5 min</span>
+  <span class="nt">prestoWorkerShutdownGracePeriodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">7200</span> <span class="c1"># 2 hours</span>
+  <span class="nt">resources</span><span class="p">:</span>
+    <span class="nt">requests</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;100Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">16</span>
+    <span class="nt">limits</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;100Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">16</span>
+  <span class="c1"># size of container memory headroom, needs to be less that resource allocation limit for memory</span>
+  <span class="nt">nodeMemoryHeadroom</span><span class="p">:</span> <span class="s">&quot;2Gi&quot;</span>
+  <span class="c1"># Percentage of container memory reduced with headroom assigned to Java heap, must be less than 100</span>
+  <span class="nt">heapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">90</span>
+  <span class="c1"># Headroom of Java heap memory not tracked by Presto during query execution, must be less than 100</span>
+  <span class="nt">heapHeadroomPercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+  <span class="nt">additionalProperties</span><span class="p">:</span> <span class="s">&quot;&quot;</span>
+  <span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="common-settings-for-coordinator-and-workers">
+<h2>Common settings for coordinator and workers<a class="headerlink" href="#common-settings-for-coordinator-and-workers" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># initFile - optional startup script, called with single parameter &quot;coordinator&quot;</span>
+<span class="c1"># or &quot;worker; if not set default container command is called</span>
+<span class="nt">initFile</span><span class="p">:</span>
+
+<span class="c1"># List of extra arguments to be passed to initFile</span>
+<span class="nt">extraArguments</span><span class="p">:</span>
+
+<span class="c1"># Below secret will be mounted in /extra-secret/ within containers</span>
+<span class="nt">extraSecret</span><span class="p">:</span>
+  <span class="c1"># Replace this with secret name that should be used from namespace you are deploying to</span>
+  <span class="nt">name</span><span class="p">:</span>
+  <span class="c1"># Optionally &#39;file&#39; may be provided which will be deployed as secret with given &#39;name&#39; in used namespace.</span>
+  <span class="nt">file</span><span class="p">:</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">readinessProbe</span><span class="p">:</span>
+  <span class="nt">exec</span><span class="p">:</span>
+    <span class="nt">command</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">-c</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">curl -s http://localhost:8080/v1/info | grep \&quot;starting\&quot;:false</span>
+  <span class="nt">initialDelaySeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
+  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">livenessProbe</span><span class="p">:</span>
+  <span class="nt">exec</span><span class="p">:</span>
+    <span class="nt">command</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">-c</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">curl -s http://localhost:8080/v1/info | grep \&quot;starting\&quot;:false</span>
+  <span class="nt">initialDelaySeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
+  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
+  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+  <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="authentication">
+<h2>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">authentication</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;file&quot;</span>
+  <span class="nt">file</span><span class="p">:</span>
+    <span class="nt">users</span><span class="p">:</span>
+      <span class="c1"># TODO Consider security issues. We are providing def. pass which may be accidentally left.</span>
+      <span class="p p-Indicator">-</span> <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;admin&quot;</span>
+        <span class="nt">password</span><span class="p">:</span> <span class="s">&quot;46991b33f7a75ff79213c0dc0e610610&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ranger">
+<h2>Ranger<a class="headerlink" href="#ranger" title="Permalink to this headline">#</a></h2>
+<p># ——————————————————————————
+# System Access Control
+# Ranger connection for RBAC
+# ——-</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">accessControl</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="nt">spec</span><span class="p">:</span>
+    <span class="nt">access-control.name</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">ranger.authentication-type</span><span class="p">:</span> <span class="s">&quot;BASIC&quot;</span>
+    <span class="nt">ranger.service-name</span><span class="p">:</span>
+    <span class="nt">ranger.policy-refresh-interval</span><span class="p">:</span> <span class="s">&quot;10s&quot;</span>
+    <span class="nt">ranger.presto-plugin-username</span><span class="p">:</span>
+    <span class="nt">ranger.presto-plugin-password</span><span class="p">:</span>
+    <span class="nt">ranger.policy-rest-url</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="query-memory-usage-control">
+<h2>Query memory usage control<a class="headerlink" href="#query-memory-usage-control" title="Permalink to this headline">#</a></h2>
+<p>cluster wide
+# - maxMemoryForCluster - Maximum memory used over all cluster nodes for queries execution
+# - heapHeadroomPercentage - Heap memory percentage not tracked by Presto during query execution. Used for java objects.
+# - maxConcurrentQueries - Maximum queries executed in parallel on single node
+# ——————————————————————————</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">query</span><span class="p">:</span>
+  <span class="nt">maxMemoryForCluster</span><span class="p">:</span> <span class="s">&quot;1Pi&quot;</span>
+  <span class="nt">maxConcurrentQueries</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="spilling">
+<h2>Spilling<a class="headerlink" href="#spilling" title="Permalink to this headline">#</a></h2>
+<p># ——————————————————————————
+# Presto Disk Spilling
+# Spilling uses internal Node storage(HDD). Mounted within Pod and Container.
+# —</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spilling</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="nt">volume</span><span class="p">:</span>
+    <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="hive-connector-storage-caching">
+<h2>Hive connector storage caching<a class="headerlink" href="#hive-connector-storage-caching" title="Permalink to this headline">#</a></h2>
+<p># ——————————————————————————
+# Presto Caching
+# !!! Warning !!!
+# Currently caching only works with Hive Connector. Future releases will change it.
+# - Enabling caching here will enable it for all Hive connectors.
+# - To enable caching only for specific connector, configure it via additionalCatalogs
+#   and additionalVolumes. In such case this feature needs to be disabled.
+# ——————————————————————————</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">cache</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="nt">diskUsagePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">80</span>
+  <span class="nt">ttl</span><span class="p">:</span> <span class="s">&quot;7d&quot;</span>
+  <span class="nt">volume</span><span class="p">:</span>
+    <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="catalogs">
+<h2>Catalogs<a class="headerlink" href="#catalogs" title="Permalink to this headline">#</a></h2>
+<p>key - catalog name
+value (| for multi line) - content of properties file</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalCatalogs</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalCatalogs</span><span class="p">:</span>
+  <span class="nt">hive</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">connector.name=hive-hadoop2</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="additional-volumes">
+<h2>Additional volumes<a class="headerlink" href="#additional-volumes" title="Permalink to this headline">#</a></h2>
+<p># Presto Additional Volumes mount. General purpose.
+# Provided as array
+#  - path: &lt;&lt;container mount path&gt;&gt;
+#    volume: {}
+#
+#  Volume definition
+#  <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes">https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes</a>
+#  without name parameter.
+#
+# E.g. for K8S emptyDir volume
+# additionalVolumes:
+#   - path: /mnt/InContainer
+#     volume:
+#       emptyDir: {}
+#
+# ——————————————————————————</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage-metrics">
+<h2>Usage Metrics<a class="headerlink" href="#usage-metrics" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">usageMetrics</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">usageClient</span><span class="p">:</span>
+    <span class="nt">initialDelay</span><span class="p">:</span> <span class="s">&quot;1m&quot;</span>
+    <span class="nt">interval</span><span class="p">:</span> <span class="s">&quot;1m&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prometheus">
+<h2>Prometheus<a class="headerlink" href="#prometheus" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">prometheus</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="nt">agent</span><span class="p">:</span>
+    <span class="nt">version</span><span class="p">:</span> <span class="s">&quot;0.13.0&quot;</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8081</span>
+    <span class="nt">config</span><span class="p">:</span> <span class="s">&quot;/usr/lib/presto/etc/telemetry/prometheus.yaml&quot;</span>
+  <span class="nt">additionalRules</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">#</a></h2>
+<p>license file in the secret is require to be named starburstdata.license</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl create secret generic starburst --from-file<span class="o">=</span>starburstdata.license
+</pre></div>
+</div>
+<p># Starburst Platform License Secret
+# Name of a Kubernetes Secret that contains a Starburst Platform license file.
+# The license file within the secret should be named “starburstdata.license”
+# ——————————————————————————
+#starburstPlatformLicense: “starburst”</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">starburstPlatformLicense</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">starburst</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 

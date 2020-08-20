@@ -86,9 +86,14 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../k8s.html">6. Kubernetes</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="overview.html">6.1. Overview</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">6.2. Requirements</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#k8s-cluster-requirements">K8s cluster requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#k8s-cluster-requirements">K8s cluster requirements</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#horizontal-scaling-requirements">Horizontal scaling requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#access-requirements">Access requirements</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#installation-tool-requirements">Installation tool requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#helm-charts-and-docker-images">Helm charts and docker images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#license">License</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">6.3. Installation</a></li>
@@ -97,9 +102,13 @@
 <li class="toctree-l2"><a class="reference internal" href="hms-configuration.html">6.6. Hive metastore configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="ranger-configuration.html">6.7. Ranger configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="operation.html">6.8. Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eks.html">6.9. Amazon Elastic Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gke.html">6.10. Google Kubernetes Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aks.html">6.11. Microsoft Azure Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="openshift.html">6.12. Red Hat OpenShift</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Kubernetes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Kubernetes (Legacy)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../security.html">8. Security</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../admin.html">9. Administration</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">10. Query Optimizer</a></li>
@@ -181,48 +190,61 @@
             
   <div class="section" id="requirements">
 <h1><span class="section-number">6.2. </span>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h1>
-<p>intro</p>
-<div class="contents local topic" id="contents">
-<ul class="simple">
-<li><p><a class="reference internal" href="#k8s-cluster-requirements" id="id1">K8s cluster requirements</a></p></li>
-<li><p><a class="reference internal" href="#installation-tool-requirements" id="id2">Installation tool requirements</a></p></li>
-<li><p><a class="reference internal" href="#helm-charts-and-docker-images" id="id3">Helm charts and docker images</a></p></li>
-</ul>
-</div>
+<p>Kubernetes (k8s) and the related tools are very vibrant open source projects.
+The dynamic nature of these projects and the commercial extensions and
+modifications results in a lot of change.</p>
+<p>Usage of Presto on Kubernetes can not support all the variations and the following sections detail the specific requirements for SEP deployments on k8s.</p>
 <div class="section" id="k8s-cluster-requirements">
 <h2>K8s cluster requirements<a class="headerlink" href="#k8s-cluster-requirements" title="Permalink to this headline">#</a></h2>
+<p>The following k8s versions are supported:</p>
 <ul class="simple">
-<li><p>K8s version 1.18, 1.17 or 1.16</p></li>
+<li><p>1.18</p></li>
+<li><p>1.17</p></li>
+<li><p>1.16</p></li>
 </ul>
-<p>This means among others that we support</p>
+<p>As a result the following services can be used:</p>
 <ul class="simple">
 <li><p>EKS</p></li>
 <li><p>GKE</p></li>
 <li><p>AKS</p></li>
-<li><p>OpenShift (only with standard k8s tooling as others)</p></li>
+<li><p>OpenShift</p></li>
 </ul>
-<p>Only standard k8s tool usage is supported.</p>
-<p>Presto requires dedicated, identical nodes with the following recommended
-hardware specifications:</p>
+<p>In all cases the clusters and the described usage and deployment only support
+standard Kubernetes tools.</p>
+<p>The nodes in the k8s cluster need to fulfill the following requirements:</p>
 <ul class="simple">
 <li><p>64 to 256 GB RAM</p></li>
 <li><p>16 to 64 cores</p></li>
+<li><p>all nodes are identical</p></li>
+<li><p>each node is dedicated to one Presto worker or coordinator only</p></li>
+<li><p>nodes are not shared with other applications running in the cluster</p></li>
 </ul>
 <p>The recommended approach to achieve this is a dedicated namespace or a dedicated
 nodegroup for all nodes.</p>
 <p>The usage of taints and tolerations, or pod affinity and anti-affinity is
 possible, but not recommended.</p>
-<p>For horizontal pod autoscaling</p>
+<div class="section" id="horizontal-scaling-requirements">
+<h3>Horizontal scaling requirements<a class="headerlink" href="#horizontal-scaling-requirements" title="Permalink to this headline">#</a></h3>
+<p>If you plan to use automatic horizontal scaling of your Presto deployment,
+additional required components need to be installed:</p>
 <ul class="simple">
-<li><p>horizontal pod autoscaler</p></li>
-<li><p>metrics server</p></li>
-<li><p>prometheus</p></li>
+<li><p><a class="reference external" href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Horizontal Pod Autoscaler</a></p></li>
+<li><p><a class="reference external" href="https://github.com/kubernetes-sigs/metrics-server">Metrics Server</a></p></li>
+<li><p><a class="reference external" href="https://prometheus.io/">Prometheus</a></p></li>
 </ul>
+<p>Reference the documentation of the above tools for installation instructions.</p>
+</div>
+<div class="section" id="access-requirements">
+<h3>Access requirements<a class="headerlink" href="#access-requirements" title="Permalink to this headline">#</a></h3>
+<p>Access to Presto from outside the cluster using the Presto CLI, or any other
+application requires the coordinator to be available via HTTPS and a DNS
+hostname.</p>
 <p>For external access:</p>
 <ul class="simple">
 <li><p>external load balancer / DNS</p></li>
 <li><p>or ingress setup and DNS service configured</p></li>
 </ul>
+</div>
 </div>
 <div class="section" id="installation-tool-requirements">
 <h2>Installation tool requirements<a class="headerlink" href="#installation-tool-requirements" title="Permalink to this headline">#</a></h2>
@@ -243,6 +265,48 @@ docker login</p>
 <p>on prem docker registry usage needs documentation
 copy docker images
 change values.yml for containers info and credential</p>
+<p># Using the Starburstdata Helm Repository</p>
+<p># Add the starburst Helm repository
+.. code-block:: shell</p>
+<blockquote>
+<div><dl class="simple">
+<dt>helm repo add </dt><dd><p>–username starburstsa –password 9dc579758f9a16728d6F starburstdata <a class="reference external" href="https://harbor.starburstdata.net/chartrepo/starburstdata">https://harbor.starburstdata.net/chartrepo/starburstdata</a></p>
+</dd>
+</dl>
+</div></blockquote>
+<p># Update the local Helm index to register all the chart from our newly
+# added repository above</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm repo update
+</pre></div>
+</div>
+<p># Install the chart. Use the upgrade option with –install as it can always
+# be used</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade <span class="se">\</span>
+  --install <span class="se">\</span>
+  --version <span class="m">1</span>-SNAPSHOT <span class="se">\</span>
+  --namespace starburst-ranger <span class="se">\</span>
+  --username starburstsa <span class="se">\</span>
+  --password 9dc579758f9a16728d6F <span class="se">\</span>
+  --repo https://harbor.starburstdata.net/chartrepo/starburstdata <span class="se">\</span>
+  --values values.yaml <span class="se">\</span>
+  starburst-ranger <span class="se">\</span>
+  starburst-ranger
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm repo add --username starburstsa --password 9dc579758f9a16728d6F starburstdata https://harbor.starburstdata.net/chartrepo/starburstdata
+</pre></div>
+</div>
+</div>
+<div class="section" id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline">#</a></h2>
+<p>license file in the secret is require to be named starburstdata.license</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl create secret generic starburst --from-file<span class="o">=</span>starburstdata.license
+</pre></div>
+</div>
+<p>secret name is require to be that</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">starburstPlatformLicense:</span> <span class="pre">starburst</span></code> in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> for SEP</p>
+</div></blockquote>
 </div>
 </div>
 
