@@ -90,7 +90,15 @@
 <li class="toctree-l2"><a class="reference internal" href="sep-configuration.html">6.4. SEP configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="hms-configuration.html">6.5. Hive metastore configuration</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">6.6. Ranger configuration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#docker-image-and-registry">Docker image and registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#docker-registry-access">Docker registry access</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger-server">Ranger server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ldap-user-synchronization-server">LDAP user synchronization server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backing-database-server">Backing database server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#exposing-the-cluster-to-outside-network">Exposing the cluster to outside network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#datasources">Datasources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#server-start-up-configuration">Server start up configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extra-secrets">Extra secrets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#node-assignment">Node assignment</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="operation.html">6.7. Operation</a></li>
@@ -185,15 +193,257 @@
 <p>intro</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#docker-image-and-registry" id="id1">Docker image and registry</a></p></li>
+<li><p><a class="reference internal" href="#docker-registry-access" id="id1">Docker registry access</a></p></li>
+<li><p><a class="reference internal" href="#ranger-server" id="id2">Ranger server</a></p></li>
+<li><p><a class="reference internal" href="#ldap-user-synchronization-server" id="id3">LDAP user synchronization server</a></p></li>
+<li><p><a class="reference internal" href="#backing-database-server" id="id4">Backing database server</a></p></li>
+<li><p><a class="reference internal" href="#exposing-the-cluster-to-outside-network" id="id5">Exposing the cluster to outside network</a></p></li>
+<li><p><a class="reference internal" href="#datasources" id="id6">Datasources</a></p></li>
+<li><p><a class="reference internal" href="#server-start-up-configuration" id="id7">Server start up configuration</a></p></li>
+<li><p><a class="reference internal" href="#extra-secrets" id="id8">Extra secrets</a></p></li>
+<li><p><a class="reference internal" href="#node-assignment" id="id9">Node assignment</a></p></li>
 </ul>
 </div>
 <p>Doc all things in
 <a class="reference external" href="https://github.com/starburstdata/starburst-platform-charts/blob/master/starburst-ranger/values.yaml">https://github.com/starburstdata/starburst-platform-charts/blob/master/starburst-ranger/values.yaml</a></p>
 <p>Can take some from old ranger docs, maybe even all</p>
-<div class="section" id="docker-image-and-registry">
-<h2>Docker image and registry<a class="headerlink" href="#docker-image-and-registry" title="Permalink to this headline">#</a></h2>
+<div class="section" id="docker-registry-access">
+<h2>Docker registry access<a class="headerlink" href="#docker-registry-access" title="Permalink to this headline">#</a></h2>
 <p>Same as <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Docker image and registry section for the SEP Helm chart</span></a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">registryCredentials</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+  <span class="nt">registry</span><span class="p">:</span>
+  <span class="nt">username</span><span class="p">:</span>
+  <span class="nt">password</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ranger-server">
+<h2>Ranger server<a class="headerlink" href="#ranger-server" title="Permalink to this headline">#</a></h2>
+<p>ranger admin UI</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">admin</span><span class="p">:</span>
+  <span class="nt">image</span><span class="p">:</span>
+    <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;harbor.starburstdata.net/starburstdata/starburst-ranger-admin&quot;</span>
+    <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;2.0.33&quot;</span>
+    <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">&quot;IfNotPresent&quot;</span>
+  <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6080</span>
+  <span class="nt">resources</span><span class="p">:</span>
+    <span class="nt">requests</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+    <span class="nt">limits</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+  <span class="c1"># serviceUser is used by Presto to access Ranger</span>
+  <span class="nt">serviceUser</span><span class="p">:</span> <span class="s">&quot;presto_service&quot;</span>
+  <span class="nt">passwords</span><span class="p">:</span>
+    <span class="nt">admin</span><span class="p">:</span> <span class="s">&quot;RangerPassword1&quot;</span>
+    <span class="nt">tagsync</span><span class="p">:</span> <span class="s">&quot;TagSyncPassword1&quot;</span>
+    <span class="nt">usersync</span><span class="p">:</span> <span class="s">&quot;UserSyncPassword1&quot;</span>
+    <span class="nt">keyadmin</span><span class="p">:</span> <span class="s">&quot;KeyAdminPassword1&quot;</span>
+    <span class="nt">service</span><span class="p">:</span> <span class="s">&quot;PrestoServicePassword1&quot;</span>
+  <span class="c1"># optional truststore containing CA certificates to use instead of default one</span>
+  <span class="nt">truststore</span><span class="p">:</span>
+    <span class="c1"># existing secret containing truststore.jks key</span>
+    <span class="nt">secret</span><span class="p">:</span>
+    <span class="c1"># password to truststore</span>
+    <span class="nt">password</span><span class="p">:</span>
+  <span class="nt">env</span><span class="p">:</span>
+    <span class="c1"># Additional env variables to pass to Ranger Admin.</span>
+    <span class="c1"># To pass Ranger install property, use variable with name RANGE__&lt;property_name&gt;,</span>
+    <span class="c1"># for example RANGER__authentication_method.</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ldap-user-synchronization-server">
+<h2>LDAP user synchronization server<a class="headerlink" href="#ldap-user-synchronization-server" title="Permalink to this headline">#</a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">usersync</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">image</span><span class="p">:</span>
+    <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;harbor.starburstdata.net/starburstdata/ranger-usersync&quot;</span>
+    <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;2.0.33&quot;</span>
+    <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">&quot;IfNotPresent&quot;</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ranger-usersync&quot;</span>
+  <span class="nt">resources</span><span class="p">:</span>
+    <span class="nt">requests</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+    <span class="nt">limits</span><span class="p">:</span>
+      <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+      <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="nt">tls</span><span class="p">:</span>
+    <span class="c1"># set true to enable tls</span>
+    <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="c1"># optional truststore containing CA certificate for ldap server</span>
+    <span class="nt">truststore</span><span class="p">:</span>
+      <span class="c1"># existing secret containing truststore.jks key</span>
+      <span class="nt">secret</span><span class="p">:</span>
+      <span class="c1"># password to truststore</span>
+      <span class="nt">password</span><span class="p">:</span>
+  <span class="c1"># env is a map of ranger config variables</span>
+  <span class="nt">env</span><span class="p">:</span>
+    <span class="c1"># Use RANGER__&lt;property_name&gt; variables to set Ranger install properties.</span>
+    <span class="nt">RANGER__SYNC_LDAP_URL</span><span class="p">:</span> <span class="s">&quot;ldap://ranger-ldap:389&quot;</span>
+    <span class="nt">RANGER__SYNC_LDAP_BIND_DN</span><span class="p">:</span> <span class="s">&quot;cn=admin,dc=ldap,dc=example,dc=org&quot;</span>
+    <span class="nt">RANGER__SYNC_LDAP_BIND_PASSWORD</span><span class="p">:</span> <span class="s">&quot;cieX7moong3u&quot;</span>
+    <span class="nt">RANGER__SYNC_LDAP_SEARCH_BASE</span><span class="p">:</span> <span class="s">&quot;dc=ldap,dc=example,dc=org&quot;</span>
+    <span class="nt">RANGER__SYNC_LDAP_USER_SEARCH_BASE</span><span class="p">:</span> <span class="s">&quot;ou=users,dc=ldap,dc=example,dc=org&quot;</span>
+    <span class="nt">RANGER__SYNC_LDAP_USER_OBJECT_CLASS</span><span class="p">:</span> <span class="s">&quot;person&quot;</span>
+    <span class="nt">RANGER__SYNC_GROUP_SEARCH_ENABLED</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
+    <span class="nt">RANGER__SYNC_GROUP_USER_MAP_SYNC_ENABLED</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
+    <span class="nt">RANGER__SYNC_GROUP_SEARCH_BASE</span><span class="p">:</span> <span class="s">&quot;ou=groups,dc=ldap,dc=example,dc=org&quot;</span>
+    <span class="nt">RANGER__SYNC_GROUP_OBJECT_CLASS</span><span class="p">:</span> <span class="s">&quot;groupOfNames&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="backing-database-server">
+<h2>Backing database server<a class="headerlink" href="#backing-database-server" title="Permalink to this headline">#</a></h2>
+<p>Internal database:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;internal&quot;</span>
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span>
+      <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;library/postgres&quot;</span>
+      <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;10.6&quot;</span>
+      <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">&quot;IfNotPresent&quot;</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="c1"># use one of:</span>
+      <span class="c1"># - existingVolumeClaim to specify existing PVC</span>
+      <span class="c1"># - persistentVolumeClaim to specify spec for new PVC</span>
+      <span class="c1"># - other volume type inline configuration, e.g. emptyDir</span>
+      <span class="c1"># Examples:</span>
+      <span class="c1"># existingVolumeClaim: &quot;my_claim&quot;</span>
+      <span class="c1"># emptyDir: {}</span>
+      <span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+        <span class="nt">storageClassName</span><span class="p">:</span>
+        <span class="nt">accessModes</span><span class="p">:</span>
+          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ReadWriteOnce</span>
+        <span class="nt">resources</span><span class="p">:</span>
+          <span class="nt">requests</span><span class="p">:</span>
+            <span class="nt">storage</span><span class="p">:</span> <span class="s">&quot;2Gi&quot;</span>
+    <span class="nt">resources</span><span class="p">:</span>
+      <span class="nt">requests</span><span class="p">:</span>
+        <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+        <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+      <span class="nt">limits</span><span class="p">:</span>
+        <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
+        <span class="nt">cpu</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5432</span>
+    <span class="nt">databaseName</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">databaseUser</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">databasePassword</span><span class="p">:</span> <span class="s">&quot;RangerPass123&quot;</span>
+    <span class="nt">databaseRootUser</span><span class="p">:</span> <span class="s">&quot;rangeradmin&quot;</span>
+    <span class="nt">databaseRootPassword</span><span class="p">:</span> <span class="s">&quot;RangerAdminPass123&quot;</span>
+</pre></div>
+</div>
+<p>External postgresql database</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="c1"># type is internal | external</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;internal&quot;</span>
+
+  <span class="nt">external</span><span class="p">:</span>
+    <span class="nt">port</span><span class="p">:</span>
+    <span class="nt">host</span><span class="p">:</span>
+    <span class="nt">databaseName</span><span class="p">:</span>
+    <span class="nt">databaseUser</span><span class="p">:</span>
+    <span class="nt">databasePassword</span><span class="p">:</span>
+    <span class="nt">databaseRootUser</span><span class="p">:</span>
+    <span class="nt">databaseRootPassword</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="exposing-the-cluster-to-outside-network">
+<h2>Exposing the cluster to outside network<a class="headerlink" href="#exposing-the-cluster-to-outside-network" title="Permalink to this headline">#</a></h2>
+<p># Service type / definition
+# Ref: <a class="reference external" href="https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#exposing-the-service">https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#exposing-the-service</a>
+#</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">expose</span><span class="p">:</span>
+  <span class="c1"># one of: clusterIp, nodePort, loadBalancer, ingress</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;clusterIp&quot;</span>
+  <span class="nt">clusterIp</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6080</span>
+  <span class="nt">nodePort</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6080</span>
+        <span class="nt">nodePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30680</span>
+  <span class="nt">loadBalancer</span><span class="p">:</span>
+    <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;ranger&quot;</span>
+    <span class="nt">IP</span><span class="p">:</span> <span class="s">&quot;&quot;</span>
+    <span class="nt">ports</span><span class="p">:</span>
+      <span class="nt">http</span><span class="p">:</span>
+        <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">6080</span>
+    <span class="nt">annotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+    <span class="nt">sourceRanges</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+  <span class="nt">ingress</span><span class="p">:</span>
+    <span class="nt">tls</span><span class="p">:</span>
+      <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">secretName</span><span class="p">:</span>
+    <span class="nt">host</span><span class="p">:</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="s">&quot;/&quot;</span>
+    <span class="nt">annotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="datasources">
+<h2>Datasources<a class="headerlink" href="#datasources" title="Permalink to this headline">#</a></h2>
+<p># datasources - list of Presto datasources to configure Ranger
+# services. It is mounted as file /config/datasources.yaml inside
+# container and processed by init script.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">datasources</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;fake-presto-1&quot;</span>
+    <span class="nt">host</span><span class="p">:</span> <span class="s">&quot;presto.fake-presto-1-namespace&quot;</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;presto_service1&quot;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="s">&quot;Password123&quot;</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;fake-presto-2&quot;</span>
+    <span class="nt">host</span><span class="p">:</span> <span class="s">&quot;presto.fake-presto-2-namespace&quot;</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;presto_service2&quot;</span>
+    <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Password123</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="server-start-up-configuration">
+<h2>Server start up configuration<a class="headerlink" href="#server-start-up-configuration" title="Permalink to this headline">#</a></h2>
+<p># initFile - optional startup script, called with container name
+# as parameter - either ranger-admin or ranger-usersync
+# Use “files/initFile.sh” to enable Presto integration using datasources section</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">initFile</span><span class="p">:</span>
+</pre></div>
+</div>
+<p># List of extra arguments to be passed to initFile</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">extraArguments</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="extra-secrets">
+<h2>Extra secrets<a class="headerlink" href="#extra-secrets" title="Permalink to this headline">#</a></h2>
+<p># Below secret will be mounted in /extra-secret/ within containers</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">extraSecret</span><span class="p">:</span>
+  <span class="c1"># Replace this with secret name that should be used from namespace you are deploying to</span>
+  <span class="nt">name</span><span class="p">:</span>
+  <span class="c1"># Optionally &#39;file&#39; may be provided which will be deployed as secret with given &#39;name&#39; in used namespace.</span>
+  <span class="nt">file</span><span class="p">:</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="node-assignment">
+<h2>Node assignment<a class="headerlink" href="#node-assignment" title="Permalink to this headline">#</a></h2>
+<p>Node labels for pod assignment - Ref: <a class="reference external" href="https://kubernetes.io/docs/user-guide/node-selection/">https://kubernetes.io/docs/user-guide/node-selection/</a></p>
+<p>Tolerations - ref: <a class="reference external" href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature">https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#taints-and-tolerations-beta-feature</a></p>
+<p>Affinity and anti-affinity -ref: <a class="reference external" href="https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity">https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity</a></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+
+<span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+
+<span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
 </div>
 </div>
 
