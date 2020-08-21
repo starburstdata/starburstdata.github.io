@@ -35,7 +35,7 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
         <link rel="up" title="6. Kubernetes" href="../k8s.html"/>
-        <link rel="next" title="6.4. Configuration" href="configuration.html"/>
+        <link rel="next" title="6.4. SEP configuration" href="sep-configuration.html"/>
         <link rel="prev" title="6.2. Requirements" href="requirements.html"/> 
 
   
@@ -88,18 +88,19 @@
 <li class="toctree-l2"><a class="reference internal" href="requirements.html">6.2. Requirements</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">6.3. Installation</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#step-by-step">Step by step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sep-installation">SEP installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hive-metastore-installation">Hive metastore installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ranger-installation">Ranger installation</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="configuration.html">6.4. Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="sep-configuration.html">6.5. SEP configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hms-configuration.html">6.6. Hive metastore configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ranger-configuration.html">6.7. Ranger configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="operation.html">6.8. Operation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="eks.html">6.9. Amazon Elastic Kubernetes Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="gke.html">6.10. Google Kubernetes Engine</a></li>
-<li class="toctree-l2"><a class="reference internal" href="aks.html">6.11. Microsoft Azure Kubernetes Service</a></li>
-<li class="toctree-l2"><a class="reference internal" href="openshift.html">6.12. Red Hat OpenShift</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sep-configuration.html">6.4. SEP configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hms-configuration.html">6.5. Hive metastore configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ranger-configuration.html">6.6. Ranger configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="operation.html">6.7. Operation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="eks.html">6.8. Amazon Elastic Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gke.html">6.9. Google Kubernetes Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aks.html">6.10. Microsoft Azure Kubernetes Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="openshift.html">6.11. Red Hat OpenShift</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../kubernetes.html">7. Kubernetes (Legacy)</a></li>
@@ -184,44 +185,83 @@
             
   <div class="section" id="installation">
 <h1><span class="section-number">6.3. </span>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">#</a></h1>
-<p>intro</p>
+<p>Now that you satisfied <a class="reference internal" href="requirements.html"><span class="doc">all the requirements</span></a> you are ready to proceed with installing SEP.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#overview" id="id1">Overview</a></p></li>
-<li><p><a class="reference internal" href="#step-by-step" id="id2">Step by step</a></p></li>
+<li><p><a class="reference internal" href="#sep-installation" id="id2">SEP installation</a></p></li>
+<li><p><a class="reference internal" href="#hive-metastore-installation" id="id3">Hive metastore installation</a></p></li>
+<li><p><a class="reference internal" href="#ranger-installation" id="id4">Ranger installation</a></p></li>
 </ul>
 </div>
 <div class="section" id="overview">
 <span id="k8s-installation-overview"></span><h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">#</a></h2>
+<p>Installing charts with Helm on your cluster follows the same steps:</p>
 <ul class="simple">
-<li><p>get helm charts and docker images</p></li>
-<li><p>get <code class="docutils literal notranslate"><span class="pre">values.yml</span></code> and update values with help of info from <a class="reference internal" href="configuration.html"><span class="doc">Configuration</span></a></p></li>
-<li><p>run helm</p></li>
-<li><p>check for success</p></li>
-<li><p>move on to <a class="reference internal" href="operation.html"><span class="doc">Operation</span></a></p></li>
+<li><p>Establish access to the <a class="reference internal" href="requirements.html#k8s-helm-repository"><span class="std std-ref">Helm chart repository</span></a></p></li>
+<li><p>Create a <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file specific to the chart and cluster</p></li>
+<li><p>Configure credentials to <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">access the Docker registry</span></a></p></li>
+<li><p>Run Helm to install the chart</p></li>
+<li><p>Access the cluster and check for success</p></li>
 </ul>
+<p>You can change the values files to add or update any configuration and run a
+Helm upgrade to apply the changes to the cluster.</p>
+<p>Iterate on the configuration in the values YAML file with minimal setup until
+you have a working system. Depending on your cluster you have to adjust memory
+requirements for the worker and coordinator and other settings. Inspect the
+message with <code class="docutils literal notranslate"><span class="pre">kubectl</span></code> or Octant to determine details.</p>
+<p>After you achieved a running cluster, ensure to store the values YAML file as a
+reference and then add more details as required for the specific cluster need.</p>
 </div>
-<div class="section" id="step-by-step">
-<span id="k8s-installation-step-by-step"></span><h2>Step by step<a class="headerlink" href="#step-by-step" title="Permalink to this headline">#</a></h2>
-<ul class="simple">
-<li><p>SEP</p></li>
-<li><p>HMS</p></li>
-<li><p>Ranger</p></li>
-</ul>
-<p># Install the chart. Use the upgrade option with –install as it can always
-# be used</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade <span class="se">\</span>
+<div class="section" id="sep-installation">
+<span id="k8s-installation-step-by-step"></span><h2>SEP installation<a class="headerlink" href="#sep-installation" title="Permalink to this headline">#</a></h2>
+<p>The SEP installation is managed with the <code class="docutils literal notranslate"><span class="pre">starburst-presto</span></code> Helm chart. Use a
+<a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">minimal values YAML file with the registry credentials</span></a> in the current directory to install SEP with the
+following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade  my-presto starburstdata/starburst-presto <span class="se">\</span>
   --install <span class="se">\</span>
-  --version <span class="m">1</span>-SNAPSHOT <span class="se">\</span>
-  --namespace starburst-ranger <span class="se">\</span>
-  --username starburstsa <span class="se">\</span>
-  --password 9dc579758f9a16728d6F <span class="se">\</span>
-  --repo https://harbor.starburstdata.net/chartrepo/starburstdata <span class="se">\</span>
-  --values values.yaml <span class="se">\</span>
-  starburst-ranger <span class="se">\</span>
-  starburst-ranger
+  --version <span class="m">338</span>.0.0 <span class="se">\</span>
+  --values ./values.yaml
 </pre></div>
 </div>
+<p>The version value is <a class="reference internal" href="requirements.html#k8s-helm-repository"><span class="std std-ref">available from the Helm repo</span></a>.</p>
+<p>The default values result in one coordinator and two worker nodes in the
+cluster.</p>
+<p>Determine the IP address or the DNS hostname of the coordinator and verify the
+coordinator is running by accessing the Presto Web UI. You can use the same
+details to connect with the CLI or the JDBC driver.</p>
+<p>As a next step, update the configuration with the desired values. The
+<a class="reference internal" href="sep-configuration.html"><span class="doc">SEP configuration</span></a> provides details for configuration of catalogs to
+access data sources, worker and coordinator memory settings and much more.</p>
+</div>
+<div class="section" id="hive-metastore-installation">
+<h2>Hive metastore installation<a class="headerlink" href="#hive-metastore-installation" title="Permalink to this headline">#</a></h2>
+<p>The Hive metastore installation is managed with the <code class="docutils literal notranslate"><span class="pre">starburst-hive</span></code> Helm
+chart. Installation follows the same approach as the SEP chart with a
+<a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">minimal values YAML file  with the registry credentials</span></a> in the current directory:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade  my-presto starburstdata/starburst-hive <span class="se">\</span>
+  --install <span class="se">\</span>
+  --version <span class="m">338</span>.0.0 <span class="se">\</span>
+  --values ./values.yaml
+</pre></div>
+</div>
+<p>As a next step, update the configuration with the desired values. The
+<a class="reference internal" href="hms-configuration.html"><span class="doc">Hive metastore configuration</span></a> provides details for the configuration of the Hive
+metastore.</p>
+</div>
+<div class="section" id="ranger-installation">
+<h2>Ranger installation<a class="headerlink" href="#ranger-installation" title="Permalink to this headline">#</a></h2>
+<p>The Ranger installation is managed with the <code class="docutils literal notranslate"><span class="pre">starburst-ranger</span></code> Helm chart. Installation follows the same approach as the SEP chart with a
+<a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">minimal values YAML file  with the registry credentials</span></a> in the current directory:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade  my-presto starburstdata/starburst-ranger<span class="se">\</span>
+  --install <span class="se">\</span>
+  --version <span class="m">338</span>.0.0 <span class="se">\</span>
+  --values ./values.yaml
+</pre></div>
+</div>
+<p>As a next step, update the configuration with the desired values. The
+<a class="reference internal" href="ranger-configuration.html"><span class="doc">Ranger configuration</span></a> provides details for the configuration of
+Starburst Ranger.</p>
 </div>
 </div>
 
@@ -232,7 +272,7 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="configuration.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.4. Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="sep-configuration.html" style="box-shadow: none; border: none;" class="btn btn-neutral float-right" title="6.4. SEP configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="requirements.html" style="box-shadow: none; border: none;" class="btn btn-neutral" title="6.2. Requirements" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
