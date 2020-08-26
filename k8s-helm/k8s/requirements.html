@@ -87,7 +87,7 @@
 <li class="toctree-l2"><a class="reference internal" href="overview.html">6.1. Overview</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">6.2. Requirements</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#k8s-cluster-requirements">K8s cluster requirements</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#horizontal-scaling-requirements">Horizontal scaling requirements</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#scaling-requirements">Scaling requirements</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#access-requirements">Access requirements</a></li>
 </ul>
 </li>
@@ -192,7 +192,7 @@
 <h1><span class="section-number">6.2. </span>Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h1>
 <p>Kubernetes (k8s) and the related tools are very vibrant open source projects.
 The dynamic nature of these projects and the commercial extensions and
-modifications results in a lot of change as well as a myriad of features and
+modifications result in a lot of change as well as a myriad of features and
 options.</p>
 <p>Usage of Presto on Kubernetes can not support all the variations and the
 following sections detail the specific requirements for SEP deployments on k8s.</p>
@@ -200,7 +200,7 @@ following sections detail the specific requirements for SEP deployments on k8s.<
 <ul class="simple">
 <li><p><a class="reference internal" href="#k8s-cluster-requirements" id="id1">K8s cluster requirements</a></p>
 <ul>
-<li><p><a class="reference internal" href="#horizontal-scaling-requirements" id="id2">Horizontal scaling requirements</a></p></li>
+<li><p><a class="reference internal" href="#scaling-requirements" id="id2">Scaling requirements</a></p></li>
 <li><p><a class="reference internal" href="#access-requirements" id="id3">Access requirements</a></p></li>
 </ul>
 </li>
@@ -223,7 +223,7 @@ following sections detail the specific requirements for SEP deployments on k8s.<
 <li><p>EKS</p></li>
 <li><p>GKE</p></li>
 <li><p>AKS</p></li>
-<li><p>OpenShift</p></li>
+<li><p>OpenShift 4.x or higher</p></li>
 </ul>
 <p>In all cases the clusters, and the described usage and deployment, only support
 standard k8s tools.</p>
@@ -235,21 +235,24 @@ standard k8s tools.</p>
 <li><p>each node is dedicated to one Presto worker or coordinator only</p></li>
 <li><p>nodes are not shared with other applications running in the cluster</p></li>
 </ul>
-<p>The recommended approach to achieve this is a dedicated namespace or a dedicated
-nodegroup for all nodes.</p>
-<p>The usage of taints and tolerations, or pod affinity and anti-affinity is
-possible, but not recommended.</p>
-<div class="section" id="horizontal-scaling-requirements">
-<h3>Horizontal scaling requirements<a class="headerlink" href="#horizontal-scaling-requirements" title="Permalink to this headline">#</a></h3>
-<p>If you plan to use automatic horizontal scaling of your Presto deployment,
-additional required components need to be installed:</p>
+<p>The recommended approach to achieve this is a dedicated cluster or namespace for
+all Presto nodes.</p>
+<p>If your cluster is required to be shared with other applications, you need to
+ensure that the exclusive node access for Presto is guaranteed. You can use
+nodegroups, taints and tolerations, or pod affinity and anti-affinity to achieve
+this. This approach is not recommended, since it is more complex to implemented,
+but can be used by experienced k8s administrators.</p>
+<div class="section" id="scaling-requirements">
+<h3>Scaling requirements<a class="headerlink" href="#scaling-requirements" title="Permalink to this headline">#</a></h3>
+<p>If you plan to use automatic scaling of your Presto deployment, additional
+required components need to be installed:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Horizontal Pod Autoscaler</a></p></li>
 <li><p><a class="reference external" href="https://github.com/kubernetes-sigs/metrics-server">Metrics Server</a></p></li>
 <li><p><a class="reference external" href="https://prometheus.io/">Prometheus</a></p></li>
 </ul>
 <p>Reference the documentation of the above tools for installation instructions.</p>
-<p>The automatic scaling adds and removes worker nodes based on demand.</p>
+<p>The automatic scaling adds and removes worker nodes based on demand. This differs from the commonly</p>
 </div>
 <div class="section" id="access-requirements">
 <h3>Access requirements<a class="headerlink" href="#access-requirements" title="Permalink to this headline">#</a></h3>
@@ -292,14 +295,13 @@ starburstdata  https://harbor.starburstdata.net/chartrepo/starburstdata
 </pre></div>
 </div>
 <p>If you search the repository, the available charts are listed:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ helm search repo
+NAME                                          CHART VERSION   APP VERSION     DESCRIPTION
+starburstdata/starburst-hive                  <span class="m">338</span>.0.0                         Helm chart <span class="k">for</span> Apache Hive
+starburstdata/starburst-presto                <span class="m">338</span>.0.0         <span class="m">1</span>.0             A Helm chart <span class="k">for</span> Starburst Presto
+starburstdata/starburst-ranger                <span class="m">338</span>.0.0         <span class="m">2</span>.0.21          Apache Ranger
 </pre></div>
 </div>
-<p>$ helm search repo
-NAME                                    CHART VERSION   APP VERSION     DESCRIPTION
-starburstdata/starburst-hive            338.0.0                         Helm chart for Apache Hive
-starburstdata/starburst-presto          338.0.0         1.0             A Helm chart for Starburst Presto
-starburstdata/starburst-ranger          338.0.0         2.0.21          Apache Ranger</p>
 <p>After new releases from Starburst, you have to update the repository:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ helm repo update
 Hang tight <span class="k">while</span> we grab the latest from your chart repositories...
@@ -329,8 +331,8 @@ cluster.</p>
 </div>
 <div class="section" id="license">
 <h2>License<a class="headerlink" href="#license" title="Permalink to this headline">#</a></h2>
-<p>If you intend to use <a class="reference internal" href="../overview.html#starburst-enterprise-presto"><span class="std std-ref">features of SEP that require a license</span></a> you need to ensure you request a license file
-from Starburst <a class="reference internal" href="sep-configuration.html#helm-sep-license"><span class="std std-ref">and configure it</span></a>.</p>
+<p>You need to ensure you get a license file from Starburst <a class="reference internal" href="sep-configuration.html#helm-sep-license"><span class="std std-ref">and configure it</span></a>, if you intend to use <a class="reference internal" href="../overview.html#starburst-enterprise-presto"><span class="std std-ref">features of SEP that require a
+license</span></a>,</p>
 </div>
 </div>
 
