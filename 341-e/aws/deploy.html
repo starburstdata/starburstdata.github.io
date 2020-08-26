@@ -293,6 +293,8 @@
         <li class="md-nav__item"><a href="#advanced-configuration" class="md-nav__link">Advanced Configuration</a>
         </li>
         <li class="md-nav__item"><a href="#other-parameters" class="md-nav__link">Other Parameters</a>
+        </li>
+        <li class="md-nav__item"><a href="#writing-a-bootstrap-script" class="md-nav__link">Writing a bootstrap script</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -558,6 +560,8 @@
         <li class="md-nav__item"><a href="#advanced-configuration" class="md-nav__link">Advanced Configuration</a>
         </li>
         <li class="md-nav__item"><a href="#other-parameters" class="md-nav__link">Other Parameters</a>
+        </li>
+        <li class="md-nav__item"><a href="#writing-a-bootstrap-script" class="md-nav__link">Writing a bootstrap script</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -1019,13 +1023,14 @@ aspects of your coordinators and workers in the cluster.</p>
 <td><p>s3://my_bucket/presto-additional-workers-configuration-1.0.zip</p></td>
 </tr>
 <tr class="row-even"><td><p>BootstrapScriptURI</p></td>
-<td><p>Optional URI of an bash script stored on S3 to execute on all nodes. The
-script runs after Presto is configured, but before it is started. For
-example, your bash script can be used to create directories, install
-additional software, deploy UDFs, or deploy other plugins. When the
-script is executed, a string argument value of <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> or
-<code class="docutils literal notranslate"><span class="pre">worker</span></code> is passed in. You can check for this argument value in your
-script to perform certain actions based on the node type.</p></td>
+<td><p>Optional URI of a <a class="reference internal" href="#cft-bootstrap-script"><span class="std std-ref">shell script stored on S3 to execute on all
+nodes</span></a>. The script runs after Presto is configured,
+but before it is started. For example, your bash script can be used to
+create directories, install additional software, deploy UDFs, or deploy
+other plugins. When the script is executed, a string argument value of
+<code class="docutils literal notranslate"><span class="pre">coordinator</span></code> or <code class="docutils literal notranslate"><span class="pre">worker</span></code> is passed in. You can check for this
+argument value in your script to perform certain actions based on the node
+type.</p></td>
 <td><p>s3://my_bucket/presto-bootstrap-1.0.sh</p></td>
 </tr>
 <tr class="row-odd"><td><p>PrestoHttpPort</p></td>
@@ -1342,6 +1347,40 @@ role privileges.</p></td>
 </tr>
 </tbody>
 </table>
+
+
+<span id="cft-bootstrap-script"></span><h3 id="writing-a-bootstrap-script">Writing a bootstrap script<a class="headerlink" href="#writing-a-bootstrap-script" title="Permalink to this headline">#</a></h3>
+<p>Bootstrap scripts are a powerful tool that can streamline cluster provisioning
+and maintenance. Commonly, these scripts are used to:</p>
+<ul class="simple">
+<li><p>Download and place plugin resources such as additional connectors or UDFs</p></li>
+<li><p>Modify the node’s filesystem with additional directories</p></li>
+<li><p>Place Presto configuration files that are not handled via the
+<code class="docutils literal notranslate"><span class="pre">AdditionalCoordinatorConfigurationURI</span></code> and
+<code class="docutils literal notranslate"><span class="pre">AdditionalWorkersConfigurationURI</span></code> CFT parameters</p></li>
+</ul>
+<p>The following example demonstrates a coordinator node check followed by a
+coordinator-specific modification. Then, the script downloads a plugin resource
+and creates a directory.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="o">[[</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">"coordinator"</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
+  <span class="nb">echo</span> <span class="s2">"io.prestosql.security=DEBUG"</span> &gt;&gt; /usr/lib/presto/etc/log.properties
+<span class="k">fi</span>
+
+sudo aws s3 cp s3://mybucket/presto/config/json-serde-jar-with-dependencies.jar /usr/lib/presto/plugin/hive-hadoop2/
+
+sudo mkdir -p /var/log/presto/dev/
+</pre></div>
+</div>
+<p>The following steps are necessary to use a script:</p>
+<ul class="simple">
+<li><p>Write the script as desired</p></li>
+<li><p>Place the script file in an S3 bucket</p></li>
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">BootstrapScriptURI</span></code> parameter to the correct S3 path of the file</p></li>
+</ul>
+<p>The bootstrap script is executed on all nodes after instance provisioning, but
+before starting Presto.</p>
+<p>A best practice is to update the name of the file with a version, an enumerator
+or a date value with each change.</p>
 
 
 
