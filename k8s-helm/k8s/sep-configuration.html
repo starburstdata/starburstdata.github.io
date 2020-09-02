@@ -34,7 +34,7 @@
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="Starburst Enterprise Presto" href="../index.html"/>
-        <link rel="up" title="6. Kubernetes" href="../k8s.html"/>
+        <link rel="up" title="6. Kubernetes with Helm" href="../k8s.html"/>
         <link rel="next" title="6.5. Hive metastore configuration" href="hms-configuration.html"/>
         <link rel="prev" title="6.3. Installation" href="installation.html"/> 
 
@@ -83,7 +83,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../client.html">3. Clients</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../mission-control.html">4. Mission Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../aws.html">5. Amazon Web Services</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../k8s.html">6. Kubernetes</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../k8s.html">6. Kubernetes with Helm</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="overview.html">6.1. Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="requirements.html">6.2. Requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html">6.3. Installation</a></li>
@@ -186,7 +186,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../k8s.html"><span class="section-number">6. </span>Kubernetes</a> &raquo;</li>
+        <li><a href="../k8s.html"><span class="section-number">6. </span>Kubernetes with Helm</a> &raquo;</li>
       
     <li><span class="section-number">6.4. </span>SEP configuration</li>
     <li class="wy-breadcrumbs-aside">
@@ -440,7 +440,7 @@ set query time out values</p>
 </div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.nodeSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.affinity</span></code> and <code class="docutils literal notranslate"><span class="pre">coordinator.tolerations</span></code></p>
 <blockquote>
-<div><p>Configuration to <a class="reference internal" href="installation.html#helm-node-selection"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
+<div><p>Configuration to <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
 </div></blockquote>
 <p>If you need to increase settings for your workload or potentially decrease
 values to adjust for smaller nodes in your k8s cluster you have to adjust the
@@ -489,17 +489,29 @@ adjusted to be suitable to your workload and cluster:</p>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">worker.count</span></code></p>
 <blockquote>
-<div><p>The number of worker pods.</p>
+<div><p>The number of worker pods for a static cluster.å</p>
 </div></blockquote>
-<p><code class="docutils literal notranslate"><span class="pre">worker.autoscaling</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">worker.autoscaling</span></code>,  and</p>
 <blockquote>
 <div><p>Configuration for the minimum and maximum number of workers. Ensure the
-additional <a class="reference internal" href="requirements.html"><span class="doc">Requirements</span></a> are fulfilled. Set <code class="docutils literal notranslate"><span class="pre">enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>
-to activate scaling. The <code class="docutils literal notranslate"><span class="pre">targetCPUUtilizationPercentage</span></code> sets the threshold
-value that triggers scaling up.</p>
+additional <a class="reference internal" href="requirements.html"><span class="doc">requirements for scaling</span></a> are fulfilled
+on your k8s cluster. Set <code class="docutils literal notranslate"><span class="pre">enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> to activate scaling. The
+<code class="docutils literal notranslate"><span class="pre">targetCPUUtilizationPercentage</span></code> sets the threshold value that triggers
+scaling up by adding more workers until <code class="docutils literal notranslate"><span class="pre">maxReplicas</span></code> is reached.</p>
 </div></blockquote>
+<p>Scaling down proceeds until <code class="docutils literal notranslate"><span class="pre">minReplicas</span></code> is reached and is controlled by
+<code class="docutils literal notranslate"><span class="pre">deploymentTerminationGracePeriodSeconds</span></code> and
+<code class="docutils literal notranslate"><span class="pre">prestoWorkerShutdownGracePeriodSeconds</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">worker.deploymentTerminationGracePeriodSeconds</span></code></p>
+<blockquote>
+<div><p>Specifies the termination grace period for workers. Workers are not terminated
+until queries running on the pod are finished and the grace period passes.</p>
+</div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">worker.prestoWorkerShutdownGracePeriodSeconds</span></code></p>
+<blockquote>
+<div><p>Sets <code class="docutils literal notranslate"><span class="pre">shutdown.grace-period</span></code> to configure the grace period for worker
+process shutdown.</p>
+</div></blockquote>
 <p>The following configuration properties for workers are identical to the
 coordinator properties, documented in preceding section.</p>
 <ul class="simple">
@@ -515,18 +527,21 @@ coordinator properties, documented in preceding section.</p>
 </div>
 <div class="section" id="common-settings-for-coordinator-and-workers-nodes">
 <span id="helm-sep-nodes"></span><h2>Common settings for coordinator and workers nodes<a class="headerlink" href="#common-settings-for-coordinator-and-workers-nodes" title="Permalink to this headline">#</a></h2>
+<p>You can create a startup shell script to customize how Presto is started on the coordinator and workers and pass additional argument to it.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">initFile</span><span class="p">:</span>
 <span class="nt">extraArguments</span><span class="p">:</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">initFile</span></code></p>
 <blockquote>
-<div><p>tbd, - optional startup script, called with single parameter “coordinator”
-# or “worker; if not set default container command is called, needs to call presto launcher script from it</p>
+<div><p>A shell script to run before Presto is launched. When called, it is passed the
+single parameter value <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> or <code class="docutils literal notranslate"><span class="pre">worker</span></code> depending on the type of
+pod. The script needs to invoke the Presto launcher script
+<code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/bin/launcher</span></code> for a successful start of Presto.</p>
 </div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">extraArguments</span></code></p>
 <blockquote>
-<div><p>List of extra arguments to be passed to initFile</p>
+<div><p>List of extra arguments to be passed to script.</p>
 </div></blockquote>
 </div>
 <div class="section" id="authentication">
@@ -536,12 +551,11 @@ coordinator properties, documented in preceding section.</p>
   <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;file&quot;</span>
   <span class="nt">file</span><span class="p">:</span>
     <span class="nt">users</span><span class="p">:</span>
-      <span class="c1"># TODO Consider security issues. We are providing def. pass which may be accidentally left.</span>
       <span class="p p-Indicator">-</span> <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;admin&quot;</span>
         <span class="nt">password</span><span class="p">:</span> <span class="s">&quot;46991b33f7a75ff79213c0dc0e610610&quot;</span>
 </pre></div>
 </div>
-<p>authentication euqiv password authenticato.type
+<p>authentication equiv password authenticato.type
 .. jason to tell me details, http server password</p>
 </div>
 <div class="section" id="ranger">
