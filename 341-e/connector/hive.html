@@ -578,6 +578,13 @@
     <li class="md-nav__item">
     
     
+      <a href="iceberg.html" class="md-nav__link">Iceberg connector</a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
       <a href="kafka.html" class="md-nav__link">Kafka connector</a>
       
     
@@ -1028,18 +1035,18 @@ the existing temporary directories.</p>
 <p>Kerberos authentication is supported for both HDFS and the Hive metastore.
 However, Kerberos authentication by ticket cache is not yet supported.</p>
 <p>The properties that apply to Hive connector security are listed in the
-<a class="reference internal" href="#hive-configuration-properties">Hive Configuration Properties</a> table. Please see the
+<a class="reference internal" href="#id1">Hive Configuration Properties</a> table. Please see the
 <a class="reference internal" href="hive-security.html"><span class="doc">Hive Connector Security Configuration</span></a> section for a more detailed discussion of the
 security options in the Hive connector.</p>
 
 
 
-<h2 id="hive-configuration-properties">Hive Configuration Properties<a class="headerlink" href="#hive-configuration-properties" title="Permalink to this headline">#</a></h2>
+<span id="id1"></span><h2 id="hive-configuration-properties">Hive Configuration Properties<a class="headerlink" href="#hive-configuration-properties" title="Permalink to this headline">#</a></h2>
 <table>
 <colgroup>
-<col style="width: 41%"/>
-<col style="width: 49%"/>
-<col style="width: 10%"/>
+<col style="width: 40%"/>
+<col style="width: 48%"/>
+<col style="width: 13%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property Name</p></th>
@@ -1176,6 +1183,39 @@ in schemas <code class="docutils literal notranslate"><span class="pre">fruit</s
 valid.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.parquet.time-zone</span></code></p></td>
+<td><p>Adjusts timestamp values to a specific time zone.
+For Hive 3.1+, this should be set to UTC.</p></td>
+<td><p>JVM default</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.rcfile.time-zone</span></code></p></td>
+<td><p>Adjusts binary encoded timestamp values to a specific
+time zone. For Hive 3.1+, this should be set to UTC.</p></td>
+<td><p>JVM default</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.orc.time-zone</span></code></p></td>
+<td><p>Sets the default time zone for legacy ORC files that did
+not declare a time zone.</p></td>
+<td><p>JVM default</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-enabled</span></code></p></td>
+<td><p>Controls whether the temporary staging directory configured
+at <code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-path</span></code> should be
+used for write operations. Temporary staging directory is
+never used for writes to non-sorted tables on S3,
+encrypted HDFS or external location. Writes to sorted tables
+will utilize this path for staging temporary files
+during sorting operation. When disabled, the target storage
+will be used for staging while writing sorted tables which
+can be inefficient when writing to object stores like S3.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-path</span></code></p></td>
+<td><p>Controls the location of temporary staging directory that
+is used for write operations. The <code class="docutils literal notranslate"><span class="pre">${USER}</span></code> placeholder
+can be used to use a different location for each user.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/tmp/${USER}</span></code></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -1222,6 +1262,10 @@ subsequent accesses to see fresh data.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.metastore-refresh-max-threads</span></code></p></td>
 <td><p>Maximum threads used to refresh cached metastore data.</p></td>
 <td><p>100</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.metastore-timeout</span></code></p></td>
+<td><p>Timeout for Hive metastore requests.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10s</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1749,7 +1793,7 @@ for the table. The referenced data directory is not deleted:</p>
 </ul>
 
 <h3 id="hive-3-related-limitations">Hive 3 Related Limitations<a class="headerlink" href="#hive-3-related-limitations" title="Permalink to this headline">#</a></h3>
-<ul class="simple">
+<ul>
 <li><p>For security reasons, the <code class="docutils literal notranslate"><span class="pre">sys</span></code> system catalog is not accessible.</p></li>
 <li><p>Hive’s <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">local</span> <span class="pre">zone</span></code> data type is not supported.
 It is possible to read from a table with a column of this type, but the column
@@ -1759,6 +1803,18 @@ and <a class="reference external" href="https://issues.apache.org/jira/browse/HI
 not correctly read <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> values from Parquet, RCBinary, or Avro
 file formats created by Hive 3.1 or later. When reading from these file formats,
 Presto returns different results than Hive.</p></li>
+<li><p><a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a> can be used to create transactional tables in ORC format like this:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">format</span><span class="o">=</span><span class="s1">'ORC'</span><span class="p">,</span>
+    <span class="n">transactional</span><span class="o">=</span><span class="k">true</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">AS</span> <span class="o">&lt;</span><span class="n">query</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Presto does not support gathering table statistics for Hive transactional tables.
+You need to use Hive to gather table statistics with <code class="docutils literal notranslate"><span class="pre">ANALYZE</span> <span class="pre">TABLE</span> <span class="pre">COMPUTE</span> <span class="pre">STATISTICS</span></code> after table creation.</p>
+</li>
 </ul>
 
 

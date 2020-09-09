@@ -484,8 +484,6 @@
         <li class="md-nav__item"><a href="#object-storage-systems" class="md-nav__link">Object storage systems</a>
         </li>
         <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
-        </li>
-        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
             </nav>
         </li>
@@ -507,6 +505,13 @@
     
     
       <a href="jmx.html" class="md-nav__link">JMX connector</a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
+      <a href="iceberg.html" class="md-nav__link">Iceberg connector</a>
       
     
     </li>
@@ -740,8 +745,6 @@
         <li class="md-nav__item"><a href="#object-storage-systems" class="md-nav__link">Object storage systems</a>
         </li>
         <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
-        </li>
-        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
             </nav>
         </li>
@@ -916,22 +919,16 @@ approaches:</p>
 <p>The implementation of the cache exposes a <a class="reference external" href="https://rubix.readthedocs.io/en/latest/metrics.html">number of metrics</a> via JMX. You can
 <a class="reference internal" href="../admin/jmx.html"><span class="doc">inspect these and other metrics directly in Presto with the JMX connector
 or in external tools</span></a>.</p>
-<p>The following example query returns the total amount of data fetched by the
-BookKeeper on the coordinator and all the separate nodes on the workers in the
-default async mode:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">fs</span><span class="p">.</span><span class="n">readfromremote</span> <span class="o">+</span> <span class="n">async_downloaded_mb</span><span class="p">.</span><span class="k">count</span>
-<span class="k">FROM</span> <span class="n">jmx</span><span class="p">.</span><span class="k">current</span><span class="p">.</span><span class="ss">"rubix:catalog=hive,name=stats"</span> <span class="n">fs</span><span class="p">,</span>
-     <span class="n">jmx</span><span class="p">.</span><span class="k">current</span><span class="p">.</span><span class="ss">"metrics:name=rubix.bookkeeper.count.async_downloaded_mb"</span> <span class="n">async_downloaded_mb</span>
-<span class="k">WHERE</span> <span class="n">fs</span><span class="p">.</span><span class="n">node</span> <span class="o">=</span> <span class="n">async_downloaded_mb</span><span class="p">.</span><span class="n">node</span><span class="p">;</span>
+<p>Basic caching statistics for the catalog are available in the
+<code class="docutils literal notranslate"><span class="pre">jmx.current."rubix:catalog=&lt;catalog_name&gt;,name=stats"</span></code> table.
+The table <code class="docutils literal notranslate"><span class="pre">jmx.current."rubix:catalog=&lt;catalog_name&gt;,name=stats</span></code>
+contains more detailed statistics.</p>
+<p>The following example query returns the average cache hit ratio for the <code class="docutils literal notranslate"><span class="pre">hive</span></code> catalog:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">avg</span><span class="p">(</span><span class="n">cache_hit</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="n">jmx</span><span class="p">.</span><span class="k">current</span><span class="p">.</span><span class="ss">"rubix:catalog=hive,name=stats"</span>
+<span class="k">WHERE</span> <span class="k">NOT</span> <span class="n">is_nan</span><span class="p">(</span><span class="n">cache_hit</span><span class="p">);</span>
 </pre></div>
 </div>
-
-
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
-<p>Caching does support user impersonation. It does not take any user-specific
-access rights to the object storage into account. The cached objects are simply
-transparent binary blobs to the caching system and full access to all content is
-available.</p>
 
 
 
