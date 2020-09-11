@@ -296,7 +296,7 @@
         </li>
         <li class="md-nav__item"><a href="#connecting-tools" class="md-nav__link">Connecting tools</a>
         </li>
-        <li class="md-nav__item"><a href="#updating" class="md-nav__link">Updating</a>
+        <li class="md-nav__item"><a href="#updates" class="md-nav__link">Updates</a>
         </li>
         <li class="md-nav__item"><a href="#scaling" class="md-nav__link">Scaling</a>
         </li></ul>
@@ -453,7 +453,7 @@
         </li>
         <li class="md-nav__item"><a href="#connecting-tools" class="md-nav__link">Connecting tools</a>
         </li>
-        <li class="md-nav__item"><a href="#updating" class="md-nav__link">Updating</a>
+        <li class="md-nav__item"><a href="#updates" class="md-nav__link">Updates</a>
         </li>
         <li class="md-nav__item"><a href="#scaling" class="md-nav__link">Scaling</a>
         </li></ul>
@@ -470,29 +470,84 @@
             
   
 <h1 id="k8s-operation--page-root">Operation<a class="headerlink" href="#k8s-operation--page-root" title="Permalink to this headline">#</a></h1>
-<p>intro</p>
+<p>Congratulations! Your cluster is up and running. Now it is time to test it out
+by connecting your clients like the CLI or some BI application using the JDBC
+driver.</p>
+<p>With that usage you gain insights on the correct configuration, data sources and
+sizing of the cluster for the desired usage and performance. This in turn leads
+you to further work such as updating configuration, scaling your cluster or even
+upgrading to a newer release.</p>
+<p>This document covers these and other aspects associated to running your SEP
+cluster, or even clusters.</p>
 
 <h2 id="running">Running<a class="headerlink" href="#running" title="Permalink to this headline">#</a></h2>
-<p>presto with web ui and the workers</p>
+<p>Once you have <a class="reference internal" href="installation.html#k8s-installation-step-by-step"><span class="std std-ref">successfully installed SEP</span></a>,
+you can confirm that the coordinator pod is running with tools such as
+<code class="docutils literal notranslate"><span class="pre">kubectl</span></code> or Octant.</p>
+<p>You can also check the log in the server pod. A successful start of the
+coordinator, and also each worker, shows with a log entry similar to the
+following snippet:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">INFO</span>  <span class="n">main</span>    <span class="n">io</span><span class="p">.</span><span class="n">prestosql</span><span class="p">.</span><span class="n">server</span><span class="p">.</span><span class="n">Server</span>      <span class="o">========</span> <span class="n">SERVER</span> <span class="n">STARTED</span> <span class="o">========</span>
+</pre></div>
+</div>
+<p>With these checks performed, you can access the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a> on
+the coordinator. Determine the FQDN and port of the coordinator as configured in
+the <a class="reference internal" href="sep-configuration.html#helm-sep-expose"><span class="std std-ref">expose section</span></a>.</p>
+<p>A default deployment exposes the UI via HTTP and does not require a password.
+Production deployments should use HTTPS and have authentication configured.</p>
+<p>The main page of the Web UI displays the number of connected workers. Confirm
+that the number is identical to the number specific in the <a class="reference internal" href="sep-configuration.html#helm-sep-workers"><span class="std std-ref">worker section</span></a>. The default number of workers is two.</p>
 
 
 <h2 id="connecting-tools">Connecting tools<a class="headerlink" href="#connecting-tools" title="Permalink to this headline">#</a></h2>
+<p>With the knowledge that you can access the Web UI, and therefore the
+coordinator, and that some workers are running, you are ready to connect client
+tools for running queries.</p>
+<p>Use the protocol, FQDN and port with the <code class="docutils literal notranslate"><span class="pre">--server</span></code> option for starting the
+<a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a> to access Presto:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">presto</span> <span class="c1">--server https://presto.example.com:9999</span>
+</pre></div>
+</div>
+<p>The same URL can be used to configure the JDBC driver or ODBC driver connection
+and connection from any other client.</p>
+
+
+<span id="helm-ops-updates"></span><h2 id="updates">Updates<a class="headerlink" href="#updates" title="Permalink to this headline">#</a></h2>
+<p>Initial <a class="reference internal" href="installation.html"><span class="doc">installation</span></a> should use the simplest possible
+configuration to allow you cluster to start and run, with some of the following
+characteristics:</p>
 <ul class="simple">
-<li><p>cli</p></li>
-<li><p>jdbc</p></li>
-<li><p>odbc</p></li>
-<li><p>others</p></li>
+<li><p>only SEP deployment</p></li>
+<li><p>limited or no catalogs</p></li>
+<li><p>no authentication</p></li>
+<li><p>minimal worker count without scaling</p></li>
 </ul>
-
-
-<h2 id="updating">Updating<a class="headerlink" href="#updating" title="Permalink to this headline">#</a></h2>
+<p>This allows you to update the configuration incrementally:</p>
 <ul class="simple">
-<li><p>update config</p></li>
-<li><p>restart complete cluster</p></li>
+<li><p>update the values YAML file by adding or updating configuration</p></li>
+<li><p>run a helm upgrade just like for installation</p></li>
+<li><p>verify that the desired changes are applied successfully</p></li>
+<li><p>repeat the process with the next desired change</p></li>
 </ul>
+<p>Typically Helm applies the relevant changes in a granular fashion. For example,
+if you change the worker configuration, no coordinator changes are performed and
+the coordinator continues to run while workers are updated.</p>
+<p>If you need to ensure that pods are recreated completely, you can use the
+<code class="docutils literal notranslate"><span class="pre">--recreate-pods</span></code> option for your <code class="docutils literal notranslate"><span class="pre">helm</span></code> command. This essentially restarts
+all workers as well as the coordinator and therefore restarts the cluster. This
+includes a downtime for users.</p>
 
 
-<h2 id="scaling">Scaling<a class="headerlink" href="#scaling" title="Permalink to this headline">#</a></h2>
+<span id="helm-ops-scaling"></span><h2 id="scaling">Scaling<a class="headerlink" href="#scaling" title="Permalink to this headline">#</a></h2>
+<p>You can scale your SEP cluster manually by adding more workers. This is done by
+updating <a class="reference internal" href="sep-configuration.html#helm-sep-workers"><span class="std std-ref">the worker count</span></a> and <a class="reference internal" href="#helm-ops-updates"><span class="std std-ref">updating your
+deployment</span></a>. Sufficient resources available in the cluster is
+a requirement.</p>
+<p>Alternatively, you can enable autoscaling in your your worker configuration and
+updating the deployment. Sufficient resources available in the cluster is a
+requirement.</p>
+<p>Alternatively you can increase the memory resources allocated to the workers and
+updating your deployment.</p>
 
 
 
