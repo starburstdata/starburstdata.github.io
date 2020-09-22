@@ -218,13 +218,6 @@
     <li class="md-nav__item">
     
     
-      <a href="../mission-control.html" class="md-nav__link">Mission Control</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
       <a href="../aws.html" class="md-nav__link">Amazon Web Services</a>
       
     
@@ -327,7 +320,9 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#logging-details" class="md-nav__link">Logging details</a>
+        <li class="md-nav__item"><a href="#logging-details-and-analysis" class="md-nav__link">Logging details and analysis</a>
+        </li>
+        <li class="md-nav__item"><a href="#persisting-metrics" class="md-nav__link">Persisting Metrics</a>
         </li></ul>
             </nav>
         </li>
@@ -431,7 +426,9 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#logging-details" class="md-nav__link">Logging details</a>
+        <li class="md-nav__item"><a href="#logging-details-and-analysis" class="md-nav__link">Logging details and analysis</a>
+        </li>
+        <li class="md-nav__item"><a href="#persisting-metrics" class="md-nav__link">Persisting Metrics</a>
         </li></ul>
             </nav>
         </li>
@@ -447,8 +444,9 @@
   
 <h1 id="admin-usage-metrics--page-root">Usage metrics<a class="headerlink" href="#admin-usage-metrics--page-root" title="Permalink to this headline">#</a></h1>
 <p>Usage metrics collection enables Presto to log information about all nodes in
-the cluster. This feature is mostly used for <a class="reference internal" href="../mission-control.html"><span class="doc">Mission Control</span></a> and other management solutions. Users can use the resulting
-log information for their own monitoring and operational purposes.</p>
+the cluster. This feature is mostly used for Mission Control and other
+management solutions. Users can use the resulting log information for their own
+monitoring and operational purposes.</p>
 
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
 <p>Usage metrics collection is configured by a number of properties, that you can
@@ -508,10 +506,47 @@ on a REST API end point on the coordinator at <code class="docutils literal notr
 </table>
 
 
-<h2 id="logging-details">Logging details<a class="headerlink" href="#logging-details" title="Permalink to this headline">#</a></h2>
+<h2 id="logging-details-and-analysis">Logging details and analysis<a class="headerlink" href="#logging-details-and-analysis" title="Permalink to this headline">#</a></h2>
 <p>The logged information includes details about number of nodes, number of cores,
 start time, cpu time, and other data about the cluster and nodes in the
 cluster. The log uses JSON format for each entry.</p>
+<p>The JSON information can be inspected manually, ingested in any logging analysis
+or management tool, and also parsed with the <a class="reference internal" href="../installation/download.html#download-others"><span class="std std-ref">metrics parser tools
+available from Starburst</span></a>. The parser is a command line
+application that can be run directly or with the <code class="docutils literal notranslate"><span class="pre">java</span></code>.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mv starburst-usage-metrics-parser-*-executable.jar usage-metrics-parser
+chmod a+x usage-metrics-parser
+./usage-metrics-parser
+<span class="c1"># or</span>
+java -jar usage-metrics-parser
+</pre></div>
+</div>
+<p>Save the logs to local empty folder and use the parser with appropriate
+arguments:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>usage-metrics-parser --from &lt;from&gt; --to &lt;to&gt; &lt;path&gt;
+</pre></div>
+</div>
+<p>The parameters <code class="docutils literal notranslate"><span class="pre">&lt;from&gt;/&lt;to&gt;</span></code> define date-time range and <code class="docutils literal notranslate"><span class="pre">&lt;path&gt;</span></code> points to
+folder with the log files. The resulting output shows the analysis results:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cluster restarts: <span class="m">1</span>, cpu time: <span class="m">265</span>.55s, available cpu time: <span class="m">93130</span>.57s, cpu utilization: <span class="m">0</span>.29%, min cores: <span class="m">16</span>, max cores: <span class="m">16</span>
+</pre></div>
+</div>
+
+
+<span id="usage-metrics-persisting"></span><h2 id="persisting-metrics">Persisting Metrics<a class="headerlink" href="#persisting-metrics" title="Permalink to this headline">#</a></h2>
+<p>Understanding the usage of your cluster requires persisting the usage metrics.
+By default the metrics are not persisted.</p>
+<p>The simplest mechanism to persist metrics is to configure the path of the log
+file to a location that is separate from the filesystem of the coordinator.
+Typically this is a network location that is mounted.</p>
+<p>The <a class="reference internal" href="../aws.html"><span class="doc">CFT setup</span></a> automatically configures persisting the metrics in
+CloudWatch. Users of Amazon EKS can <a class="reference external" href="https://aws.amazon.com/blogs/containers/how-to-capture-application-logs-when-using-amazon-eks-on-aws-fargate/">also use CloudWatch as well</a>.</p>
+<p>Logs exported from CloudWatch are decorated and have to be pre-processed to
+limit information to the raw format displayed in the preceding section to
+process it with the metrics parser.</p>
+<p>Log management solutions integrated with other cloud platforms, or available
+separately, allow persisting the metrics by capturing the log file or regularly
+inspecting the REST endpoint.</p>
 
 
 
