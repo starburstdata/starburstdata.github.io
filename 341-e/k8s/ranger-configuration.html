@@ -218,13 +218,6 @@
     <li class="md-nav__item">
     
     
-      <a href="../mission-control.html" class="md-nav__link">Mission Control</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
       <a href="../aws.html" class="md-nav__link">Amazon Web Services</a>
       
     
@@ -495,9 +488,18 @@
             
   
 <h1 id="k8s-ranger-configuration--page-root">Ranger configuration<a class="headerlink" href="#k8s-ranger-configuration--page-root" title="Permalink to this headline">#</a></h1>
-<p>The <code class="docutils literal notranslate"><span class="pre">starburst-ranger</span></code> Helm chart configures the Ranger serverin the cluster
-with the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file detailed in the following sections.</p>
-<p>A minimal values file <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">adds the registry credentials</span></a> and overrides any defaults to suitable values.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">starburst-ranger</span></code> Helm chart configures Ranger usage in the cluster
+with the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file detailed in the following sections. It allows you
+to use the <a class="reference internal" href="../security/system-ranger.html"><span class="doc">system level security support of Starburst Enterprise Presto</span></a>.</p>
+<p>It creates the following setup:</p>
+<ul class="simple">
+<li><p>A pod with the <a class="reference internal" href="#helm-ranger-server"><span class="std std-ref">Ranger server</span></a> with the Presto
+Ranger plugin deployed and configured to connect to Presto</p></li>
+<li><p>Optionally a pod with <a class="reference internal" href="#helm-ranger-usersync"><span class="std std-ref">Ranger LDAP user synchronization system</span></a> deployed and configured</p></li>
+<li><p>Optionally a pod with a <a class="reference internal" href="#helm-ranger-database"><span class="std std-ref">PostgreSQL database backend</span></a> for Ranger</p></li>
+</ul>
+<p>A minimal values file <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">adds the registry credentials</span></a>
+and overrides any defaults to suitable values.</p>
 <p>Ranger needs to be <a class="reference internal" href="sep-configuration.html#helm-sep-ranger"><span class="std std-ref">enabled in the SEP configuration</span></a> and
 deployed with Helm after SEP.</p>
 
@@ -513,7 +515,8 @@ deployed with Helm after SEP.</p>
 
 
 <span id="helm-ranger-server"></span><h2 id="ranger-server">Ranger server<a class="headerlink" href="#ranger-server" title="Permalink to this headline">#</a></h2>
-<p>ranger admin UI</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">admin</span></code> section configures the Ranger server and the included user
+interface for policy management.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">admin</span><span class="p">:</span>
   <span class="nt">image</span><span class="p">:</span>
     <span class="nt">repository</span><span class="p">:</span> <span class="s">"harbor.starburstdata.net/starburstdata/starburst-ranger-admin"</span>
@@ -547,9 +550,19 @@ deployed with Helm after SEP.</p>
     <span class="c1"># for example RANGER__authentication_method.</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">admin.serviceUser</span></code></p>
+<p>The operating system user that is used to run the Ranger application.</p>
+<p><code class="docutils literal notranslate"><span class="pre">admin.passwords</span></code></p>
+<p>A number of passwords need to be set to any desired values. They are used for
+administrative and Ranger internal purposes and do not need to be changed or
+used elsewhere.</p>
 
 
 <span id="helm-ranger-usersync"></span><h2 id="ldap-user-synchronization-server">LDAP user synchronization server<a class="headerlink" href="#ldap-user-synchronization-server" title="Permalink to this headline">#</a></h2>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">usersync</span></code> block to configure the details of the
+synchronization of users and groups between Ranger and your LDAP system. It runs
+on a separate pod when deployed.</p>
+<p>The default configuration enables user synchronization:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">usersync</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
   <span class="nt">image</span><span class="p">:</span>
@@ -588,10 +601,64 @@ deployed with Helm after SEP.</p>
     <span class="nt">RANGER__SYNC_GROUP_OBJECT_CLASS</span><span class="p">:</span> <span class="s">"groupOfNames"</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.enabled</span></code></p>
+<p>Enable or disable user synchronization feature.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.name</span></code></p>
+<p>Name of the pod.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.tls.enabled</span></code></p>
+<p>Enable or disable TLS for usersync.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.tls.truststore.secret</span></code></p>
+<p>Name of the secret created from the truststore.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.tls.truststore.password</span></code></p>
+<p>Password for the truststore.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env</span></code></p>
+<p>A map of Ranger config variables related to the user synchronization.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_LDAP_URL</span></code></p>
+<p>URL to the LDAP server.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_LDAP_BIND_DN</span></code></p>
+<p>Distinguished name (DN) string used to bind for the LDAP connection.</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env</span> <span class="pre">/</span> <span class="pre">RANGER__SYNC_LDAP_BIND_PASSWORD</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_LDAP_SEARCH_BASE</span></code>
+<code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_LDAP_USER_SEARCH_BASE</span></code></p>
+<p>User information search base in the LDAP directory</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_LDAP_USER_OBJECT_CLASS</span></code></p>
+<p>Object class for users</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_GROUP_SEARCH_ENABLED</span></code></p>
+<p>Enable or disable group search</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_GROUP_USER_MAP_SYNC_ENABLED</span></code></p>
+<p>Enable or disable synchronization of group-user mapping</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_GROUP_SEARCH_BASE</span></code></p>
+<p>Group information search base in the LDAP directory</p>
+<p><code class="docutils literal notranslate"><span class="pre">usersync.env.RANGER__SYNC_GROUP_OBJECT_CLASS</span></code></p>
+<p>Object class for groups</p>
+<p>—</p>
+<p>The following steps can be used to enable TLS with the LDAP server:</p>
+<ul>
+<li><p>Create a truststore file named <code class="docutils literal notranslate"><span class="pre">truststore.jks</span></code> from the LDAP server</p></li>
+<li><p>Create a Kubernetes secret <code class="docutils literal notranslate"><span class="pre">ldap-cert</span></code> from the truststore file</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl create secret generic ldap-cert --from-file truststore.jks
+</pre></div>
+</div>
+</li>
+<li><p>Update values to reflect the secret name in the <code class="docutils literal notranslate"><span class="pre">tls</span></code> section</p></li>
+<li><p>Update truststore password in the <code class="docutils literal notranslate"><span class="pre">tls</span></code> section</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">tls</span><span class="p">:</span>
+  <span class="n">enabled</span><span class="p">:</span> <span class="k">true</span>
+  <span class="n">truststore</span><span class="p">:</span>
+    <span class="n">secret</span><span class="p">:</span> <span class="n">ldap</span><span class="o">-</span><span class="n">cert</span>
+    <span class="n">password</span><span class="p">:</span> <span class="ss">"truststore password"</span>
+</pre></div>
+</div>
+</li>
+</ul>
 
 
 <span id="helm-ranger-database"></span><h2 id="backing-database-server">Backing database server<a class="headerlink" href="#backing-database-server" title="Permalink to this headline">#</a></h2>
-<p>Internal database:</p>
+<p>You can use a PostgreSQL database within the cluster, created by the chart, as
+backend for the policy storage of Ranger in the <code class="docutils literal notranslate"><span class="pre">database</span></code> block for testing.</p>
+<p>Alternatively, you can use an external PostgreSQL database for production usage.
+You have to manage this server and database yourself.</p>
+<p>By default an internal database is configured:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
   <span class="nt">type</span><span class="p">:</span> <span class="s">"internal"</span>
   <span class="nt">internal</span><span class="p">:</span>
@@ -600,13 +667,6 @@ deployed with Helm after SEP.</p>
       <span class="nt">tag</span><span class="p">:</span> <span class="s">"10.6"</span>
       <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">"IfNotPresent"</span>
     <span class="nt">volume</span><span class="p">:</span>
-      <span class="c1"># use one of:</span>
-      <span class="c1"># - existingVolumeClaim to specify existing PVC</span>
-      <span class="c1"># - persistentVolumeClaim to specify spec for new PVC</span>
-      <span class="c1"># - other volume type inline configuration, e.g. emptyDir</span>
-      <span class="c1"># Examples:</span>
-      <span class="c1"># existingVolumeClaim: "my_claim"</span>
-      <span class="c1"># emptyDir: {}</span>
       <span class="nt">persistentVolumeClaim</span><span class="p">:</span>
         <span class="nt">storageClassName</span><span class="p">:</span>
         <span class="nt">accessModes</span><span class="p">:</span>
@@ -629,11 +689,49 @@ deployed with Helm after SEP.</p>
     <span class="nt">databaseRootPassword</span><span class="p">:</span> <span class="s">"RangerAdminPass123"</span>
 </pre></div>
 </div>
-<p>External postgresql database</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.type</span></code></p>
+<p>Set to <code class="docutils literal notranslate"><span class="pre">internal</span></code> to use a database in the k8s cluster, managed by the chart.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.image</span></code></p>
+<p>Docker container images used for the PostgreSQL server.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.volume</span></code></p>
+<p>Storage volume to persist the database. The default configuration requests a new
+persistent volume (PV). Alternatively you can an use existing volume claim by
+referencing the name:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
-  <span class="c1"># type is internal | external</span>
   <span class="nt">type</span><span class="p">:</span> <span class="s">"internal"</span>
-
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">existingVolumeClaim</span><span class="p">:</span> <span class="s">"my_claim"</span>
+</pre></div>
+</div>
+<p>You can also configure an empty directory on the pod, keeping in mind that a pod
+replacement looses the database content.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">"internal"</span>
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+<p>Other volume types can also be used.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.resources</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.databaseName</span></code></p>
+<p>Name of the internal database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.databaseUser</span></code></p>
+<p>User to connect to the internal database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.databasePassword</span></code></p>
+<p>Password to connect to internal database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.databaseRootUser</span></code></p>
+<p>User to administrate the internal database for creating and updating tables and
+similar operations.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.databaseRootPassword</span></code></p>
+<p>Password for the administrator to connect to the the internal database.</p>
+<p>—</p>
+<p>The following section shows the empty default setup for using  of an external
+PostgreSQL database. You just provide the necessary details for the external
+server and ensure that it can be reached from the k8s cluster pod.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">"external"</span>
   <span class="nt">external</span><span class="p">:</span>
     <span class="nt">port</span><span class="p">:</span>
     <span class="nt">host</span><span class="p">:</span>
@@ -644,6 +742,23 @@ deployed with Helm after SEP.</p>
     <span class="nt">databaseRootPassword</span><span class="p">:</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">database.type</span></code></p>
+<p>Set to <code class="docutils literal notranslate"><span class="pre">external</span></code> to use a database managed externally.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">port</span></code></p>
+<p>Port to access the external database</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">host</span></code></p>
+<p>Host of the external database</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databaseName</span></code></p>
+<p>Name of the database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databaseUser</span></code></p>
+<p>User to connect to the database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databasePassword</span></code></p>
+<p>Password to connect to the database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databaseRootUser</span></code></p>
+<p>User to administrate the external database by creating and updating tables and
+similar operations.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databaseRootPassword</span></code></p>
+<p>Password for the administrator to connect to the external database.</p>
 
 
 <span id="helm-ranger-expose"></span><h2 id="exposing-the-cluster-to-outside-network">Exposing the cluster to outside network<a class="headerlink" href="#exposing-the-cluster-to-outside-network" title="Permalink to this headline">#</a></h2>
