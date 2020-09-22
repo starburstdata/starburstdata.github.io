@@ -97,7 +97,8 @@
 <li class="toctree-l2"><a class="reference internal" href="dist-sort.html">9.8. Distributed Sort</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">9.9. Usage Metrics</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#logging-details">Logging Details</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging-details-and-analysis">Logging Details and Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#persisting-metrics">Persisting Metrics</a></li>
 </ul>
 </li>
 </ul>
@@ -186,7 +187,8 @@ log information for their own monitoring and operational purposes.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#configuration" id="id2">Configuration</a></p></li>
-<li><p><a class="reference internal" href="#logging-details" id="id3">Logging Details</a></p></li>
+<li><p><a class="reference internal" href="#logging-details-and-analysis" id="id3">Logging Details and Analysis</a></p></li>
+<li><p><a class="reference internal" href="#persisting-metrics" id="id4">Persisting Metrics</a></p></li>
 </ul>
 </div>
 <div class="section" id="configuration">
@@ -247,11 +249,48 @@ on a REST API end point on the coordinator at <code class="docutils literal notr
 </tbody>
 </table>
 </div>
-<div class="section" id="logging-details">
-<h2><a class="toc-backref" href="#id3">Logging Details</a><a class="headerlink" href="#logging-details" title="Permalink to this headline">#</a></h2>
+<div class="section" id="logging-details-and-analysis">
+<h2><a class="toc-backref" href="#id3">Logging Details and Analysis</a><a class="headerlink" href="#logging-details-and-analysis" title="Permalink to this headline">#</a></h2>
 <p>The logged information includes details about number of nodes, number of cores,
 start time, cpu time, and other data about the cluster and nodes in the
 cluster. The log uses JSON format for each entry.</p>
+<p>The JSON information can be inspected manually, ingested in any logging analysis
+or management tool, and also parsed with the <a class="reference internal" href="../installation/download.html#download-others"><span class="std std-ref">metrics parser tools
+available from Starburst</span></a>. The parser is a command line
+application that can be run directly or with the <code class="docutils literal notranslate"><span class="pre">java</span></code>.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mv starburst-usage-metrics-parser-*-executable.jar usage-metrics-parser
+chmod a+x usage-metrics-parser
+./usage-metrics-parser
+<span class="c1"># or</span>
+java -jar usage-metrics-parser
+</pre></div>
+</div>
+<p>Save the logs to local empty folder and use the parser with appropriate
+arguments:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>usage-metrics-parser --from &lt;from&gt; --to &lt;to&gt; &lt;path&gt;
+</pre></div>
+</div>
+<p>The parameters <code class="docutils literal notranslate"><span class="pre">&lt;from&gt;/&lt;to&gt;</span></code> define date-time range and <code class="docutils literal notranslate"><span class="pre">&lt;path&gt;</span></code> points to
+folder with the log files. The resulting output shows the analysis results:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cluster restarts: <span class="m">1</span>, cpu time: <span class="m">265</span>.55s, available cpu time: <span class="m">93130</span>.57s, cpu utilization: <span class="m">0</span>.29%, min cores: <span class="m">16</span>, max cores: <span class="m">16</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="persisting-metrics">
+<span id="usage-metrics-persisting"></span><h2><a class="toc-backref" href="#id4">Persisting Metrics</a><a class="headerlink" href="#persisting-metrics" title="Permalink to this headline">#</a></h2>
+<p>Understanding the usage of your cluster requires persisting the usage metrics.
+By default the metrics are not persisted.</p>
+<p>The simplest mechanism to persist metrics is to configure the path of the log
+file to a location that is separate from the filesystem of the coordinator.
+Typically this is a network location that is mounted.</p>
+<p>The <a class="reference internal" href="../aws.html"><span class="doc">CFT setup</span></a> automatically configures persisting the metrics in
+CloudWatch. Users of Amazon EKS can <a class="reference external" href="https://aws.amazon.com/blogs/containers/how-to-capture-application-logs-when-using-amazon-eks-on-aws-fargate/">also use CloudWatch as well</a>.</p>
+<p>Logs exported from CloudWatch are decorated and have to be pre-processed to
+limit information to the raw format displayed in the preceding section to
+process it with the metrics parser.</p>
+<p>Log management solutions integrated with other cloud platforms, or available
+separately, allow persisting the metrics by capturing the log file or regularly
+inspecting the REST endpoint.</p>
 </div>
 </div>
 

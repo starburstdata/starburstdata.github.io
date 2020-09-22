@@ -606,7 +606,10 @@ which are inserted in <a class="reference internal" href="../installation/deploy
 <span id="helm-sep-spilling"></span><h2>Spilling<a class="headerlink" href="#spilling" title="Permalink to this headline">#</a></h2>
 <p>You can configure <a class="reference internal" href="../admin/spill.html"><span class="doc">disk spilling</span></a> with the <code class="docutils literal notranslate"><span class="pre">spilling</span></code>
 section. It uses internal node storage, which is mounted within the container.
-It is disabled by default, and we recommend to leave is disabled.</p>
+It is disabled by default, and we recommend to leave it disabled. Enabling
+spilling can be used to allow rare memory intensive queries to succeed on a
+smaller cluster, at the expense of query performance and overall cluster
+performance.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">spilling</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
   <span class="nt">volume</span><span class="p">:</span>
@@ -689,26 +692,34 @@ name.</p>
 </div>
 <div class="section" id="additional-volumes">
 <span id="helm-sep-volumes"></span><h2>Additional volumes<a class="headerlink" href="#additional-volumes" title="Permalink to this headline">#</a></h2>
-<p># Presto Additional Volumes mount. General purpose.
-# Provided as array
-#  - path: &lt;&lt;container mount path&gt;&gt;
-#    volume: {}
-#
-#  Volume definition
-#  <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes">https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes</a>
-#  without name parameter.
-#
-# E.g. for K8S emptyDir volume
-# additionalVolumes:
-#   - path: /mnt/InContainer
-#     volume:
-#       emptyDir: {}</p>
+<p>Additional volumes can be necessary for persisting files, for <a class="reference internal" href="../connector/hive-caching.html"><span class="doc">Hive object
+storage caching</span></a> and a number of other use cases, and
+can be defined in the <code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code> section. None are defined by
+default:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+<p>You can add one or more <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes">volumes supported by k8s</a>, to
+all nodes in the cluster. Optionally, it can be mounted on a specific path by
+adding it to the container image:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt/InContainer</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/lib/presto/cache1</span>
+      <span class="l l-Scalar l-Scalar-Plain">volume</span><span class="p p-Indicator">:</span>
+      <span class="nt">hostPath</span><span class="p">:</span>
+      <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/media/nv1/presto-cache</span>
+  <span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/var/lib/presto/cache2</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">hostPath</span><span class="p">:</span>
+        <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/media/nv2/presto-cache</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="usage-metrics">
 <span id="helm-sep-usage-metrics"></span><h2>Usage Metrics<a class="headerlink" href="#usage-metrics" title="Permalink to this headline">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">usageMetrics</span></code> section configures <a class="reference internal" href="../admin/usage-metrics.html"><span class="doc">usage metric</span></a> and uses the following default configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">usageMetrics</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
   <span class="nt">usageClient</span><span class="p">:</span>
@@ -716,6 +727,24 @@ name.</p>
     <span class="nt">interval</span><span class="p">:</span> <span class="s">&quot;1m&quot;</span>
 </pre></div>
 </div>
+<p>Metrics gathering is enabled, which results in an additional side-car container
+with the coordinator, called <code class="docutils literal notranslate"><span class="pre">usage-client</span></code>. The container gathers and exposes
+the metrics over the lifetime of the coordinator.</p>
+<p>You can view usage metrics data using kubectl:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ kubectl logs -n &lt;namespace&gt; &lt;pod_name&gt; usage-client
+<span class="o">{</span><span class="s2">&quot;startTime&quot;</span>:1598353893065,<span class="s2">&quot;time&quot;</span>:<span class="s2">&quot;2020-08-25T11:13:00.753Z&quot;</span>,<span class="s2">&quot;cumulativeCpuTime&quot;</span>:<span class="s2">&quot;0.00s&quot;</span>,...<span class="o">}</span>
+<span class="o">{</span><span class="s2">&quot;startTime&quot;</span>:1598353893065,<span class="s2">&quot;time&quot;</span>:<span class="s2">&quot;2020-08-25T11:14:00.707Z&quot;</span>,<span class="s2">&quot;cumulativeCpuTime&quot;</span>:<span class="s2">&quot;9.61s&quot;</span>,...<span class="o">}</span>
+</pre></div>
+</div>
+<p>Restarts result in a reset of the metrics. Metrics are not persisted by default,
+but can be written to a <a class="reference internal" href="../admin/usage-metrics.html#usage-metrics-persisting"><span class="std std-ref">configured persistent volume</span></a>. The path to the log file as to be configured as
+additional property on the coordinator:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">additionalProperties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">usage-metrics.log.path=/mnt/logging-pv</span>
+</pre></div>
+</div>
+<p>The persistent volume has to be configured as <a class="reference internal" href="#helm-sep-volumes"><span class="std std-ref">additional volume</span></a>.</p>
 </div>
 <div class="section" id="prometheus">
 <span id="helm-sep-prometheus"></span><h2>Prometheus<a class="headerlink" href="#prometheus" title="Permalink to this headline">#</a></h2>
@@ -755,13 +784,12 @@ choice in the cluster.</p>
 <div class="section" id="adding-files">
 <span id="helm-sep-adding-files"></span><h2>Adding files<a class="headerlink" href="#adding-files" title="Permalink to this headline">#</a></h2>
 <p>Various use cases around security and event listeners need additional config
-files as properties or xml files. You can add any file to pod using <a class="reference external" href="https://kubernetes.io/docs/concepts/configuration/configmap/">config maps</a>.</p>
-<p>For example, …</p>
+files as properties or xml files. You can add any file to a pod using <a class="reference external" href="https://kubernetes.io/docs/concepts/configuration/configmap/">config
+maps</a>.</p>
 <p>Examples:</p>
 <ul class="simple">
-<li><p>ldap authentication file</p></li>
-<li><p>hive xml file</p></li>
-<li><p>hadoop xml file</p></li>
+<li><p>LDAP authentication file</p></li>
+<li><p>Hive site xml file</p></li>
 </ul>
 </div>
 </div>
