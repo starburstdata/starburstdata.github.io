@@ -527,6 +527,8 @@
         </li>
         <li class="md-nav__item"><a href="#with-clause" class="md-nav__link">WITH Clause</a>
         </li>
+        <li class="md-nav__item"><a href="#with-recursive-clause" class="md-nav__link">WITH RECURSIVE Clause</a>
+        </li>
         <li class="md-nav__item"><a href="#select-clause" class="md-nav__link">SELECT Clause</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#select-expressions" class="md-nav__link">Select expressions</a>
@@ -788,6 +790,8 @@
         </li>
         <li class="md-nav__item"><a href="#with-clause" class="md-nav__link">WITH Clause</a>
         </li>
+        <li class="md-nav__item"><a href="#with-recursive-clause" class="md-nav__link">WITH RECURSIVE Clause</a>
+        </li>
         <li class="md-nav__item"><a href="#select-clause" class="md-nav__link">SELECT Clause</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#select-expressions" class="md-nav__link">Select expressions</a>
@@ -867,7 +871,7 @@
 <h1 id="sql-select--page-root">SELECT<a class="headerlink" href="#sql-select--page-root" title="Permalink to this headline">#</a></h1>
 
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">#</a></h2>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[ WITH with_query [, ...] ]
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>[ WITH [ RECURSIVE ] with_query [, ...] ]
 SELECT [ ALL | DISTINCT ] select_expression [, ...]
 [ FROM from_item [, ...] ]
 [ WHERE condition ]
@@ -946,6 +950,69 @@ For example, the following queries are equivalent:</p>
 relation is used. This means that if the relation is used more than once and the query
 is non-deterministic, the results may be different each time.</p>
 </div>
+
+
+<h2 id="with-recursive-clause">WITH RECURSIVE Clause<a class="headerlink" href="#with-recursive-clause" title="Permalink to this headline">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">RECURSIVE</span></code> clause is a variant of the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause. It defines
+a list of queries to process, including recursive processing of suitable
+queries.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This feature is experimental only. Proceed to use it only if you understand
+potential query failures and the impact of the recursion processing on your
+workload.</p>
+</div>
+<p>A recursive <code class="docutils literal notranslate"><span class="pre">WITH</span></code>-query must be shaped as a <code class="docutils literal notranslate"><span class="pre">UNION</span></code> of two relations. The
+first relation is called the <em>recursion base</em>, and the second relation is called
+the <em>recursion step</em>. Presto supports recursive <code class="docutils literal notranslate"><span class="pre">WITH</span></code>-queries with a single
+recursive reference to a <code class="docutils literal notranslate"><span class="pre">WITH</span></code>-query from within the query. The name <code class="docutils literal notranslate"><span class="pre">T</span></code> of
+the query <code class="docutils literal notranslate"><span class="pre">T</span></code> can be mentioned once in the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> clause of the recursion
+step relation.</p>
+<p>The following listing shows a simple example, that displays a commonly used
+form of a single query in the list:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>WITH RECURSIVE t(n) AS (
+    VALUES (1)
+    UNION ALL
+    SELECT n + 1 FROM t WHERE n &lt; 4
+)
+SELECT sum(n) FROM t;
+</pre></div>
+</div>
+<p>In the preceding query the simple assignment <code class="docutils literal notranslate"><span class="pre">VALUES</span> <span class="pre">(1)</span></code> defines the
+recursion base relation. <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">n</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">FROM</span> <span class="pre">t</span> <span class="pre">WHERE</span> <span class="pre">n</span> <span class="pre">&lt;</span> <span class="pre">4</span></code> defines the
+recursion step relation. The recursion processing performs these steps:</p>
+<ul class="simple">
+<li><p>recursive base yields <code class="docutils literal notranslate"><span class="pre">1</span></code></p></li>
+<li><p>first recursion yields <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">=</span> <span class="pre">2</span></code></p></li>
+<li><p>second recursion uses the result from the first and adds one: <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">=</span> <span class="pre">3</span></code></p></li>
+<li><p>third recursion uses the result from the second and adds one again:
+<code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">+</span> <span class="pre">1</span> <span class="pre">=</span> <span class="pre">4</span></code></p></li>
+<li><p>fourth recursion aborts since <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">4</span></code></p></li>
+<li><p>this results in <code class="docutils literal notranslate"><span class="pre">t</span></code> having values <code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">3</span></code> and <code class="docutils literal notranslate"><span class="pre">4</span></code></p></li>
+<li><p>the final statement performs the sum operation of these elements with the
+final result value <code class="docutils literal notranslate"><span class="pre">10</span></code></p></li>
+</ul>
+<p>The types of the returned columns are those of the base relation. Therefore it
+is required that types in the step relation can be coerced to base relation
+types.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RECURSIVE</span></code> clause applies to all queries in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> list, but not
+all of them must be recursive. If a <code class="docutils literal notranslate"><span class="pre">WITH</span></code>-query is not shaped according to
+the rules mentioned above or it does not contain a recursive reference, it is
+processed like a regular <code class="docutils literal notranslate"><span class="pre">WITH</span></code>-query. Column aliases are mandatory for all
+the queries in the recursive <code class="docutils literal notranslate"><span class="pre">WITH</span></code> list.</p>
+<p>The following limitations apply as a result of following the SQL standard and
+due to implementation choices, in addition to <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause limitations:</p>
+<ul class="simple">
+<li><p>only single-element recursive cycles are supported. Like in regular
+<code class="docutils literal notranslate"><span class="pre">WITH</span></code>-queries, references to previous queries in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> list are
+allowed. References to following queries are forbidden.</p></li>
+<li><p>usage of outer joins, set operations, limit clause, and others is not always
+allowed in the step relation</p></li>
+<li><p>recursion depth is fixed, defaults to <code class="docutils literal notranslate"><span class="pre">10</span></code>, and doesn’t depend on the actual
+query results</p></li>
+</ul>
+<p>You can adjust the recursion depth with the <a class="reference internal" href="set-session.html"><span class="doc">session property</span></a> <code class="docutils literal notranslate"><span class="pre">max_recursion_depth</span></code>. When changing the value consider
+that the size of the query plan growth is quadratic with the recursion depth.</p>
 
 
 <h2 id="select-clause">SELECT Clause<a class="headerlink" href="#select-clause" title="Permalink to this headline">#</a></h2>

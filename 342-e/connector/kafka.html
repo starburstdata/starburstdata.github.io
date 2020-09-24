@@ -956,9 +956,9 @@ show up in <code class="docutils literal notranslate"><span class="pre">DESCRIBE
 <p>For each defined table, the connector maintains the following columns:</p>
 <table>
 <colgroup>
-<col style="width: 11%"/>
-<col style="width: 4%"/>
-<col style="width: 85%"/>
+<col style="width: 10%"/>
+<col style="width: 13%"/>
+<col style="width: 77%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Column name</p></th>
@@ -999,15 +999,19 @@ show up in <code class="docutils literal notranslate"><span class="pre">DESCRIBE
 <td><p>BIGINT</p></td>
 <td><p>Number of bytes in the message.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_key_corrupt</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_headers</span></code></p></td>
+<td><p>map(VARCHAR, array(VARBINARY))</p></td>
+<td><p>Headers of the message where values with the same key are grouped as array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_key_corrupt</span></code></p></td>
 <td><p>BOOLEAN</p></td>
 <td><p>True if the key decoder could not decode the key for this row. When true, data columns mapped from the key should be treated as invalid.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_key</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_key</span></code></p></td>
 <td><p>VARCHAR</p></td>
 <td><p>Key bytes as an UTF-8 encoded string. This is only useful for textual keys.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">_key_length</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">_key_length</span></code></p></td>
 <td><p>BIGINT</p></td>
 <td><p>Number of bytes in the key.</p></td>
 </tr>
@@ -1460,18 +1464,80 @@ for a Kafka message:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">type</span></code> - Presto type of column.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">mapping</span></code> - slash-separated list of field names to select a field from the
 JSON object</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> - name of formatter (required for temporal types)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">formatHint</span></code> - pattern to format temporal data (only use with
+<code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code> formatter)</p></li>
 </ul>
-<p>The following Presto data types are supported by the JSON encoder</p>
+<p>The following Presto data types are supported by the JSON encoder:</p>
+<table>
+<colgroup>
+<col style="width: 100%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Presto data types</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">TIME</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The following <code class="docutils literal notranslate"><span class="pre">dataFormats</span></code> are available for temporal data:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">iso8601</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rfc2822</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code> - formats temporal data according to
+<a class="reference external" href="https://www.joda.org/joda-time/key_format.html">Joda Time</a>
+pattern given by <code class="docutils literal notranslate"><span class="pre">formatHint</span></code> field</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">milliseconds-since-epoch</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seconds-since-epoch</span></code></p></li>
 </ul>
+<p>All temporal data in Kafka supports milliseconds precision</p>
+<p>The following table defines which temporal data types are supported by
+<code class="docutils literal notranslate"><span class="pre">dataFormats</span></code>:</p>
+<table>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 68%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Presto data type</p></th>
+<th class="head"><p>Decoding rules</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">milliseconds-since-epoch</span></code>,
+<code class="docutils literal notranslate"><span class="pre">seconds-since-epoch</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIME</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">rfc2822</span></code>,
+<code class="docutils literal notranslate"><span class="pre">milliseconds-since-epoch</span></code>, <code class="docutils literal notranslate"><span class="pre">seconds-since-epoch</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">rfc2822</span></code>,</p></td>
+</tr>
+</tbody>
+</table>
 <p>Example JSON field definition in a <a class="reference external" href="#table-definition-files">table definition file</a>
 for a Kafka message:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -1494,7 +1560,9 @@ for a Kafka message:</p>
       <span class="p">},</span>
       <span class="p">{</span>
         <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"field3"</span><span class="p">,</span>
-        <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"BOOLEAN"</span><span class="p">,</span>
+        <span class="nt">"type"</span><span class="p">:</span> <span class="s2">"TIMESTAMP"</span><span class="p">,</span>
+        <span class="nt">"dataFormat"</span><span class="p">:</span> <span class="s2">"custom-date-time"</span><span class="p">,</span>
+        <span class="nt">"formatHint"</span><span class="p">:</span> <span class="s2">"yyyy-dd-MM HH:mm:ss.SSS"</span><span class="p">,</span>
         <span class="nt">"mapping"</span><span class="p">:</span> <span class="s2">"field3"</span>
       <span class="p">}</span>
     <span class="p">]</span>
@@ -1504,7 +1572,7 @@ for a Kafka message:</p>
 </div>
 <p>Example insert query for the above table definition:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">example_json_table</span> <span class="p">(</span><span class="n">field1</span><span class="p">,</span> <span class="n">field2</span><span class="p">,</span> <span class="n">field3</span><span class="p">)</span>
-  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="s1">'example text'</span><span class="p">,</span> <span class="k">TRUE</span><span class="p">);</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="mi">123456789</span><span class="p">,</span> <span class="s1">'example text'</span><span class="p">,</span> <span class="k">TIMESTAMP</span> <span class="s1">'2020-07-15 01:02:03.456'</span><span class="p">);</span>
 </pre></div>
 </div>
 
@@ -1811,17 +1879,38 @@ which can be specified via <code class="docutils literal notranslate"><span clas
 <td><p>Default field decoder (omitted <code class="docutils literal notranslate"><span class="pre">dataFormat</span></code> attribute)</p></td>
 </tr>
 <tr class="row-odd"><td><div class="line-block">
-<div class="line"><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></div>
-<div class="line"><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></div>
+<div class="line"><code class="docutils literal notranslate"><span class="pre">DATE</span></code></div>
+</div>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code></p></td>
+</tr>
+<tr class="row-even"><td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">TIME</span></code></div>
+<div class="line"><br/></div>
+</div>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">milliseconds-since-epoch</span></code>,
+<code class="docutils literal notranslate"><span class="pre">seconds-since-epoch</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><div class="line-block">
 <div class="line"><code class="docutils literal notranslate"><span class="pre">TIME</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></div>
+</div>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code></p></td>
+</tr>
+<tr class="row-even"><td><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></div>
+<div class="line"><br/></div>
 </div>
 </td>
 <td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">rfc2822</span></code>,
 <code class="docutils literal notranslate"><span class="pre">milliseconds-since-epoch</span></code>, <code class="docutils literal notranslate"><span class="pre">seconds-since-epoch</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">rfc2822</span></code>,</p></td>
+<tr class="row-odd"><td><div class="line-block">
+<div class="line"><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></div>
+</div>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">custom-date-time</span></code>, <code class="docutils literal notranslate"><span class="pre">iso8601</span></code>, <code class="docutils literal notranslate"><span class="pre">rfc2822</span></code></p></td>
 </tr>
 </tbody>
 </table>
