@@ -88,9 +88,10 @@
 <li class="toctree-l2"><a class="reference internal" href="installation.html">5.3. Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="sep-configuration.html">5.4. SEP configuration</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">5.5. Hive metastore configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-the-hms">Using the HMS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#docker-image-and-registry">Docker image and registry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#exposing-the-pod-to-outside-network">Exposing the pod to outside network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#database-backend-for-ranger">Database backend for Ranger</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#database-backend-for-hms">Database backend for HMS</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#storage">Storage</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#server-configuration">Server configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#node-assignment">Node assignment</a></li>
@@ -193,20 +194,34 @@ detailed in the following sections.</p>
 <p>HMS needs to be deployed after SEP.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#docker-image-and-registry" id="id1">Docker image and registry</a></p></li>
-<li><p><a class="reference internal" href="#exposing-the-pod-to-outside-network" id="id2">Exposing the pod to outside network</a></p></li>
-<li><p><a class="reference internal" href="#database-backend-for-ranger" id="id3">Database backend for Ranger</a></p></li>
-<li><p><a class="reference internal" href="#storage" id="id4">Storage</a></p></li>
-<li><p><a class="reference internal" href="#server-configuration" id="id5">Server configuration</a></p></li>
-<li><p><a class="reference internal" href="#node-assignment" id="id6">Node assignment</a></p></li>
+<li><p><a class="reference internal" href="#using-the-hms" id="id1">Using the HMS</a></p></li>
+<li><p><a class="reference internal" href="#docker-image-and-registry" id="id2">Docker image and registry</a></p></li>
+<li><p><a class="reference internal" href="#exposing-the-pod-to-outside-network" id="id3">Exposing the pod to outside network</a></p></li>
+<li><p><a class="reference internal" href="#database-backend-for-hms" id="id4">Database backend for HMS</a></p></li>
+<li><p><a class="reference internal" href="#storage" id="id5">Storage</a></p></li>
+<li><p><a class="reference internal" href="#server-configuration" id="id6">Server configuration</a></p></li>
+<li><p><a class="reference internal" href="#node-assignment" id="id7">Node assignment</a></p></li>
 </ul>
+</div>
+<div class="section" id="using-the-hms">
+<span id="helm-hms-using"></span><h2>Using the HMS<a class="headerlink" href="#using-the-hms" title="Permalink to this headline">#</a></h2>
+<p>The expose section configures the DNS availability of the HMS in the cluster. By
+default the HMS is available at the hostname <code class="docutils literal notranslate"><span class="pre">hive</span></code> and port <code class="docutils literal notranslate"><span class="pre">9083</span></code>. As a
+result the Thrift URL within the cluster is <code class="docutils literal notranslate"><span class="pre">thrift://hive:9083</span></code>.</p>
+<p>You can use the URL for <a class="reference internal" href="sep-configuration.html#helm-sep-catalogs"><span class="std std-ref">any catalog</span></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalog</span><span class="p">:</span>
+  <span class="nt">datalake</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">connector.name=hive-hadoop2</span>
+    <span class="no">hive.metastore.uri=thrift://hive:9083</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="docker-image-and-registry">
 <span id="helm-hms-image"></span><h2>Docker image and registry<a class="headerlink" href="#docker-image-and-registry" title="Permalink to this headline">#</a></h2>
 <p>Same as <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Docker image and registry section for the SEP Helm chart</span></a></p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">image</span><span class="p">:</span>
   <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;harbor.starburstdata.net/starburstdata/hive&quot;</span>
-  <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;338.2.0&quot;</span>
+  <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;338.2.1&quot;</span>
   <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">&quot;IfNotPresent&quot;</span>
 
 <span class="nt">registryCredentials</span><span class="p">:</span>
@@ -221,7 +236,9 @@ detailed in the following sections.</p>
 <span id="helm-hms-expose"></span><h2>Exposing the pod to outside network<a class="headerlink" href="#exposing-the-pod-to-outside-network" title="Permalink to this headline">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">expose</span></code> section for the HMS works identical to the <a class="reference internal" href="sep-configuration.html#helm-sep-expose"><span class="std std-ref">SEP server
 expose section</span></a>. Differences are isolated to the configured
-default values. The default type is <code class="docutils literal notranslate"><span class="pre">clusterIp</span></code>:</p>
+default values. The default type is <code class="docutils literal notranslate"><span class="pre">clusterIp</span></code>. Ensure to adapt your
+configured catalogs to use the correct Thrift URL for HMS, when changing this
+configuration.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">expose</span><span class="p">:</span>
   <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;clusterIp&quot;</span>
   <span class="nt">clusterIp</span><span class="p">:</span>
@@ -253,11 +270,11 @@ default values. The default type is <code class="docutils literal notranslate"><
 </pre></div>
 </div>
 </div>
-<div class="section" id="database-backend-for-ranger">
-<span id="helm-hms-database"></span><h2>Database backend for Ranger<a class="headerlink" href="#database-backend-for-ranger" title="Permalink to this headline">#</a></h2>
-<p>Internal to the cluster:</p>
+<div class="section" id="database-backend-for-hms">
+<span id="helm-hms-database"></span><h2>Database backend for HMS<a class="headerlink" href="#database-backend-for-hms" title="Permalink to this headline">#</a></h2>
+<p>The database backend for HMS is a PostgreSQL database internal to the
+cluster by default:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
-  <span class="c1"># type is internal | external</span>
   <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">internal</span>
   <span class="nt">internal</span><span class="p">:</span>
     <span class="nt">image</span><span class="p">:</span>
@@ -271,14 +288,14 @@ default values. The default type is <code class="docutils literal notranslate"><
       <span class="c1"># - other volume type inline configuration, e.g. emptyDir</span>
       <span class="c1"># Examples:</span>
       <span class="c1"># existingVolumeClaim: &quot;my_claim&quot;</span>
-      <span class="c1"># emptyDir: {}</span>
-      <span class="nt">persistentVolumeClaim</span><span class="p">:</span>
-        <span class="nt">storageClassName</span><span class="p">:</span>
-        <span class="nt">accessModes</span><span class="p">:</span>
-          <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">ReadWriteOnce</span>
-        <span class="nt">resources</span><span class="p">:</span>
-          <span class="nt">requests</span><span class="p">:</span>
-            <span class="nt">storage</span><span class="p">:</span> <span class="s">&quot;2Gi&quot;</span>
+      <span class="c1"># persistentVolumeClaim:</span>
+      <span class="c1">#  storageClassName:</span>
+      <span class="c1">#  accessModes:</span>
+      <span class="c1">#    - ReadWriteOnce</span>
+      <span class="c1">#  resources:</span>
+      <span class="c1">#    requests:</span>
+      <span class="c1">#      storage: &quot;2Gi&quot;</span>
+      <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
     <span class="nt">resources</span><span class="p">:</span>
       <span class="nt">requests</span><span class="p">:</span>
         <span class="nt">memory</span><span class="p">:</span> <span class="s">&quot;1Gi&quot;</span>
@@ -293,46 +310,59 @@ default values. The default type is <code class="docutils literal notranslate"><
     <span class="nt">databasePassword</span><span class="p">:</span> <span class="s">&quot;HivePass1234&quot;</span>
 </pre></div>
 </div>
-<p>Connect to an external PostgreSQL database.</p>
+<p>Alternatively you can use an external PostgreSQL or MySQL database, by setting
+<code class="docutils literal notranslate"><span class="pre">database.type</span></code> to <code class="docutils literal notranslate"><span class="pre">external</span></code> and configuring the nested properties.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
   <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external</span>
   <span class="nt">external</span><span class="p">:</span>
-    <span class="c1"># docker container supported drivers: com.mysql.jdbc.Driver or org.postgresql.Driver</span>
     <span class="nt">jdbcUrl</span><span class="p">:</span>
     <span class="nt">driver</span><span class="p">:</span>
     <span class="nt">user</span><span class="p">:</span>
     <span class="nt">password</span><span class="p">:</span>
 </pre></div>
 </div>
-<p>Other databases beyond PostgreSQL are not supported.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external.jdbcUrl</span></code>: JDBC URL to connect to the external database
+as required by the database and used driver, including hostname and port</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external.driver</span></code>:  Valid values are <code class="docutils literal notranslate"><span class="pre">com.mysql.jdbc.Driver</span></code> for an
+external MySQL or compatible database or <code class="docutils literal notranslate"><span class="pre">org.postgresql.Driver</span></code> for a
+PostgreSQL database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external.user</span></code>: Database user name to access the external database
+using JDBC.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.external.password</span></code>: Password for the user configured to access the
+external database using JDBC.</p>
 </div>
 <div class="section" id="storage">
 <span id="helm-hms-storage"></span><h2>Storage<a class="headerlink" href="#storage" title="Permalink to this headline">#</a></h2>
+<p>The chart allows you to configure the credentials to access the HDFS or object
+storage. The credentials enable the HMS to access to storage for metadata
+information including statistics gathering.</p>
+<p>In addition you have to <a class="reference internal" href="sep-configuration.html#helm-sep-catalogs"><span class="std std-ref">configure the catalog</span></a> with
+sufficient, corresponding credentials.</p>
+<p>The default configuration includes no credentials:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">hdfs</span><span class="p">:</span>
   <span class="nt">hadoopUserName</span><span class="p">:</span>
-</pre></div>
-</div>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">objectStorage</span><span class="p">:</span>
-  <span class="c1"># AWS</span>
+<span class="nt">objectStorage</span><span class="p">:</span>
   <span class="nt">awsS3</span><span class="p">:</span>
     <span class="nt">region</span><span class="p">:</span>
     <span class="nt">endpoint</span><span class="p">:</span>
     <span class="nt">accessKey</span><span class="p">:</span>
     <span class="nt">secretKey</span><span class="p">:</span>
     <span class="nt">pathStyleAccess</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
-  <span class="c1"># Google</span>
   <span class="nt">gs</span><span class="p">:</span>
     <span class="nt">cloudKeyFilePath</span><span class="p">:</span>
   <span class="nt">azure</span><span class="p">:</span>
-    <span class="c1"># Azure Blob Filesystem</span>
     <span class="nt">abfs</span><span class="p">:</span>
-      <span class="nt">storageAccount</span><span class="p">:</span>
+      <span class="nt">authType</span><span class="p">:</span> <span class="s">&quot;accessKey&quot;</span>
       <span class="nt">accessKey</span><span class="p">:</span>
-    <span class="c1"># Windows Azure Storage Blob</span>
+        <span class="nt">storageAccount</span><span class="p">:</span>
+        <span class="nt">accessKey</span><span class="p">:</span>
+      <span class="nt">oauth</span><span class="p">:</span>
+        <span class="nt">clientId</span><span class="p">:</span>
+        <span class="nt">secret</span><span class="p">:</span>
+        <span class="nt">endpoint</span><span class="p">:</span>
     <span class="nt">wasb</span><span class="p">:</span>
       <span class="nt">storageAccount</span><span class="p">:</span>
       <span class="nt">accessKey</span><span class="p">:</span>
-  <span class="c1"># Azure Data Lake</span>
   <span class="nt">adl</span><span class="p">:</span>
     <span class="nt">oauth2</span><span class="p">:</span>
       <span class="nt">clientId</span><span class="p">:</span>
@@ -340,6 +370,45 @@ default values. The default type is <code class="docutils literal notranslate"><
       <span class="nt">refreshUrl</span><span class="p">:</span>
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">hdfs.hadoopUserName</span></code>: User name for Hadoop HDFS access</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.*</span></code>: Configuration for AWS S3 access</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.region</span></code>: AWS region name</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.endpoint</span></code>: AWS S3 endpoint</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.accessKey</span></code>: Name of the access key for AWS S3</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.secretKey</span></code>: Name of the secret key for AWS S3</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.awsS3.pathStyleAccess</span></code>:</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.gs.*</span></code>: Configuration for Google Storage access</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.gs.cloudKeyFilePath</span></code>:  Path to the file containing the access
+key to the cloud storage</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.*</span></code>: Configuration for Microsoft Azure storage systems</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.*</span></code>: Configuration for Azure Blob Filesystem (ABFS)</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.authType</span></code>: Authentication to access ABFS, Valid
+values are``accessKey`` or <code class="docutils literal notranslate"><span class="pre">oauth</span></code>, configuration in the following properties.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.accessKey.*</span></code>: Configuration for access key
+authentication to ABFS</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.accessKey.storageAccount</span></code>: Name of the ABFS account to access</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.accessKey.accessKey</span></code>: Actual access key to use for
+ABFS  access</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.oauth.*</span></code>: Configuration for OAuth authentication to
+ABFS</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.oauth.clientId</span></code>: Client identifier for OAuth
+authentication.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.oauth.secret</span></code>: Secret for OAuth.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.abfs.oauth.endpoint</span></code>: Endpoint URL for OAuth.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.wasb.*</span></code>: Configuration for Windows Azure Storage Blob
+(WASB)</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.wasb.storageAccount</span></code>: Name of the storage account to use
+for WASB.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.wasb.accessKey</span></code>: Key to access WASB.</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.adl</span></code>: Configuration for Azure Data Lake (ADL)</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.adl.oauth2.*</span></code>: Configuration for OAuth authentication to
+ADL</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.adl.oauth2.clientId</span></code>: Client identifier for OAuth access
+to ADL</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.adl.oauth2.credential</span></code>: Credential for OAuth access to
+ADL</p>
+<p><code class="docutils literal notranslate"><span class="pre">objectStorage.azure.adl.oauth2.refreshUrl</span></code>: Refresh URL for the OAuth access
+to ADL.</p>
 </div>
 <div class="section" id="server-configuration">
 <span id="helm-hms-server"></span><h2>Server configuration<a class="headerlink" href="#server-configuration" title="Permalink to this headline">#</a></h2>
