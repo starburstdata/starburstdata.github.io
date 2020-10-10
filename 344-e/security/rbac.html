@@ -68,8 +68,8 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Administration" href="../admin.html" />
-    <link rel="prev" title="Okta authentication" href="okta-authentication.html" />
+    <link rel="next" title="System level security with Apache Ranger" href="system-ranger.html" />
+    <link rel="prev" title="Event logger" href="event-logger.html" />
   
    
 
@@ -338,14 +338,27 @@
     <li class="md-nav__item">
     
     
-      <a href="starburst-hive-security.html" class="md-nav__link">Starburst Hive connector security</a>
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    <label class="md-nav__link md-nav__link--active" for="__toc"> Role based access control </label>
+    
+      <a href="#" class="md-nav__link md-nav__link--active">Role based access control</a>
       
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
-      <a href="ranger-overview.html" class="md-nav__link">Apache Ranger Overview</a>
+        
+<nav class="md-nav md-nav--secondary">
+    <label class="md-nav__title" for="__toc">Contents</label>
+  <ul class="md-nav__list" data-md-scrollfix="">
+        <li class="md-nav__item"><a href="#security-rbac--page-root" class="md-nav__link">Role based access control</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#roles-in-presto" class="md-nav__link">ROLES in Presto</a>
+        </li>
+        <li class="md-nav__item"><a href="#column-level-authorization" class="md-nav__link">Column level authorization</a>
+        </li>
+        <li class="md-nav__item"><a href="#apache-ranger-or-apache-sentry-for-hive-level-security" class="md-nav__link">Apache Ranger or Apache Sentry for Hive level security</a>
+        </li></ul>
+            </nav>
+        </li>
+  </ul>
+</nav>
       
     
     </li>
@@ -359,7 +372,7 @@
     <li class="md-nav__item">
     
     
-      <a href="hive-ranger.html" class="md-nav__link">Hive-level security with Apache Ranger</a>
+      <a href="hive-ranger.html" class="md-nav__link">Hive level security with Apache Ranger</a>
       
     
     </li>
@@ -388,22 +401,6 @@
     
     
       <a href="okta-authentication.html" class="md-nav__link">Okta authentication</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    <label class="md-nav__link md-nav__link--active" for="__toc"> Role based access control </label>
-    
-      <a href="#" class="md-nav__link md-nav__link--active">Role based access control</a>
-      
-        
-<nav class="md-nav md-nav--secondary">
-  <ul class="md-nav__list" data-md-scrollfix="">
-  </ul>
-</nav>
       
     
     </li></ul>
@@ -503,7 +500,18 @@
               <div class="md-sidebar__inner">
                 
 <nav class="md-nav md-nav--secondary">
+    <label class="md-nav__title" for="__toc">Contents</label>
   <ul class="md-nav__list" data-md-scrollfix="">
+        <li class="md-nav__item"><a href="#security-rbac--page-root" class="md-nav__link">Role based access control</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#roles-in-presto" class="md-nav__link">ROLES in Presto</a>
+        </li>
+        <li class="md-nav__item"><a href="#column-level-authorization" class="md-nav__link">Column level authorization</a>
+        </li>
+        <li class="md-nav__item"><a href="#apache-ranger-or-apache-sentry-for-hive-level-security" class="md-nav__link">Apache Ranger or Apache Sentry for Hive level security</a>
+        </li></ul>
+            </nav>
+        </li>
   </ul>
 </nav>
               </div>
@@ -515,7 +523,57 @@
             
   
 <h1 id="security-rbac--page-root">Role based access control<a class="headerlink" href="#security-rbac--page-root" title="Permalink to this headline">#</a></h1>
-<p>Delete this file, everything moved into appropriate doc.</p>
+<p>Using role based access control (RBAC) in SEP, you can manage authorization for
+large number of users and objects through the entire enterprise.</p>
+<p>SEP supports three RBAC mechanisms</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="system-ranger.html"><span class="doc">System level security with Apache Ranger</span></a> for security across all connectors and more system
+level resources</p></li>
+<li><p><a class="reference internal" href="hive-ranger.html"><span class="doc">Hive level security with Apache Ranger</span></a> for Hive catalogs accessing HDFS and others only</p></li>
+<li><p><a class="reference internal" href="hive-sentry.html"><span class="doc">Hive level security with Apache Sentry</span></a> for Hive catalogs accessing HDFS and others only</p></li>
+</ul>
+<p>Using SQL Standard Based authorization is one way to achieve this.
+For an overview of this authorization option, see the documentation in
+<a class="reference internal" href="../connector/hive-security.html#hive-sql-standard-based-authorization"><span class="std std-ref">SQL Standard Based Authorization</span></a>.</p>
+<p>In RBAC there is the notion of Roles and Privileges. Roles are authorization
+entities for which authorization privileges are granted to. Privileges can be
+granted to zero, one, or more roles. Users belong to one or more groups.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/rbac.png"><img alt="../_images/rbac.png" src="../_images/rbac.png" style="width: 960.0px; height: 540.0px;"/></a>
+</div></blockquote>
+<p>When configured with Apache Ranger or Apache Sentry, Presto will enforce the privileges required to access data.
+Unlike sql-standard based authorization, Presto does not manage granting privileges to roles when integrated with
+Apache Ranger or Apache Sentry. It only enforces ones set by Apache Ranger or Apache Sentry.
+Presto relies on an underlying mechanism such as Kerberos to authenticate the user who belongs
+to zero or more user groups. These groups are commonly mapped from LDAP/AD but can also be configured
+to be mapped from Operating System groups.</p>
+<p>For more information on managing privileges refer to the Hortonworks or Cloudera documentation for Apache Ranger
+and Apache Sentry respectively:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.6.5/bk_security/content/using_ranger_to_provide_authorization_in_hadoop.html">Using Apache Ranger with Hortonworks</a></p></li>
+<li><p><a class="reference external" href="https://www.cloudera.com/documentation/enterprise/5-15-x/topics/sg_hive_sql.html#concept_c2q_4qx_p4">Using Apache Sentry with Cloudera</a></p></li>
+</ul>
+
+<h2 id="roles-in-presto">ROLES in Presto<a class="headerlink" href="#roles-in-presto" title="Permalink to this headline">#</a></h2>
+<p>When using Apache Sentry, setting a role makes that role active and the user
+only has those privileges applied to that role. By default all assigned roles
+are active and the user has the combined privileges of these roles.</p>
+<p>See <a class="reference internal" href="../sql/set-role.html"><span class="doc">SET ROLE</span></a> and <a class="reference internal" href="../sql/show-roles.html"><span class="doc">SHOW ROLES</span></a> for additional information.</p>
+
+
+<h2 id="column-level-authorization">Column level authorization<a class="headerlink" href="#column-level-authorization" title="Permalink to this headline">#</a></h2>
+<p>Presto will enforce column level privileges granted to roles. For example, if a user is only granted
+access to a subset of table columns, they will only be able to query from these columns.
+If they execute an SQL statement that refers to other columns, the query will fail with an error.</p>
+
+
+<h2 id="apache-ranger-or-apache-sentry-for-hive-level-security">Apache Ranger or Apache Sentry for Hive level security<a class="headerlink" href="#apache-ranger-or-apache-sentry-for-hive-level-security" title="Permalink to this headline">#</a></h2>
+<p>Presto is integrated with both <a class="reference internal" href="hive-ranger.html"><span class="doc">Apache Ranger</span></a> and <a class="reference internal" href="hive-sentry.html"><span class="doc">Apache Sentry</span></a>
+for RBAC support. Each are excellent options and the choice simply depends on the Hadoop distribution you are using.
+Apache Ranger is packaged with Hortonworks Data Platform and Apache Sentry is packaged with Cloudera Enterprise.
+Therefore it makes most sense to simply use what is packaged with your Hadoop distribution.</p>
+<p>Apache Ranger is an excellent option for those not tied to a specific Hadoop distribution, or if you want to use <a class="reference internal" href="system-ranger.html"><span class="doc">System level security with Apache Ranger</span></a>.</p>
+
 
 
 
@@ -529,7 +587,7 @@
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
           
-            <a href="okta-authentication.html" title="Okta authentication"
+            <a href="event-logger.html" title="Event logger"
                class="md-flex md-footer-nav__link md-footer-nav__link--prev"
                rel="prev">
               <div class="md-flex__cell md-flex__cell--shrink">
@@ -538,17 +596,17 @@
               <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
                 <span class="md-flex__ellipsis">
                   <span
-                      class="md-footer-nav__direction"> Previous </span> Okta authentication </span>
+                      class="md-footer-nav__direction"> Previous </span> Event logger </span>
               </div>
             </a>
           
           
-            <a href="../admin.html" title="Administration"
+            <a href="system-ranger.html" title="System level security with Apache Ranger"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> Next </span> Administration </span>
+                class="md-footer-nav__direction"> Next </span> System level security with Apache Ranger </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
