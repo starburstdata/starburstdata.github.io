@@ -289,13 +289,6 @@
     <li class="md-nav__item">
     
     
-      <a href="starburst-greenplum.html" class="md-nav__link">Starburst Greenplum Connector</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
       <a href="starburst-hive.html" class="md-nav__link">Starburst Hive connector</a>
       
     
@@ -508,6 +501,12 @@
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table Statistics</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#updating-table-and-partition-statistics" class="md-nav__link">Updating table and partition statistics</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic Filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#delaying-execution-for-dynamic-filters" class="md-nav__link">Delaying execution for dynamic filters</a>
         </li></ul>
             </nav>
         </li>
@@ -870,6 +869,12 @@
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table Statistics</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#updating-table-and-partition-statistics" class="md-nav__link">Updating table and partition statistics</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic Filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#delaying-execution-for-dynamic-filters" class="md-nav__link">Delaying execution for dynamic filters</a>
         </li></ul>
             </nav>
         </li>
@@ -1602,6 +1607,30 @@ before re-analyzing just a subset:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">drop_stats</span><span class="p">(</span><span class="k">schema_name</span><span class="p">,</span> <span class="k">table_name</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'p2_value1'</span><span class="p">,</span> <span class="s1">'p2_value2'</span><span class="p">]])</span>
 </pre></div>
 </div>
+
+
+
+<h2 id="dynamic-filtering">Dynamic Filtering<a class="headerlink" href="#dynamic-filtering" title="Permalink to this headline">#</a></h2>
+<p>The Hive connector supports the <a class="reference internal" href="../admin/dynamic-filtering.html"><span class="doc">dynamic filtering</span></a> optimization.
+Dynamic partition pruning is supported for partitioned tables stored in any file format
+for broadcast as well as partitioned joins.</p>
+<p>For tables stored in ORC or Parquet file format, dynamic filters are also pushed into
+local table scan on worker nodes for broadcast joins. Dynamic filter predicates
+pushed into the ORC and Parquet readers are used to perform stripe or row-group pruning
+and save on disk I/O. Sorting the data within ORC or Parquet files by the columns used in
+join criteria significantly improves the effectiveness of stripe or row-group pruning.
+This is because grouping similar data within the same stripe or row-group
+greatly improves the selectivity of the min/max indexes maintained at stripe or
+row-group level.</p>
+
+<h3 id="delaying-execution-for-dynamic-filters">Delaying execution for dynamic filters<a class="headerlink" href="#delaying-execution-for-dynamic-filters" title="Permalink to this headline">#</a></h3>
+<p>It can often be beneficial to wait for the collection of dynamic filters before starting
+a table scan. This extra wait time can potentially result in significant overall savings
+in query and CPU time, if dynamic filtering is able to reduce the amount of scanned data.</p>
+<p>For the Hive connector, a table scan can be delayed for a configured amount of
+time until the collection of dynamic filters by using the configuration property
+<code class="docutils literal notranslate"><span class="pre">hive.dynamic-filtering-probe-blocking-timeout</span></code> in the catalog file or the catalog
+session property <code class="docutils literal notranslate"><span class="pre">&lt;hive-catalog&gt;.dynamic_filtering_probe_blocking_timeout</span></code>.</p>
 
 
 
