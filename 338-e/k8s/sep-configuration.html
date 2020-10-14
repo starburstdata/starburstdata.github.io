@@ -96,6 +96,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#workers">Workers</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes">Common settings for coordinator and workers nodes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#external-secret-reference">External secret reference</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#external-secrets">External Secrets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#query-memory-usage-control">Query memory usage control</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#spilling">Spilling</a></li>
@@ -105,7 +106,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#usage-metrics">Usage Metrics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#prometheus">Prometheus</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#license">License</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#administrator">Administrator</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#adding-files">Adding files</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#used-directories">Used directories</a></li>
 </ul>
@@ -215,16 +215,16 @@ configuration for <a class="reference internal" href="#helm-sep-catalogs"><span 
 <li><p><a class="reference internal" href="#workers" id="id5">Workers</a></p></li>
 <li><p><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes" id="id6">Common settings for coordinator and workers nodes</a></p></li>
 <li><p><a class="reference internal" href="#external-secret-reference" id="id7">External secret reference</a></p></li>
-<li><p><a class="reference internal" href="#authentication" id="id8">Authentication</a></p></li>
-<li><p><a class="reference internal" href="#query-memory-usage-control" id="id9">Query memory usage control</a></p></li>
-<li><p><a class="reference internal" href="#spilling" id="id10">Spilling</a></p></li>
-<li><p><a class="reference internal" href="#hive-connector-storage-caching" id="id11">Hive connector storage caching</a></p></li>
-<li><p><a class="reference internal" href="#catalogs" id="id12">Catalogs</a></p></li>
-<li><p><a class="reference internal" href="#additional-volumes" id="id13">Additional volumes</a></p></li>
-<li><p><a class="reference internal" href="#usage-metrics" id="id14">Usage Metrics</a></p></li>
-<li><p><a class="reference internal" href="#prometheus" id="id15">Prometheus</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id16">License</a></p></li>
-<li><p><a class="reference internal" href="#administrator" id="id17">Administrator</a></p></li>
+<li><p><a class="reference internal" href="#external-secrets" id="id8">External Secrets</a></p></li>
+<li><p><a class="reference internal" href="#authentication" id="id9">Authentication</a></p></li>
+<li><p><a class="reference internal" href="#query-memory-usage-control" id="id10">Query memory usage control</a></p></li>
+<li><p><a class="reference internal" href="#spilling" id="id11">Spilling</a></p></li>
+<li><p><a class="reference internal" href="#hive-connector-storage-caching" id="id12">Hive connector storage caching</a></p></li>
+<li><p><a class="reference internal" href="#catalogs" id="id13">Catalogs</a></p></li>
+<li><p><a class="reference internal" href="#additional-volumes" id="id14">Additional volumes</a></p></li>
+<li><p><a class="reference internal" href="#usage-metrics" id="id15">Usage Metrics</a></p></li>
+<li><p><a class="reference internal" href="#prometheus" id="id16">Prometheus</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id17">License</a></p></li>
 <li><p><a class="reference internal" href="#adding-files" id="id18">Adding files</a></p></li>
 <li><p><a class="reference internal" href="#used-directories" id="id19">Used directories</a></p></li>
 </ul>
@@ -413,11 +413,8 @@ reasonable defaults on a production sized k8s cluster.</p>
         <span class="no">node.server-log-file=/var/log/presto/server.log</span>
         <span class="no">node.launcher-log-file=/var/log/presto/launcher.log</span>
       <span class="nt">log.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-        <span class="no">com.facebook.presto=INFO</span>
-        <span class="no">com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN</span>
-        <span class="no">com.ning.http.client=DEBUG</span>
-        <span class="no">com.facebook.presto.server.PluginManager=DEBUG</span>
-        <span class="no">io.airlift.discovery.client=INFO</span>
+        <span class="no"># Enable verbose logging from Presto</span>
+        <span class="no">#io.prestosql=DEBUG</span>
       <span class="nt">password-authenticator.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
         <span class="no">password-authenticator.name=file</span>
         <span class="no">file.password-file=/usr/lib/presto/etc/auth/password.db</span>
@@ -535,46 +532,6 @@ accordingly to <a class="reference external" href="https://kubernetes.io/docs/re
       <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;&lt;secret_name&gt;&gt;</span>
 </pre></div>
 </div>
-<p>This can be used to deliver values to Presto configuration properties file
-by creating a Kubernetes secret holding variables. For example, if you want to
-use secrets for sensitive credential information in the connector configuration:</p>
-<p>1. Create a secret holding variables. You can statically create secrets using
-<code class="docutils literal notranslate"><span class="pre">base64</span></code> encoded values of your configuration. Make sure your secret key (i.e
-the ENV variable name) follows this regex pattern <code class="docutils literal notranslate"><span class="pre">[a-zA-Z][a-zA-Z0-9_]*</span></code> -
-only alphanumerics and underscore allowed.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> -n user <span class="p">|</span> base64
-<span class="nb">echo</span> -n pass <span class="p">|</span> base64
-</pre></div>
-</div>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
-<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Secret</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
-<span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Opaque</span>
-<span class="nt">data</span><span class="p">:</span>
-  <span class="nt">PSQL_USERNAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_user&gt;</span>
-  <span class="nt">PSQL_PASSWORD</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_pass&gt;</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="2">
-<li><p>Add the secret reference in <code class="docutils literal notranslate"><span class="pre">envFrom</span></code> for both <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and <code class="docutils literal notranslate"><span class="pre">worker</span></code>:</p></li>
-</ol>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
-      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
-</pre></div>
-</div>
-<ol class="arabic simple" start="3">
-<li><p>Reference variables in Presto properties using built-in placeholder pattern:</p></li>
-</ol>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>catalogs:
-  postgresql: <span class="p">|</span>
-    connector.name<span class="o">=</span>postgresql
-    connection-url<span class="o">=</span>jdbc:postgresql://postgresql:5432/postgres
-    connection-password<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_PASSWORD</span><span class="si">}</span>
-    connection-user<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_USERNAME</span><span class="si">}</span>
-</pre></div>
-</div>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.nodeSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.affinity</span></code> and <code class="docutils literal notranslate"><span class="pre">coordinator.tolerations</span></code></p>
 <p>Configuration to <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
 </div>
@@ -609,10 +566,8 @@ adjusted to be suitable to your workload and cluster:</p>
         <span class="no">node.server-log-file=/var/log/presto/server.log</span>
         <span class="no">node.launcher-log-file=/var/log/presto/launcher.log</span>
       <span class="nt">log.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-        <span class="no">com.facebook.presto=INFO</span>
-        <span class="no">com.sun.jersey.guice.spi.container.GuiceComponentProviderFactory=WARN</span>
-        <span class="no">com.ning.http.client=DEBUG</span>
-        <span class="no">com.facebook.presto.server.PluginManager=DEBUG</span>
+        <span class="no"># Enable verbose logging from Presto</span>
+        <span class="no">#io.prestosql=DEBUG</span>
     <span class="nt">other</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
   <span class="nt">count</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">2</span>
   <span class="nt">autoscaling</span><span class="p">:</span>
@@ -746,6 +701,89 @@ in <code class="docutils literal notranslate"><span class="pre">password-authent
 <p>This mounts the secret named <code class="docutils literal notranslate"><span class="pre">ldap-ca</span></code> in the path <code class="docutils literal notranslate"><span class="pre">/mnt/secretsRef/ldap-ca</span></code>
 and replaces <code class="docutils literal notranslate"><span class="pre">secretRef:ldap-ca</span></code> occurrences into the absolute path.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ldap.ssl-trust-certificate<span class="o">=</span>/mnt/secretRef/ldap-ca/ca.crt
+</pre></div>
+</div>
+</div>
+<div class="section" id="external-secrets">
+<h2>External Secrets<a class="headerlink" href="#external-secrets" title="Permalink to this headline">#</a></h2>
+<p>This allows to automatically mount external secrets (for example from AWS
+Secrets Manager) which are referenced by <code class="docutils literal notranslate"><span class="pre">secretRef</span></code> or <code class="docutils literal notranslate"><span class="pre">secretEnv</span></code>
+notation.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">externalSecrets</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span> <span class="c1"># disabled by default</span>
+  <span class="c1"># type of External Secret Provider, currently only goDaddy is supported</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">goDaddy</span>
+  <span class="c1"># prefix of all secrets that needs to be mapped to external secret</span>
+  <span class="nt">secretPrefix</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;&lt;secret_name_prefix&gt;&gt;</span>
+  <span class="nt">goDaddy</span><span class="p">:</span>
+    <span class="c1"># section for GoDaddy External Secrets specific configuration</span>
+    <span class="nt">backendType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;&lt;string&gt;&gt;</span> <span class="c1"># refer: https://github.com/godaddy/kubernetes-external-secrets</span>
+</pre></div>
+</div>
+<p>Chart scans for all <code class="docutils literal notranslate"><span class="pre">secretRef</span></code> or <code class="docutils literal notranslate"><span class="pre">secretEnv</span></code> references in <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>
+which starts with configured <code class="docutils literal notranslate"><span class="pre">secretPrefix</span></code>. For each secret found, it generates
+and <code class="docutils literal notranslate"><span class="pre">ExternalSecret</span></code> K8s manifest.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Selected External Secrets provider needs to be deployed and configured
+separately. The secret names in external storage must match names of K8s
+secrets we reference to. When using <code class="docutils literal notranslate"><span class="pre">secretEnv</span></code>, the external storage
+secret must contain only single value. For each external secret single K8s
+secret will be created. Including one key with external secret value.</p>
+</div>
+<p>An example of this configuration:</p>
+<ol class="arabic simple">
+<li><p>Create AWS Secrets Manager secret:</p></li>
+</ol>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>aws secretsmanager create-secret --name external0presto0http0server0port --secret-string <span class="m">8888</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Reference it from your configuration section in config.properties:</p></li>
+</ol>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">etcFiles</span><span class="p">:</span>
+    <span class="nt">config.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+      <span class="no">http-server.http.port=secretEnv:external0presto0http0server0port</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Now configure External Secrets:</p></li>
+</ol>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">externalSecrets</span><span class="p">:</span>
+  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">goDaddy</span>
+  <span class="nt">secretPrefix</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external0</span>
+  <span class="nt">goDaddy</span><span class="p">:</span>
+    <span class="nt">backendType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretsManager</span>
+</pre></div>
+</div>
+<p>This will result in External Secret Manifest created:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">kubernetes-client.io/v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ExternalSecret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external0presto0http0server0port</span>
+<span class="nt">spec</span><span class="p">:</span>
+  <span class="nt">backendType</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secretsManager</span>
+  <span class="nt">data</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">key</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external0presto0http0server0port</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external0presto0http0server0port</span>
+</pre></div>
+</div>
+<p>And also the External Secrets provider fetches secret from AWS and
+creates K8s Secret:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external0presto0http0server0port</span>
+<span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Opaque</span>
+<span class="nt">data</span><span class="p">:</span>
+  <span class="nt">external0presto0http0server0port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8888</span>
+</pre></div>
+</div>
+<p>The k8s secret is now bound to container as <code class="docutils literal notranslate"><span class="pre">external0presto0http0server0port</span></code>
+environment variable. Presto <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> is resolved to:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>http-server.http.port<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">external0presto0http0server0port</span><span class="si">}</span>
 </pre></div>
 </div>
 </div>
@@ -972,13 +1010,6 @@ choice in the cluster.</p>
 </div></blockquote>
 </li>
 </ol>
-</div>
-<div class="section" id="administrator">
-<span id="helm-sep-admin"></span><h2>Administrator<a class="headerlink" href="#administrator" title="Permalink to this headline">#</a></h2>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">prestoAdmin</span><span class="p">:</span>
-  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="adding-files">
 <span id="helm-sep-adding-files"></span><h2>Adding files<a class="headerlink" href="#adding-files" title="Permalink to this headline">#</a></h2>
