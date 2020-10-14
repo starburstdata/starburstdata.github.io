@@ -535,6 +535,46 @@ accordingly to <a class="reference external" href="https://kubernetes.io/docs/re
       <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;&lt;secret_name&gt;&gt;</span>
 </pre></div>
 </div>
+<p>This can be used to deliver values to Presto configuration properties file
+by creating a Kubernetes secret holding variables. For example, if you want to
+use secrets for sensitive credential information in connector configuration:</p>
+<p>1. Create a secret holding variables. You can statically create secrets using
+<code class="docutils literal notranslate"><span class="pre">base64</span></code> encoded values of your configuration. Make sure your secret key (i.e
+the ENV variable name) follows this regex pattern <code class="docutils literal notranslate"><span class="pre">[a-zA-Z][a-zA-Z0-9_]*</span></code>,
+e.g: no hyphens allowed.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> -n user <span class="p">|</span> base64
+<span class="nb">echo</span> -n pass <span class="p">|</span> base64
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
+<span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Opaque</span>
+<span class="nt">data</span><span class="p">:</span>
+<span class="nt">PSQL_USERNAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_user&gt;</span>
+<span class="nt">PSQL_PASSWORD</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_pass&gt;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Add the secret reference in <code class="docutils literal notranslate"><span class="pre">envFrom</span></code> for both <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and <code class="docutils literal notranslate"><span class="pre">worker</span></code>:</p></li>
+</ol>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Reference variables in Presto properties using build in placeholder pattern:</p></li>
+</ol>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>catalogs:
+  postgresql: <span class="p">|</span>
+    connector.name<span class="o">=</span>postgresql
+    connection-url<span class="o">=</span>jdbc:postgresql://postgresql:5432/postgres
+    connection-password<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_PASSWORD</span><span class="si">}</span>
+    connection-user<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_USERNAME</span><span class="si">}</span>
+</pre></div>
+</div>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.nodeSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.affinity</span></code> and <code class="docutils literal notranslate"><span class="pre">coordinator.tolerations</span></code></p>
 <p>Configuration to <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
 </div>
