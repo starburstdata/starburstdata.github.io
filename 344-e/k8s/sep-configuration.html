@@ -833,14 +833,62 @@ query time out values</p>
   <span class="no">query.min-expire-age=30m</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">coordinator.envFrom</span></code></p>
-<p>Allows to propagate environment variables from different sources like
-accordingly to <a class="reference external" href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envfromsource-v1-core">K8S schema</a>:</p>
+<p id="helm-sep-coordinator-envfrom"><code class="docutils literal notranslate"><span class="pre">coordinator.envFrom</span></code></p>
+<p>Allows to propagate environment variables from different sources complying to
+<a class="reference external" href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envfromsource-v1-core">K8S schema</a>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
       <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;&lt;secret_name&gt;&gt;</span>
 </pre></div>
 </div>
+<p>This can be used to deliver values to Presto configuration properties file by
+creating a Kubernetes secret holding variable values. For example, if you want
+to use secrets for sensitive credential information to use in a catalog
+properties file:</p>
+<p>1. Create a secret holding variables. You can statically create secrets using
+<code class="docutils literal notranslate"><span class="pre">base64</span></code> encoded values of your configuration. Make sure your secret key,
+which is used to define the environment variable name, follows this regex
+pattern <code class="docutils literal notranslate"><span class="pre">[a-zA-Z][a-zA-Z0-9_]*</span></code> - only alphanumerics and underscore allowed.
+Convention is to use all caps and underscores such as <code class="docutils literal notranslate"><span class="pre">PSQL_USERNAME</span></code>.</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> -n user <span class="p">|</span> base64
+<span class="nb">echo</span> -n pass <span class="p">|</span> base64
+</pre></div>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Secret</span>
+<span class="nt">metadata</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
+<span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">Opaque</span>
+<span class="nt">data</span><span class="p">:</span>
+  <span class="nt">PSQL_USERNAME</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_user&gt;</span>
+  <span class="nt">PSQL_PASSWORD</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">&lt;base64_encoded_pass&gt;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>Add the secret reference in <code class="docutils literal notranslate"><span class="pre">envFrom</span></code> for both <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and
+<code class="docutils literal notranslate"><span class="pre">worker</span></code> to make it accessible on all nodes:</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">variables-secret</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>3. Reference variables in properties files using built-in placeholder pattern as
+supported by the <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets support of Presto</span></a>.</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>catalogs:
+  postgresql: <span class="p">|</span>
+    connector.name<span class="o">=</span>postgresql
+    connection-url<span class="o">=</span>jdbc:postgresql://postgresql:5432/postgres
+    connection-password<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_PASSWORD</span><span class="si">}</span>
+    connection-user<span class="o">=</span><span class="si">${</span><span class="nv">ENV</span><span class="p">:</span><span class="nv">PSQL_USERNAME</span><span class="si">}</span>
+</pre></div>
+</div>
+</div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.nodeSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.affinity</span></code> and <code class="docutils literal notranslate"><span class="pre">coordinator.tolerations</span></code></p>
 <p>Configuration to <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
 
@@ -932,6 +980,7 @@ coordinator properties, documented in preceding section.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.heapSizePercentage</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.heapHeadroomPercentage</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.additionalProperties</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">worker.envFrom</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.nodeSelector</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.affinity</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.tolerations</span></code></p></li>
@@ -986,8 +1035,8 @@ init script in coordinator and worker:</p>
 
 <span id="helm-sep-secretref"></span><h2 id="external-secret-reference">External secret reference<a class="headerlink" href="#external-secret-reference" title="Permalink to this headline">#</a></h2>
 <p>There are several locations where properties require pointing to files delivered
-outside of Presto, for example CA certificates. In such cases you can use A
-special notation that  allows you to point to a k8s secret.</p>
+outside of Presto, for example CA certificates. In such cases you can use a
+special notation that allows you to point to a k8s secret.</p>
 <p>For example if you are looking to configure <a class="reference internal" href="#helm-sep-authentication"><span class="std std-ref">password authentication using
 LDAP</span></a>, which requires the following configuration file
 in <code class="docutils literal notranslate"><span class="pre">password-authenticator.properties</span></code>:</p>
@@ -1013,6 +1062,12 @@ in <code class="docutils literal notranslate"><span class="pre">password-authent
 and replaces <code class="docutils literal notranslate"><span class="pre">secretRef:ldap-ca</span></code> occurrences into the absolute path.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>ldap.ssl-trust-certificate<span class="o">=</span>/mnt/secretRef/ldap-ca/ca.crt
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Specific secret values such as passwords can be passed into properties files
+<a class="reference internal" href="#helm-sep-coordinator-envfrom"><span class="std std-ref">using the envFrom parameters</span></a> available
+for <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and <code class="docutils literal notranslate"><span class="pre">worker</span></code>.</p>
 </div>
 
 
