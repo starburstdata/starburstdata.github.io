@@ -537,7 +537,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema Rules</a>
         </li>
-        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a>
+        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column Constraint</a>
+        </li>
+        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and Mask Environment</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#session-property-rules" class="md-nav__link">Session Property Rules</a>
         </li></ul>
@@ -890,7 +896,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema Rules</a>
         </li>
-        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a>
+        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column Constraint</a>
+        </li>
+        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and Mask Environment</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#session-property-rules" class="md-nav__link">Session Property Rules</a>
         </li></ul>
@@ -1335,6 +1347,10 @@ node after distributing them.</p>
 each of which is a list of rules that are matched in the order specified
 in the config file. The user is granted the privileges from the first
 matching rule. All regexes default to <code class="docutils literal notranslate"><span class="pre">.*</span></code> if not specified.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These rules do not apply to system defined table in the <code class="docutils literal notranslate"><span class="pre">information_schema</span></code> schema.</p>
+</div>
 
 <h3 id="schema-rules">Schema Rules<a class="headerlink" href="#schema-rules" title="Permalink to this headline">#</a></h3>
 <p>These rules govern who is considered an owner of a schema.</p>
@@ -1355,7 +1371,26 @@ matching rule. All regexes default to <code class="docutils literal notranslate"
 <li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> (optional): regex to match against table name.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>, <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>,
 <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">OWNERSHIP</span></code>, <code class="docutils literal notranslate"><span class="pre">GRANT_SELECT</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (optional): list of column constraints.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter</span></code> (optional): boolean filter expression for the table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter_environment</span></code> (optional): environment use during filter evaluation.</p></li>
 </ul>
+
+<h4 id="column-constraint">Column Constraint<a class="headerlink" href="#column-constraint" title="Permalink to this headline">#</a></h4>
+<p>These constraints can be used to restrict access to column data.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: name of the column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowed</span></code> (optional): if false, column can not be accessed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code> (optional): mask expression applied to column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask_environment</span></code> (optional): environment use during mask evaluation.</p></li>
+</ul>
+
+
+<h4 id="filter-and-mask-environment">Filter and Mask Environment<a class="headerlink" href="#filter-and-mask-environment" title="Permalink to this headline">#</a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): username for checking permission of subqueries in mask.</p></li>
+</ul>
+
 
 
 <h3 id="session-property-rules">Session Property Rules<a class="headerlink" href="#session-property-rules" title="Permalink to this headline">#</a></h3>
@@ -1398,9 +1433,28 @@ matching rule. All regexes default to <code class="docutils literal notranslate"
       <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[]</span>
     <span class="p">},</span>
     <span class="p">{</span>
+      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"hr"</span><span class="p">,</span>
+      <span class="nt">"table"</span><span class="p">:</span> <span class="s2">"employee"</span><span class="p">,</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
+      <span class="nt">"filter"</span><span class="p">:</span> <span class="s2">"user = current_user"</span>
+    <span class="p">}</span>
+    <span class="p">{</span>
       <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
       <span class="nt">"table"</span><span class="p">:</span> <span class="s2">".*"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">]</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
+      <span class="nt">"columns"</span> <span class="p">:</span> <span class="p">[</span>
+         <span class="p">{</span>
+            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"address"</span><span class="p">,</span>
+            <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">false</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"ssn"</span><span class="p">,</span>
+            <span class="nt">"mask"</span><span class="p">:</span> <span class="s2">"'XXX-XX-' + substring(credit_card, -4)"</span><span class="p">,</span>
+            <span class="nt">"mask_environment"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
+            <span class="p">}</span>
+         <span class="p">}</span>
+      <span class="p">]</span>
     <span class="p">}</span>
   <span class="p">],</span>
   <span class="nt">"session_properties"</span><span class="p">:</span> <span class="p">[</span>

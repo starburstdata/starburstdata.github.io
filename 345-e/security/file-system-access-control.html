@@ -333,6 +333,10 @@
         <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema Rules</a>
         </li>
         <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a>
+        </li>
+        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column Constraint</a>
+        </li>
+        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and Mask Environment</a>
         </li></ul>
             </nav>
         </li>
@@ -559,6 +563,10 @@
         <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema Rules</a>
         </li>
         <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table Rules</a>
+        </li>
+        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column Constraint</a>
+        </li>
+        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and Mask Environment</a>
         </li></ul>
             </nav>
         </li>
@@ -618,6 +626,10 @@ rules.  The catalog rules are course grained rules used to restrict all access o
 access to catalogs. They do not explicitly grant any specific schema or table permissions.
 The table and schema rules are used to specify who can can create, drop, alter, select, insert,
 delete, etc. for schemas and tables.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These rules do not apply to system defined table in the <code class="docutils literal notranslate"><span class="pre">information_schema</span></code> schema.</p>
+</div>
 <p>For each rule set, permission is based on the first matching rule read from top to bottom.  If
 no rule matches, access is denied. If no rules are provided at all, then access is granted.</p>
 <p>The following table summarizes the permissions required for each SQL command:</p>
@@ -904,6 +916,25 @@ ownership of any schema, you can use the following rules:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> (optional): regex to match against table names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>, <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>,
 <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">OWNERSHIP</span></code>, <code class="docutils literal notranslate"><span class="pre">GRANT_SELECT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (optional): list of column constraints.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter</span></code> (optional): boolean filter expression for the table.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filter_environment</span></code> (optional): environment use during filter evaluation.</p></li>
+</ul>
+
+
+<h3 id="column-constraint">Column Constraint<a class="headerlink" href="#column-constraint" title="Permalink to this headline">#</a></h3>
+<p>These constraints can be used to restrict access to column data.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: name of the column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allowed</span></code> (optional): if false, column can not be accessed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code> (optional): mask expression applied to column.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mask_environment</span></code> (optional): environment use during mask evaluation.</p></li>
+</ul>
+
+
+<h3 id="filter-and-mask-environment">Filter and Mask Environment<a class="headerlink" href="#filter-and-mask-environment" title="Permalink to this headline">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): username for checking permission of subqueries in mask.</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -913,7 +944,10 @@ ownership of any schema, you can use the following rules:</p>
 <ul class="simple">
 <li><p>User <code class="docutils literal notranslate"><span class="pre">admin</span></code> has all privileges across all tables and schemas</p></li>
 <li><p>User <code class="docutils literal notranslate"><span class="pre">banned_user</span></code> has no privileges</p></li>
-<li><p>All users have <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privileges on all tables in the <code class="docutils literal notranslate"><span class="pre">default.default</span></code> schema</p></li>
+<li><p>All users have <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privileges on <code class="docutils literal notranslate"><span class="pre">default.hr.employees</span></code>, but the
+table is filtered to only the row for the current user.</p></li>
+<li><p>All users have <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privileges on all tables in the <code class="docutils literal notranslate"><span class="pre">default.default</span></code>
+schema, except for the <code class="docutils literal notranslate"><span class="pre">address</span></code> column which is blocked, and <code class="docutils literal notranslate"><span class="pre">ssn</span></code> which is masked.</p></li>
 </ul>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"tables"</span><span class="p">:</span> <span class="p">[</span>
@@ -927,9 +961,32 @@ ownership of any schema, you can use the following rules:</p>
     <span class="p">},</span>
     <span class="p">{</span>
       <span class="nt">"catalog"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
+      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"hr"</span><span class="p">,</span>
+      <span class="nt">"table"</span><span class="p">:</span> <span class="s2">"employee"</span><span class="p">,</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
+      <span class="nt">"filter"</span><span class="p">:</span> <span class="s2">"user = current_user"</span>
+      <span class="s2">"filter_environment"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="p">{</span>
+      <span class="nt">"catalog"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
       <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
       <span class="nt">"table"</span><span class="p">:</span> <span class="s2">".*"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">]</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
+      <span class="nt">"columns"</span> <span class="p">:</span> <span class="p">[</span>
+         <span class="p">{</span>
+            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"address"</span><span class="p">,</span>
+            <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">false</span>
+         <span class="p">},</span>
+         <span class="p">{</span>
+            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"SSN"</span><span class="p">,</span>
+            <span class="nt">"mask"</span><span class="p">:</span> <span class="s2">"'XXX-XX-' + substring(credit_card, -4)"</span><span class="p">,</span>
+            <span class="nt">"mask_environment"</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
+            <span class="p">}</span>
+         <span class="p">}</span>
+      <span class="p">]</span>
     <span class="p">}</span>
   <span class="p">]</span>
 <span class="p">}</span>
