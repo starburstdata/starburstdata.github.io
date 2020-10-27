@@ -402,6 +402,8 @@
         <li class="md-nav__item"><a href="#privilege-sets" class="md-nav__link">Privilege sets</a>
         </li>
         <li class="md-nav__item"><a href="#denying-access-to-specific-tables-and-columns" class="md-nav__link">Denying access to specific tables and columns</a>
+        </li>
+        <li class="md-nav__item"><a href="#presto-ranger-plugin-upgrade" class="md-nav__link">Presto Ranger plugin upgrade</a>
         </li></ul>
             </nav>
         </li>
@@ -556,6 +558,8 @@
         <li class="md-nav__item"><a href="#privilege-sets" class="md-nav__link">Privilege sets</a>
         </li>
         <li class="md-nav__item"><a href="#denying-access-to-specific-tables-and-columns" class="md-nav__link">Denying access to specific tables and columns</a>
+        </li>
+        <li class="md-nav__item"><a href="#presto-ranger-plugin-upgrade" class="md-nav__link">Presto Ranger plugin upgrade</a>
         </li></ul>
             </nav>
         </li>
@@ -807,6 +811,40 @@ should typically not be available to normal users. The above examples shows
 how you can implement this best practice for catalogs using the Hive
 connector.</p>
 </div>
+
+
+<h2 id="presto-ranger-plugin-upgrade">Presto Ranger plugin upgrade<a class="headerlink" href="#presto-ranger-plugin-upgrade" title="Permalink to this headline">#</a></h2>
+<p><strong>Typically</strong> you automatically get the latest version of the Presto Ranger
+plugin, when updating and there is <strong>no necessary configuration changes</strong> you
+need to apply.</p>
+<p>One exception is if you use user impersonation in combination with Ranger. This
+feature is new with version 345-elements, and if you are upgrading to that
+release you need to perform the following manual upgrade steps.</p>
+<p>Before starting this upgrade, you need to gather the following information:</p>
+<ul class="simple">
+<li><p>the path to your current Presto Ranger plugin, for example
+<code class="docutils literal notranslate"><span class="pre">${RANGER_HOME}/ews/webapp/WEB-INF/lib/presto-ranger-plugin-2.0.33.jar</span></code></p></li>
+<li><p>your Ranger host information</p></li>
+<li><p>the Ranger plugin download, version 2.0.34+</p></li>
+</ul>
+<p>The changes need to be performed while Presto is not running.</p>
+<p>Remove the old plugin:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>rm <span class="si">${</span><span class="nv">RANGER_HOME</span><span class="si">}</span>/ews/webapp/WEB-INF/lib/presto-ranger-plugin-*.jar
+</pre></div>
+</div>
+<p>Add the new plugin:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cp presto-ranger-plugin-*.jar <span class="si">${</span><span class="nv">RANGER_HOME</span><span class="si">}</span>/ews/webapp/WEB-INF/lib
+</pre></div>
+</div>
+<p>Copy the service definition and start Ranger.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cp servicedef.json <span class="si">${</span><span class="nv">RANGER_BASE</span><span class="si">}</span>
+<span class="si">${</span><span class="nv">RANGER_BASE</span><span class="si">}</span>/start.sh
+</pre></div>
+</div>
+<p>Determine your <code class="docutils literal notranslate"><span class="pre">RANGERADMINSESSIONID</span></code> as per your Ranger documentation.</p>
+<p><a class="reference external" href="/security/put_servicedef.http">Download the new service definition</a></p>
+<p>Update the host and session id and submit it to Ranger.</p>
+<p>After the service definitions have been updated, start Presto.</p>
 
 
 
