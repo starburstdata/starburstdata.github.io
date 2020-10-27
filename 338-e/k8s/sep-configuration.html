@@ -97,7 +97,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes">Common settings for coordinator and workers nodes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#external-secret-reference">External secret reference</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#external-secrets">External secrets</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#file-based-authentication">File-based authentication</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#query-memory-usage-control">Query memory usage control</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#spilling">Spilling</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#hive-connector-storage-caching">Hive connector storage caching</a></li>
@@ -216,7 +216,7 @@ configuration for <a class="reference internal" href="#helm-sep-catalogs"><span 
 <li><p><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes" id="id6">Common settings for coordinator and workers nodes</a></p></li>
 <li><p><a class="reference internal" href="#external-secret-reference" id="id7">External secret reference</a></p></li>
 <li><p><a class="reference internal" href="#external-secrets" id="id8">External secrets</a></p></li>
-<li><p><a class="reference internal" href="#authentication" id="id9">Authentication</a></p></li>
+<li><p><a class="reference internal" href="#file-based-authentication" id="id9">File-based authentication</a></p></li>
 <li><p><a class="reference internal" href="#query-memory-usage-control" id="id10">Query memory usage control</a></p></li>
 <li><p><a class="reference internal" href="#spilling" id="id11">Spilling</a></p></li>
 <li><p><a class="reference internal" href="#hive-connector-storage-caching" id="id12">Hive connector storage caching</a></p></li>
@@ -308,14 +308,14 @@ improved by setting values to the following parameters:</p>
 <p><code class="docutils literal notranslate"><span class="pre">environment</span></code></p>
 <p>The environment name for the Presto cluster set as <code class="docutils literal notranslate"><span class="pre">node.environment</span></code> in the
 <a class="reference internal" href="../installation/deployment.html#presto-node-properties"><span class="std std-ref">node properties file</span></a>. Examples are values
-such as <code class="docutils literal notranslate"><span class="pre">production</span></code>, <code class="docutils literal notranslate"><span class="pre">staging</span></code>, <code class="docutils literal notranslate"><span class="pre">batchcluster</span></code>, <code class="docutils literal notranslate"><span class="pre">site-analytics</span></code> or
+such as <code class="docutils literal notranslate"><span class="pre">production</span></code>, <code class="docutils literal notranslate"><span class="pre">staging</span></code>, <code class="docutils literal notranslate"><span class="pre">batch_cluster</span></code>, <code class="docutils literal notranslate"><span class="pre">site_analytics</span></code> or
 any other short meaningful string.</p>
 <p><code class="docutils literal notranslate"><span class="pre">sharedSecret</span></code></p>
 <p>Set the shared secret value for <a class="reference internal" href="../security/internal-communication.html"><span class="doc">secure communication between
 coordinator and workers in the cluster</span></a> to
 a long random string. If not set, the <code class="docutils literal notranslate"><span class="pre">node.environment</span></code> value from the
 <code class="docutils literal notranslate"><span class="pre">node.properties</span></code> file is used.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test-cluster</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test_cluster</span>
 <span class="nt">sharedSecret</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">u70Qhhw9PsZmEgIo7Zqg3kIj3AJZ5/Mnyy5iyjcsgnceM+SSV+APSTis...</span>
 </pre></div>
 </div>
@@ -736,25 +736,24 @@ init script in coordinator and worker:</p>
 <p>There are several locations where properties require pointing to files delivered
 outside of Presto, for example CA certificates. In such cases you can use a
 special notation that allows you to point to a k8s secret.</p>
-<p>For example if you are looking to configure <a class="reference internal" href="#helm-sep-authentication"><span class="std std-ref">password authentication using
-LDAP</span></a>, which requires the following configuration file
-in <code class="docutils literal notranslate"><span class="pre">password-authenticator.properties</span></code>:</p>
+<p>For example, you can configure password authentication using LDAP. This requires
+the following configuration file <code class="docutils literal notranslate"><span class="pre">etc/password-authenticator.properties</span></code>,
+which points to the <code class="docutils literal notranslate"><span class="pre">ca.crt</span></code> certificate file.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">ldap.ssl-trust-certificate=etc/ca.crt</span>
 </pre></div>
 </div>
-<p>First step is to create a k8s secret holding the file.</p>
+<p>Your first step is to create a k8s secret holding the file:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">kubectl create secret generic ldap-ca --from-file=ca.crt</span>
 </pre></div>
 </div>
 <p>You can configure the secret reference usage for the above configuration as:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">authentication</span><span class="p">:</span>
-  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;ldap&quot;</span>
-  <span class="nt">ldap</span><span class="p">:</span>
-    <span class="nt">properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-      <span class="no">ldap.url=ldaps://ldap-server:636</span>
-      <span class="no">ldap.user-bind-pattern=uid=${USER},OU=America,DC=corp,DC=example,DC=com</span>
-      <span class="no">ldap.ssl-trust-certificate=secretRef:ldap-ca:ca.crt</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">etcFiles</span><span class="p">:</span>
+    <span class="nt">properties</span><span class="p">:</span>
+      <span class="nt">password-authenticator.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+        <span class="no">ldap.url=ldaps://ldap-server:636</span>
+        <span class="no">ldap.user-bind-pattern=uid=${USER},OU=America,DC=corp,DC=example,DC=com</span>
+        <span class="no">ldap.ssl-trust-certificate=secretRef:ldap-ca:ca.crt</span>
 </pre></div>
 </div>
 <p>This mounts the secret named <code class="docutils literal notranslate"><span class="pre">ldap-ca</span></code> in the path <code class="docutils literal notranslate"><span class="pre">/mnt/secretsRef/ldap-ca</span></code>
@@ -764,7 +763,7 @@ and replaces <code class="docutils literal notranslate"><span class="pre">secret
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Specific secret values such as passwords can be passed into properties files
+<p>Specific secret values, such as passwords, can be passed into properties files
 <a class="reference internal" href="#helm-sep-coordinator-envfrom"><span class="std std-ref">using the envFrom parameters</span></a> available
 for <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and <code class="docutils literal notranslate"><span class="pre">worker</span></code>.</p>
 </div>
@@ -862,16 +861,28 @@ k8s secret:</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="authentication">
-<span id="helm-sep-authentication"></span><h2>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">#</a></h2>
-<p>Configure the file-based authentication usage and users.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">authentication</span><span class="p">:</span>
-  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-  <span class="nt">type</span><span class="p">:</span> <span class="s">&quot;file&quot;</span>
-  <span class="nt">file</span><span class="p">:</span>
-    <span class="nt">users</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="nt">username</span><span class="p">:</span> <span class="s">&quot;admin&quot;</span>
-        <span class="nt">password</span><span class="p">:</span> <span class="s">&quot;46991b33f7a75ff79213c0dc0e610610&quot;</span>
+<div class="section" id="file-based-authentication">
+<h2>File-based authentication<a class="headerlink" href="#file-based-authentication" title="Permalink to this headline">#</a></h2>
+<p>The command <code class="docutils literal notranslate"><span class="pre">htpasswd</span></code> can generate a user database, which can be used to
+configure file-based user authentication. It creates the file under
+<code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/etc/auth/{{.Values.userDatabase.name}}</span></code>. This allows you to
+statically deliver user credentials to the file
+<code class="docutils literal notranslate"><span class="pre">etc/password-authenticator.properties</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">userDatabase</span><span class="p">:</span>
+  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">password.db</span>
+  <span class="nt">users</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">admin</span>
+      <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">46991b33f7a75ff79213c0dc0e610610</span>
+</pre></div>
+</div>
+<p>Add the following setup to your values YAML file to configure file-based
+authentication:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">etcFiles</span><span class="p">:</span>
+    <span class="nt">properties</span><span class="p">:</span>
+      <span class="nt">password-authenticator.properties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+        <span class="no">password-authenticator.name=file</span>
+        <span class="no">file.password-file=/usr/lib/presto/etc/auth/password.db</span>
 </pre></div>
 </div>
 </div>
