@@ -452,6 +452,7 @@ reasonable defaults on a production-sized k8s cluster.</p>
   <span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
   <span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
   <span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+  <span class="nt">priorityClassName</span><span class="p">:</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.etcFiles.jvm.config</span></code></p>
@@ -598,6 +599,8 @@ supported by the <a class="reference internal" href="../security/secrets.html"><
 </div></blockquote>
 <p><code class="docutils literal notranslate"><span class="pre">coordinator.nodeSelector</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.affinity</span></code> and <code class="docutils literal notranslate"><span class="pre">coordinator.tolerations</span></code></p>
 <p>Configuration to <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">determine the node and pod to use</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">coordinator.priorityClassName</span></code></p>
+<p>Priority class for coordinator pod for setting <a class="reference external" href="https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption">k8s pod priority and preemption</a>.</p>
 </div>
 <div class="section" id="workers">
 <span id="helm-sep-workers"></span><h2>Workers<a class="headerlink" href="#workers" title="Permalink to this headline">#</a></h2>
@@ -656,6 +659,7 @@ adjusted to be suitable to your workload and cluster:</p>
   <span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
   <span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
   <span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+  <span class="nt">priorityClassName</span><span class="p">:</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">worker.count</span></code></p>
@@ -669,6 +673,13 @@ scaling up by adding more workers until <code class="docutils literal notranslat
 <p>Scaling down proceeds until <code class="docutils literal notranslate"><span class="pre">minReplicas</span></code> is reached and is controlled by
 <code class="docutils literal notranslate"><span class="pre">deploymentTerminationGracePeriodSeconds</span></code> and
 <code class="docutils literal notranslate"><span class="pre">prestoWorkerShutdownGracePeriodSeconds</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The autoscaling feature does not yet work with Openshift clusters (as of
+the latest release 4.6), due to a known limitation with Openshift clusters.
+HPA <a class="reference external" href="https://bugzilla.redhat.com/show_bug.cgi?id=1749468">does not work</a>
+with pods having init containers in Openshift.</p>
+</div>
 <p>Read more information in our <a class="reference internal" href="operation.html#helm-ops-scaling"><span class="std std-ref">scaling section</span></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">worker.deploymentTerminationGracePeriodSeconds</span></code></p>
 <p>Specifies the termination grace period for workers. Workers are not terminated
@@ -689,6 +700,7 @@ coordinator properties, documented in preceding section.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.nodeSelector</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.affinity</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">worker.tolerations</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">worker.priorityClassName</span></code></p></li>
 </ul>
 </div>
 <div class="section" id="common-settings-for-coordinator-and-workers-nodes">
@@ -712,8 +724,15 @@ coordinator and workers and pass additional argument to it.</p>
 be an inline string in the YAML file. The script is started as <code class="docutils literal notranslate"><span class="pre">/bin/bash</span>
 <span class="pre">&lt;&lt;init_file&gt;&gt;</span></code>. When called, it is passed the single parameter value
 <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> or <code class="docutils literal notranslate"><span class="pre">worker</span></code> depending on the type of pod. The script needs to
-invoke the Presto launcher script <code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/bin/launcher</span></code> for a
+invoke the Presto script <code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/bin/run-presto</span></code> for a
 successful start of Presto.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">initFile</span></code>, for chart versions released before middle of Oct 2020 use
+the launcher script <code class="docutils literal notranslate"><span class="pre">exec</span> <span class="pre">/usr/lib/presto/bin/launcher</span> <span class="pre">run</span></code>. For newer
+releases use <code class="docutils literal notranslate"><span class="pre">exec</span> <span class="pre">/usr/lib/presto/bin/run-presto</span></code> to enable graceful
+shutdown of workers .</p>
+</div>
 <p><code class="docutils literal notranslate"><span class="pre">extraArguments</span></code></p>
 <p>List of extra arguments to be passed to the <code class="docutils literal notranslate"><span class="pre">initFile</span></code> script.</p>
 <p>The following example shows how you can use <code class="docutils literal notranslate"><span class="pre">initFile</span></code> to run a custom init
@@ -721,7 +740,7 @@ script on the coordinator and workers:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">initFile</span><span class="p">:</span> <span class="p p-Indicator">|</span>
   <span class="no">#!/bin/bash</span>
   <span class="no">echo &quot;Custom init for $1 $2</span>
-  <span class="no">exec /usr/lib/presto/bin/launcher run</span>
+  <span class="no">exec /usr/lib/presto/bin/run-presto</span>
 <span class="nt">extraArguments</span><span class="p">:</span>
   <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TEST_ARG</span>
 </pre></div>
@@ -1140,7 +1159,7 @@ configure additional files or otherwise want to tweak the container.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/plugin</span></code>: all plugins for Presto including connectors</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/etc</span></code>: etc folder for Presto configuration files such as
 <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> and others</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/bin</span></code>: location of the <code class="docutils literal notranslate"><span class="pre">launcher</span></code> script, which is invoked
+<li><p><code class="docutils literal notranslate"><span class="pre">/usr/lib/presto/bin</span></code>: location of the <code class="docutils literal notranslate"><span class="pre">run-presto</span></code> script, which is invoked
 with the container start</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">/data/presto/var/run</span></code>: contains <code class="docutils literal notranslate"><span class="pre">launcher.pid</span></code> file used by the launcher
 script</p></li>
