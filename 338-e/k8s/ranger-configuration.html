@@ -100,6 +100,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#server-start-up-configuration">Server start up configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#extra-secrets">Extra secrets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#node-assignment">Node assignment</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security-context">Security context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#service-account">Service account</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="operation.html">5.7. Operation</a></li>
@@ -198,8 +200,8 @@ to use the <a class="reference internal" href="../security/system-ranger.html"><
 <ul class="simple">
 <li><p>A pod with the <a class="reference internal" href="#helm-ranger-server"><span class="std std-ref">Ranger server</span></a> with the Presto
 Ranger plugin deployed and configured to connect to Presto</p></li>
-<li><p>Optionally a pod with <a class="reference internal" href="#helm-ranger-usersync"><span class="std std-ref">Ranger LDAP user synchronization system</span></a> deployed and configured</p></li>
-<li><p>Optionally a pod with a <a class="reference internal" href="#helm-ranger-database"><span class="std std-ref">PostgreSQL database backend</span></a> for Ranger</p></li>
+<li><p>Optionally a container in the pod with <a class="reference internal" href="#helm-ranger-usersync"><span class="std std-ref">Ranger LDAP user synchronization system</span></a> deployed and configured</p></li>
+<li><p>Optionally a container in the pod with a <a class="reference internal" href="#helm-ranger-database"><span class="std std-ref">PostgreSQL database backend</span></a> for Ranger</p></li>
 </ul>
 <p>A minimal values file <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">adds the registry credentials</span></a>
 and overrides any defaults to suitable values.</p>
@@ -214,6 +216,8 @@ and overrides any defaults to suitable values.</p>
 <li><p><a class="reference internal" href="#server-start-up-configuration" id="id7">Server start up configuration</a></p></li>
 <li><p><a class="reference internal" href="#extra-secrets" id="id8">Extra secrets</a></p></li>
 <li><p><a class="reference internal" href="#node-assignment" id="id9">Node assignment</a></p></li>
+<li><p><a class="reference internal" href="#security-context" id="id10">Security context</a></p></li>
+<li><p><a class="reference internal" href="#service-account" id="id11">Service account</a></p></li>
 </ul>
 </div>
 <div class="section" id="docker-registry-access">
@@ -262,6 +266,8 @@ interface for policy management.</p>
     <span class="c1"># Additional env variables to pass to Ranger Admin.</span>
     <span class="c1"># To pass Ranger install property, use variable with name RANGE__&lt;property_name&gt;,</span>
     <span class="c1"># for example RANGER__authentication_method.</span>
+  <span class="nt">securityContext</span><span class="p">:</span>
+    <span class="c1"># Optionally configure a security context for the ranger admin container</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">admin.serviceUser</span></code></p>
@@ -313,6 +319,8 @@ on a separate pod when deployed.</p>
     <span class="nt">RANGER__SYNC_GROUP_USER_MAP_SYNC_ENABLED</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
     <span class="nt">RANGER__SYNC_GROUP_SEARCH_BASE</span><span class="p">:</span> <span class="s">&quot;ou=groups,dc=ldap,dc=example,dc=org&quot;</span>
     <span class="nt">RANGER__SYNC_GROUP_OBJECT_CLASS</span><span class="p">:</span> <span class="s">&quot;groupOfNames&quot;</span>
+  <span class="nt">securityContext</span><span class="p">:</span>
+    <span class="c1"># Optionally configure a security context for the ranger usersync container</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">usersync.enabled</span></code></p>
@@ -401,6 +409,8 @@ You have to manage this server and database yourself.</p>
     <span class="nt">databasePassword</span><span class="p">:</span> <span class="s">&quot;RangerPass123&quot;</span>
     <span class="nt">databaseRootUser</span><span class="p">:</span> <span class="s">&quot;rangeradmin&quot;</span>
     <span class="nt">databaseRootPassword</span><span class="p">:</span> <span class="s">&quot;RangerAdminPass123&quot;</span>
+    <span class="nt">securityContext</span><span class="p">:</span>
+      <span class="c1"># Optionally configure a security context for the ranger usersync container</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">database.type</span></code></p>
@@ -580,6 +590,40 @@ type:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">nodeSelector</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
 <span class="nt">tolerations</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
 <span class="nt">affinity</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="security-context">
+<span id="helm-ranger-securitycontext"></span><h2>Security context<a class="headerlink" href="#security-context" title="Permalink to this headline">#</a></h2>
+<p>You can optionally configure <a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod">security contexts</a>
+to define privilege and access control settings for the Ranger containers. You
+can separately configure the security context for <a class="reference internal" href="#helm-ranger-server"><span class="std std-ref">Ranger admin</span></a>, <a class="reference internal" href="#helm-ranger-usersync"><span class="std std-ref">usersync</span></a> and <a class="reference internal" href="#helm-ranger-database"><span class="std std-ref">database</span></a> containers.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">securityContext</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>If you do not want to set the serviceContext for the <code class="docutils literal notranslate"><span class="pre">default</span></code>
+service account, you can restrict it by configuring the <a class="reference internal" href="#helm-ranger-serviceaccount"><span class="std std-ref">service account</span></a> for the Ranger pod.</p>
+<p>For a restricted environment like Openshift, you may need to set the
+<code class="docutils literal notranslate"><span class="pre">AUDIT_WRITE</span></code> capability for Ranger <a class="reference internal" href="#helm-ranger-usersync"><span class="std std-ref">usersync</span></a>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">securityContext</span><span class="p">:</span>
+  <span class="nt">capabilities</span><span class="p">:</span>
+    <span class="nt">add</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">AUDIT_WRITE</span>
+</pre></div>
+</div>
+<p>Additionally Openshift clusters, need <a class="reference external" href="https://docs.openshift.com/enterprise/3.1/admin_guide/manage_scc.html#enable-images-to-run-with-user-in-the-dockerfile">anyuid</a>
+and <code class="docutils literal notranslate"><span class="pre">privileged</span></code> security context constraints set for the <a class="reference internal" href="#helm-ranger-serviceaccount"><span class="std std-ref">service
+account</span></a> used by Ranger. For example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>oc create serviceaccount &lt;k8s-service-account&gt;
+oc adm policy add-scc-to-user anyuid system:serviceaccount:&lt;k8s-namespace&gt;:&lt;k8s-service-account&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="service-account">
+<span id="helm-ranger-serviceaccount"></span><h2>Service account<a class="headerlink" href="#service-account" title="Permalink to this headline">#</a></h2>
+<p>You can configure a <a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/">security account</a>
+for the Ranger pod using:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">serviceAccountName</span><span class="p">:</span>
 </pre></div>
 </div>
 </div>
