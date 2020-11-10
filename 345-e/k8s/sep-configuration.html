@@ -273,7 +273,11 @@
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a>
         </li>
-        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a>
+        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#example-for-ingress-with-nginx-and-cert-manager" class="md-nav__link">Example for ingress with nginx and cert-manager</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#coordinator" class="md-nav__link">Coordinator</a>
         </li>
@@ -492,7 +496,11 @@
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a>
         </li>
-        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a>
+        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#example-for-ingress-with-nginx-and-cert-manager" class="md-nav__link">Example for ingress with nginx and cert-manager</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#coordinator" class="md-nav__link">Coordinator</a>
         </li>
@@ -708,6 +716,50 @@ in the same cluster, and can be exposed via ingress configuration.</p>
     <span class="nt">annotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
 </pre></div>
 </div>
+
+<h3 id="example-for-ingress-with-nginx-and-cert-manager">Example for ingress with nginx and cert-manager<a class="headerlink" href="#example-for-ingress-with-nginx-and-cert-manager" title="Permalink to this headline">#</a></h3>
+<p><a class="reference external" href="https://nginx.org/en/">nginx</a> is a powerful HTTP and proxy server, commonly
+used as load balancer. You can combine using it with cert-manager backed by
+<a class="reference external" href="https://letsencrypt.org/">Let’s Encrypt</a>:</p>
+<p>As a first step you need to deploy an HTTPS ingress controller for your cluster.
+You can follow a <a class="reference external" href="https://cert-manager.io/docs/tutorials/acme/ingress/">tutorial from the cert-manager documentation</a>.</p>
+<p>With the setup done, and an A record in your DNS zone ready, you can expose the
+Presto Web UI:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">expose</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">"ingress"</span>
+  <span class="nt">ingress</span><span class="p">:</span>
+    <span class="nt">serviceName</span><span class="p">:</span> <span class="s">"presto"</span>
+    <span class="nt">servicePort</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">tls</span><span class="p">:</span>
+      <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">secretName</span><span class="p">:</span> <span class="s">"tls-secret-presto"</span>
+    <span class="nt">host</span><span class="p">:</span> <span class="s">""</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="s">"/(.*)"</span>
+    <span class="nt">annotations</span><span class="p">:</span>
+      <span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span> <span class="s">"nginx"</span>
+      <span class="nt">cert-manager.io/issuer</span><span class="p">:</span> <span class="s">"letsencrypt-staging"</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">secretName</span></code> is used by the cert-manager to store the generated
+certificate, and can be any value.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">annotations</span></code> section uses the <code class="docutils literal notranslate"><span class="pre">nginx</span></code> default value for the single
+ingress controller installation. It assumes certificate issuer with the name
+<code class="docutils literal notranslate"><span class="pre">letsencrypt-staging</span></code> is used, and needs to exist.</p>
+<p>The Ranger user interface can be exposed in exactly the same way:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">expose</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="s">"ingress"</span>
+  <span class="nt">ingress</span><span class="p">:</span>
+    <span class="nt">tls</span><span class="p">:</span>
+      <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+      <span class="nt">secretName</span><span class="p">:</span> <span class="s">"tls-secret-ranger"</span>
+    <span class="nt">host</span><span class="p">:</span> <span class="s">""</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="s">"/(.*)"</span>
+    <span class="nt">annotations</span><span class="p">:</span>
+      <span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span> <span class="s">"nginx"</span>
+      <span class="nt">cert-manager.io/issuer</span><span class="p">:</span> <span class="s">"letsencrypt-staging"</span>
+</pre></div>
+</div>
+
 
 
 <span id="helm-sep-coordinator"></span><h2 id="coordinator">Coordinator<a class="headerlink" href="#coordinator" title="Permalink to this headline">#</a></h2>
