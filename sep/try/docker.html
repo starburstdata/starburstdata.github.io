@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Starburst Universe | Trying SEP with Docker</title>
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Starburst Universe - Trying SEP with Docker">
+    <meta property="og:description" content="Starburst Universe - your hub to all knowledge about Starburst products.">
+    <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
+
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/mdb.min.css">
+    <link rel="stylesheet" href="/assets/css/highlight.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body><div class="wrap"><header style="padding-top:86px;">
+  <nav class="navbar fixed-top navbar-expand-lg navbar-dark scrolling-navbar">
+    <a class="navbar-brand" href="/universe.html">
+      <img src="/assets/img/logo/starburst-reverse.png" height="40" alt=" Starburst Universe">
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/sep/index.html">Starburst Enterprise Presto</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"  href="/about.html">About</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+<div class="container spacer-60">
+      <h1>Trying SEP with Docker</h1>
+<p>You can install Starburst Enterprise Presto (SEP) in a Docker container and run
+it on any Docker host. This is especially useful as a test or demo environment
+or to evaluate SEP.</p>
+<p>With custom configuration of the containers for the SEP coordinator and worker
+nodes, you can run a set of Docker containers to implement a SEP cluster
+hosted on Linux on your local network or on a cloud provider.</p>
+<blockquote>
+<p><strong>Important!</strong> You can run SEP with Docker on Mac or Windows laptops <em>for
+evaluation purposes only</em>, and with the understanding that these are likely to
+be memory-limited devices that cannot run complex queries. A production
+implementation of a SEP cluster on Docker is supported only on Linux servers.</p>
+</blockquote>
+<p>This page presumes you have Docker installed and running, and presumes some
+familiarity with Docker commands. For Mac and Windows evaluations, make sure you
+have Docker Desktop installed and running.</p>
+<h2>Initial run of SEP on Docker</h2>
+<p>Starburst Data provides a Docker image for a trial configuration of SEP on
+Docker Hub. Use the following command to download and run this image:</p>
+<pre><code class="language-bash">docker run -d -p 8080:8080 --name presdock starburstdata/presto
+</code></pre>
+<p>The <code>docker run</code> options have the following meanings:</p>
+<table>
+<thead>
+<tr>
+<th>Option     </th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>–d         </td>
+<td>detach</td>
+</tr>
+<tr>
+<td>–p         </td>
+<td>map ports as hostport:dockerport</td>
+</tr>
+<tr>
+<td>––name     </td>
+<td>provide an alias for this image to be</td>
+</tr>
+<tr>
+<td>  </td>
+<td>used in subsequent Docker commands</td>
+</tr>
+<tr>
+<td> </td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The default SEP image has the following characteristics:</p>
+<ul>
+<li>There is <strong>no</strong> Presto CLI command installed in the Docker image</li>
+<li>The jvm.config is set to use 1G maximum</li>
+<li>The following catalogs are installed:
+<ul>
+<li>jmx</li>
+<li>memory</li>
+<li>system</li>
+<li>tpcds</li>
+<li>tpch</li>
+</ul>
+</li>
+</ul>
+<h2>Run Presto CLI locally</h2>
+<p>To interact with the SEP server running in Docker, use the standard Presto CLI
+tool on the Docker host. See <a href="/sep/try/any-linux#downloadcli">Use the Presto CLI to validate the
+server</a> to learn about
+downloading and renaming the Presto CLI Jar file.</p>
+<p>The <code>docker run</code> command mapped the SEP server’s default port running inside the
+container to the same port on the host machine. This means you can use the host
+machine’s <code>presto</code> command as-is:</p>
+<pre><code class="language-bash">presto
+</code></pre>
+<p>At the <code>presto&gt;</code> prompt, enter <code>show catalogs;</code>. Then enter <code>quit;</code> or Control+D
+to exit the CLI.</p>
+<p>Next see <a href="(/sep/try/use-presto/)">First steps with the Presto
+CLI</a> to learn more about using the
+Presto CLI.</p>
+<h2>Use a local etc directory</h2>
+<p>If you tried to run the <code>tpch-queries.sql</code> script described in the last section
+of the <strong>First Steps</strong> page, you receive an error message:</p>
+<pre><code class="language-text">Catalog does not exist: blackhole
+</code></pre>
+<p>The set of catalogs provided with the default Docker image does not include a
+catalog for the Black Hole connector. This raises the question of how to
+customize SEP running in the Docker image.</p>
+<p>Starburst does <strong>not</strong> recommend going into the Docker image to change
+configuration files there. Those changes would be lost the next time Starburst
+updated the public Docker image to a new version, which your next <code>docker run</code>
+command would download and use.</p>
+<p>Instead, there is a way to map the <code>etc</code> directory used by SEP-in-Docker to a
+local directory. Once configured, SEP uses the local <code>etc</code> directory as its
+primary source of configuration files, and ignores the default settings in the
+Docker image.</p>
+<p>To do this requires one extra <code>docker run</code> option. First stop and remove the
+currently running Docker image:</p>
+<pre><code class="language-bash">docker images stop presdock
+docker images rm presdock
+</code></pre>
+<p>Create a local directory to contain your custom SEP configuration files. For
+example:</p>
+<pre><code class="language-bash">mkdir -p ~/presdock/etc
+</code></pre>
+<h2>Populate the local etc directory</h2>
+<p>Even the simplest SEP server must have a minimum set of configuration files
+before it can start.</p>
+<p>The simplest way to get started quickly is to use the set of configuration files
+provided as examples for the O’Reilly book <a href="https://www.starburstdata.com/oreilly-presto-guide-download/">Presto: The Definitive
+Guide</a>. Download
+these samples from their <a href="https://github.com/prestosql/presto-the-definitive-guide">GitHub
+location</a> either as a
+zip file or a git clone.</p>
+<p>From your unzip or clone location of these samples, copy the entire <code>etc</code>
+directory from the <code>single-installation</code> sample to your <code>~/presdock/etc</code>
+directory. For example:</p>
+<pre><code class="language-bash">cd &lt;unzip-or-clone-of-Def-Guide-samples&gt;/single-installation
+rsync -av etc ~/presdock/etc
+</code></pre>
+<h2>Edit local configuration files</h2>
+<p>Navigate to your local <code>etc</code> directory. For example:</p>
+<pre><code class="language-bash">cd ~/presdoc/etc
+</code></pre>
+<p>Inspect the configuration files provided there for use with Docker. For example,
+the <code>jvm.config</code> file sets <code>-mx16G</code>, which might be too large for Docker
+running on Docker Desktop on Mac or Windows. Set that to a lower value such as
+<code>-mx5G</code>.</p>
+<blockquote>
+<p><strong>Important!</strong> Make sure Docker is configured to use enough memory to handle
+the <code>-mx</code> setting you choose for SEP. For example, Docker Desktop’s default RAM
+setting is 2G. Change Docker Desktop to use 6G to allow large queries to run in
+the Docker image. Adjust these numbers as appropriate for your environment.</p>
+</blockquote>
+<h2>Invoke docker run with local etc directory</h2>
+<p>Now invoke the <code>docker run</code> command with a new option:</p>
+<table>
+<thead>
+<tr>
+<th>Option       </th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>––volume     </td>
+<td>specify a directory in the image to be</td>
+</tr>
+<tr>
+<td>  </td>
+<td>mounted on the current host directory</td>
+</tr>
+<tr>
+<td> </td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Now restart the Docker image, this time including a <code>--volume</code> option:</p>
+<pre><code class="language-bash">docker run -d -p 8080:8080 --volume $PWD:/usr/lib/presto/etc --name presdock starburstdata/presto
+</code></pre>
+<p>Connect the Presto CLI to SEP running in Docker, and run the <code>show catalogs;</code>
+command again. This time you see that the list includes the <code>blackhole</code>
+catalog.</p>
+<p>Exit from the interactive CLI. Assuming you are still in your local
+<code>~/presdock/etc</code> directory, invoke the following command line script:</p>
+<pre><code class="language-bash">cd &lt;unzip-or-clone-of-Def-Guide-samples&gt;/tpch
+presto --file=tpch-queries.sql
+</code></pre>
+<h2>Configure custom data sources and options</h2>
+<p>The external <code>etc</code> directory illustrated on this page allows you to continue to
+add and configure the catalogs and features you need to connect to your data
+sources of interest.</p>
+
+    </div>
+    <div style="margin-bottom:50px;"></div>
+</div><footer class="page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3">
+        <p>Starburst NameTBD</p>
+        <ul>
+          <li class="footer-item"><a href="/data-administrator">For Presto administrators</a></li>
+          <li class="footer-item"><a href="/data-engineer">For data engineers</a></li>
+          <li class="footer-item"><a href="/data-analyst">For data scientists and analysts</a></li>
+          <li class="footer-item"><a href="https://docs.starburstdata.com/latest/index.html" target="_blank">Reference Manual</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/oreilly-presto-guide-download/" target="_blank">Get the Guide</a></li> 
+        </ul>
+      </div>
+      <div class="col-md-3">
+      <p>Other resources</p>
+        <ul>
+          <li class="footer-item"><a href="https://www.starburstdata.com/weekly-demo-registration/" target="_blank">Join our weekly demos</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/#!" target="_blank">Start a trial</a></li>
+          <li class="footer-item"><a href="https://blog.starburstdata.com/" target="_blank">Read our blog</a></li>
+          <li class="footer-item"><a href="https://starburstsupport.force.com/s/" target="_blank">Get support</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/contact/" target="_blank">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-6" style="text-align:right;">
+        <img src="/assets/img/logo/starburst-reverse.png" height="60" alt=" Starburst Universe" style="margin-bottom:20px;">
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#copyright">Copyright 2017 - 2020, Starburst Data</a>
+        </li>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#trademarks">Trademarks</a>
+        </li>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  <script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+  <script type="text/javascript" src="/assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="/assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/assets/js/mdb.min.js"></script>
+</body>
+</html>

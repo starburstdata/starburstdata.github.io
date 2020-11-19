@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Starburst Universe | First steps with the Presto CLI</title>
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Starburst Universe - First steps with the Presto CLI">
+    <meta property="og:description" content="Starburst Universe - your hub to all knowledge about Starburst products.">
+    <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
+
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/mdb.min.css">
+    <link rel="stylesheet" href="/assets/css/highlight.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body><div class="wrap"><header style="padding-top:86px;">
+  <nav class="navbar fixed-top navbar-expand-lg navbar-dark scrolling-navbar">
+    <a class="navbar-brand" href="/universe.html">
+      <img src="/assets/img/logo/starburst-reverse.png" height="40" alt=" Starburst Universe">
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/sep/index.html">Starburst Enterprise Presto</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"  href="/about.html">About</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</header>
+<div class="container spacer-60">
+      <h1>First steps with the Presto CLI</h1>
+<p>Once you have a Starburst Enterprise server running on the local machine as
+described on the <a href="/sep/try/any-linux/">Trying SEP on any Linux</a>
+or <a href="/sep/try/docker/">Trying SEP with Docker</a> pages, follow the
+steps on this page to learn the basics of the Presto CLI.</p>
+<h2>Connect to a running server</h2>
+<p>Run <code>presto</code> to connect to the running server at the default URL,
+<code>localhost:8080</code>:</p>
+<pre><code class="language-bash">presto
+</code></pre>
+<p>If your SEP server uses a different port or is running elsewhere on your
+network, specify the server URL. For example:</p>
+<pre><code class="language-bash">presto --server=presto.example.com:8082
+</code></pre>
+<p>This opens a Presto CLI shell, with <code>presto&gt;</code> prompt. All commands entered
+here must be terminated with a semicolon.</p>
+<h2>Usage help</h2>
+<p>To see the available commands:</p>
+<pre><code class="language-sql">presto&gt; help;
+</code></pre>
+<h2>Show the data source catalogs</h2>
+<p>To see the catalogs of data sources configured by the <code>single-installation/etc</code>
+configuration sample, run:</p>
+<pre><code class="language-sql">presto&gt; show catalogs;
+</code></pre>
+<p>This returns:</p>
+<pre><code class="language-text">  Catalog  
+-----------
+ blackhole
+ jmx
+ memory
+ system
+ tpcds
+ tpch
+(6 rows)
+</code></pre>
+<p>(Each query returns a set of performance metadata, which is not repeated here.)</p>
+<p>The default Docker image shows the same list of catalogs except for <code>blackhole</code>.</p>
+<h2>Using the tpch catalog</h2>
+<p>Start with the <code>tpch</code> catalog, which allows you to test the capabilities and
+query syntax of Presto without configuring access to an external data source.
+The catalog file, <code>etc/catalog/tpch.properties</code>, has a single line:</p>
+<pre><code class="language-property">connector.name=tpch
+</code></pre>
+<p>This connects your Presto server to its included TPCH connector, which is
+described in its <a href="https://starburstdata.github.io/latest/connector/tpch.html">documentation
+page</a>.</p>
+<p>See the schemas provided in the TPCH connector:</p>
+<pre><code class="language-sql">presto&gt; show schemas from tpch;
+</code></pre>
+<p>This returns:</p>
+<pre><code class="language-text">       Schema
+--------------------
+ information_schema
+ sf1
+ sf100
+ sf1000
+ sf10000
+ sf100000
+ sf300
+ sf3000
+ sf30000
+ tiny
+(10 rows)
+</code></pre>
+<p>To see the tables in one of these schemas:</p>
+<pre><code class="language-sql">presto&gt; show tables from tpch.sf100;
+</code></pre>
+<h2>Getting down to the table level</h2>
+<p>To avoid typing the catalog and schema name every time:</p>
+<pre><code class="language-sql">presto&gt; use tpch.sf100;
+presto:sf100&gt;
+</code></pre>
+<p>To see the tables in sf100:</p>
+<pre><code class="language-sql">presto:sf100&gt; show tables;
+</code></pre>
+<p>which returns:</p>
+<pre><code class="language-text">  Table
+----------
+ customer
+ lineitem
+ nation
+ orders
+ part
+ partsupp
+ region
+ supplier
+(8 rows)
+</code></pre>
+<p>To see the structure of the customer table:</p>
+<pre><code class="language-sql">presto:sf100&gt; show columns from customer;
+</code></pre>
+<p>which returns:</p>
+<pre><code class="language-text">   Column   |     Type     | Extra | Comment
+------------+--------------+-------+---------
+ custkey    | bigint       |       |
+ name       | varchar(25)  |       |
+ address    | varchar(40)  |       |
+ nationkey  | bigint       |       |
+ phone      | varchar(15)  |       |
+ acctbal    | double       |       |
+ mktsegment | varchar(10)  |       |
+ comment    | varchar(117) |       |
+(8 rows)
+</code></pre>
+<h2>Using the CLI at the shell prompt</h2>
+<p>You can use <code>presto</code> from the shell prompt as well. To see this, first exit
+<code>presto</code> interactive mode with <code>quit;</code> or <code>exit;</code>:</p>
+<pre><code class="language-sql">presto:sf100&gt; quit;
+</code></pre>
+<p>You can enter a valid SQL script on the <code>presto</code> command line:</p>
+<pre><code class="language-bash">presto --execute 'SELECT custkey, name, phone, acctbal FROM tpch.sf100.customer LIMIT 7'
+</code></pre>
+<p>You can send a SQL script file to <code>presto</code> from the command line with the <code>-f</code>
+or <code>--file</code> options. Two TPCH scripts are included with the Definitive Guide’s
+samples. Use these as follows:</p>
+<pre><code class="language-bash">cd &lt;unzip-or-clone-of-Def-Guide-samples&gt;/tpch
+</code></pre>
+<p>Now run:</p>
+<pre><code class="language-bash">presto -f nations.sql
+</code></pre>
+<p>and</p>
+<pre><code class="language-bash">presto --file=tpch-queries.sql
+</code></pre>
+<p>This second script uses the <a href="https://starburstdata.github.io/latest/connector/blackhole.html">Black hole
+connector</a>,
+which is designed to operate like <code>/dev/null</code> and <code>/dev/zero</code> for high
+performance testing of Presto components. To run this second script more than
+once, you must stop and restart the SEP server. From <code>presto-root</code> for your
+server, run:</p>
+<pre><code class="language-bash">sudo bin/launcher stop
+sudo bin/launcher start
+</code></pre>
+<p>then:</p>
+<pre><code class="language-bash">presto --file=tpch-queries.sql
+</code></pre>
+
+    </div>
+    <div style="margin-bottom:50px;"></div>
+</div><footer class="page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-3">
+        <p>Starburst NameTBD</p>
+        <ul>
+          <li class="footer-item"><a href="/data-administrator">For Presto administrators</a></li>
+          <li class="footer-item"><a href="/data-engineer">For data engineers</a></li>
+          <li class="footer-item"><a href="/data-analyst">For data scientists and analysts</a></li>
+          <li class="footer-item"><a href="https://docs.starburstdata.com/latest/index.html" target="_blank">Reference Manual</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/oreilly-presto-guide-download/" target="_blank">Get the Guide</a></li> 
+        </ul>
+      </div>
+      <div class="col-md-3">
+      <p>Other resources</p>
+        <ul>
+          <li class="footer-item"><a href="https://www.starburstdata.com/weekly-demo-registration/" target="_blank">Join our weekly demos</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/#!" target="_blank">Start a trial</a></li>
+          <li class="footer-item"><a href="https://blog.starburstdata.com/" target="_blank">Read our blog</a></li>
+          <li class="footer-item"><a href="https://starburstsupport.force.com/s/" target="_blank">Get support</a></li>
+          <li class="footer-item"><a href="https://www.starburstdata.com/contact/" target="_blank">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-6" style="text-align:right;">
+        <img src="/assets/img/logo/starburst-reverse.png" height="60" alt=" Starburst Universe" style="margin-bottom:20px;">
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#copyright">Copyright 2017 - 2020, Starburst Data</a>
+        </li>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#trademarks">Trademarks</a>
+        </li>
+      </div>
+    </div>
+  </div>
+</footer>
+
+  <script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+  <script type="text/javascript" src="/assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="/assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/assets/js/mdb.min.js"></script>
+</body>
+</html>
