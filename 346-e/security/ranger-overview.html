@@ -432,7 +432,13 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#starburst-ranger-cli" class="md-nav__link">Starburst Ranger CLI</a>
+        <li class="md-nav__item"><a href="#starburst-ranger-cli" class="md-nav__link">Starburst Ranger CLI</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#ranger-user-management" class="md-nav__link">Ranger user management</a>
+        </li>
+        <li class="md-nav__item"><a href="#service-definition-management" class="md-nav__link">Service definition management</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -648,7 +654,13 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#starburst-ranger-cli" class="md-nav__link">Starburst Ranger CLI</a>
+        <li class="md-nav__item"><a href="#starburst-ranger-cli" class="md-nav__link">Starburst Ranger CLI</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#ranger-user-management" class="md-nav__link">Ranger user management</a>
+        </li>
+        <li class="md-nav__item"><a href="#service-definition-management" class="md-nav__link">Service definition management</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -856,8 +868,8 @@ such as <code class="docutils literal notranslate"><span class="pre">information
 <p>The properties listed in this table apply to all Ranger-related configurations
 in system access control properties files as as well catalog files using the
 Hive connector for Hive access control with Apache Ranger or Privacera.</p>
-<table id="id2">
-<caption><span class="caption-text">Ranger properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Ranger properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 20%"/>
@@ -1045,12 +1057,20 @@ Presto plugin username <code class="docutils literal notranslate"><span class="p
 
 
 <span id="id1"></span><h2 id="starburst-ranger-cli">Starburst Ranger CLI<a class="headerlink" href="#starburst-ranger-cli" title="Permalink to this headline">#</a></h2>
-<p>You can use the Starburst Ranger CLI to manage the service definitions and users
-in Apache Ranger or Privacera Ranger and other tasks.</p>
+<p>You can use the Starburst Ranger CLI to manage integration of SEP with Apache
+Ranger or Privacera Ranger for the following tasks:</p>
+<ul class="simple">
+<li><p>Service definition setup for <a class="reference internal" href="global-ranger.html#ranger-installation"><span class="std std-ref">initial configuration</span></a></p></li>
+<li><p>Service definition setup for <a class="reference internal" href="global-ranger.html#ranger-plugin-upgrade"><span class="std std-ref">initial configuration</span></a></p></li>
+<li><p><a class="reference internal" href="#ranger-user-management"><span class="std std-ref">Ranger user management</span></a></p></li>
+</ul>
 <p>The command line application is an executable Java archive, that requires Java
 11 or higher available on the system path. You can download it from Starburst
 and install it with the following steps on Linux or macOS.</p>
 <ul>
+<li><p>Ensure the computer is able to reach the Ranger server via HTTP, since the
+CLI interacts with the REST API. This can be the coordinator, or worker in
+the cluster or any other computer.</p></li>
 <li><p>Verify Java with <code class="docutils literal notranslate"><span class="pre">java</span> <span class="pre">-version</span></code></p></li>
 <li><p>Move the binary to a directory in your path, such as <code class="docutils literal notranslate"><span class="pre">~/bin</span></code> and rename it.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mv starburst-ranger-cli-*-executable.jar ~/bin/starburst-ranger-cli
@@ -1081,19 +1101,79 @@ starburst-ranger-cli <span class="o">[</span>--properties<span class="o">=</span
 </div>
 </li>
 </ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">help</span></code> command can also provide details about the other commands and their
+specific options, if you append help to the desired command, with a few examples
+shown in the following block:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>starburst-ranger-cli <span class="nb">help</span>
+starburst-ranger-cli user <span class="nb">help</span>
+starburst-ranger-cli service-definition <span class="nb">help</span>
+starburst-ranger-cli user create <span class="nb">help</span>
+</pre></div>
+</div>
 <p>Windows installation is supported as well and requires similar commands. You can
 also run the application directly with Java on Linux, macOS or Windows.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>java -jar starburst-ranger-cli-*-executable.jar
 </pre></div>
 </div>
-<p>You can supply <a class="reference internal" href="#ranger-config-properties"><span class="std std-ref">Ranger configuration properties</span></a>
-as part of your CLI invocation with two methods:</p>
+<p>You have to supply the connection details from Presto to Ranger in a properties
+file. Typically you can simply use the <a class="reference internal" href="global-ranger.html#ranger-plugin-configuration"><span class="std std-ref">Ranger access control properties
+file</span></a> by copying it to the computer running the
+CLI. Alternatively you can use individual properties as command line options.</p>
 <ul class="simple">
 <li><p>Use the <code class="docutils literal notranslate"><span class="pre">--properties</span></code> to specify the full path to a <code class="docutils literal notranslate"><span class="pre">.properties</span></code> file
 that contains one or more <code class="docutils literal notranslate"><span class="pre">key=value</span></code> pairs on each line</p></li>
 <li><p>Use the <code class="docutils literal notranslate"><span class="pre">-p</span></code> option for each property separately with the format
 <code class="docutils literal notranslate"><span class="pre">-p=key=value</span></code>.</p></li>
 </ul>
+
+<span id="id2"></span><h3 id="ranger-user-management">Ranger user management<a class="headerlink" href="#ranger-user-management" title="Permalink to this headline">#</a></h3>
+<p>You can manage users in Ranger with the CLI. Properties are used to provide the
+details for Ranger access.</p>
+<p>The following operations are available:</p>
+<ul class="simple">
+<li><p>create a user</p></li>
+<li><p>get user details</p></li>
+<li><p>delete a user</p></li>
+</ul>
+<p>Syntax follows the same syntax and users properties and the <code class="docutils literal notranslate"><span class="pre">--name</span></code> option:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>starburst-ranger-cli user get
+starburst-ranger-cli user create
+starburst-ranger-cli user delete
+</pre></div>
+</div>
+<p>A full example to get a user can look like this:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>starburst-ranger-cli user get --name<span class="o">=</span>username --properties<span class="o">=</span>ranger-access-control.properties
+</pre></div>
+</div>
+<p>Creating a user relies on a JSON file, such as <code class="docutils literal notranslate"><span class="pre">alice.json</span></code>, with the
+following syntax:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span>
+  <span class="nt">"firstName"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">,</span>
+  <span class="nt">"lastName"</span><span class="p">:</span> <span class="s2">"Wonderland"</span><span class="p">,</span>
+  <span class="nt">"emailAddress"</span><span class="p">:</span> <span class="s2">"alice@example.com"</span><span class="p">,</span>
+  <span class="nt">"password"</span><span class="p">:</span> <span class="s2">"not@trivialP225w0rd"</span><span class="p">,</span>
+  <span class="nt">"description"</span><span class="p">:</span> <span class="s2">"She went down the rabbit hole."</span><span class="p">,</span>
+  <span class="nt">"groupIdList"</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="nt">"groupNameList"</span><span class="p">:</span> <span class="p">[],</span>
+  <span class="nt">"status"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">"isVisible"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">"userSource"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nt">"userRoleList"</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The files is passed with the <code class="docutils literal notranslate"><span class="pre">-f</span></code> or <code class="docutils literal notranslate"><span class="pre">--from-file</span></code> option:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>starburst-ranger-cli user create -f<span class="o">=</span>alice.json
+</pre></div>
+</div>
+
+
+<h3 id="service-definition-management">Service definition management<a class="headerlink" href="#service-definition-management" title="Permalink to this headline">#</a></h3>
+<p>You can find information about creating and overriding the service definition in
+the sections about <a class="reference internal" href="global-ranger.html#ranger-plugin-installation"><span class="std std-ref">installing</span></a> and
+<a class="reference internal" href="global-ranger.html#ranger-plugin-upgrade"><span class="std std-ref">upgrading</span></a> the Presto Ranger plugin.</p>
+
 
 
 
