@@ -429,6 +429,14 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#jdbc-connection-pooling" class="md-nav__link">JDBC connection pooling</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -739,6 +747,14 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#jdbc-connection-pooling" class="md-nav__link">JDBC connection pooling</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -884,6 +900,96 @@ removed.</p>
 data source cache.</p>
 <p><code class="docutils literal notranslate"><span class="pre">connection-pool.pool-cache-ttl</span></code> controls the expiration of a cached data
 source when they are no longer accessed.</p>
+
+
+<span id="base-jdbc-table-scan-redirection"></span><h2 id="table-scan-redirection">Table scan redirection<a class="headerlink" href="#table-scan-redirection" title="Permalink to this headline">#</a></h2>
+<p>Table scan redirection enables SEP to offload data access to tables accessed in
+one catalog to equivalent tables accessed in another catalog. This can improve
+performance by shifting data access to a more performant system. It can also
+reduce load on a data source.</p>
+<p>Redirection is transparent to the user, and therefore provides performance
+improvements without the need to modify queries.</p>
+<p>A typical use case is the redirection from a catalog configuring a relational
+database to a catalog using the Hive connector to access a data lake. That
+catalog can also take advantage of <a class="reference internal" href="hive-caching.html"><span class="doc">Hive connector storage caching</span></a>.</p>
+
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h3>
+<p>Table scan redirection is enabled in <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code> with the
+following properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">redirection.config-source</span><span class="o">=</span><span class="s">FILE</span>
+<span class="na">redirection.config-file</span><span class="o">=</span><span class="s">etc/redirection-rules.json</span>
+</pre></div>
+</div>
+<p>The configuration is located in a JSON file. The following sample
+<code class="docutils literal notranslate"><span class="pre">redirection-rules.json</span></code> file configures redirection of table scans from a
+catalog <code class="docutils literal notranslate"><span class="pre">rdbms</span></code> to a catalog <code class="docutils literal notranslate"><span class="pre">datalake</span></code>.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"rdbms"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"schemas"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">"schema_name_a"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"table_name_1"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">"targetCatalog"</span><span class="p">:</span> <span class="s2">"datalake"</span><span class="p">,</span>
+          <span class="nt">"targetSchema"</span><span class="p">:</span> <span class="s2">"cache"</span><span class="p">,</span>
+          <span class="nt">"targetTable"</span><span class="p">:</span> <span class="s2">"table_name_a"</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">"schema_name_b"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">"table_name_2"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">"targetCatalog"</span><span class="p">:</span> <span class="s2">"datalake"</span><span class="p">,</span>
+          <span class="nt">"targetSchema"</span><span class="p">:</span> <span class="s2">"cache"</span><span class="p">,</span>
+          <span class="nt">"targetTable"</span><span class="p">:</span> <span class="s2">"table_name_b"</span><span class="p">,</span>
+          <span class="nt">"columns"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">"col1"</span><span class="p">,</span>
+            <span class="s2">"col2"</span><span class="p">,</span>
+            <span class="s2">"col3"</span>
+          <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="nt">"table_name_3"</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">"targetCatalog"</span><span class="p">:</span> <span class="s2">"datalake"</span><span class="p">,</span>
+          <span class="nt">"targetSchema"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
+          <span class="nt">"targetTable"</span><span class="p">:</span> <span class="s2">"table_name_c"</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>If the target table stores a subset of the columns from the source table, then
+the columns stored by the target table must be specified as shown above for
+<code class="docutils literal notranslate"><span class="pre">rdbms.schema_name_b.table_name_2</span></code>. When <code class="docutils literal notranslate"><span class="pre">columns</span></code> for a target table are
+not specified, it is assumed that it contains all the columns from the source
+table.</p>
+<p>The above configuration results in the following be:</p>
+<ul class="simple">
+<li><p>All scans on <code class="docutils literal notranslate"><span class="pre">rdbms.schema_name_a.table_name_1</span></code> are redirected to
+<code class="docutils literal notranslate"><span class="pre">datalake.cache.table_name_a</span></code>.</p></li>
+<li><p>Scans on <code class="docutils literal notranslate"><span class="pre">rdbms.schema_name_b.table_name_2</span></code> using the columns
+<code class="docutils literal notranslate"><span class="pre">col1,</span> <span class="pre">col2,</span> <span class="pre">col3</span></code> are redirected to <code class="docutils literal notranslate"><span class="pre">datalake.cache.table_name_b</span></code>.</p></li>
+<li><p>All scans on <code class="docutils literal notranslate"><span class="pre">rdbms.schema_name_b.table_name_3</span></code> are redirected to
+<code class="docutils literal notranslate"><span class="pre">datalake.cache.table_name_c</span></code>.</p></li>
+</ul>
+<p>Redirections for multiple catalogs can be defined by adding key-value pairs
+along the lines of <code class="docutils literal notranslate"><span class="pre">"rdbms":</span> <span class="pre">{...}</span></code> to the above configuration file.</p>
+<p>By default, SEP reloads rules from the configuration file every minute. This can
+controlled using <code class="docutils literal notranslate"><span class="pre">redirection.refresh-period</span></code> property in
+<code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>.</p>
+<p>Redirection of table scans is performed by SEP after applying authentication
+and permission checks from the source catalog.</p>
+<p>Table scan redirection for a catalog can be disabled using the
+<code class="docutils literal notranslate"><span class="pre">table_scan_redirection_enabled</span></code> catalog session property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION mycatalog.table_scan_redirection_enabled = false;
+</pre></div>
+</div>
+
+
+<h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h3>
+<ul class="simple">
+<li><p>Creation and refresh of target tables is not managed by SEP.</p></li>
+<li><p>Data types of columns stored in the target table must match with the data
+types of those columns in the source table.</p></li>
+</ul>
+
 
 
 
