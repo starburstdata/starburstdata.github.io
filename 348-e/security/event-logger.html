@@ -637,13 +637,20 @@ name needs to be set to <code class="docutils literal notranslate"><span class="
 connection URL with hostname, port and database name as well as username and
 password for accessing the PostgreSQL database.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">event-logger</span>
-<span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:postgresql://postgresql.example.com:5432/public</span>
+<span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:postgresql://postgresql.example.com:5432/event_logger</span>
 <span class="na">jdbc.user</span><span class="o">=</span><span class="s">test_psql</span>
 <span class="na">jdbc.password</span><span class="o">=</span><span class="s">test12</span>
 </pre></div>
 </div>
 <p>The user needs to have sufficient rights to create tables and insert data in the
 configured schema.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not good practice to use the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema. The user should be
+configured to use a different schema, by default. See the <a class="reference external" href="https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATTERNS">PostgreSQL
+documentation</a>
+for details.</p>
+</div>
 <p>The cluster must be restarted after creating configuration file. At first usage
 the table <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> is automatically created in the PostgreSQL
 database.</p>
@@ -899,77 +906,89 @@ hoc analysis and more.</p>
 
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this headline">#</a></h2>
 <p>Generate event logger data by running a query.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; SELECT nationkey, name, regionkey FROM tpch.sf1.nation LIMIT 5;
-nationkey |   name    | regionkey
------------+-----------+-----------
-        0 | ALGERIA   |         0
-        1 | ARGENTINA |         1
-        2 | BRAZIL    |         1
-        3 | CANADA    |         1
-        4 | EGYPT     |         4
-(5 rows)
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; CREATE TABLE memory.default.country AS
+        SELECT n.name nation_name, r.name region_name
+        FROM delta.sf1.nation n JOIN delta.sf1.region r ON n.regionkey = r.regionkey;
+CREATE TABLE: 25 rows
 
-Query 20200703_035704_00001_9n2pi, FINISHED, 1 node
-Splits: 33 total, 33 done (100.00%)
-1.80 [25 rows, 0B] [13 rows/s, 0B/s]
+Query 20201209_021306_00003_qsyab, FINISHED, 1 node
+Splits: 68 total, 68 done (100.00%)
+3.34 [35 rows, 5.35KB] [10 rows/s, 1.6KB/s]
 </pre></div>
 </div>
 <p>Event logger data is written to the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table in the
 PostgreSQL database.</p>
-<p>In the following example, the catalog file is named <code class="docutils literal notranslate"><span class="pre">postgresql.properties</span></code>
-and the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema contains the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table. The query_id
-from the execution is used to locate the correct record. The output in the
-following example has been trimmed.</p>
+<p>In the following example, the catalog file is named <code class="docutils literal notranslate"><span class="pre">event_logger.properties</span></code>
+and the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema contains the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table. The
+<code class="docutils literal notranslate"><span class="pre">query_id</span></code> from the execution is used to locate the correct record. The output
+in the following example has been trimmed.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; SELECT *
-        FROM postgresql.public.completed_queries
-        WHERE query_id = '20200703_035704_00001_9n2pi';
+        FROM event_logger.public.completed_queries
+        WHERE query_id = '20201209_021306_00003_qsyab';
 -[ RECORD 1 ]-------------------------+---------------------------------------
-query_id                              | 20200703_035704_00001_9n2pi
+query_id                              | 20201209_021306_00003_qsyab
 catalog                               | NULL
 schema                                | NULL
-principal                             | NULL
-user_agent                            | StatementClientV1/334
+principal                             | demo
+user_agent                            | StatementClientV1/345
 client_info                           | NULL
 source                                | presto-cli
 environment                           | demo
 remote_client_address                 | 127.0.0.1
-server_version                        | 334-e
+server_version                        | 348-e
 usr                                   | demo
 query_state                           | FINISHED
-query                                 | SELECT nationkey, name, regionkey FROM tpch.sf1.nation LIMIT 5
-query_plan                            | Fragment 0 [SINGLE]
-                                      |     CPU: 24.50ms, Scheduled: 117.15ms, Input: 5 rows (148B); per task: avg.: 5.00 std.dev.: 0.00, Output: 5 rows
-                                      |     Output layout: [nationkey, name, regionkey]
+query                                 | CREATE TABLE memory.default.country AS SELECT n.name nation_name, r.name region_name FROM delta.sf1.nation n JOIN delta.sf1.region r ON n.regionkey = r.regionkey
+query_plan                            | Fragment 0 [COORDINATOR_ONLY]
+                                      |     CPU: 43.24ms, Scheduled: 60.81ms, Input: 2 rows (81B); per task: avg.: 2.00 std.dev.: 0.00, Output: 1 row (9B)
+                                      |     Output layout: [rows]
                                       | ...
-total_rows                            | 25
-total_bytes                           | 0
-output_rows                           | 5
-output_bytes                          | 148
-written_rows                          | 0
-written_bytes                         | 0
-cpu_time_ms                           | 1615
-wall_time_ms                          | 2169
+total_rows                            | 35
+total_bytes                           | 5477
+output_rows                           | 1
+output_bytes                          | 9
+written_rows                          | 25
+written_bytes                         | 597
+cpu_time_ms                           | 392
+wall_time_ms                          | 3342
 queued_time_ms                        | 10
-peak_user_memory_bytes                | 0
-peak_total_non_revocable_memory_bytes | 0
-peak_task_user_memory                 | 0
-peak_task_total_memory                | 0
-physical_input_bytes                  | 0
-physical_input_rows                   | 25
-internal_network_bytes                | 202
-internal_network_rows                 | 5
-cumulative_memory                     | 0.0
-completed_splits                      | 33
+peak_user_memory_bytes                | 387318
+peak_total_non_revocable_memory_bytes | 387318
+peak_task_user_memory                 | 387318
+peak_task_total_memory                | 387318
+physical_input_bytes                  | 5274
+physical_input_rows                   | 30
+internal_network_bytes                | 933
+internal_network_rows                 | 32
+cumulative_memory                     | 7.7086698E7
+completed_splits                      | 68
 plan_node_stats_and_costs             | {"stats":{},"costs":{}}
 stage_gc_statistics                   | [{"stageId":0,"tasks":1,"fullGcTasks":0,...
 cpu_time_distribution                 | [{"stageId":0,"tasks":1,"p25":25,"p50":25,...
 operator_summaries                    | [{"stageId":0,"pipelineId":0,"operatorId":0,..
-resource_waiting_time                 | 165
-analysis_time                         | 168
-execution_time                        | 1993
-create_time                           | 2020-07-03 03:59:54.543 UTC
-end_time                              | 2020-07-03 03:59:56.712 UTC
-accessed_metadata                     | [{"catalogName":"tpch","schema":"sf1.0","table":"nation","columns":["nationkey","regionkey","name"]}]
+resource_waiting_time                 | 783
+analysis_time                         | 783
+execution_time                        | 2559
+create_time                           | 2020-12-09 02:13:06.140000 UTC
+end_time                              | 2020-12-09 02:13:09.482000 UTC
+accessed_metadata                     | [{"catalogName":"delta","schema":"sf1","table":"nation","columns":["name","regionkey"],...
+failure_info                          | NULL
+update_type                           | CREATE TABLE
+planning_time                         | 1711
+scheduled_time                        | 1263
+</pre></div>
+</div>
+<p>The tables accessed by the query are recorded in the <code class="docutils literal notranslate"><span class="pre">query_tables</span></code> table and
+can be identified using the same <code class="docutils literal notranslate"><span class="pre">query_id</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; SELECT *
+        FROM event_logger.public.query_tables
+        WHERE query_id = '20201209_021306_00003_qsyab';
+          query_id           | catalog_name | schema_name | table_name | physical_bytes | physical_rows | is_output
+-----------------------------+--------------+-------------+------------+----------------+---------------+-----------
+ 20201209_021306_00003_qsyab | memory       | default     | country    |            597 |            25 | true
+ 20201209_021306_00003_qsyab | delta        | sf1         | region     |           1691 |             5 | false
+ 20201209_021306_00003_qsyab | delta        | sf1         | nation     |           3583 |            25 | false
+(3 rows)
 </pre></div>
 </div>
 
