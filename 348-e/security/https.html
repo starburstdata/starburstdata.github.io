@@ -279,7 +279,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#inspect-pem-certificates" class="md-nav__link">Inspect PEM certificates</a>
         </li>
-        <li class="md-nav__item"><a href="#validate-pem-certificates" class="md-nav__link">Validate PEM certificates</a>
+        <li class="md-nav__item"><a href="#validate-key" class="md-nav__link">Validate key</a>
+        </li>
+        <li class="md-nav__item"><a href="#validate-certificate" class="md-nav__link">Validate certificate</a>
+        </li>
+        <li class="md-nav__item"><a href="#invalid-certs" class="md-nav__link">Invalid certs</a>
         </li>
         <li class="md-nav__item"><a href="#inspect-jks-keystores" class="md-nav__link">Inspect JKS keystores</a>
         </li>
@@ -594,7 +598,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#inspect-pem-certificates" class="md-nav__link">Inspect PEM certificates</a>
         </li>
-        <li class="md-nav__item"><a href="#validate-pem-certificates" class="md-nav__link">Validate PEM certificates</a>
+        <li class="md-nav__item"><a href="#validate-key" class="md-nav__link">Validate key</a>
+        </li>
+        <li class="md-nav__item"><a href="#validate-certificate" class="md-nav__link">Validate certificate</a>
+        </li>
+        <li class="md-nav__item"><a href="#invalid-certs" class="md-nav__link">Invalid certs</a>
         </li>
         <li class="md-nav__item"><a href="#inspect-jks-keystores" class="md-nav__link">Inspect JKS keystores</a>
         </li>
@@ -628,8 +636,8 @@ allows you to connect to the server using URLs that specify the HTTP protocol
 with the Presto <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a>, the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a>, or other clients.</p>
 <p>This guide describes how to configure Presto to use <a class="reference external" href="https://en.wikipedia.org/wiki/Transport_Layer_Security">Transport Layer Security
 (TLS)</a>, and require
-the HTTPS protocol from client connections. This is a requirement to enable any
-supported authentication and authorization.</p>
+the HTTPS protocol from client connections. All authentication and authorization
+technologies supported by SEP require configuring TLS as the foundation.</p>
 <p>Transport Layer Security (TLS) is the successor to its now-deprecated
 predecessor, Secure Sockets Layer (SSL). This page uses the term TLS to refer
 to TLS and SSL.</p>
@@ -638,11 +646,11 @@ to TLS and SSL.</p>
 <p>To configure Presto with TLS support, there are two alternative paths to
 consider:</p>
 <ul class="simple">
-<li><p>Use the <a class="reference internal" href="#https-load-balancer"><span class="std std-ref">load balancer or proxy</span></a> at your site or
-cloud environment to terminate HTTPS/TLS. This approach is the simplest and
+<li><p>Use the <a class="reference internal" href="#https-load-balancer"><span class="std std-ref">load balancer or proxy</span></a> at your site
+or cloud environment to terminate HTTPS/TLS. This approach is the simplest and
 strongly preferred solution.</p></li>
-<li><p>Secure the <a class="reference internal" href="#https-presto"><span class="std std-ref">Presto server directly</span></a>. This requires you to
-obtain a valid certificate, and add it to the Presto coordinator’s
+<li><p>Secure the <a class="reference internal" href="#https-presto"><span class="std std-ref">Presto server directly</span></a>. This requires you
+to obtain a valid certificate, and add it to the Presto coordinator’s
 configuration.</p></li>
 </ul>
 
@@ -651,9 +659,9 @@ configuration.</p></li>
 <p>Your site or cloud environment may already have a load balancer or proxy server
 configured and running with a valid TLS certificate. In this case, you can work
 with your network administration group to set up your Presto server behind the
-load balancer. It accepts TLS connections and forwards them to Presto running
-with default HTTP configuration. This includes changing the port to the default
-<code class="docutils literal notranslate"><span class="pre">8080</span></code>.</p>
+load balancer. The load balancer or proxy server accepts TLS connections and
+forwards them to the Presto coordinator, which runs with default HTTP
+configuration on the default port, 8080.</p>
 <p>In this case, the Presto cluster is contained in a virtual private network. The
 load balancer adds request headers with the original client information:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>X-Forwarded-Proto: https
@@ -671,8 +679,8 @@ Client tools can access Presto with the URL exposed by the load balancer.</p>
 
 <span id="https-presto"></span><h2 id="secure-presto-directly">Secure Presto directly<a class="headerlink" href="#secure-presto-directly" title="Permalink to this headline">#</a></h2>
 <p>Instead of the preferred mechanism of <a class="reference internal" href="#https-load-balancer"><span class="std std-ref">using an external load balancer</span></a>, you can secure the Presto coordinator itself. This
-requires you to use a certificate and configure Presto to use it for any client
-connections.</p>
+requires you to obtain and install a TLS certificate and configure Presto to use
+it for any client connections.</p>
 
 <h3 id="add-a-tls-certificate">Add a TLS certificate<a class="headerlink" href="#add-a-tls-certificate" title="Permalink to this headline">#</a></h3>
 <p>Obtain a TLS certificate file (a cert) from one of the following sources:</p>
@@ -684,7 +692,7 @@ connections.</p>
 <li><p>A free certificate generator, such as <a class="reference external" href="https://letsencrypt.org/">letsencrypt.org</a> or <a class="reference external" href="https://www.sslforfree.com/">sslforfree.com</a></p></li>
 <li><p>A certificate generating command such as <code class="docutils literal notranslate"><span class="pre">openssl</span></code> or <code class="docutils literal notranslate"><span class="pre">keytool</span></code></p></li>
 </ul>
-<p>Presto supports certificate files in PEM (PKCS #8 and PKCS #1) or JKS format.
+<p>Presto supports certificate files in PEM (PKCS #8 and PKCS #12) or JKS format.
 The PEM format is preferred, and is easier to use.</p>
 <p>Make sure you obtain a certificate that is certified by a recognized
 certification authority (CA), or that you submit a self-generated certificate
@@ -692,53 +700,68 @@ to a CA for validation.</p>
 
 <span id="inspect-pems"></span><h4 id="inspect-pem-certificates">Inspect PEM certificates<a class="headerlink" href="#inspect-pem-certificates" title="Permalink to this headline">#</a></h4>
 <p>When you receive your PEM format certificate, inspect it and verify that it
-shows the correct information for your Presto server. Use this <code class="docutils literal notranslate"><span class="pre">openssl</span></code>
-command to inspect the cert:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl x509 -in your-cert-file -text -nout
-</pre></div>
-</div>
-<p>If your PEM file was generated with a password, <code class="docutils literal notranslate"><span class="pre">openssl</span></code> prompts for it.</p>
-<p>The PEM file should contain server certificate and private key sections. For
-example:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-----BEGIN CERTIFICATE-----
-MIIFHjCCAwYCCQCmg7+WHUP8ADANBgkqhkiG9w0BAQsFADBRMQswCQYDVQQGEwJV
-...
------END CERTIFICATE-----
------BEGIN PRIVATE KEY-----
-MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQDTWPax1rfWIvK/
+shows the correct information for your Presto server. First, use the <code class="docutils literal notranslate"><span class="pre">cat</span></code>
+command to view this plain text file. It should contain sections for a PRIVATE
+KEY and at least one CERTIFICATE:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-----BEGIN PRIVATE KEY-----
+MIIEowIBAAKCAQEAwJL8CLeDFAHhZe3QOOF1vWt4Vuk9vyO38Y1y9SgBfB02b2jW
 ....
 -----END PRIVATE KEY-----
+-----BEGIN CERTIFICATE-----
+MIIDujCCAqICAQEwDQYJKoZIhvcNAQEFBQAwgaIxCzAJBgNVBAYTAlVTMRYwFAYD
+....
+-----END CERTIFICATE-----
+-----BEGIN CERTIFICATE-----
+MIIDwjCCAqoCCQCxyqwZ9GK50jANBgkqhkiG9w0BAQsFADCBojELMAkGA1UEBhMC
+....
+-----END CERTIFICATE-----
 </pre></div>
 </div>
-<p>If you received two separate files, one for each type, just concatenate the
-files into one, in the order shown above.</p>
-<p>If your PEM reports <code class="docutils literal notranslate"><span class="pre">ENCRYPTED</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code>, you must use a password when
-invoking that key.</p>
-<p>In your PEM file, look for the following characteristics:</p>
-<ul class="simple">
-<li><p>Modern browsers now enforce 398 days as the maximum validity length. Look for
-<code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">Before</span></code> and <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">After</span></code> dates in the <code class="docutils literal notranslate"><span class="pre">Validity</span></code> section of the
-output, and make sure the time between does not exceed 398 days.</p></li>
-<li><p>If you received an x509 version 3 certificate, it has a <strong>Subject Alternative
-Name</strong> field. Make sure this shows the DNS name of your server, such as
-<code class="docutils literal notranslate"><span class="pre">DNS:presto.example.com</span></code></p></li>
-<li><p>The legacy common name (CN) field is ignored by modern browsers, but is good
-to have. Example: <code class="docutils literal notranslate"><span class="pre">CN=presto.example.com</span></code></p></li>
-</ul>
-
-
-<span id="validate-pems"></span><h4 id="validate-pem-certificates">Validate PEM certificates<a class="headerlink" href="#validate-pem-certificates" title="Permalink to this headline">#</a></h4>
-<p>Validate your PEM cert with the following command:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl rsa -in your-cert-file -check -noout
+<p>If your PEM or key file reports <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">ENCRYPTED</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code>, you must use a
+password when invoking that key.</p>
+<p>If you received separate PEM files, one for the server’s key and another for its
+certificate, concatenate the files into one, in order from key to cert.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>cat key.pem cert.pem &gt; server.pem
 </pre></div>
 </div>
-<p>If your PEM file was generated with a password, <code class="docutils literal notranslate"><span class="pre">openssl</span></code> prompts for it. Look
-for the following confirmation message:</p>
+
+
+<span id="validate-pems"></span><h4 id="validate-key">Validate key<a class="headerlink" href="#validate-key" title="Permalink to this headline">#</a></h4>
+<p>This page presumes your system uses OpenSSL 1.1 or later.</p>
+<p>Test the key’s validity with the following command:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl rsa -in server.pem -check -noout
+</pre></div>
+</div>
+<p>Look for the following confirmation message:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>RSA key ok
 </pre></div>
 </div>
+
+
+<h4 id="validate-certificate">Validate certificate<a class="headerlink" href="#validate-certificate" title="Permalink to this headline">#</a></h4>
+<p>For the cert file, analyze it with a different <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl x509 -in server.pem -text -noout
+</pre></div>
+</div>
+<p>If your cert was generated with a password, <code class="docutils literal notranslate"><span class="pre">openssl</span></code> prompts for it.</p>
+<p>In the output of the <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command, look for the following
+characteristics:</p>
+<ul class="simple">
+<li><p>Modern browsers now enforce 398 days as the maximum validity period for a
+cert. Look for <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">Before</span></code> and <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">After</span></code> dates in the <code class="docutils literal notranslate"><span class="pre">Validity</span></code>
+section of the output, and make sure the time span does not exceed 398
+days.</p></li>
+<li><p>If you received an x509 version 3 certificate, it may have a <strong>Subject
+Alternative Name</strong> field. If present, make sure this shows the DNS name of
+your server, such as <code class="docutils literal notranslate"><span class="pre">DNS:presto.example.com</span></code></p></li>
+<li><p>The legacy common name (CN) field is ignored by modern browsers, but is a good
+visual aid to distinguish certs. Example: <code class="docutils literal notranslate"><span class="pre">CN=presto.example.com</span></code></p></li>
+</ul>
+
+
+<h4 id="invalid-certs">Invalid certs<a class="headerlink" href="#invalid-certs" title="Permalink to this headline">#</a></h4>
 <p>If your cert does not pass validation, or does not show the expected information
-after inspection, contact the group or vendor who provided it.</p>
+upon inspection, contact the group or vendor who provided it.</p>
 
 
 <span id="troubleshooting-keystore"></span><h4 id="inspect-jks-keystores">Inspect JKS keystores<a class="headerlink" href="#inspect-jks-keystores" title="Permalink to this headline">#</a></h4>
@@ -747,14 +770,16 @@ are stored in a JKS keystore file.</p>
 <p>Inspect the JKS keystore file to make sure it contains the correct information
 for your Presto server. Use the <code class="docutils literal notranslate"><span class="pre">keytool</span></code> command, which is installed as part
 of Java, to retrieve information from your keystore container file:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>keytool -list -v -keystore your-keystore.jks
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>keytool -list -v -keystore yourKeystore.jks
 </pre></div>
 </div>
 <p>Keystores always require a password. If not provided on the <code class="docutils literal notranslate"><span class="pre">keytool</span></code> command
 line, <code class="docutils literal notranslate"><span class="pre">keytool</span></code> prompts for the password.</p>
 <p>Independent of the keystore’s password, it is possible that the JKS key has its
-own password. Make sure these passwords are the same, because <code class="docutils literal notranslate"><span class="pre">keytool</span></code> only
-prompts for one password at a time.</p>
+own password. It is easiest to make sure these passwords are the same. If the
+JKS key inside the keystore has a different password, you must specify it with
+the <code class="docutils literal notranslate"><span class="pre">keymanager.password</span></code> configuration property described
+below.</p>
 <p>In the output of the <code class="docutils literal notranslate"><span class="pre">keytool</span> <span class="pre">-list</span></code> command, look for:</p>
 <ul>
 <li><p>The keystore must contain a private key, such as <code class="docutils literal notranslate"><span class="pre">Entry</span> <span class="pre">type:</span>
@@ -780,10 +805,10 @@ certificate keystore, possibly with <code class="docutils literal notranslate"><
 might receive a certificate self-signed only by the issuing CA, or one signed by
 a chain of validating CAs.</p>
 <p>To create a certified JKS keystore, you must import the certificate received
-from the CA into the keystore, using the <code class="docutils literal notranslate"><span class="pre">keytool</span> <span class="pre">-import</span></code> command. The
+from the CA into the keystore, using the <code class="docutils literal notranslate"><span class="pre">keytool</span> <span class="pre">‑import</span></code> command. The
 <code class="docutils literal notranslate"><span class="pre">keytool</span></code> command is complex and covers many cases. Please study the
 <strong>Certificate Chains</strong> and <strong>Importing Certificates</strong> sections of the
-<code class="docutils literal notranslate"><span class="pre">keytool</span></code> man page before proceeding.</p>
+<code class="docutils literal notranslate"><span class="pre">keytool</span></code> man page for instructions.</p>
 <p>The JKS system works in conjunction with JKS truststore files, described in
 <a class="reference internal" href="#config-truststore"><span class="std std-ref">Additional configuration for truststores</span></a>.</p>
 
@@ -800,25 +825,20 @@ path reference.</p></li>
 </ul>
 <p>You can place your PEM file or JKS keystore file in the Presto server’s <code class="docutils literal notranslate"><span class="pre">etc</span></code>
 directory, which allows you to use a relative path reference in configuration
-files.</p>
-<p>For <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> style Presto installations, if you upgrade one Presto version to
-another, remember to copy the cert file to the new installation’s <code class="docutils literal notranslate"><span class="pre">etc</span></code>
-directory.</p>
-<p>By contrast, an RPM installation generally uses the system <code class="docutils literal notranslate"><span class="pre">/etc/presto</span></code>
-directory to hold server configuration files, which are re-used after a Presto
-server version upgrade.</p>
+files. However, this location might require you to keep track of the cert file
+and move it to a new <code class="docutils literal notranslate"><span class="pre">etc</span></code> directory if you upgrade your Presto version.</p>
 
 
 <span id="configure-https"></span><h3 id="configure-the-coordinator">Configure the coordinator<a class="headerlink" href="#configure-the-coordinator" title="Permalink to this headline">#</a></h3>
 <p>On the coordinator, add the following lines to <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">the config properties file</span></a> to enable HTTPS support for the server:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.enabled=true
 http-server.https.port=8443
-http-server.https.keystore.path=etc/presto-example-com.pem
+http-server.https.keystore.path=etc/prestoExampleCom.pem
 </pre></div>
 </div>
-<p>Alternatives for the third line include:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.path=etc/presto-example-com.jks
-http-server.https.keystore.path=/usr/local/etc/presto-example-com.pem
+<p>Possible alternatives for the third line include:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.path=etc/prestoExampleCom.jks
+http-server.https.keystore.path=/usr/local/etc/prestoExampleCom.p12
 </pre></div>
 </div>
 <p>Relative paths are relative to the Presto server’s root directory. In a
@@ -828,8 +848,13 @@ one. For these cases, add the following line to specify the JKS or PEM password.
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.key=&lt;keystore-password&gt;
 </pre></div>
 </div>
-<p>Restart the server and test connecting with a URL that begins with <code class="docutils literal notranslate"><span class="pre">https://</span></code>
-using the Presto <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a>.</p>
+<p>If the JKS key itself inside the keystore has an independent password, specify
+that with the following property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keymanager.password=&lt;key-password&gt;
+</pre></div>
+</div>
+<p>Restart the server and test connecting to it with a URL that begins with
+<code class="docutils literal notranslate"><span class="pre">https://</span></code> using the <a class="reference internal" href="../installation/cli.html"><span class="doc">Presto CLI</span></a> or <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a>.</p>
 <p>Presto disables HTTP access to the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a> when
 HTTPS is enabled for the coordinator. Although not recommended, you can enable
 it by setting:</p>
@@ -858,13 +883,17 @@ http-server.https.enabled=true
 validate private keys. The truststore file, <code class="docutils literal notranslate"><span class="pre">cacerts</span></code>, is provided as part of
 your Java installation.</p>
 <p>A PEM format certificate usually contains a private key for your server plus a
-validating certificate that is recognized by at least one Certificate
-Authority. Thus, there is no need to identify a local truststore when using
-a signed PEM certificate.</p>
-<p>When using JKS keys, it is possible to copy the system <code class="docutils literal notranslate"><span class="pre">cacerts</span></code> file and use
-the copy. In this case, identify the location of the copy with the following
-configuration properties:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.truststore.path=etc/prestoca
+validating certificate that is recognized by at least one Certificate Authority,
+or a chain of CAs going back to a globally recognized CA. Thus, there is no need
+to identify a local truststore when using a signed PEM certificate.</p>
+<p>JKS keystores normally rely on the default location of the system truststore as
+installed with your Java installation.</p>
+<p>However, you may need to <em>temporarily</em> use a local CA to validate a self-signed
+cert. Do not use a local CA in a production enviroment, but you might need one
+during development of your cluster configuration while waiting for your
+self-signed cert to return signed by a recognized CA. In this case, identify the
+location of the local CA file with configuration properties like the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.truststore.path=etc/tempca
 http-server.https.truststore.key=&lt;truststore-password&gt;
 </pre></div>
 </div>
