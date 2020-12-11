@@ -423,6 +423,8 @@
         </li>
         <li class="md-nav__item"><a href="#lower-case-of-teradata-not-casespecific-char-types" class="md-nav__link">Lower case of Teradata <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">CASESPECIFIC</span></code> char types</a>
         </li>
+        <li class="md-nav__item"><a href="#pass-through-queries" class="md-nav__link">Pass-through queries</a>
+        </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
@@ -781,6 +783,8 @@
         <li class="md-nav__item"><a href="#mapping-configuration" class="md-nav__link">Mapping configuration</a>
         </li>
         <li class="md-nav__item"><a href="#lower-case-of-teradata-not-casespecific-char-types" class="md-nav__link">Lower case of Teradata <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">CASESPECIFIC</span></code> char types</a>
+        </li>
+        <li class="md-nav__item"><a href="#pass-through-queries" class="md-nav__link">Pass-through queries</a>
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1148,6 +1152,36 @@ property:</p>
 </div>
 
 
+<h3 id="pass-through-queries">Pass-through queries<a class="headerlink" href="#pass-through-queries" title="Permalink to this headline">#</a></h3>
+<p>The Teradata connector allows you to embed any valid Teradata query. You need to
+enable this feature in the catalog properties file with the following
+configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">teradata.query-pass-through.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>The Teradata query string you want to pass through has to be base32-encoded to
+avoid having to deal with escaping quotes and case sensitivity issues in table
+identifiers.</p>
+<p>For example, you can encode the following simple Teradata query. It uses the
+<code class="docutils literal notranslate"><span class="pre">TOP</span></code> statement, which is not supported in ANSI SQL and Presto:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">TOP</span> <span class="mi">1</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">nationkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Copy the statement into a file <code class="docutils literal notranslate"><span class="pre">query.txt</span></code>, and encode the text on the
+command line with <code class="docutils literal notranslate"><span class="pre">base32</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ base32 query.txt
+KNCUYRKDKQQFIT2QEAYSAKRAIZJE6TJANZQXI2LPNYQE6USEIVJCAQSZEBXGC5DJN5XGWZLZHMFA
+</pre></div>
+</div>
+<p>The command is typically available in a <code class="docutils literal notranslate"><span class="pre">coreutils</span></code> package.</p>
+<p>Now it can be used in a query. The following example returns all resulting rows
+(<code class="docutils literal notranslate"><span class="pre">*</span></code>) from the query that runs in the <code class="docutils literal notranslate"><span class="pre">any</span></code> schema in the <code class="docutils literal notranslate"><span class="pre">td</span></code> catalog:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">td</span><span class="p">.</span><span class="k">any</span><span class="p">.</span><span class="ss">"$query:KNCUYRKDKQQFIT2QEAYSAKRAIZJE6TJANZQXI2LPNYQE6USEIVJCAQSZEBXGC5DJN5XGWZLZHMFA"</span>
+</pre></div>
+</div>
+
+
 <h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this headline">#</a></h3>
 <p>The connector includes a number of performance improvements, detailed in the
 following sections.</p>
@@ -1202,7 +1236,7 @@ following sections.</p>
 <span id="teradata-user-impersonation"></span><h4 id="user-impersonation">User impersonation<a class="headerlink" href="#user-impersonation" title="Permalink to this headline">#</a></h4>
 <p>Teradata connector supports <a class="reference internal" href="../security/impersonation.html"><span class="doc">user impersonation</span></a>.</p>
 <p>User impersonation can be enabled in the catalog file:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>teradata.impersonation-enabled=true
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>teradata.impersonation.enabled=true
 </pre></div>
 </div>
 <p>User impersonation in Teradata connector is based on <code class="docutils literal notranslate"><span class="pre">GRANT</span> <span class="pre">CONNECT</span> <span class="pre">THROUGH</span></code>.
