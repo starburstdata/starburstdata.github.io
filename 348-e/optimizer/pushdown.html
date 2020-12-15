@@ -297,7 +297,7 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#analysis-and-confirmation" class="md-nav__link">Analysis and Confirmation</a>
+        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation Pushdown</a>
         </li>
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
@@ -401,7 +401,7 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#analysis-and-confirmation" class="md-nav__link">Analysis and Confirmation</a>
+        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation Pushdown</a>
         </li>
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
@@ -419,8 +419,9 @@
   
 <h1 id="optimizer-pushdown--page-root">Pushdown<a class="headerlink" href="#optimizer-pushdown--page-root" title="Permalink to this headline">#</a></h1>
 <p>Presto can push down the processing of queries, or parts of queries, into the
-connected data source. This means that a specific function, or other operation,
-is passed through to the underlying database or storage system for processing.</p>
+connected data source. This means that a specific predicate, aggregation function,
+or other operation, is passed through to the underlying database or storage system
+for processing.</p>
 <p>The results of this pushdown can include the following benefits:</p>
 <ul class="simple">
 <li><p>improved overall query performance</p></li>
@@ -430,20 +431,17 @@ is passed through to the underlying database or storage system for processing.</
 <p>Support for pushdown is specific to each connector and the relevant underlying
 database or storage system.</p>
 
-<h2 id="analysis-and-confirmation">Analysis and Confirmation<a class="headerlink" href="#analysis-and-confirmation" title="Permalink to this headline">#</a></h2>
-<p>Pushdown depends on a number of factors:</p>
+<h2 id="aggregation-pushdown">Aggregation Pushdown<a class="headerlink" href="#aggregation-pushdown" title="Permalink to this headline">#</a></h2>
+<p>Aggregation pushdown can take place provided the following conditions are satisfied:</p>
 <ul class="simple">
-<li><p>generic support for pushdown for that function in Presto</p></li>
-<li><p>function or operation specific support for pushdown in the connector</p></li>
-<li><p>query that allows the detection of the function to push down</p></li>
-<li><p>function needs to exist in the underlying system so it can process the
-pushdown</p></li>
+<li><p>If aggregation pushdown is generally supported by the connector.</p></li>
+<li><p>If pushdown of the specific function or functions is supported by the connector.</p></li>
+<li><p>If the query structure allows pushdown to take place.</p></li>
 </ul>
-<p>The best way to analyze if pushdown for a specific query is performed is to
-take a closer look at the <a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN plan</span></a> of the query. If an
-operation such as an aggregate function is successfully pushed down to the
-connector, the explain plan does <strong>not</strong> show that operator. The explain plan
-only shows the operations that are performed by Presto.</p>
+<p>You can check if pushdown for a specific query is performed by looking at the
+<a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN plan</span></a> of the query. If an aggregate function is successfully
+pushed down to the connector, the explain plan does <strong>not</strong> show that <code class="docutils literal notranslate"><span class="pre">Aggregate</span></code> operator.
+The explain plan only shows the operations that are performed by Presto.</p>
 <p>As an example, we loaded the TPCH data set into a PostgreSQL database and then
 queried it using the PostgreSQL connector:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">regionkey</span><span class="p">,</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
@@ -462,7 +460,7 @@ queried it using the PostgreSQL connector:</p>
 the <code class="docutils literal notranslate"><span class="pre">count</span></code> function, as this operation is now performed by the connector. You
 can see the <code class="docutils literal notranslate"><span class="pre">count(*)</span></code> function as part of the PostgreSQL <code class="docutils literal notranslate"><span class="pre">TableScan</span></code>
 operator. This shows you that the pushdown was successful.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
     Output layout: [regionkey_0, _presto_generated_1]
     Output partitioning: SINGLE []
     Stage Execution Strategy: UNGROUPED_EXECUTION
@@ -488,14 +486,13 @@ Fragment 1 [SOURCE]
 <p>A number of factors can prevent a push down:</p>
 <ul class="simple">
 <li><p>adding a condition to the query</p></li>
-<li><p>using a different aggregate function without pushdown support in Presto</p></li>
-<li><p>using a function that has no native equivalent in the underlying data source</p></li>
+<li><p>using a different aggregate function that cannot be pushed down into the connector</p></li>
 <li><p>using a connector without pushdown support for the specific function</p></li>
 </ul>
 <p>As a result, the explain plan shows the <code class="docutils literal notranslate"><span class="pre">Aggregate</span></code> operation being performed
-by Presto. This is a clear sign that now pushdown to the database is not
+by Presto. This is a clear sign that now pushdown to the remote data source is not
 performed, and instead Presto performs the aggregate processing.</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
     Output layout: [regionkey, count]
     Output partitioning: SINGLE []
     Stage Execution Strategy: UNGROUPED_EXECUTION
@@ -545,6 +542,8 @@ Fragment 2 [SOURCE]
 <li><p>complex grouping operations such as <code class="docutils literal notranslate"><span class="pre">ROLLUP</span></code>, <code class="docutils literal notranslate"><span class="pre">CUBE</span></code>, or <code class="docutils literal notranslate"><span class="pre">GROUPING</span> <span class="pre">SETS</span></code></p></li>
 <li><p>expressions inside the aggregation function call: <code class="docutils literal notranslate"><span class="pre">sum(a</span> <span class="pre">*</span> <span class="pre">b)</span></code></p></li>
 <li><p>coercions: <code class="docutils literal notranslate"><span class="pre">sum(integer_column)</span></code></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#aggregate-function-ordering-during-aggregation"><span class="std std-ref">aggregations with ordering</span></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#aggregate-function-filtering-during-aggregation"><span class="std std-ref">aggregations with filter</span></a></p></li>
 </ul>
 
 
