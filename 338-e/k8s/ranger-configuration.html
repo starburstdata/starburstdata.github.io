@@ -265,11 +265,13 @@ interface for policy management.</p>
     <span class="nt">secret</span><span class="p">:</span>
     <span class="c1"># password to truststore</span>
     <span class="nt">password</span><span class="p">:</span>
+  <span class="c1"># Enable the propagation of environment variables from Secrets and Configmaps</span>
+  <span class="nt">envFrom</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
   <span class="nt">env</span><span class="p">:</span>
     <span class="c1"># Additional env variables to pass to Ranger Admin.</span>
     <span class="c1"># To pass Ranger install property, use variable with name RANGE__&lt;property_name&gt;,</span>
     <span class="c1"># for example RANGER__authentication_method.</span>
-  <span class="nt">securityContext</span><span class="p">:</span>
+  <span class="nt">securityContext</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
     <span class="c1"># Optionally configure a security context for the ranger admin container</span>
 </pre></div>
 </div>
@@ -307,6 +309,8 @@ on a separate pod when deployed.</p>
       <span class="nt">secret</span><span class="p">:</span>
       <span class="c1"># password to truststore</span>
       <span class="nt">password</span><span class="p">:</span>
+  <span class="c1"># Enable the propagation of environment variables from Secrets and Configmaps</span>
+  <span class="nt">envFrom</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
   <span class="c1"># env is a map of ranger config variables</span>
   <span class="nt">env</span><span class="p">:</span>
     <span class="c1"># Use RANGER__&lt;property_name&gt; variables to set Ranger install properties.</span>
@@ -410,7 +414,9 @@ You have to manage this server and database yourself.</p>
     <span class="nt">databasePassword</span><span class="p">:</span> <span class="s">&quot;RangerPass123&quot;</span>
     <span class="nt">databaseRootUser</span><span class="p">:</span> <span class="s">&quot;rangeradmin&quot;</span>
     <span class="nt">databaseRootPassword</span><span class="p">:</span> <span class="s">&quot;RangerAdminPass123&quot;</span>
-    <span class="nt">securityContext</span><span class="p">:</span>
+    <span class="nt">securityContext</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+    <span class="nt">envFrom</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+    <span class="nt">env</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">database.type</span></code></p>
@@ -450,6 +456,45 @@ replacement looses the database content.</p>
 similar operations.</p>
 <p><code class="docutils literal notranslate"><span class="pre">database.internal.databaseRootPassword</span></code></p>
 <p>Password for the administrator to connect to the the internal database.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.envFrom</span></code></p>
+<p>YAML sequence of mappings <a class="reference external" href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envfromsource-v1-core">to define Secret or Configmap</a>
+as a source of <a class="reference internal" href="hms-configuration.html#helms-hms-environment-variables"><span class="std std-ref">environment variables</span></a> for the internal PostgreSQL container.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code></p>
+<p>YAML sequence of mappings <a class="reference external" href="https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/">to define two keys</a>
+environment variables for the internal PostgreSQL container.</p>
+<p>For example, Openshift deployments often do not have access to pull from the
+default Docker registry <code class="docutils literal notranslate"><span class="pre">library/postgres</span></code>. You can replace it with an image
+from the Red Hat registry, which requires additional <a class="reference internal" href="hms-configuration.html#helms-hms-environment-variables"><span class="std std-ref">environment variables</span></a> set with the parameter
+<code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">internal</span>
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span>
+       <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;registry.redhat.io/rhscl/postgresql-96-rhel7&quot;</span>
+       <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;latest&quot;</span>
+    <span class="nt">env</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_DATABASE</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_USER</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
+      <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_PASSWORD</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;HivePass1234&quot;</span>
+</pre></div>
+</div>
+<p>Another option is to create a Secret (ex. <code class="docutils literal notranslate"><span class="pre">postgresql-secret</span></code>) containing
+variables needed by <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> mentioned in previous code block, and pass it
+to the container with <code class="docutils literal notranslate"><span class="pre">envFrom</span></code> parameter:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">internal</span>
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span>
+       <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;registry.redhat.io/rhscl/postgresql-96-rhel7&quot;</span>
+       <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;latest&quot;</span>
+    <span class="nt">envFrom</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql-secret</span>
+</pre></div>
+</div>
 <p>—</p>
 <p>The following section shows the empty default setup for using  of an external
 PostgreSQL database. You just provide the necessary details for the external

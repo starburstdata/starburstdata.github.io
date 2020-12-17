@@ -99,6 +99,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#server-configuration">Server configuration</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#node-assignment">Node assignment</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#annotations">Annotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#environment-variables">Environment variables</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="ranger-configuration.html">5.6. Ranger configuration</a></li>
@@ -207,6 +208,7 @@ detailed in the following sections.</p>
 <li><p><a class="reference internal" href="#server-configuration" id="id7">Server configuration</a></p></li>
 <li><p><a class="reference internal" href="#node-assignment" id="id8">Node assignment</a></p></li>
 <li><p><a class="reference internal" href="#annotations" id="id9">Annotations</a></p></li>
+<li><p><a class="reference internal" href="#environment-variables" id="id10">Environment variables</a></p></li>
 </ul>
 </div>
 <div class="section" id="using-the-hms">
@@ -314,16 +316,20 @@ cluster by default:</p>
     <span class="nt">databaseName</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
     <span class="nt">databaseUser</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
     <span class="nt">databasePassword</span><span class="p">:</span> <span class="s">&quot;HivePass1234&quot;</span>
+    <span class="nt">envFrom</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
     <span class="nt">env</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code>: YAML sequence of mappings to define two keys
-<a class="reference external" href="https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/">environment variables</a>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.envFrom</span></code>: YAML sequence of mappings <a class="reference external" href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#envfromsource-v1-core">to define Secret or
+Configmap</a>
+as a source of <a class="reference internal" href="#helms-hms-environment-variables"><span class="std std-ref">environment variables</span></a>
 for the internal PostgreSQL container.</p>
+<p><code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code>: YAML sequence of mappings <a class="reference external" href="https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/">to define two keys</a>
+environment variables for the internal PostgreSQL container.</p>
 <p>For example, Openshift deployments often do not have access to pull from the
 default Docker registry <code class="docutils literal notranslate"><span class="pre">library/postgres</span></code>. You can replace it with an image
-from the Redhat registry, which requires additional environment variables
-set with the parameter <code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code>:</p>
+from the Redhat registry, which requires additional <a class="reference internal" href="#helms-hms-environment-variables"><span class="std std-ref">environment variables</span></a> set with the parameter
+<code class="docutils literal notranslate"><span class="pre">database.internal.env</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
   <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">internal</span>
   <span class="nt">internal</span><span class="p">:</span>
@@ -332,11 +338,25 @@ set with the parameter <code class="docutils literal notranslate"><span class="p
        <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;latest&quot;</span>
     <span class="nt">env</span><span class="p">:</span>
       <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_DATABASE</span>
-         <span class="l l-Scalar l-Scalar-Plain">value</span><span class="p p-Indicator">:</span> <span class="s">&quot;hive&quot;</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
       <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_USER</span>
-         <span class="l l-Scalar l-Scalar-Plain">value</span><span class="p p-Indicator">:</span> <span class="s">&quot;hive&quot;</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;hive&quot;</span>
       <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">POSTGRESQL_PASSWORD</span>
-         <span class="l l-Scalar l-Scalar-Plain">value</span><span class="p p-Indicator">:</span> <span class="s">&quot;HivePass1234&quot;</span>
+        <span class="nt">value</span><span class="p">:</span> <span class="s">&quot;HivePass1234&quot;</span>
+</pre></div>
+</div>
+<p>Another option is to create a Secret (ex. <code class="docutils literal notranslate"><span class="pre">postgresql-secret</span></code>) containing
+variables needed by <code class="docutils literal notranslate"><span class="pre">postgresql</span></code> which are mentioned in previous code block,
+and pass it to the container with <code class="docutils literal notranslate"><span class="pre">envFrom</span></code> parameter:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+  <span class="nt">type</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">internal</span>
+  <span class="nt">internal</span><span class="p">:</span>
+    <span class="nt">image</span><span class="p">:</span>
+       <span class="nt">repository</span><span class="p">:</span> <span class="s">&quot;registry.redhat.io/rhscl/postgresql-96-rhel7&quot;</span>
+       <span class="nt">tag</span><span class="p">:</span> <span class="s">&quot;latest&quot;</span>
+    <span class="nt">envFrom</span><span class="p">:</span>
+      <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
+          <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">postgresql-secret</span>
 </pre></div>
 </div>
 <p>Alternatively you can use an external PostgreSQL or MySQL database, by setting
@@ -497,6 +517,24 @@ to ADL.</p>
 <p>You can add configuration to annotate the deployment and pod:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">deploymentAnnotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
 <span class="nt">podAnnotations</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="environment-variables">
+<span id="helms-hms-environment-variables"></span><h2>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">#</a></h2>
+<p>You can pass environment variables to the HMS container using the same mechanism
+used for the internal database:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+<span class="nt">env</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+<p>Both are specified as a mapping sequences for example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">envFrom</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">secretRef</span><span class="p">:</span>
+      <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">my-secret-with-vars</span>
+<span class="nt">env</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MY_VARIABLE</span>
+    <span class="nt">value</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">some-value</span>
 </pre></div>
 </div>
 </div>
