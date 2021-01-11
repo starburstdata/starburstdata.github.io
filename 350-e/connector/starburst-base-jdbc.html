@@ -443,7 +443,15 @@
         </li>
         <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#file-based-configuration" class="md-nav__link">File-based configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuration-with-the-cache-service" class="md-nav__link">Configuration with the cache service</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Metrics</a>
         </li>
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
@@ -765,7 +773,15 @@
         </li>
         <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#file-based-configuration" class="md-nav__link">File-based configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuration-with-the-cache-service" class="md-nav__link">Configuration with the cache service</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Metrics</a>
         </li>
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li></ul>
@@ -813,8 +829,8 @@ configuration (config) properties as needed.</p>
 <p>After establishing a base catalog properties file, you can add other
 configuration properties. Connector-specific properties are defined in the
 documentation for each connector.</p>
-<table id="id1">
-<caption><span class="caption-text">Available config properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Available config properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -860,8 +876,8 @@ based on the actual data in the data source.</p>
 <p>Table and column statistics can be viewed in Presto using
 <a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a>, and behavior can be configured with the following
 properties in the catalog properties file:</p>
-<table id="id2">
-<caption><span class="caption-text">Table statistics configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Table statistics configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 32%"/>
 <col style="width: 63%"/>
@@ -991,10 +1007,20 @@ improvements without the need to modify queries.</p>
 <p>A typical use case is the redirection from a catalog configuring a relational
 database to a catalog using the Hive connector to access a data lake. That
 catalog can also take advantage of <a class="reference internal" href="hive-caching.html"><span class="doc">Hive connector storage caching</span></a>.</p>
+<p>Redirection of table scans is performed by SEP after applying authentication
+and permission checks from the source catalog.</p>
+<p>Table scan redirection for a catalog can be disabled using the
+<code class="docutils literal notranslate"><span class="pre">table_scan_redirection_enabled</span></code> catalog session property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION mycatalog.table_scan_redirection_enabled = false;
+</pre></div>
+</div>
 
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h3>
-<p>Table scan redirection is enabled in <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code> with the
-following properties:</p>
+<p>Table scan redirection is enabled for a specific catalog <code class="docutils literal notranslate"><span class="pre">mycatalog</span></code> in
+<code class="docutils literal notranslate"><span class="pre">etc/catalog/mycatalog.properties</span></code> using either a local JSON file, or the
+<a class="reference internal" href="../admin/cache-service.html"><span class="doc">cache service</span></a> as the source of redirections.</p>
+
+<h4 id="file-based-configuration">File-based configuration<a class="headerlink" href="#file-based-configuration" title="Permalink to this headline">#</a></h4>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">redirection.config-source</span><span class="o">=</span><span class="s">FILE</span>
 <span class="na">redirection.config-file</span><span class="o">=</span><span class="s">etc/redirection-rules.json</span>
 </pre></div>
@@ -1053,13 +1079,43 @@ along the lines of <code class="docutils literal notranslate"><span class="pre">
 <p>By default, SEP reloads rules from the configuration file every minute. This can
 controlled using <code class="docutils literal notranslate"><span class="pre">redirection.refresh-period</span></code> property in
 <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>.</p>
-<p>Redirection of table scans is performed by SEP after applying authentication
-and permission checks from the source catalog.</p>
-<p>Table scan redirection for a catalog can be disabled using the
-<code class="docutils literal notranslate"><span class="pre">table_scan_redirection_enabled</span></code> catalog session property:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION mycatalog.table_scan_redirection_enabled = false;
+
+
+<h4 id="configuration-with-the-cache-service">Configuration with the cache service<a class="headerlink" href="#configuration-with-the-cache-service" title="Permalink to this headline">#</a></h4>
+<p>The <a class="reference internal" href="../admin/cache-service.html"><span class="doc">cache service</span></a> can be used as the source of
+redirections as an alternative to the configuration file, using the following
+configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">redirection.config-source</span><span class="o">=</span><span class="s">SERVICE</span>
+<span class="na">cache-service.uri</span><span class="o">=</span><span class="s">http://starburst-cache-service:8180</span>
 </pre></div>
 </div>
+<p>By default, the redirections obtained from the cache service are cached within
+SEP for 1 minute. This can be changed using <code class="docutils literal notranslate"><span class="pre">cache-service.cache-ttl</span></code>
+property.</p>
+<p>When authentication is enabled for the cache service, the below configuration
+can be used to connect to it.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">redirection.config-source</span><span class="o">=</span><span class="s">SERVICE</span>
+<span class="na">cache-service.uri</span><span class="o">=</span><span class="s">https://starburst-cache-service:8180</span>
+<span class="na">cache-service.user</span><span class="o">=</span><span class="s">test</span>
+<span class="na">cache-service.password</span><span class="o">=</span><span class="s">test</span>
+<span class="na">cache-service.http-client.trust-store-path</span><span class="o">=</span><span class="s">localhost.truststore</span>
+<span class="na">cache-service.http-client.trust-store-password</span><span class="o">=</span><span class="s">changeit</span>
+<span class="na">cache-service.http-client.https.hostname-verification</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+
+
+
+<h3 id="id1">Metrics<a class="headerlink" href="#id1" title="Permalink to this headline">#</a></h3>
+<p>Metrics about table scan redirection are reported in a JMX table for each
+specific catalog <code class="docutils literal notranslate"><span class="pre">mycatalog</span></code> using any connector:</p>
+<p><code class="docutils literal notranslate"><span class="pre">jmx.current."com.starburstdata.presto.plugin.jdbc.redirection:name=mycatalog,type=redirectionstats"</span></code></p>
+<p>For the <a class="reference internal" href="starburst-snowflake.html"><span class="doc">Snowflake connector</span></a>, the JMX
+table also includes the name:</p>
+<p><code class="docutils literal notranslate"><span class="pre">jmx.current."com.starburstdata.presto.plugin.jdbc.redirection:catalog=snowflake,name=snowflake,type=redirectionstats"</span></code></p>
+<p>Metrics include information about the number of successful redirections and
+the number of times redirection could not be performed due to the target table
+missing some columns from the source table.</p>
 
 
 <h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h3>
