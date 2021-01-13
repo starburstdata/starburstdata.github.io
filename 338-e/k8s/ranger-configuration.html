@@ -95,6 +95,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ranger-server">Ranger server</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#ldap-user-synchronization-server">LDAP user synchronization server</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#backing-database-server">Backing database server</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-volumes">Additional volumes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#exposing-the-cluster-to-outside-network">Exposing the cluster to outside network</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#datasources">Datasources</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#server-start-up-configuration">Server start up configuration</a></li>
@@ -212,14 +213,15 @@ and overrides any defaults to suitable values.</p>
 <li><p><a class="reference internal" href="#ranger-server" id="id2">Ranger server</a></p></li>
 <li><p><a class="reference internal" href="#ldap-user-synchronization-server" id="id3">LDAP user synchronization server</a></p></li>
 <li><p><a class="reference internal" href="#backing-database-server" id="id4">Backing database server</a></p></li>
-<li><p><a class="reference internal" href="#exposing-the-cluster-to-outside-network" id="id5">Exposing the cluster to outside network</a></p></li>
-<li><p><a class="reference internal" href="#datasources" id="id6">Datasources</a></p></li>
-<li><p><a class="reference internal" href="#server-start-up-configuration" id="id7">Server start up configuration</a></p></li>
-<li><p><a class="reference internal" href="#extra-secrets" id="id8">Extra secrets</a></p></li>
-<li><p><a class="reference internal" href="#node-assignment" id="id9">Node assignment</a></p></li>
-<li><p><a class="reference internal" href="#annotations" id="id10">Annotations</a></p></li>
-<li><p><a class="reference internal" href="#security-context" id="id11">Security context</a></p></li>
-<li><p><a class="reference internal" href="#service-account" id="id12">Service account</a></p></li>
+<li><p><a class="reference internal" href="#additional-volumes" id="id5">Additional volumes</a></p></li>
+<li><p><a class="reference internal" href="#exposing-the-cluster-to-outside-network" id="id6">Exposing the cluster to outside network</a></p></li>
+<li><p><a class="reference internal" href="#datasources" id="id7">Datasources</a></p></li>
+<li><p><a class="reference internal" href="#server-start-up-configuration" id="id8">Server start up configuration</a></p></li>
+<li><p><a class="reference internal" href="#extra-secrets" id="id9">Extra secrets</a></p></li>
+<li><p><a class="reference internal" href="#node-assignment" id="id10">Node assignment</a></p></li>
+<li><p><a class="reference internal" href="#annotations" id="id11">Annotations</a></p></li>
+<li><p><a class="reference internal" href="#security-context" id="id12">Security context</a></p></li>
+<li><p><a class="reference internal" href="#service-account" id="id13">Service account</a></p></li>
 </ul>
 </div>
 <div class="section" id="docker-registry-access">
@@ -531,6 +533,35 @@ automatically created during installation.</p>
 create and update tables and similar operations.</p>
 <p><code class="docutils literal notranslate"><span class="pre">database.external</span> <span class="pre">/</span> <span class="pre">databaseRootPassword</span></code></p>
 <p>Password for the administrator to connect to the external database.</p>
+</div>
+<div class="section" id="additional-volumes">
+<span id="helm-ranger-volumes"></span><h2>Additional volumes<a class="headerlink" href="#additional-volumes" title="Permalink to this headline">#</a></h2>
+<p>Additional volumes can be necessary for storing and accessing persisted files.
+They can be defined in the <code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code> section. None are defined by
+default:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span> <span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+<p>You can add one or more <a class="reference external" href="https://kubernetes.io/docs/concepts/storage/volumes/#types-of-volumes">volumes supported by k8s</a>, to
+all nodes in the cluster.</p>
+<p>If you specify <code class="docutils literal notranslate"><span class="pre">path</span></code> only, a directory named in <code class="docutils literal notranslate"><span class="pre">path</span></code> is created. When
+mounting ConfigMap or Secret, files are created in this directory for each key.</p>
+<p>This supports an optional <code class="docutils literal notranslate"><span class="pre">subPath</span></code> parameter which takes in an optional
+key in the ConfigMap or Secret volume you create. If you specify <code class="docutils literal notranslate"><span class="pre">subPath</span></code>, a
+specific key named <code class="docutils literal notranslate"><span class="pre">subPath</span></code> from ConfigMap or Secret is mounted as a file
+with the  name provided by <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
+<p>The following example snippet shows both use cases:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt/InContainer</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+  <span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/tmp/config.txt</span>
+    <span class="nt">subPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">config.txt</span>
+    <span class="nt">volume</span><span class="p">:</span>
+      <span class="nt">configMap</span><span class="p">:</span>
+        <span class="nt">name</span><span class="p">:</span> <span class="s">&quot;configmap-in-volume&quot;</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="exposing-the-cluster-to-outside-network">
 <span id="helm-ranger-expose"></span><h2>Exposing the cluster to outside network<a class="headerlink" href="#exposing-the-cluster-to-outside-network" title="Permalink to this headline">#</a></h2>
