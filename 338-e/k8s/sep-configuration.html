@@ -90,7 +90,10 @@
 <li class="toctree-l2"><a class="reference internal" href="installation.html">5.3. Installation</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">5.4. SEP configuration</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#docker-image-and-registry">Docker image and registry</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#internal-communication">Internal communication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#internal-communication">Internal communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#tls-for-internal-communication">TLS for internal communication</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#exposing-the-cluster-to-an-outside-network">Exposing the cluster to an outside network</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#example-for-ingress-with-nginx-and-cert-manager">Example for ingress with nginx and cert-manager</a></li>
 </ul>
@@ -215,32 +218,36 @@ configuration for <a class="reference internal" href="#helm-sep-catalogs"><span 
 <div class="contents local topic" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#docker-image-and-registry" id="id2">Docker image and registry</a></p></li>
-<li><p><a class="reference internal" href="#internal-communication" id="id3">Internal communication</a></p></li>
-<li><p><a class="reference internal" href="#exposing-the-cluster-to-an-outside-network" id="id4">Exposing the cluster to an outside network</a></p>
+<li><p><a class="reference internal" href="#internal-communication" id="id3">Internal communication</a></p>
 <ul>
-<li><p><a class="reference internal" href="#example-for-ingress-with-nginx-and-cert-manager" id="id5">Example for ingress with nginx and cert-manager</a></p></li>
+<li><p><a class="reference internal" href="#tls-for-internal-communication" id="id4">TLS for internal communication</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#coordinator" id="id6">Coordinator</a></p></li>
-<li><p><a class="reference internal" href="#workers" id="id7">Workers</a></p></li>
-<li><p><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes" id="id8">Common settings for coordinator and workers nodes</a></p></li>
-<li><p><a class="reference internal" href="#security-context" id="id9">Security context</a></p></li>
-<li><p><a class="reference internal" href="#external-secret-reference" id="id10">External secret reference</a></p>
+<li><p><a class="reference internal" href="#exposing-the-cluster-to-an-outside-network" id="id5">Exposing the cluster to an outside network</a></p>
 <ul>
-<li><p><a class="reference internal" href="#defining-external-secrets" id="id11">Defining external secrets</a></p></li>
+<li><p><a class="reference internal" href="#example-for-ingress-with-nginx-and-cert-manager" id="id6">Example for ingress with nginx and cert-manager</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#file-based-authentication" id="id12">File-based authentication</a></p></li>
-<li><p><a class="reference internal" href="#query-memory-usage-control" id="id13">Query memory usage control</a></p></li>
-<li><p><a class="reference internal" href="#spilling" id="id14">Spilling</a></p></li>
-<li><p><a class="reference internal" href="#hive-connector-storage-caching" id="id15">Hive connector storage caching</a></p></li>
-<li><p><a class="reference internal" href="#catalogs" id="id16">Catalogs</a></p></li>
-<li><p><a class="reference internal" href="#additional-volumes" id="id17">Additional volumes</a></p></li>
-<li><p><a class="reference internal" href="#usage-metrics" id="id18">Usage Metrics</a></p></li>
-<li><p><a class="reference internal" href="#prometheus" id="id19">Prometheus</a></p></li>
-<li><p><a class="reference internal" href="#license" id="id20">License</a></p></li>
-<li><p><a class="reference internal" href="#adding-files" id="id21">Adding files</a></p></li>
-<li><p><a class="reference internal" href="#used-directories" id="id22">Used directories</a></p></li>
+<li><p><a class="reference internal" href="#coordinator" id="id7">Coordinator</a></p></li>
+<li><p><a class="reference internal" href="#workers" id="id8">Workers</a></p></li>
+<li><p><a class="reference internal" href="#common-settings-for-coordinator-and-workers-nodes" id="id9">Common settings for coordinator and workers nodes</a></p></li>
+<li><p><a class="reference internal" href="#security-context" id="id10">Security context</a></p></li>
+<li><p><a class="reference internal" href="#external-secret-reference" id="id11">External secret reference</a></p>
+<ul>
+<li><p><a class="reference internal" href="#defining-external-secrets" id="id12">Defining external secrets</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#file-based-authentication" id="id13">File-based authentication</a></p></li>
+<li><p><a class="reference internal" href="#query-memory-usage-control" id="id14">Query memory usage control</a></p></li>
+<li><p><a class="reference internal" href="#spilling" id="id15">Spilling</a></p></li>
+<li><p><a class="reference internal" href="#hive-connector-storage-caching" id="id16">Hive connector storage caching</a></p></li>
+<li><p><a class="reference internal" href="#catalogs" id="id17">Catalogs</a></p></li>
+<li><p><a class="reference internal" href="#additional-volumes" id="id18">Additional volumes</a></p></li>
+<li><p><a class="reference internal" href="#usage-metrics" id="id19">Usage Metrics</a></p></li>
+<li><p><a class="reference internal" href="#prometheus" id="id20">Prometheus</a></p></li>
+<li><p><a class="reference internal" href="#license" id="id21">License</a></p></li>
+<li><p><a class="reference internal" href="#adding-files" id="id22">Adding files</a></p></li>
+<li><p><a class="reference internal" href="#used-directories" id="id23">Used directories</a></p></li>
 </ul>
 </div>
 <div class="section" id="docker-image-and-registry">
@@ -328,8 +335,9 @@ format:</p>
 </div>
 <div class="section" id="internal-communication">
 <span id="helm-sep-internal-communication"></span><h2>Internal communication<a class="headerlink" href="#internal-communication" title="Permalink to this headline">#</a></h2>
-<p>The security of internal communication between the coordinator and the workers
-has to be improved by setting values to the following parameters:</p>
+<p>The <a class="reference internal" href="../security/internal-communication.html"><span class="doc">security of internal communication</span></a>
+between the coordinator and the workers has to be improved by setting values to
+the following parameters:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span>
 <span class="nt">sharedSecret</span><span class="p">:</span>
 </pre></div>
@@ -347,6 +355,17 @@ file is used.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">test_cluster</span>
 <span class="nt">sharedSecret</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">u70Qhhw9PsZmEgIo7Zqg3kIj3AJZ5/Mnyy5iyjcsgnceM+SSV+APSTis...</span>
 </pre></div>
+</div>
+<div class="section" id="tls-for-internal-communication">
+<h3>TLS for internal communication<a class="headerlink" href="#tls-for-internal-communication" title="Permalink to this headline">#</a></h3>
+<p>You can optionally enable TLS for <a class="reference internal" href="../security/internal-communication.html"><span class="doc">internal communication</span></a>, if the cluster is deemed insecure, or TLS
+is otherwise required and the performance overhead is acceptable.</p>
+<p>All cluster nodes must have a fully qualified domain name (FQDN) that matches
+the Kubernetes naming scheme. The chart manages the <code class="docutils literal notranslate"><span class="pre">node.internal-address</span></code>
+property automatically and the SAN field in TLS certs must match.</p>
+<p>The TLS certificates used must have <code class="docutils literal notranslate"><span class="pre">presto</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc</span></code>
+and <code class="docutils literal notranslate"><span class="pre">*.worker.&lt;namespace&gt;.svc</span></code> in the Subject Alternative Name (SAN) field.
+Replace <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> with a real value.</p>
 </div>
 </div>
 <div class="section" id="exposing-the-cluster-to-an-outside-network">
@@ -1015,7 +1034,7 @@ statically deliver user credentials to the file
   <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">password.db</span>
   <span class="nt">users</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">admin</span>
-      <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">46991b33f7a75ff79213c0dc0e610610</span>
+      <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">thepassword</span>
 </pre></div>
 </div>
 <p>Add the following setup to your values YAML file to configure file-based
