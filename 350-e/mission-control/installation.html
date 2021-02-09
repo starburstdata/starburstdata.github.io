@@ -518,13 +518,18 @@ supported configuration properties.</p></li>
 
 
 <span id="mc-helm-installation"></span><h2 id="installation-with-helm">Installation with Helm<a class="headerlink" href="#installation-with-helm" title="Permalink to this headline">#</a></h2>
-<p>Deploy and start the SEP with the Helm chart:</p>
+<p>Deploy and start the SEP with the Helm operator:</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Remember to adjust the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file by providing <a class="reference internal" href="../k8s/requirements.html#k8s-docker-registry"><span class="std std-ref">the Docker
 registry credentials</span></a>.</p>
 </div>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm upgrade --install --version <span class="m">350</span>.1.1 --values values.yaml --generate-name starburstdata/starburst-presto-helm-operator
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If you upgrade from 345-e or earlier, remember to uninstall the old operator
+first, and ensure that all related objects are deleted, including CRD.</p>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm install --version <span class="m">350</span>.1.1 --values values.yaml --generate-name starburstdata/starburst-presto-helm-operator
 </pre></div>
 </div>
 <p>Deploy and start the Mission Control server:</p>
@@ -559,6 +564,14 @@ outlined in the following sub-sections.</p>
     <span class="no">-XX:+ExitOnOutOfMemoryError</span>
   <span class="nt">allowInsecureHttp</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default values <code class="docutils literal notranslate"><span class="pre">expose.type:</span> <span class="pre">"clusterIp"</span></code> and
+<code class="docutils literal notranslate"><span class="pre">missioncontrol.allowInsecureHttp:</span> <span class="pre">false</span></code> do not allow external access to
+the Mission Control WebUI. You need to secure the access by configuring TLS
+encryption through a load balancer or ingress, or by enabling insecure HTTP
+access with <code class="docutils literal notranslate"><span class="pre">missioncontrol.allowInsecureHttp:</span> <span class="pre">true</span></code>.</p>
 </div>
 
 
@@ -597,6 +610,11 @@ Docker registry.</p>
 
 <h3 id="database">Database<a class="headerlink" href="#database" title="Permalink to this headline">#</a></h3>
 <p>Use this section to configure the database backend for Mission Control.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Mission Control 350.1.0 and higher requires the PostgreSQL 11 or later as
+it uses stored procedures.</p>
+</div>
 <p>There are three types of databases available:</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">embedded</span></code> - use an in-memory database. It is destroyed when Mission
@@ -617,7 +635,7 @@ new persistent volume claim for storing the data.</p>
   internal:
     image:
       repository: "library/postgres"
-      tag: "10.6"
+      tag: "11.3"
       pullPolicy: "IfNotPresent"
     volume:
       persistentVolumeClaim:
@@ -636,7 +654,7 @@ new persistent volume claim for storing the data.</p>
         cpu: 2
     port: 5432
     databaseName: missioncontrol
-    user: missioncontrol
+    user: mission_control_admin
     password: McPass123
 </pre></div>
 </div>
