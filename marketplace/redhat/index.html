@@ -294,11 +294,34 @@ SimpleJekyllSearch({
 </div>
 
 <p>OpenShift from Red Hat Marketplace (RHM) is a container platform using
-Kubernetes operators that automate the provisioning, management, and scaling of
-applications to any cloud platform or even on-prem. Starburst Enterprise is
-available on
+Kubernetes Helm charts that automate the provisioning, management, and scaling
+of applications to any cloud platform or even on-prem. Starburst Enterprise platform (SEP)
+is available on
 <a href="https://marketplace.redhat.com/en-us/products/starburst-presto-enterprise">RHM</a>
 as of OpenShift version 4.</p>
+      <h2 id="prerequisites">
+        
+        
+          Prerequisites <a href="#prerequisites" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Before you get started, here are some things you need:</p>
+
+<ul>
+  <li>Access to an OpenShift cluster using IAM credentials, and with sufficient
+Elastic IPs</li>
+  <li>Previously installed and configured Kubernetes, including access to
+<code class="language-plaintext highlighter-rouge">kubectl</code></li>
+  <li>A Helm chart repository for your organization</li>
+  <li>An editor suitable for editing YAML files</li>
+  <li>Your SEP license file</li>
+</ul>
+
+<p>For more information, please refer to our <a href="https://docs.starburst.io/338-e/k8s/requirements.html">Kubernetes with
+Helm</a> documentation.</p>
       <h2 id="quick-start">
         
         
@@ -315,119 +338,97 @@ copy the <code class="language-plaintext highlighter-rouge">oc</code> executable
 is done, you are ready to install the operator in OCP4.</p>
 
 <p>Using your administrator login for Red Hat OCP, log in to the OCP web console
-and click <code class="language-plaintext highlighter-rouge">Operators &gt; OperatorHub</code> in the left-hand menu. Once there, select
-“Presto” from the <code class="language-plaintext highlighter-rouge">Project:</code> drop-down menu, and navigate through the projects
-to <code class="language-plaintext highlighter-rouge">All Items &gt; Big Data &gt; Presto</code> until you see the <code class="language-plaintext highlighter-rouge">Starburst Presto
-Operator</code> tile. Click on that tile, then click the <code class="language-plaintext highlighter-rouge">Install</code> button. When the
-<code class="language-plaintext highlighter-rouge">Create Operator Subscription</code> page appears, select the <code class="language-plaintext highlighter-rouge">Presto</code> project as
-the specific namespace on the cluster, leave all other options as default, and
-click <code class="language-plaintext highlighter-rouge">Subscribe</code>. When the operation is complete, you are subscribed to
-the SEP operator, and it is installed and accessible to you
-in OCP4.</p>
+and click <strong>Operators &gt; OperatorHub</strong> in the left-hand menu.</p>
 
-<p>You are now ready to deploy SEP. SEP is initially
-configured during deployment using a YAML file edited through the OCP console.</p>
-      <h2 id="product-configuration">
+<p>Once there, select “Presto” from the <strong>Project:</strong> drop-down menu, and navigate
+through the projects to <strong>All Items &gt; Big Data &gt; Starburst</strong> until you
+see <strong>Starburst Enterprise</strong>. Click on that tile, then click the <strong>Install</strong>
+button.</p>
+
+<p>When the <strong>Create Operator Subscription</strong> page appears, select the
+<strong>Starburst</strong> project as the specific namespace on the cluster, leave
+all other options as default, and click <strong>Subscribe</strong>.</p>
+
+<p>When the operation is complete, you are subscribed to the SEP
+operator, and it is installed and accessible to you in OCP4.</p>
+      <h2 id="getting-up-and-running">
         
         
-          Product configuration <a href="#product-configuration" class="titleAnchor">#</a>
+          Getting up and running <a href="#getting-up-and-running" class="titleAnchor">#</a>
         
         
       </h2>
     
-
-<p>To deploy your SEP cluster once the operator is installed, go
-back to the OCP web console and click <code class="language-plaintext highlighter-rouge">Operators &gt; Installed Operators</code> in the
-left-hand menu. Click on <code class="language-plaintext highlighter-rouge">Presto Operator</code>, then click on the <code class="language-plaintext highlighter-rouge">Presto</code> tab
-in the <code class="language-plaintext highlighter-rouge">Operator Details</code> pane. Click <code class="language-plaintext highlighter-rouge">Create Instance</code>.</p>
-
-<p>To create an example cluster with one coordinator, three workers, and one Hive
-metastore, copy and paste the following YAML, and click <code class="language-plaintext highlighter-rouge">Create</code>:</p>
-
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">starburstdata.com/v1</span>
-<span class="na">kind</span><span class="pi">:</span> <span class="s">Presto</span>
-<span class="na">metadata</span><span class="pi">:</span>
-  <span class="na">name</span><span class="pi">:</span> <span class="s">example-presto</span>
-<span class="na">spec</span><span class="pi">:</span>
-  <span class="na">nameOverride</span><span class="pi">:</span> <span class="s">example-presto</span>
-  <span class="na">prometheus</span><span class="pi">:</span>
-    <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
-    <span class="na">additionalRules</span><span class="pi">:</span>
-      <span class="pi">-</span> <span class="na">pattern</span><span class="pi">:</span> <span class="s1">'</span><span class="s">presto.execution&lt;name=TaskManager&gt;&lt;&gt;FailedTasks.TotalCount'</span>
-        <span class="na">name</span><span class="pi">:</span> <span class="s1">'</span><span class="s">failed_tasks'</span>
-        <span class="na">type</span><span class="pi">:</span> <span class="s">COUNTER</span>
-  <span class="na">service</span><span class="pi">:</span>
-    <span class="na">type</span><span class="pi">:</span> <span class="s">NodePort</span>
-    <span class="na">name</span><span class="pi">:</span> <span class="s">example-presto</span>
-  <span class="na">memory</span><span class="pi">:</span>
-    <span class="na">nodeMemoryHeadroom</span><span class="pi">:</span> <span class="s">1Gi</span>
-  <span class="na">coordinator</span><span class="pi">:</span>
-    <span class="na">cpuRequest</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
-    <span class="na">memoryAllocation</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
-  <span class="na">worker</span><span class="pi">:</span>
-    <span class="na">count</span><span class="pi">:</span> <span class="m">3</span>
-    <span class="na">prestoWorkerShutdownGracePeriodSeconds</span><span class="pi">:</span> <span class="m">1</span>
-    <span class="na">cpuRequest</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
-    <span class="na">memoryAllocation</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
-  <span class="na">hive</span><span class="pi">:</span>
-    <span class="na">awsSecretName</span><span class="pi">:</span> <span class="s">ceph-user-creds</span>
-    <span class="na">additionalProperties</span><span class="pi">:</span> <span class="pi">|</span>
-      <span class="s">connector.name=hive-hadoop2</span>
-      <span class="s">hive.s3.endpoint=http://172.30.XX.XXX</span>
-      <span class="s">hive.s3.signer-type=AWSS3V4SignerType</span>
-      <span class="s">hive.s3.path-style-access=true</span>
-      <span class="s">hive.s3.use-instance-credentials=false</span>
-      <span class="s">hive.s3.staging-directory=/tmp</span>
-      <span class="s">hive.s3.ssl.enabled=false</span>
-      <span class="s">hive.s3.sse.enabled=false</span>
-      <span class="s">hive.s3.max-connections=100</span>
-    <span class="na">internalMetastore</span><span class="pi">:</span>
-      <span class="na">s3Endpoint</span><span class="pi">:</span> <span class="s">http://172.30.XX.XXX</span>
-      <span class="na">image</span><span class="pi">:</span>
-        <span class="na">name</span><span class="pi">:</span> <span class="s">200442618260.dkr.ecr.us-east-2.amazonaws.com/k8s/starburstdata/hive-metastore</span>
-        <span class="na">imagepullPolicy</span><span class="pi">:</span> <span class="s">IfNotPresent</span>
-        <span class="na">tag</span><span class="pi">:</span> <span class="s">k8s-0.3-ubi8.4</span>
-      <span class="na">memory</span><span class="pi">:</span> <span class="s">0.5G</span>
-      <span class="na">cpu</span><span class="pi">:</span> <span class="m">0.5</span>
-      <span class="na">postgreSql</span><span class="pi">:</span>
-        <span class="na">jdbcUrl</span><span class="pi">:</span> <span class="s">jdbc:postgresql://172.XX.XX.XX/pgbench</span>
-        <span class="na">username</span><span class="pi">:</span> <span class="s">pgbench</span>
-        <span class="na">password</span><span class="pi">:</span> <span class="s">postgres123</span>
-  <span class="na">additionalCatalogs</span><span class="pi">:</span>
-    <span class="na">tpcds</span><span class="pi">:</span> <span class="pi">|</span>
-      <span class="s">connector.name=tpcds</span>
-    <span class="na">postgresql</span><span class="pi">:</span> <span class="pi">|</span>
-      <span class="s">connector.name=postgresql</span>
-      <span class="s">connection-url=jdbc:postgresql://172.XX.XX.XX:5432/pgbench</span>
-      <span class="s">connection-user=pgbench</span>
-      <span class="s">connection-password=postgres123</span>
-  <span class="na">additionalEtcPrestoTextFiles</span><span class="pi">:</span>
-    <span class="s">some.text.file</span><span class="pi">:</span> <span class="pi">|</span>
-      <span class="s">Hello world</span>
-    <span class="s">another.text.file</span><span class="pi">:</span> <span class="s">Hello world</span>
-  <span class="na">additionalEtcPrestoBinaryFiles</span><span class="pi">:</span>
-    <span class="s">some.binary.file</span><span class="pi">:</span> <span class="pi">|</span>
-      <span class="s">aGVsbG8gd29ybGQ=</span>
-</code></pre></div></div>
-      <h3 id="making-configuration-changes">
+      <h3 id="installation">
         
         
-          Making configuration changes <a href="#making-configuration-changes" class="titleAnchor">#</a>
+          Installation <a href="#installation" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>Once deployed, the YAML configuration file can be found by navigating to the
-<code class="language-plaintext highlighter-rouge">Operators &gt; Installed Operators</code> as above and selecting <code class="language-plaintext highlighter-rouge">Actions &gt; Edit</code>
-for the cluster. From there, make configuration changes as needed for your
-organization’s needs. When you are done making changes, click <code class="language-plaintext highlighter-rouge">Save</code> and then
-<code class="language-plaintext highlighter-rouge">Reload</code> to deploy your changes.</p>
+<p>Once you have your operator subscription in place, it’s time to install. There
+are several steps to getting SEP installed and deployed:</p>
 
-<p>For more information on SEP and Kubernetes operators, visit the
-<a href="https://docs.starburst.io/latest/kubernetes/overview.html">Kubernetes operator
-section</a> of our
-reference documentation.</p>
+<ul>
+  <li>Installing the SEP cluster</li>
+  <li>Installing the Hive Metastore Service (HMS)</li>
+  <li>Installing Apache Ranger (optional)</li>
+</ul>
+
+<p>You must install the HMS to connect and query any objects storage with the Hive
+connector. This is typically a core use case for SEP, and then a
+required step. The HMS is used by SEP to manage the metadata of
+any objects storage.</p>
+
+<p>Once these installations are complete, you need to assign containers to specific
+nodes or pods in your cluster.</p>
+
+<p>Read more about installation and node assignments in our Kubernetes with Helm
+<a href="https://docs.starburst.io/338-e/k8s/installation.html">installation guide</a>.</p>
+      <h3 id="configuration">
+        
+        
+          Configuration <a href="#configuration" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>When your installations are complete and the nodes are assigned containers, you
+must configure your cluster. Just like with installation, there are several
+steps to configuring Starburst Enterprise:</p>
+
+<ul>
+  <li><a href="https://docs.starburst.io/338-e/k8s/sep-configuration.html">Configuring SEP</a></li>
+  <li><a href="https://docs.starburst.io/338-e/k8s/hms-configuration.html">Configuring the Hive metastore</a></li>
+  <li><a href="https://docs.starburst.io/338-e/k8s/ranger-configuration.html">Configuring Apache Ranger</a> (if installed)</li>
+</ul>
+
+<p>Each of these steps uses a specific Helm chart. Click on the links for detailed
+instructions on configuring each of the SEP Helm charts.</p>
+
+<p>Make sure to configure your desired data sources as catalogs when you configure
+the SEP chart.</p>
+      <h2 id="next-steps">
+        
+        
+          Next steps <a href="#next-steps" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Your cluster is now operational! You can now connect to it with your client
+tools and start querying your data sources.</p>
+
+<p>We’ve created an <a href="https://docs.starburst.io/338-e/k8s/operation.html">operations guide</a> to
+get you started with common first steps in cluster operations.</p>
+
+<p>It includes some great advice about starting with a small, initial configuration
+that is built upon in our <a href="../../videos/2020-09-09-cluster-sizing-and-performance-video">cluster sizing and performance video
+training</a>.</p>
       <h2 id="troubleshooting">
         
         
@@ -442,9 +443,8 @@ parts. As such, if you find you need help troubleshooting, here are some helpful
 resources:</p>
 
 <ul>
-  <li><a href="https://docs.starburst.io/latest/security/cli.html?highlight=troubleshooting#troubleshooting">CLI Kerberos authentication</a></li>
-  <li><a href="https://docs.starburst.io/latest/security/server.html?#troubleshooting">Coordinator Kerberos authentication</a></li>
-  <li><a href="https://docs.starburst.io/latest/security/ldap.html?highlight=troubleshooting#troubleshooting">LDAP authentication</a></li>
+  <li><a href="https://docs.starburst.io/338-e/security/ldap.html?#troubleshooting">LDAP authentication</a></li>
+  <li><a href="../../data-consumer/index.html">Data consumer guide with clients, SQL and other tips</a></li>
 </ul>
       <h2 id="faqs">
         
@@ -457,28 +457,34 @@ resources:</p>
       <h3 id="q-once-its-deployed-how-do-i-access-my-cluster">
         
         
-          <strong>Q: Once it’s deployed, how do I access my cluster?</strong> <a href="#q-once-its-deployed-how-do-i-access-my-cluster" class="titleAnchor">#</a>
+          Q: Once it’s deployed, how do I access my cluster? <a href="#q-once-its-deployed-how-do-i-access-my-cluster" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p><strong>A:</strong> You can use the CLI on the command line or the web UI to
-access your cluster. For example:</p>
+<p><strong>A:</strong> You can use the <a href="../../data-consumer/clients/cli.html">CLI on a
+terminal</a> or the <a href="https://docs.starburst.io/338-e/admin/web-interface.html">Web
+UI</a> to access your cluster. For
+example:</p>
 
 <ul>
   <li>
-    <p>Presto cli command: <code class="language-plaintext highlighter-rouge">./presto --server
+    <p>Presto CLI command: <code class="language-plaintext highlighter-rouge">./presto --server
 example-presto-presto.apps.demo.rht-sbu.io --catalog hive</code></p>
   </li>
   <li>
     <p>Web UI URL: <code class="language-plaintext highlighter-rouge">http://example-presto-presto.apps.demo.rht-sbu.io</code></p>
   </li>
+  <li>
+    <p><a href="../../data-consumer/clients/index.html">Many other client applications</a> can
+be connected, and used to run queries, created dashboards and more.</p>
+  </li>
 </ul><hr />
       <h3 id="q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster">
         
         
-          <strong>Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster?</strong> <a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster" class="titleAnchor">#</a>
+          Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster? <a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster" class="titleAnchor">#</a>
         
         
       </h3>
@@ -488,8 +494,8 @@ example-presto-presto.apps.demo.rht-sbu.io --catalog hive</code></p>
 prompt for a pod, you’ll need the name of the pod you want to work from. To do
 so, log in to your cluster as per your RHM documentation. For example:</p>
 
-<p><code class="language-plaintext highlighter-rouge">oc login -u kubeadmin -p XXXXX-XXXXX-XXXXX-XXXX
-https://api.demo.rht-sbu.io:6443</code></p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>oc login <span class="nt">-u</span> kubeadmin <span class="nt">-p</span> XXXXX-XXXXX-XXXXX-XXXX https://api.demo.rht-sbu.io:6443
+</code></pre></div></div>
 
 <p>Get the list of running pods:</p>
 
@@ -516,30 +522,30 @@ shell:</p>
       <h3 id="q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console">
         
         
-          <strong>Q: Is there a way to get a shell prompt through the OCP web console?</strong> <a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console" class="titleAnchor">#</a>
+          Q: Is there a way to get a shell prompt through the OCP web console? <a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console" class="titleAnchor">#</a>
         
         
       </h3>
     
 
 <p><strong>A:</strong> Yes. Log in to your OCP web console and navigate to
-<code class="language-plaintext highlighter-rouge">Workloads &gt; Pods</code>. Select the pod you want a terminal for, and click the
-<code class="language-plaintext highlighter-rouge">Terminal</code> tab.</p><hr />
+<strong>Workloads &gt; Pods</strong>. Select the pod you want a terminal for, and click the
+<strong>Terminal</strong> tab.</p><hr />
       <h3 id="q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it">
         
         
-          <strong>Q: I’ve added a new data source. How do I update the configuration to recognize it?</strong> <a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it" class="titleAnchor">#</a>
+          Q: I’ve added a new data source. How do I update the configuration to recognize it? <a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p><strong>A:</strong> Using the <a href="#making-configuration-changes">making configuration
+<p><strong>A:</strong> Using the <a href="#configuration">making configuration
 changes</a> section to edit your YAML configuration,
-find <code class="language-plaintext highlighter-rouge">additionalCatalogs</code> and add an entry for your new data source. For
-example, to add a PostgreSQL data source:</p>
+find <code class="language-plaintext highlighter-rouge">additionalCatalogs</code>, and add an entry for your new data source. For
+example, to add a PostgreSQL data source called <code class="language-plaintext highlighter-rouge">mydatabase</code>:</p>
 
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="na">postgresql</span><span class="pi">:</span> <span class="pi">|</span>
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="na">mydatabase</span><span class="pi">:</span> <span class="pi">|</span>
       <span class="s">connector.name=postgresql</span>
       <span class="s">connection-url=jdbc:postgresql://172.30.XX.64:5432/pgbench</span>
       <span class="s">connection-user=pgbench</span>
@@ -547,12 +553,13 @@ example, to add a PostgreSQL data source:</p>
 </code></pre></div></div>
 
 <p>Once your changes are complete, click <code class="language-plaintext highlighter-rouge">Save</code> and then <code class="language-plaintext highlighter-rouge">Reload</code> to deploy
-your changes.</p>
+your changes. Note that this restarts the coordinator and all workers on the
+cluster, and might take a little while.</p>
 
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#red-hat-marketplace">Red Hat Marketplace</a><ul><li><a href="#quick-start">Quick start</a></li><li><a href="#product-configuration">Product configuration</a><ul><li><a href="#making-configuration-changes">Making configuration changes</a></li></ul></li><li><a href="#troubleshooting">Troubleshooting</a></li><li><a href="#faqs">FAQs</a><ul><li><a href="#q-once-its-deployed-how-do-i-access-my-cluster"><strong>Q: Once it’s deployed, how do I access my cluster?</strong></a></li><li><a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster"><strong>Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster?</strong></a></li><li><a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console"><strong>Q: Is there a way to get a shell prompt through the OCP web console?</strong></a></li><li><a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it"><strong>Q: I’ve added a new data source. How do I update the configuration to recognize it?</strong></a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#red-hat-marketplace">Red Hat Marketplace</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#quick-start">Quick start</a></li><li><a href="#getting-up-and-running">Getting up and running</a><ul><li><a href="#installation">Installation</a></li><li><a href="#configuration">Configuration</a></li></ul></li><li><a href="#next-steps">Next steps</a></li><li><a href="#troubleshooting">Troubleshooting</a></li><li><a href="#faqs">FAQs</a><ul><li><a href="#q-once-its-deployed-how-do-i-access-my-cluster">Q: Once it’s deployed, how do I access my cluster?</a></li><li><a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster">Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster?</a></li><li><a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console">Q: Is there a way to get a shell prompt through the OCP web console?</a></li><li><a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it">Q: I’ve added a new data source. How do I update the configuration to recognize it?</a></li></ul></li></ul></li></ul>
 
         </div>
       </div>
