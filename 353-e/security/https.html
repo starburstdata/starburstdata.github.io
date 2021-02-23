@@ -72,7 +72,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="PEM, keystore, and truststore files" href="tls.html" />
+    <link rel="next" title="Keystores and truststores" href="tls.html" />
     <link rel="prev" title="Security overview" href="security-overview.html" />
   
    
@@ -276,25 +276,23 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#add-a-tls-certificate" class="md-nav__link">Add a TLS certificate</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#inspect-pem-certificates" class="md-nav__link">Inspect PEM certificates</a>
+        <li class="md-nav__item"><a href="#inspect-received-key-files" class="md-nav__link">Inspect received key files</a>
+        </li>
+        <li class="md-nav__item"><a href="#inspect-received-pem-certificates" class="md-nav__link">Inspect received PEM certificates</a>
         </li>
         <li class="md-nav__item"><a href="#validate-key" class="md-nav__link">Validate key</a>
         </li>
         <li class="md-nav__item"><a href="#validate-certificate" class="md-nav__link">Validate certificate</a>
         </li>
-        <li class="md-nav__item"><a href="#invalid-certs" class="md-nav__link">Invalid certs</a>
+        <li class="md-nav__item"><a href="#invalid-certificates" class="md-nav__link">Invalid certificates</a>
         </li>
         <li class="md-nav__item"><a href="#inspect-jks-keystores" class="md-nav__link">Inspect JKS keystores</a>
-        </li>
-        <li class="md-nav__item"><a href="#import-ca-certificate-into-jks-keystore" class="md-nav__link">Import CA certificate into JKS keystore</a>
         </li></ul>
             </nav>
         </li>
         <li class="md-nav__item"><a href="#place-the-certificate-file" class="md-nav__link">Place the certificate file</a>
         </li>
         <li class="md-nav__item"><a href="#configure-the-coordinator" class="md-nav__link">Configure the coordinator</a>
-        </li>
-        <li class="md-nav__item"><a href="#additional-configuration-for-truststores" class="md-nav__link">Additional configuration for truststores</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -308,7 +306,7 @@
     <li class="md-nav__item">
     
     
-      <a href="tls.html" class="md-nav__link">PEM, keystore, and truststore files</a>
+      <a href="tls.html" class="md-nav__link">Keystores and truststores</a>
       
     
     </li>
@@ -602,25 +600,23 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#add-a-tls-certificate" class="md-nav__link">Add a TLS certificate</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#inspect-pem-certificates" class="md-nav__link">Inspect PEM certificates</a>
+        <li class="md-nav__item"><a href="#inspect-received-key-files" class="md-nav__link">Inspect received key files</a>
+        </li>
+        <li class="md-nav__item"><a href="#inspect-received-pem-certificates" class="md-nav__link">Inspect received PEM certificates</a>
         </li>
         <li class="md-nav__item"><a href="#validate-key" class="md-nav__link">Validate key</a>
         </li>
         <li class="md-nav__item"><a href="#validate-certificate" class="md-nav__link">Validate certificate</a>
         </li>
-        <li class="md-nav__item"><a href="#invalid-certs" class="md-nav__link">Invalid certs</a>
+        <li class="md-nav__item"><a href="#invalid-certificates" class="md-nav__link">Invalid certificates</a>
         </li>
         <li class="md-nav__item"><a href="#inspect-jks-keystores" class="md-nav__link">Inspect JKS keystores</a>
-        </li>
-        <li class="md-nav__item"><a href="#import-ca-certificate-into-jks-keystore" class="md-nav__link">Import CA certificate into JKS keystore</a>
         </li></ul>
             </nav>
         </li>
         <li class="md-nav__item"><a href="#place-the-certificate-file" class="md-nav__link">Place the certificate file</a>
         </li>
         <li class="md-nav__item"><a href="#configure-the-coordinator" class="md-nav__link">Configure the coordinator</a>
-        </li>
-        <li class="md-nav__item"><a href="#additional-configuration-for-truststores" class="md-nav__link">Additional configuration for truststores</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -640,10 +636,19 @@
 <p>Trino runs with no security configuration in its default installation. This
 allows you to connect to the server using URLs that specify the HTTP protocol
 with the Trino <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a>, the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a>, or other clients.</p>
-<p>This guide describes how to configure Trino to use <a class="reference external" href="https://en.wikipedia.org/wiki/Transport_Layer_Security">Transport Layer Security
-(TLS)</a>, and require
-the HTTPS protocol from client connections. All authentication and authorization
-technologies supported by Trino require configuring TLS as the foundation.</p>
+<p>This guide describes how to configure your Trino server to use <a class="reference external" href="https://en.wikipedia.org/wiki/Transport_Layer_Security">Transport Layer
+Security (TLS)</a>,
+thereby requiring the HTTPS protocol from client connections. All authentication
+and authorization technologies supported by Trino require configuring TLS as the
+foundation.</p>
+<p>When configured to use TLS, a Trino server responds to connections from TLS 1.2
+and TLS 1.3 certificates. The server rejects TLS 1.1, TLS 1.0, and all SSL
+format certificates.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>This page discusses only how to prepare the Trino server for client
+connections from outside of the Trino cluster to its coordinator.</p>
+</div>
 <p>Transport Layer Security (TLS) is the successor to its now-deprecated
 predecessor, Secure Sockets Layer (SSL). This page uses the term TLS to refer
 to TLS and SSL.</p>
@@ -655,7 +660,7 @@ consider:</p>
 <li><p>Use the <a class="reference internal" href="#https-load-balancer"><span class="std std-ref">load balancer or proxy</span></a> at your site
 or cloud environment to terminate HTTPS/TLS. This approach is the simplest and
 strongly preferred solution.</p></li>
-<li><p>Secure the Trino <a class="reference internal" href="#https-presto"><span class="std std-ref">server directly</span></a>. This requires you
+<li><p>Secure the Trino <a class="reference internal" href="#https-coordinator"><span class="std std-ref">server directly</span></a>. This requires you
 to obtain a valid certificate, and add it to the Trino coordinator’s
 configuration.</p></li>
 </ul>
@@ -666,16 +671,19 @@ configuration.</p></li>
 configured and running with a valid TLS certificate. In this case, you can work
 with your network administration group to set up your Trino server behind the
 load balancer. The load balancer or proxy server accepts TLS connections and
-forwards them to the Trino coordinator, which runs with default HTTP
+forwards them to the Trino coordinator, which typically runs with default HTTP
 configuration on the default port, 8080.</p>
-<p>In this case, the Trino cluster is contained in a virtual private network. The
-load balancer adds request headers with the original client information:</p>
+<p>When a load balancer accepts a TLS encrypted connection, it places the following
+string in the HTML header of connection attempts:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>X-Forwarded-Proto: https
-X-Forwarded-Host: presto.example.com
-Forwarded:  for=10.0.16.42;proto=https;by=73.159.60.147
 </pre></div>
 </div>
-<p>To enable processing of forwarded headers, <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">the config properties file</span></a> must include the following:</p>
+<p>This tells the Trino coordinator to process the connection as if a TLS
+connection has already been successfully negotiated for it. This is why you do
+not need to configure <code class="docutils literal notranslate"><span class="pre">http-server.https.enabled=true</span></code> for a coordinator
+behind a load balancer.</p>
+<p>However, to enable processing of such forwarded headers, the server’s
+<a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">config properties file</span></a> <em>must</em> include the following:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.process-forwarded=true
 </pre></div>
 </div>
@@ -683,37 +691,87 @@ Forwarded:  for=10.0.16.42;proto=https;by=73.159.60.147
 Client tools can access Trino with the URL exposed by the load balancer.</p>
 
 
-<span id="https-presto"></span><h2 id="secure-oss-directly">Secure Trino directly<a class="headerlink" href="#secure-oss-directly" title="Permalink to this headline">#</a></h2>
+<span id="https-coordinator"></span><h2 id="secure-oss-directly">Secure Trino directly<a class="headerlink" href="#secure-oss-directly" title="Permalink to this headline">#</a></h2>
 <p>Instead of the preferred mechanism of <a class="reference internal" href="#https-load-balancer"><span class="std std-ref">using an external load balancer</span></a>, you can secure the Trino coordinator itself. This
 requires you to obtain and install a TLS certificate and configure Trino to use
 it for any client connections.</p>
 
 <h3 id="add-a-tls-certificate">Add a TLS certificate<a class="headerlink" href="#add-a-tls-certificate" title="Permalink to this headline">#</a></h3>
-<p>Obtain a TLS certificate file (a cert) from one of the following sources:</p>
+<p>Obtain a TLS certificate file for use with your Trino server. Consider the
+following types of certificates:</p>
 <ul class="simple">
-<li><p>Your site’s network administration group</p></li>
-<li><p>Your cloud environment provider</p></li>
+<li><p><strong>Globally trusted certificates</strong>. A certificate that is automatically trusted
+by browsers and clients such as <code class="docutils literal notranslate"><span class="pre">curl</span></code>. This is the easiest type to use
+because you do not need to configure clients. Obtain a certificate of this
+type from:</p>
+<ul>
+<li><p>A commercial certificate vendor</p></li>
+<li><p>Your cloud infrastructure provider</p></li>
 <li><p>A domain name registrar, such as Verisign or GoDaddy</p></li>
-<li><p>A certificate vendor</p></li>
-<li><p>A free certificate generator, such as <a class="reference external" href="https://letsencrypt.org/">letsencrypt.org</a> or <a class="reference external" href="https://www.sslforfree.com/">sslforfree.com</a></p></li>
-<li><p>A certificate generating command such as <code class="docutils literal notranslate"><span class="pre">openssl</span></code> or <code class="docutils literal notranslate"><span class="pre">keytool</span></code></p></li>
+<li><p>A free certificate generator, such as
+<a class="reference external" href="https://letsencrypt.org/">letsencrypt.org</a> or
+<a class="reference external" href="https://www.sslforfree.com/">sslforfree.com</a></p></li>
 </ul>
-<p>Trino supports certificate files in PEM (PKCS #8 and PKCS #12) or JKS format.
-The PEM format is preferred, and is easier to use.</p>
-<p>Make sure you obtain a certificate that is certified by a recognized
-certification authority (CA), or that you submit a self-generated certificate
-to a CA for validation.</p>
+</li>
+<li><p><strong>Corporate trusted certificates</strong>. A certificate trusted by browsers and
+clients in your company. Typically, a site’s IT department runs a local
+certificate authority and preconfigures clients and servers to trust this CA.</p></li>
+<li><p><strong>Generated self-signed certificates</strong>. A certificate generated just for
+Trino that is not automatically trusted by any client. However, see
+<a class="reference internal" href="tls.html#self-signed-limits"><span class="std std-ref">Limitations of self-signed certificates</span></a>.</p></li>
+</ul>
+<p>Trino recognizes public and private keys as specified in the PKCS #1 standard,
+and recognizes x.509 certificates. Both keys and certificates can be simple
+PEM-encoded files or can be imported into legacy JKS containers. Directly using
+PEM-encoded files, as specified in the PKCS #8 standard, is preferred and is
+easier to work with. Trino also recognizes certifificates and keys in the binary
+PKCS #12 keystore format, usually in a file with <code class="docutils literal notranslate"><span class="pre">.p12</span></code> or <code class="docutils literal notranslate"><span class="pre">.pfx</span></code>
+extensions.</p>
+<p>Make sure you obtain a certificate that is validated by a recognized
+certification authority (CA).</p>
 
-<span id="inspect-pems"></span><h4 id="inspect-pem-certificates">Inspect PEM certificates<a class="headerlink" href="#inspect-pem-certificates" title="Permalink to this headline">#</a></h4>
-<p>When you receive your PEM format certificate, inspect it and verify that it
-shows the correct information for your Trino server. First, use the <code class="docutils literal notranslate"><span class="pre">cat</span></code>
-command to view this plain text file. It should contain sections for a PRIVATE
-KEY and at least one CERTIFICATE:</p>
+<span id="inspect-pems"></span><h4 id="inspect-received-key-files">Inspect received key files<a class="headerlink" href="#inspect-received-key-files" title="Permalink to this headline">#</a></h4>
+<p>This section shows how to inspect and validate key and certificate files
+received in PEM-encoded format. The <a class="reference internal" href="#troubleshooting-keystore"><span class="std std-ref">Inspect JKS keystores</span></a> section
+below shows how to validate keys in the legacy JKS truststore format.</p>
+<p>When you receive your PEM format key and certificate file or files, inspect them
+to verify that they show the correct information for your Trino server. The file
+name extensions shown on this page are examples only; there is no extension
+naming standard.</p>
+<p>You may receive a single file that includes a private key and its certificate,
+or separate files. First, use the <code class="docutils literal notranslate"><span class="pre">cat</span></code> command to view these plain text
+files. For example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cat clustercoord.key
+cat clustercoord.cert
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cat clustercoord.pem
+</pre></div>
+</div>
+<p>A key file looks something like the following:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-----BEGIN PRIVATE KEY-----
 MIIEowIBAAKCAQEAwJL8CLeDFAHhZe3QOOF1vWt4Vuk9vyO38Y1y9SgBfB02b2jW
 ....
 -----END PRIVATE KEY-----
------BEGIN CERTIFICATE-----
+</pre></div>
+</div>
+<p>If your key file reports <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">ENCRYPTED</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code> instead, you must
+specify the key’s password to open or inspect the file. You specified the
+password when requesting the key, or the password could be assigned by your
+site’s network managers.</p>
+<blockquote>
+<div><p>If your key file reports <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">EC</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code> or
+<code class="docutils literal notranslate"><span class="pre">BEGIN_DSA_PRIVATE_KEY</span></code>, this designates keys using Elliptical Curve or
+DSA alternatives to RSA. In these cases, consult <code class="docutils literal notranslate"><span class="pre">openssl</span></code> references for
+the appropriate versions of the commands below.</p>
+</div></blockquote>
+
+
+<h4 id="inspect-received-pem-certificates">Inspect received PEM certificates<a class="headerlink" href="#inspect-received-pem-certificates" title="Permalink to this headline">#</a></h4>
+<p>A separate certificate file looks like the following with the <code class="docutils literal notranslate"><span class="pre">cat</span></code>
+command:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-----BEGIN CERTIFICATE-----
 MIIDujCCAqICAQEwDQYJKoZIhvcNAQEFBQAwgaIxCzAJBgNVBAYTAlVTMRYwFAYD
 ....
 -----END CERTIFICATE-----
@@ -723,19 +781,21 @@ MIIDwjCCAqoCCQCxyqwZ9GK50jANBgkqhkiG9w0BAQsFADCBojELMAkGA1UEBhMC
 -----END CERTIFICATE-----
 </pre></div>
 </div>
-<p>If your PEM or key file reports <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">ENCRYPTED</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code>, you must use a
-password when invoking that key.</p>
-<p>If you received separate PEM files, one for the server’s key and another for its
-certificate, concatenate the files into one, in order from key to cert.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>cat key.pem cert.pem &gt; server.pem
+<p>The file can show a single certificate section, or more than one to express a
+chain of authorities, each certifying the previous.</p>
+<p>If you received a single file, make sure it shows at least one KEY and
+CERTIFICATE section. If you received separate files, concatenate them into one,
+typically in order from key to certificate. For example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cat clustercoord.key clustercoord.cert &gt; clustercoord.pem
 </pre></div>
 </div>
 
 
 <span id="validate-pems"></span><h4 id="validate-key">Validate key<a class="headerlink" href="#validate-key" title="Permalink to this headline">#</a></h4>
-<p>This page presumes your system uses OpenSSL 1.1 or later.</p>
-<p>Test the key’s validity with the following command:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl rsa -in server.pem -check -noout
+<p>This page presumes your system provides the <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command from OpenSSL 1.1
+or later.</p>
+<p>Test an RSA-encoded private key’s validity with the following command:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl rsa -in clustercoord.pem -check -noout
 </pre></div>
 </div>
 <p>Look for the following confirmation message:</p>
@@ -745,29 +805,28 @@ certificate, concatenate the files into one, in order from key to cert.</p>
 
 
 <h4 id="validate-certificate">Validate certificate<a class="headerlink" href="#validate-certificate" title="Permalink to this headline">#</a></h4>
-<p>For the cert file, analyze it with a different <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command:</p>
+<p>Analyze a certificate file, or the certificate portion of a concatenated file,
+with a different <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openssl x509 -in server.pem -text -noout
 </pre></div>
 </div>
-<p>If your cert was generated with a password, <code class="docutils literal notranslate"><span class="pre">openssl</span></code> prompts for it.</p>
+<p>If your certificate was generated with a password, <code class="docutils literal notranslate"><span class="pre">openssl</span></code> prompts for it.</p>
 <p>In the output of the <code class="docutils literal notranslate"><span class="pre">openssl</span></code> command, look for the following
 characteristics:</p>
 <ul class="simple">
 <li><p>Modern browsers now enforce 398 days as the maximum validity period for a
-cert. Look for <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">Before</span></code> and <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">After</span></code> dates in the <code class="docutils literal notranslate"><span class="pre">Validity</span></code>
-section of the output, and make sure the time span does not exceed 398
-days.</p></li>
-<li><p>If you received an x509 version 3 certificate, it may have a <strong>Subject
-Alternative Name</strong> field. If present, make sure this shows the DNS name of
-your server, such as <code class="docutils literal notranslate"><span class="pre">DNS:presto.example.com</span></code></p></li>
-<li><p>The legacy common name (CN) field is ignored by modern browsers, but is a good
-visual aid to distinguish certs. Example: <code class="docutils literal notranslate"><span class="pre">CN=presto.example.com</span></code></p></li>
+certificate. Look for <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">Before</span></code> and <code class="docutils literal notranslate"><span class="pre">Not</span> <span class="pre">After</span></code> dates in the
+<code class="docutils literal notranslate"><span class="pre">Validity</span></code> section of the output, and make sure the time span does not
+exceed 398 days.</p></li>
+<li><p>Modern browsers and clients require the <strong>Subject Alternative Name</strong> (SAN)
+field. Make sure this shows the DNS name of your server, such as
+<code class="docutils literal notranslate"><span class="pre">DNS:clustercoord.example.com</span></code>. Certificates without SANs are not supported.</p></li>
 </ul>
 
 
-<h4 id="invalid-certs">Invalid certs<a class="headerlink" href="#invalid-certs" title="Permalink to this headline">#</a></h4>
-<p>If your cert does not pass validation, or does not show the expected information
-upon inspection, contact the group or vendor who provided it.</p>
+<h4 id="invalid-certificates">Invalid certificates<a class="headerlink" href="#invalid-certificates" title="Permalink to this headline">#</a></h4>
+<p>If your certificate does not pass validation, or does not show the expected
+information upon inspection, contact the group or vendor who provided it.</p>
 
 
 <span id="troubleshooting-keystore"></span><h4 id="inspect-jks-keystores">Inspect JKS keystores<a class="headerlink" href="#inspect-jks-keystores" title="Permalink to this headline">#</a></h4>
@@ -784,7 +843,7 @@ line, <code class="docutils literal notranslate"><span class="pre">keytool</span
 <p>Independent of the keystore’s password, it is possible that the JKS key has its
 own password. It is easiest to make sure these passwords are the same. If the
 JKS key inside the keystore has a different password, you must specify it with
-the <code class="docutils literal notranslate"><span class="pre">keymanager.password</span></code> configuration property described
+the <code class="docutils literal notranslate"><span class="pre">https-server.https.keymanager.password</span></code> configuration property described
 below.</p>
 <p>In the output of the <code class="docutils literal notranslate"><span class="pre">keytool</span> <span class="pre">-list</span></code> command, look for:</p>
 <ul>
@@ -796,74 +855,71 @@ certificate. Example: <code class="docutils literal notranslate"><span class="pr
 <li><p>Verify that the subject alternative name, if present, matches your server’s
 DNS name. Example:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SubjectAlternativeName [
-    DNSName:  presto.example.com
+    DNSName:  cluster.example.com
 ]
 </pre></div>
 </div>
 </li>
 </ul>
-
-
-<h4 id="import-ca-certificate-into-jks-keystore">Import CA certificate into JKS keystore<a class="headerlink" href="#import-ca-certificate-into-jks-keystore" title="Permalink to this headline">#</a></h4>
-<p>If you generated a self-signed JKS keystore, you must send that with a
-Certificate Signing Request to a Certificate Authority. In return, you receive a
-certificate keystore, possibly with <code class="docutils literal notranslate"><span class="pre">.cer</span></code> extension. Depending on the CA, you
-might receive a certificate self-signed only by the issuing CA, or one signed by
-a chain of validating CAs.</p>
-<p>To create a certified JKS keystore, you must import the certificate received
-from the CA into the keystore, using the <code class="docutils literal notranslate"><span class="pre">keytool</span> <span class="pre">‑import</span></code> command. The
-<code class="docutils literal notranslate"><span class="pre">keytool</span></code> command is complex and covers many cases. Please study the
-<strong>Certificate Chains</strong> and <strong>Importing Certificates</strong> sections of the
-<code class="docutils literal notranslate"><span class="pre">keytool</span></code> man page for instructions.</p>
-<p>The JKS system works in conjunction with JKS truststore files, described in
-<a class="reference internal" href="#config-truststore"><span class="std std-ref">Additional configuration for truststores</span></a>.</p>
+<p>The JKS system works in conjunction with a truststore, described in
+<a class="reference internal" href="tls.html#cli-java-truststore"><span class="std std-ref">Java truststore</span></a>.</p>
 
 
 
 <span id="cert-placement"></span><h3 id="place-the-certificate-file">Place the certificate file<a class="headerlink" href="#place-the-certificate-file" title="Permalink to this headline">#</a></h3>
-<p>There are no location requirements for the PEM or JKS certificate file as long
-as the following applies:</p>
+<p>There are no location requirements for the certificate file as long as the
+following applies:</p>
 <ul class="simple">
 <li><p>The location is visible from the server’s configuration file location with a
 relative path reference from the server’s root directory, or with an absolute
 path reference.</p></li>
 <li><p>The location is secure from copying or tampering by malicious actors.</p></li>
 </ul>
-<p>You can place your PEM file or JKS keystore file in the Trino server’s <code class="docutils literal notranslate"><span class="pre">etc</span></code>
-directory, which allows you to use a relative path reference in configuration
-files. However, this location might require you to keep track of the cert file
-and move it to a new <code class="docutils literal notranslate"><span class="pre">etc</span></code> directory if you upgrade your Trino version.</p>
+<p>You can place your file in the Trino server’s <code class="docutils literal notranslate"><span class="pre">etc</span></code> directory, which allows
+you to use a relative path reference in configuration files. However, this
+location can require you to keep track of the certificate file, and move it to
+a new <code class="docutils literal notranslate"><span class="pre">etc</span></code> directory when you upgrade your Trino version.</p>
 
 
 <span id="configure-https"></span><h3 id="configure-the-coordinator">Configure the coordinator<a class="headerlink" href="#configure-the-coordinator" title="Permalink to this headline">#</a></h3>
-<p>On the coordinator, add the following lines to <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">the config properties file</span></a> to enable HTTPS support for the server:</p>
+<p>On the coordinator, add the following lines to <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">the config properties file</span></a> to enable HTTPS support for the server.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Legacy <code class="docutils literal notranslate"><span class="pre">keystore</span></code> and <code class="docutils literal notranslate"><span class="pre">truststore</span></code> wording is used in property names,
+even when using PEM format certificates. PEM certs generally do not require
+truststore properties, because this format incorporates its chain of
+authorizing certificates back to the originating CA (or possibly back to an
+intermediate CA assigned by a large international CA).</p>
+</div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.enabled=true
 http-server.https.port=8443
-http-server.https.keystore.path=etc/prestoExampleCom.pem
+http-server.https.keystore.path=etc/clustercoord.pem
 </pre></div>
 </div>
 <p>Possible alternatives for the third line include:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.path=etc/prestoExampleCom.jks
-http-server.https.keystore.path=/usr/local/etc/prestoExampleCom.p12
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.path=etc/clustercoord.jks
+http-server.https.keystore.path=/usr/local/certs/clustercoord.p12
 </pre></div>
 </div>
 <p>Relative paths are relative to the Trino server’s root directory. In a
 <code class="docutils literal notranslate"><span class="pre">tar.gz</span></code> installation, the root directory is one level above <code class="docutils literal notranslate"><span class="pre">etc</span></code>.</p>
-<p>JKS keystores always require a password, and PEM certs can optionally require
-one. For these cases, add the following line to specify the JKS or PEM password.</p>
+<p>JKS keystores always require a password, while PEM format certificates can
+optionally require a password. For these cases, add the following line to
+specify the password.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keystore.key=&lt;keystore-password&gt;
 </pre></div>
 </div>
-<p>If the JKS key itself inside the keystore has an independent password, specify
-that with the following property:</p>
+<p>It is possible for a key inside a keystore to have its own password,
+independent of the keystore’s password. In this case, specify the key’s password
+with the following property:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.keymanager.password=&lt;key-password&gt;
 </pre></div>
 </div>
 <p>Restart the server and test connecting to it with a URL that begins with
 <code class="docutils literal notranslate"><span class="pre">https://</span></code> using the Trino <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a> or <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a>.</p>
-<p>Trino disables HTTP access to the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a> when
-HTTPS is enabled for the coordinator. Although not recommended, you can enable
-it by setting:</p>
+<p>When your Trino coordinator has an authenticator enabled along with HTTPS
+enabled, it disables HTTP access to the <a class="reference internal" href="../admin/web-interface.html"><span class="doc">Web UI</span></a>.
+Although not recommended, you can re-enable it by setting:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.authentication.allow-insecure-over-http=true
 </pre></div>
 </div>
@@ -874,33 +930,11 @@ interest, you can disable HTTP access:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.http.enabled=false
 </pre></div>
 </div>
-<p>However, there are configuration scenarios that require the server to respond to
-HTTP requests for inter-node communication with worker nodes even with HTTPS
-enabled for client access. In these cases, configure both server types as
-<code class="docutils literal notranslate"><span class="pre">enabled=true</span></code>:</p>
+<p>However, there are configuration scenarios such as HA that requires HTTP to be
+enabled, even with HTTPS enabled for client access. In these cases, configure
+both server types as <code class="docutils literal notranslate"><span class="pre">enabled=true</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.http.enabled=true
 http-server.https.enabled=true
-</pre></div>
-</div>
-
-
-<span id="config-truststore"></span><h3 id="additional-configuration-for-truststores">Additional configuration for truststores<a class="headerlink" href="#additional-configuration-for-truststores" title="Permalink to this headline">#</a></h3>
-<p>The JKS truststore file is a list of Certificate Authorities trusted by Java to
-validate private keys. The truststore file, <code class="docutils literal notranslate"><span class="pre">cacerts</span></code>, is provided as part of
-your Java installation.</p>
-<p>A PEM format certificate usually contains a private key for your server plus a
-validating certificate that is recognized by at least one Certificate Authority,
-or a chain of CAs going back to a globally recognized CA. Thus, there is no need
-to identify a local truststore when using a signed PEM certificate.</p>
-<p>JKS keystores normally rely on the default location of the system truststore as
-installed with your Java installation.</p>
-<p>However, you may need to <em>temporarily</em> use a local CA to validate a self-signed
-cert. Do not use a local CA in a production enviroment, but you might need one
-during development of your cluster configuration while waiting for your
-self-signed cert to return signed by a recognized CA. In this case, identify the
-location of the local CA file with configuration properties like the following:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.truststore.path=etc/tempca
-http-server.https.truststore.key=&lt;truststore-password&gt;
 </pre></div>
 </div>
 
@@ -932,12 +966,12 @@ http-server.https.truststore.key=&lt;truststore-password&gt;
             </a>
           
           
-            <a href="tls.html" title="PEM, keystore, and truststore files"
+            <a href="tls.html" title="Keystores and truststores"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> Next </span> PEM, keystore, and truststore files </span>
+                class="md-footer-nav__direction"> Next </span> Keystores and truststores </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
