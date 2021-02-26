@@ -415,6 +415,12 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#connector-starburst-sqlserver--page-root" class="md-nav__link">Starburst SQL Server connector</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#dynamic-catalog-selection" class="md-nav__link">Dynamic catalog selection</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
@@ -750,6 +756,12 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#connector-starburst-sqlserver--page-root" class="md-nav__link">Starburst SQL Server connector</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#dynamic-catalog-selection" class="md-nav__link">Dynamic catalog selection</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
@@ -789,6 +801,61 @@
 <p>The additional features of the connector require a valid
 <a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>, unless otherwise noted.</p>
 </div>
+
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
+<p>The connector configuration is identical to the configuration for the base
+<a class="reference internal" href="sqlserver.html"><span class="doc">SQL Server connector</span></a>.</p>
+<p>A minimal configuration, with the connector-name <code class="docutils literal notranslate"><span class="pre">sqlserver</span></code> and the JDBC
+connections details, is shown in the following snippet:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">sqlserver</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:sqlserver://&lt;host&gt;:&lt;port&gt;;database=&lt;database&gt;</span>
+<span class="na">connection-user</span><span class="o">=</span><span class="s">sqlserver_username</span>
+<span class="na">connection-password</span><span class="o">=</span><span class="s">sqlserver_password</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> parameter can use any valid JDBC connection string
+supported by the <a class="reference external" href="https://docs.microsoft.com/en-us/sql/connect/jdbc/microsoft-jdbc-driver-for-sql-server?view=sql-server-ver15">SQL Server JDBC driver</a>.
+This allows you to specify a SQL Server instance and other parameters as
+desired in your specific use case.</p>
+
+<h3 id="dynamic-catalog-selection">Dynamic catalog selection<a class="headerlink" href="#dynamic-catalog-selection" title="Permalink to this headline">#</a></h3>
+<p>The default configuration, e.g. in a file <code class="docutils literal notranslate"><span class="pre">etc/oursqlserver.properties</span></code>,
+enables the connection to one database running on a SQL Server instance.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">sqlserver</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:sqlserver://dbserver.example.com:1443/exampledb</span>
+</pre></div>
+</div>
+<p>The connector supports connecting to multiple SQL Server databases using a
+single catalog by setting a <code class="docutils literal notranslate"><span class="pre">override-catalog</span></code> session property. This support
+has to be enabled in the catalog properties file with the
+<code class="docutils literal notranslate"><span class="pre">sqlserver.override-catalog.enabled</span></code> property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">sqlserver</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:sqlserver://dbserver.example.com:1443/exampledb</span>
+<span class="na">sqlserver.override-catalog.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>With sufficient access rights, available to the user specified in
+<code class="docutils literal notranslate"><span class="pre">connection-user</span></code>, the preceding example allows you to query any table in any
+schema in the database <code class="docutils literal notranslate"><span class="pre">exampledb</span></code> on the SQL Server <code class="docutils literal notranslate"><span class="pre">dbserver</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">oursqlserver</span><span class="p">.</span><span class="n">exampleschema</span><span class="p">.</span><span class="n">exampletable</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In order to query another database, such as <code class="docutils literal notranslate"><span class="pre">testdb</span></code>, you have override the
+database configured in the catalog. From then on you can query that database in
+the current user session:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span> <span class="k">SESSION</span> <span class="n">oursqlserver</span><span class="p">.</span><span class="n">override</span><span class="o">-</span><span class="k">catalog</span><span class="o">=</span><span class="n">testdb</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">oursqlserver</span><span class="p">.</span><span class="n">testdbschema</span><span class="p">.</span><span class="n">testdbtable</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The access rights to the databases, schemas, tables and actual rows, continue
+to be determined by the configured user for the connection, and any other
+security setup like impersonation or Apache Ranger integration. Make sure
+these access rights are as restrictive as required.</p>
+</div>
+
+
 
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this headline">#</a></h2>
 <p>The connector includes a number of performance improvements, detailed in the
