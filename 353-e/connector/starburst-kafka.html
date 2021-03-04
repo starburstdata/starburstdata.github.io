@@ -360,13 +360,17 @@
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tls-ssl-encryption" class="md-nav__link">TLS/SSL encryption</a>
+        </li>
         <li class="md-nav__item"><a href="#tls-ssl-authentication" class="md-nav__link">TLS/SSL authentication</a>
         </li>
         <li class="md-nav__item"><a href="#sasl-authentication" class="md-nav__link">SASL authentication</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#password-authentication" class="md-nav__link">Password authentication</a>
+        </li>
         <li class="md-nav__item"><a href="#kerberos-authentication" class="md-nav__link">Kerberos authentication</a>
         </li>
-        <li class="md-nav__item"><a href="#oauth2-authentication" class="md-nav__link">OAuth2 authentication</a>
+        <li class="md-nav__item"><a href="#oauth-2-0-authentication" class="md-nav__link">OAuth 2.0 authentication</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -770,13 +774,17 @@
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tls-ssl-encryption" class="md-nav__link">TLS/SSL encryption</a>
+        </li>
         <li class="md-nav__item"><a href="#tls-ssl-authentication" class="md-nav__link">TLS/SSL authentication</a>
         </li>
         <li class="md-nav__item"><a href="#sasl-authentication" class="md-nav__link">SASL authentication</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#password-authentication" class="md-nav__link">Password authentication</a>
+        </li>
         <li class="md-nav__item"><a href="#kerberos-authentication" class="md-nav__link">Kerberos authentication</a>
         </li>
-        <li class="md-nav__item"><a href="#oauth2-authentication" class="md-nav__link">OAuth2 authentication</a>
+        <li class="md-nav__item"><a href="#oauth-2-0-authentication" class="md-nav__link">OAuth 2.0 authentication</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -809,8 +817,17 @@
 <a class="reference internal" href="kafka.html"><span class="doc">Kafka connector</span></a> with configuration and usage identical. It includes
 the following features:</p>
 <ul class="simple">
-<li><p>TLS/SSL authentication to Kafka</p></li>
-<li><p>Kerberos support including TLS/SSL support</p></li>
+<li><p>TLS/SSL encryption (1-way SSL)</p></li>
+<li><dl class="simple">
+<dt>Additional authentication mechanisms:</dt><dd><ul>
+<li><p>TLS/SSL authentication (2-way SSL)</p></li>
+<li><p>Basic authentication</p></li>
+<li><p>OAuth 2.0</p></li>
+<li><p>Kerberos</p></li>
+</ul>
+</dd>
+</dl>
+</li>
 <li><p>Encoder and decoder for protobuf messages</p></li>
 </ul>
 <div class="admonition note">
@@ -893,16 +910,19 @@ password values in the catalog file.</p>
 <p>The connector includes a number of security-related features, detailed in the
 following sections.</p>
 
-<h3 id="tls-ssl-authentication">TLS/SSL authentication<a class="headerlink" href="#tls-ssl-authentication" title="Permalink to this headline">#</a></h3>
-<p>With TLS/SSL authentication, the connector authenticates with the Kafka
-server/broker, also called <em>2-way authentication</em>.  Add the following
-configuration to your catalog  file to use TLS/SSL:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SSL
-</pre></div>
-</div>
-<p>You need to set the following required configuration properties:</p>
+<span id="kafka-ssl-encryption"></span><h3 id="tls-ssl-encryption">TLS/SSL encryption<a class="headerlink" href="#tls-ssl-encryption" title="Permalink to this headline">#</a></h3>
+<p>By default the connector communicates with the Kafka server using the
+<code class="docutils literal notranslate"><span class="pre">PLAINTEXT</span></code> protocol, which means sent data is not encrypted. To
+encrypt the communication between the connector and the server change the
+<code class="docutils literal notranslate"><span class="pre">kafka-security-protocol</span></code> configuration property to:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SSL</span></code> - in order to connect to the server without any authentication or
+when using <a class="reference internal" href="#kafka-ssl-authentication"><span class="std std-ref">SSL authentication (2-way SSL)</span></a>,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SASL_SSL</span></code> - when connecting to the server using <a class="reference internal" href="#kafka-sasl-authentication"><span class="std std-ref">SASL authentication</span></a>.</p></li>
+</ul>
+<p>In addition, you can set following optional configuration properties:</p>
 <table id="id2">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">Optional SSL encryption configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -914,25 +934,40 @@ configuration to your catalog  file to use TLS/SSL:</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.location</span></code></p></td>
-<td><p>Location of the truststore file.</p></td>
+<td><p>Location of the truststore file</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.truststore.password</span></code></p></td>
-<td><p>Password to the truststore file.</p></td>
+<td><p>Password to the truststore file</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.location</span></code></p></td>
-<td><p>Location of the keystore file.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.password</span></code></p></td>
-<td><p>Password to the keystore file.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.key.password</span></code></p></td>
-<td><p>Password of the private key stored in the keystore file.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.endpoint-identification-algorithm</span></code></p></td>
+<td><p>The endpoint identification algorithm used by SEP to validate the
+server host name. The default value is <code class="docutils literal notranslate"><span class="pre">HTTPS</span></code>. SEP verifies
+that the broker host name matches the host name in the broker’s
+certificate. To disable server host name verification use <code class="docutils literal notranslate"><span class="pre">disabled</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
-<p>In addition, you can set the following optional properties:</p>
+<p>You can see a full example configuration with <code class="docutils literal notranslate"><span class="pre">SSL</span></code> encryption in the
+following snippet:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
+...
+kafka.security-protocol=SSL
+kafka.ssl.truststore.location=/etc/secrets/kafka.broker.truststore.jks
+kafka.ssl.truststore.password=truststore_password
+</pre></div>
+</div>
+
+
+<span id="kafka-ssl-authentication"></span><h3 id="tls-ssl-authentication">TLS/SSL authentication<a class="headerlink" href="#tls-ssl-authentication" title="Permalink to this headline">#</a></h3>
+<p>With TLS/SSL authentication, the connector authenticates with the Kafka
+server/broker, also called <em>2-way authentication</em>.  Add the following
+configuration to your catalog file to use TLS/SSL:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SSL
+</pre></div>
+</div>
+<p>You need to set the following required configuration properties:</p>
 <table id="id3">
-<caption><span class="caption-text">Optional setting</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -943,21 +978,22 @@ configuration to your catalog  file to use TLS/SSL:</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.endpoint-identification-algorithm</span></code></p></td>
-<td><p>The endpoint identification algorithm used by SEP to validate the
-server host name. The default value is <code class="docutils literal notranslate"><span class="pre">HTTPS</span></code>. SEP verifies
-that the broker host name matches the host name in the broker’s
-certificate. To disable server host name verification use <code class="docutils literal notranslate"><span class="pre">disabled</span></code>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.location</span></code></p></td>
+<td><p>Location of the keystore file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.keystore.password</span></code></p></td>
+<td><p>Password to the keystore file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.ssl.key.password</span></code></p></td>
+<td><p>Password of the private key stored in the keystore file</p></td>
 </tr>
 </tbody>
 </table>
-<p>You can see a full example configuration with <code class="docutils literal notranslate"><span class="pre">SSL</span></code> security protocol in the
+<p>You can see a full example configuration using the SSL authentication in the
 following snippet:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
 ...
 kafka.security-protocol=SSL
-kafka.ssl.truststore.location=/etc/secrets/kafka.broker.truststore.jks
-kafka.ssl.truststore.password=truststore_passwrod
 kafka.ssl.keystore.location=/etc/secrets/kafka.broker.keystore.jks
 kafka.ssl.keystore.password=keystore_password
 kafka.ssl.key.password=private_key_password
@@ -965,84 +1001,61 @@ kafka.ssl.key.password=private_key_password
 </div>
 
 
-<h3 id="sasl-authentication">SASL authentication<a class="headerlink" href="#sasl-authentication" title="Permalink to this headline">#</a></h3>
+<span id="kafka-sasl-authentication"></span><h3 id="sasl-authentication">SASL authentication<a class="headerlink" href="#sasl-authentication" title="Permalink to this headline">#</a></h3>
 <p>With SASL authentication, the connector authenticates with the Kafka server
-using one of the following, supported SASL mechanisms:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">GSSAPI</span></code> (Kerberos)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">OAUTHBEARER</span></code> (OAuth2)</p></li>
-</ul>
+using one of the following, supported authentication mechanisms:</p>
+<table id="id4">
+<caption><span class="caption-text">Authentication mechanisms</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Authentication mechanism name</p></th>
+<th class="head"><p>Corresponding Kafka SASL mechanism</p></th>
+<th class="head"><p>Documentation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PLAIN</span></code></p></td>
+<td><p><a class="reference internal" href="#kafka-password-authentication"><span class="std std-ref">Password authentication</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KERBEROS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GSSAPI</span></code></p></td>
+<td><p><a class="reference internal" href="#kafka-kerberos-authentication"><span class="std std-ref">Kerberos authentication</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OAUTH2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OAUTHBEARER</span></code></p></td>
+<td><p><a class="reference internal" href="#kafka-oauth2-authentication"><span class="std std-ref">OAuth 2.0 authentication</span></a></p></td>
+</tr>
+</tbody>
+</table>
 <p>SASL authentication can be enabled for both <code class="docutils literal notranslate"><span class="pre">PLAINTEXT</span></code> and <code class="docutils literal notranslate"><span class="pre">SSL</span></code> protocols
-by setting <code class="docutils literal notranslate"><span class="pre">kafka.security-protocol</span></code> to <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> or <code class="docutils literal notranslate"><span class="pre">SASL_SSL</span></code>
-values.</p>
-<p>Example configuration of <code class="code docutils literal notranslate"><span class="pre">GSSAPI</span></code> (Kerberos) authentication over TLS/SSL:</p>
+by setting <code class="docutils literal notranslate"><span class="pre">kafka.security-protocol</span></code> to <code class="docutils literal notranslate"><span class="pre">SASL_PLAINTEXT</span></code> and <code class="docutils literal notranslate"><span class="pre">SASL_SSL</span></code>
+respectively.</p>
+<p>Example configuration of the Kerberos authentication over TLS/SSL:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_SSL
-kafka.sasl.mechanism=GSSAPI
+kafka.authentication.type=KERBEROS
 </pre></div>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If SASL authentication mechanism is enabled, then the SSL client
+<p>If the SASL authentication mechanism is enabled, then the SSL client
 authentication (2-way authentication) is disabled, but the client still
 verifies the server certificate (1-way authentication).</p>
 </div>
 
-<h4 id="kerberos-authentication">Kerberos authentication<a class="headerlink" href="#kerberos-authentication" title="Permalink to this headline">#</a></h4>
-<p>The GSSAPI SASL mechanism can be used to authenticate the Kafka connector
-using the Kerberos service. Add the following configuration to your catalog
-properties file to use the GSSAPI (Kerberos) SASL mechanism:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_PLAINTEXT
-kafka.sasl.mechanism=GSSAPI
-</pre></div>
-</div>
-<p>Set the following required configuration properties:</p>
-<table id="id4">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
-<colgroup>
-<col style="width: 40%"/>
-<col style="width: 60%"/>
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property Name</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.principal</span></code></p></td>
-<td><p>Kafka Kerberos client principal.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.client.keytab</span></code></p></td>
-<td><p>Kafka Kerberos client keytab location.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.config</span></code></p></td>
-<td><p>Kerberos service file location. Typically <code class="docutils literal notranslate"><span class="pre">/etc/krb5.conf</span></code>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.kerberos.service-name</span></code></p></td>
-<td><p>The Kerberos principal name of Kafka service.</p></td>
-</tr>
-</tbody>
-</table>
-<p>Example configuration of Kerberos authentication using <code class="docutils literal notranslate"><span class="pre">GSSAPI</span></code> with <code class="docutils literal notranslate"><span class="pre">SASL</span></code>:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
-...
-kafka.security-protocol=SASL_PLAINTEXT
-kafka.sasl.mechanism=GSSAPI
-kafka.kerberos.client.principal=kafka/broker1.your.org@YOUR.ORG
-kafka.kerberos.client.keytab=/etc/secrets/kafka_client.keytab
-kafka.kerberos.config=/etc/krb5.conf
-kafka.kerberos.service-name=kafka
-</pre></div>
-</div>
-
-
-<h4 id="oauth2-authentication">OAuth2 authentication<a class="headerlink" href="#oauth2-authentication" title="Permalink to this headline">#</a></h4>
-<p>The OAUTHBEARER SASL mechanism can be used to authenticate with the Kafka
-connector using an access token obtained from an OAuth 2.0 compliant
-authorization server. Only the client credentials flow is supported.</p>
+<span id="kafka-password-authentication"></span><h4 id="password-authentication">Password authentication<a class="headerlink" href="#password-authentication" title="Permalink to this headline">#</a></h4>
+<p>The password authentication is simple username and password authentication
+using the SASL <code class="docutils literal notranslate"><span class="pre">PLAIN</span></code> authentication mechanism to authenticate.</p>
+<p>Password authentication should only be used with <a class="reference internal" href="#kafka-ssl-encryption"><span class="std std-ref">SSL encryption</span></a> enabled to ensure that the password is not sent without
+encryption.</p>
 <p>Add the following configuration to your catalog properties file to use the
-OAUTHBEARER SASL mechanism:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_PLAINTEXT
-kafka.sasl.mechanism=OAUTHBEARER
+password authentication:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_SSL
+kafka.authentication.type=PASSWORD
 </pre></div>
 </div>
 <p>Set the following required configuration properties:</p>
@@ -1053,27 +1066,32 @@ kafka.sasl.mechanism=OAUTHBEARER
 <col style="width: 60%"/>
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>Property Name</p></th>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
 <th class="head"><p>Description</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.token-url</span></code></p></td>
-<td><p>The token URL of an OAuth 2.0 compliant authorization server.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.username</span></code></p></td>
+<td><p>User name for Kafka access</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.client-id</span></code></p></td>
-<td><p>ID of the Kafka connector OAuth2 client.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.client-secret</span></code></p></td>
-<td><p>Secret for the client.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.password</span></code></p></td>
+<td><p>Password for the user</p></td>
 </tr>
 </tbody>
 </table>
-<p>If the authorization server is using SSL with a self-signed certificate set the
-additional properties to use a custom truststore while validating the
-certificate:</p>
+
+
+<span id="kafka-kerberos-authentication"></span><h4 id="kerberos-authentication">Kerberos authentication<a class="headerlink" href="#kerberos-authentication" title="Permalink to this headline">#</a></h4>
+<p>The Kerberos authentication uses the Kerberos service and the SASL <code class="docutils literal notranslate"><span class="pre">GSSAPI</span></code>
+authentication mechanism to authenticate. Add the following configuration to
+your catalog properties file to use the Kerberos authentication mechanism:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_SSL
+kafka.authentication.mechanism=KERBEROS
+</pre></div>
+</div>
+<p>Set the following required configuration properties:</p>
 <table id="id6">
-<caption><span class="caption-text">Additional settings</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1084,15 +1102,92 @@ certificate:</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.ssl.truststore.path</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.client.principal</span></code></p></td>
+<td><p>Kerberos client principal name</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.client.keytab</span></code></p></td>
+<td><p>Kerberos client keytab location</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.config</span></code></p></td>
+<td><p>Kerberos service file location, typically <code class="docutils literal notranslate"><span class="pre">/etc/krb5.conf</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.service-name</span></code></p></td>
+<td><p>Kerberos principal name of the Kafka service</p></td>
+</tr>
+</tbody>
+</table>
+<p>Example configuration using the Kerberos authentication:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=kafka
+...
+kafka.security-protocol=SASL_SSL
+kafka.authentication.type=KERBEROS
+kafka.authentication.client.principal=kafka/broker1.your.org@YOUR.ORG
+kafka.authentication.client.keytab=/etc/secrets/kafka_client.keytab
+kafka.authentication.config=/etc/krb5.conf
+kafka.authentication.service-name=kafka
+</pre></div>
+</div>
+
+
+<span id="kafka-oauth2-authentication"></span><h4 id="oauth-2-0-authentication">OAuth 2.0 authentication<a class="headerlink" href="#oauth-2-0-authentication" title="Permalink to this headline">#</a></h4>
+<p>The OAuth 2.0 authentication uses an access token obtained from an OAuth 2.0
+compliant authorization server and SASL <code class="docutils literal notranslate"><span class="pre">OAUTHBEARER</span></code> authentication mechanism
+to authenticate the Kafka connector. Only the client credentials flow is
+currently supported.</p>
+<p>Add the following configuration to your catalog properties file to use the
+OAuth 2.0 authentication:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SASL_SSL
+kafka.authentication.type=OAUTH2
+</pre></div>
+</div>
+<p>Set the following required configuration properties:</p>
+<table id="id7">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.token-url</span></code></p></td>
+<td><p>The token URL of an OAuth 2.0 compliant authorization server.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.client-id</span></code></p></td>
+<td><p>ID of the Kafka connector OAuth2 client.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.client-secret</span></code></p></td>
+<td><p>Secret for the client.</p></td>
+</tr>
+</tbody>
+</table>
+<p>If the authorization server is using SSL with a self-signed certificate, set the
+additional properties to use a custom truststore while validating the
+certificate:</p>
+<table id="id8">
+<caption><span class="caption-text">Additional settings</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.ssl.truststore.path</span></code></p></td>
 <td><p>Location of the SSL truststore file used to verify the OAUTH2
-authorization server certificate.</p></td>
+authorization server certificate</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.ssl.truststore.password</span></code></p></td>
-<td><p>Password to the truststore file.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.ssl.truststore.password</span></code></p></td>
+<td><p>Password to the truststore file</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.sasl.oauth2.ssl.truststore.type</span></code></p></td>
-<td><p>Type of the truststore file. Supported values are: <code class="docutils literal notranslate"><span class="pre">JKS</span></code> and <code class="docutils literal notranslate"><span class="pre">PKCS12</span></code>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.authentication.oauth2.ssl.truststore.type</span></code></p></td>
+<td><p>Type of the truststore file, supported values are: <code class="docutils literal notranslate"><span class="pre">JKS</span></code> and <code class="docutils literal notranslate"><span class="pre">PKCS12</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1126,8 +1221,8 @@ in the original Avro schema, then a write operation fails.</p></li>
 </ul>
 <p>The following table lists supported SEP types, which can be used in <code class="docutils literal notranslate"><span class="pre">type</span></code>
 for the equivalent Avro field type.</p>
-<table id="id7">
-<caption><span class="caption-text">SEP to Protobuf type mapping for encoding</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
+<table id="id9">
+<caption><span class="caption-text">SEP to Protobuf type mapping for encoding</span><a class="headerlink" href="#id9" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
@@ -1242,8 +1337,8 @@ proto file then a read operation returns NULL.</p></li>
 </ul>
 <p>Table below lists supported SEP types which can be used in <code class="docutils literal notranslate"><span class="pre">type</span></code> for the
 equivalent Proto field type/s.</p>
-<table id="id8">
-<caption><span class="caption-text">SEP to Protobuf type mapping for decoding</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<table id="id10">
+<caption><span class="caption-text">SEP to Protobuf type mapping for decoding</span><a class="headerlink" href="#id10" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
