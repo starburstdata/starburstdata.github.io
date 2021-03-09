@@ -945,7 +945,7 @@ following is a sample showing the supported ways of configuring redirections.</p
       <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"test_catalog"</span><span class="p">,</span>
       <span class="nt">"schemaNameLike"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
       <span class="nt">"tableNameLike"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
-      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"52s"</span>
+      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"10m"</span>
     <span class="p">},</span>
     <span class="p">{</span>
       <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"test_catalog"</span><span class="p">,</span>
@@ -983,6 +983,23 @@ following is a sample showing the supported ways of configuring redirections.</p
         <span class="nt">"scaleWriters"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
         <span class="nt">"writerMinSize"</span><span class="p">:</span> <span class="s2">"100MB"</span>
       <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"mysql"</span><span class="p">,</span>
+      <span class="nt">"schemaName"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
+      <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"events"</span><span class="p">,</span>
+      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"2m"</span><span class="p">,</span>
+      <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"15m"</span><span class="p">,</span>
+      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_id"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"postgresql"</span><span class="p">,</span>
+      <span class="nt">"schemaName"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
+      <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"events"</span><span class="p">,</span>
+      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"2m"</span><span class="p">,</span>
+      <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"15m"</span><span class="p">,</span>
+      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_hour"</span><span class="p">,</span>
+      <span class="nt">"predicate"</span><span class="p">:</span> <span class="s2">"event_hour &lt; (SELECT date_add('hour', -1, latest_event_hour) FROM (SELECT max(event_hour) AS latest_event_hour FROM postgresql.foo.events))"</span>
     <span class="p">}</span>
   <span class="p">]</span>
 <span class="p">}</span>
@@ -998,13 +1015,49 @@ A rule must either specify <code class="docutils literal notranslate"><span clas
 <p>For each rule, the frequency of refreshing cached table can be defined either by
 specifying a time duration in <code class="docutils literal notranslate"><span class="pre">refreshInterval</span></code>, or by a cron expression in
 <code class="docutils literal notranslate"><span class="pre">cronExpression</span></code>.</p>
-<p>The ttl for a cache table is the time until the table expires. The service
-removes cached tables when they are no longer needed, such as when a newer
-redirection is present or ttl expired. The service waits for <code class="docutils literal notranslate"><span class="pre">grace-period</span></code>
-before removing the cached table. This allows any running queries, which started
-just before the cached table is expired, to finish gracefully. The ttl is
-computed so that the service performs a complete source table import before the
-current cached table expires.</p>
+<p>By default, each refresh of a cached table results in all the rows from the
+specified columns of the source table getting bulk loaded into the cached table.
+When the source table is large and requires frequent refreshes, the rule can be
+configured to load data from the source table incrementally.</p>
+<p>For incrementally refreshed cached tables, an <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> must be
+specified. This column is used by the service to apply a <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span> <span class="pre">&gt;</span>
+<span class="pre">(SELECT</span> <span class="pre">max(incrementalColumn)</span> <span class="pre">FROM</span> <span class="pre">cachedTable)</span></code> filter when loading data
+incrementally from the source table. This facilitates loading only newer data
+from the source table instead of the entire table in each refresh iteration.</p>
+<p>Depending on the properties of the source table, incremental refresh can be
+setup in one of two ways shown in the example <code class="docutils literal notranslate"><span class="pre">rules.json</span></code> above:</p>
+<ol class="arabic simple">
+<li><p>Use a strictly incrementing column from the source table to detect new rows.
+The service depends on the property of strictly increasing values to
+copy only the rows from source table where the value of <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>
+is greater than the values already present in the cached table.
+Modifications or deletions of existing rows are ignored.</p></li>
+<li><p>Use a monotonically incrementing column from the source table in combination
+with a configured <code class="docutils literal notranslate"><span class="pre">predicate</span></code>. Fact tables often contain time/date based
+columns which have the property of monotonically increasing, but not strictly
+increasing values. The <code class="docutils literal notranslate"><span class="pre">predicate</span></code> field can be used to specify a filter
+condition that delays loading the latest data which could still be modified
+(e.g. new rows added or existing rows changed) in the source table. This
+filter is applied in addition to the filter applied on <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>
+by the service to avoid loading the same data again.</p></li>
+</ol>
+<p>The initial refresh for an incrementally cached table is a bulk load.
+Modification of <code class="docutils literal notranslate"><span class="pre">columns</span></code>, <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code>,
+<code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>, <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> or <code class="docutils literal notranslate"><span class="pre">predicate</span></code> field
+results in the creation of a new cached table which is re-populated from the
+source table from scratch.</p>
+<p>For bulk loaded cached tables, ttl is the time until the table expires. The
+service removes cached tables when they are no longer needed, such as when a
+newer redirection is present or ttl expired. The service waits for the
+<code class="docutils literal notranslate"><span class="pre">grace-period</span></code> before removing the cached table. This allows any running
+queries, which started just before the cached table is expired, to finish
+gracefully. The ttl is computed so that the service performs a complete source
+table import before the current cached table expires.</p>
+<p>For incrementally cached tables, the cached table is not removed until the
+corresponding redirection rule is removed or modified in <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>. If the
+cached table can not be successfully refreshed according to the specified
+refresh frequency, it is not used for table scan redirection so that queries on
+stale data are avoided.</p>
 <p>The grace period can be specified for all cached tables using
 <code class="docutils literal notranslate"><span class="pre">defaultGracePeriod</span></code>, and overridden within each rule using <code class="docutils literal notranslate"><span class="pre">gracePeriod</span></code>.</p>
 <p>The target catalog for all cached tables can be defined using
