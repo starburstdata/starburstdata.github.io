@@ -367,6 +367,8 @@
         </li>
         <li class="md-nav__item"><a href="#add-redirection" class="md-nav__link">Add redirection</a>
         </li>
+        <li class="md-nav__item"><a href="#incremental-import" class="md-nav__link">Incremental import</a>
+        </li>
         <li class="md-nav__item"><a href="#expire-redirections" class="md-nav__link">Expire redirections</a>
         </li></ul>
             </nav>
@@ -506,6 +508,8 @@
         <li class="md-nav__item"><a href="#list-imports" class="md-nav__link">List imports</a>
         </li>
         <li class="md-nav__item"><a href="#add-redirection" class="md-nav__link">Add redirection</a>
+        </li>
+        <li class="md-nav__item"><a href="#incremental-import" class="md-nav__link">Incremental import</a>
         </li>
         <li class="md-nav__item"><a href="#expire-redirections" class="md-nav__link">Expire redirections</a>
         </li></ul>
@@ -692,9 +696,12 @@ cached table:</p>
 
 <h3 id="add-redirection">Add redirection<a class="headerlink" href="#add-redirection" title="Permalink to this headline">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">cache</span></code> command adds caching of a given source table into the target
-catalog and schema. The cache service automatically generates a name for target
-table with a random suffix. The cached table is used to redirect table scans on
-source tables for a time interval specified by the <code class="docutils literal notranslate"><span class="pre">--cache-ttl</span></code> option:</p>
+catalog and schema. The cache service automatically generates a name for the
+target table with a random suffix. The cached table is bulk loaded from the
+specified source table. Incrementally loaded cached tables can be defined only
+through a <a class="reference internal" href="cache-service.html#cache-service-refresh-rules"><span class="std std-ref">JSON file</span></a>. The cached table is
+used to redirect table scans on source tables for a time interval specified by
+the <code class="docutils literal notranslate"><span class="pre">--cache-ttl</span></code> option:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>cache-cli cache --source=mysql.test.nation_tmp --target-catalog=hive --target-schema=cache --cache-ttl=1h
 </pre></div>
 </div>
@@ -777,6 +784,61 @@ reduces import memory usage and improves cached table file sizes.</p></td>
 <td><p>false</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use-server-import-config</span></code></p></td>
+<td><p>Use caching server table import configuration. The cache server has
+different default import configuration for partitioned and
+non-partitioned tables.</p></td>
+<td><p>true</p></td>
+</tr>
+</tbody>
+</table>
+
+
+<h3 id="incremental-import">Incremental import<a class="headerlink" href="#incremental-import" title="Permalink to this headline">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">incremental_import</span></code> command schedules an incremental import for the
+redirection corresponding to a given identifier. The redirection selected for
+incremental import must be configured for incremental imports through a
+<a class="reference internal" href="cache-service.html#cache-service-refresh-rules"><span class="std std-ref">JSON file</span></a>. The cached table is used to
+redirect table scans on a source table for a time interval specified by the
+<code class="docutils literal notranslate"><span class="pre">--freshness-duration</span></code> option:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>cache-cli incremental_import --id=1 --freshness-duration=1h
+</pre></div>
+</div>
+<p>The output shows the import id if the import is successfully scheduled:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Incremental import id (3)
+</pre></div>
+</div>
+<table id="id3">
+<caption><span class="caption-text">Optional <code class="docutils literal notranslate"><span class="pre">incremental_import</span></code> command options</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 63%"/>
+<col style="width: 5%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max-import-duration</span></code></p></td>
+<td><p>Maximum allowed execution time for a cached table import job</p></td>
+<td><p>30m</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">use-preferred-write-partitioning</span></code></p></td>
+<td><p>Use table partitioning to parallelize writes using multiple worker nodes.
+This reduces import memory usage and improves cached table file sizes.</p></td>
+<td><p>true</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">writer-count</span></code></p></td>
+<td><p>Number of writers per task when writing table</p></td>
+<td><p>4</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scale-writers</span></code></p></td>
+<td><p>Scale writers when writing table</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">use-server-import-config</span></code></p></td>
 <td><p>Use caching server table import configuration. The cache server has
 different default import configuration for partitioned and
 non-partitioned tables.</p></td>
