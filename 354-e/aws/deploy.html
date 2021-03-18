@@ -663,7 +663,7 @@ configuration options:</p>
 <li><p><strong>Preliminary details:</strong></p>
 <p>Simply provide a name for your stack that allows
 you to distinguish it from other stacks running in your AWS account, for
-example <strong>prestocluster</strong>.</p>
+example <strong>sepcluster</strong>.</p>
 </li>
 <li><p><strong>Network configuration:</strong></p>
 <p>Specify the <a class="reference internal" href="#cft-network-configuration"><span class="std std-ref">network configuration parameters</span></a>. They are typically preconfigured. See the
@@ -783,8 +783,8 @@ the script file and run it to create your cluster.</p>
 <span id="id2"></span><h3 id="cft-cli-example">CFT CLI example<a class="headerlink" href="#cft-cli-example" title="Permalink to this headline">#</a></h3>
 <p>The following example shows a full command to create a cluster with the AWS CLI.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>aws cloudformation create-stack \
---stack-name "Presto-cluster" \
---template-url "https://s3.amazonaws.com/awsmp-fulfillment-cf-templates-prod/PrestoCFT.template" \
+--stack-name "SEP-cluster" \
+--template-url "https://s3.amazonaws.com/awsmp-fulfillment-cf-templates-prod/StarburstCFT.template" \
 --parameters \
 "ParameterKey=VPC,ParameterValue=vpc-4bd6ca11" \
 "ParameterKey=Subnet,ParameterValue=subnet-123abc2b" \
@@ -801,9 +801,9 @@ the script file and run it to create your cluster.</p>
 "ParameterKey=ExternalRdbmsMetastoreUserName,ParameterValue=hive"  \
 "ParameterKey=ExternalRdbmsMetastorePassword,ParameterValue='q@55vv0r|&gt;'"  \
 "ParameterKey=ExternalRdbmsMetastoreDatabaseName,ParameterValue=hive_metastore"  \
-"ParameterKey=AdditionalCoordinatorConfigurationURI,ParameterValue=s3://my_bucket/presto-additional-coordinator-configuration-1.0.zip" \
-"ParameterKey=AdditionalWorkersConfigurationURI,ParameterValue=s3://my_bucket/presto-additional-workers-configuration-1.0.zip" \
-"ParameterKey=BootstrapScriptURI,ParameterValue=s3://my_bucket/presto-bootstrap-1.0.sh" \
+"ParameterKey=AdditionalCoordinatorConfigurationURI,ParameterValue=s3://my_bucket/starburst-additional-coordinator-configuration-1.0.zip" \
+"ParameterKey=AdditionalWorkersConfigurationURI,ParameterValue=s3://my_bucket/starburst-additional-workers-configuration-1.0.zip" \
+"ParameterKey=BootstrapScriptURI,ParameterValue=s3://my_bucket/starburst-bootstrap-1.0.sh" \
 "ParameterKey=LicenseURI,ParameterValue=s3://my_bucket/starburstdata.license" \
 "ParameterKey=S3Endpoint,ParameterValue=https://mybucket.s3-us-west-2.amazonaws.com" \
 "ParameterKey=S3AccessKey,ParameterValue=AKIAIOSFODNN7EXAMPLE" \
@@ -957,7 +957,7 @@ service fails.</p></td>
 </table>
 
 
-<span id="cft-presto-configuration"></span><h3 id="sep-configuration">SEP configuration<a class="headerlink" href="#sep-configuration" title="Permalink to this headline">#</a></h3>
+<span id="cft-sep-configuration"></span><h3 id="sep-configuration">SEP configuration<a class="headerlink" href="#sep-configuration" title="Permalink to this headline">#</a></h3>
 <p>The SEP configuration parameter allow you to configure all SEP-specific
 aspects of your coordinators and workers in the cluster.</p>
 <table id="id6">
@@ -977,12 +977,12 @@ aspects of your coordinators and workers in the cluster.</p>
 <tr class="row-even"><td><p>AdditionalCoordinatorConfigurationURI</p></td>
 <td><p>URI of S3 zip file with additional configuration for the coordinator
 (Optional)</p></td>
-<td><p>s3://my_bucket/presto-additional-coordinator-configuration-1.0.zip</p></td>
+<td><p>s3://my_bucket/starburst-additional-coordinator-configuration-1.0.zip</p></td>
 </tr>
 <tr class="row-odd"><td><p>AdditionalWorkersConfigurationURI</p></td>
 <td><p>URI of S3 zip file with additional configuration for the workers
 (Optional)</p></td>
-<td><p>s3://my_bucket/presto-additional-workers-configuration-1.0.zip</p></td>
+<td><p>s3://my_bucket/starburst-additional-workers-configuration-1.0.zip</p></td>
 </tr>
 <tr class="row-even"><td><p>BootstrapScriptURI</p></td>
 <td><p>Optional URI of a <a class="reference internal" href="#cft-bootstrap-script"><span class="std std-ref">shell script stored on S3 to execute on all
@@ -993,9 +993,9 @@ other plugins. When the script is executed, a string argument value of
 <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> or <code class="docutils literal notranslate"><span class="pre">worker</span></code> is passed in. You can check for this
 argument value in your script to perform certain actions based on the node
 type.</p></td>
-<td><p>s3://my_bucket/presto-bootstrap-1.0.sh</p></td>
+<td><p>s3://my_bucket/starburst-bootstrap-1.0.sh</p></td>
 </tr>
-<tr class="row-odd"><td><p>PrestoHttpPort</p></td>
+<tr class="row-odd"><td><p>StarburstHttpPort</p></td>
 <td><p>Port to use for SEP coordinator and therefore the web UI as well as
 JDBC and other client connections. Defaults to <code class="docutils literal notranslate"><span class="pre">8080</span></code>.</p></td>
 <td><p>8088</p></td>
@@ -1326,12 +1326,12 @@ coordinator-specific modification. Then, the script downloads a plugin resource
 and creates a directory.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env bash</span>
 <span class="k">if</span> <span class="o">[[</span> <span class="s2">"</span><span class="nv">$1</span><span class="s2">"</span> <span class="o">==</span> <span class="s2">"coordinator"</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
-  <span class="nb">echo</span> <span class="s2">"io.prestosql.security=DEBUG"</span> &gt;&gt; /usr/lib/presto/etc/log.properties
+  <span class="nb">echo</span> <span class="s2">"io.trino.security=DEBUG"</span> &gt;&gt; /usr/lib/starburst/etc/log.properties
 <span class="k">fi</span>
 
-sudo aws s3 cp s3://mybucket/presto/config/json-serde-jar-with-dependencies.jar /usr/lib/presto/plugin/hive-hadoop2/
+sudo aws s3 cp s3://mybucket/starburst/config/json-serde-jar-with-dependencies.jar /usr/lib/starburst/plugin/hive-hadoop2/
 
-sudo mkdir -p /var/log/presto/dev/
+sudo mkdir -p /var/log/starburst/dev/
 </pre></div>
 </div>
 <p>The following steps are necessary to use a script:</p>
