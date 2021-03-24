@@ -170,6 +170,7 @@
   </nav>
 </header>
 
+
   
   <div class="md-container">
     
@@ -787,6 +788,112 @@ troubleshooting.</p>
       </div>
     </main>
   </div>
+<div class="md-grid md-main__inner" style="height: auto;">
+  <div class="md-content">
+    <div class="feedback-container md-content__inner md-typeset">
+      <div class="feedback-thumbs">
+        <p>Is the information on this page helpful?</p>
+        <p class="feedback-option" title="yes">Yes</p>
+        <p class="feedback-option" title="no">No</p>
+      </div>
+      <div class="feedback-message">
+        <textarea class="feedback-body" placeholder="Additional feedback"></textarea>
+        <button type="button" onclick="sendMessage()" class="feedback-button">Submit</button>
+        <a onclick="skip()" class="feedback-skip">Skip</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id="></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '');
+</script>
+<script>
+function feedback() {
+  var feedbackValue = "";
+  var feedbackThumbs = document.querySelector(".feedback-thumbs");
+  var feedbackMessage = document.querySelector(".feedback-message");
+  var initialFeedbackMessageContents = feedbackMessage.innerHTML;
+  var feedbackAnswer = localStorage.getItem('feedback-answer-' + window.location.pathname);
+  var options = Array.from(document.querySelectorAll(".feedback-option"));
+
+  if (feedbackAnswer) {
+    Object.keys(options).map(i => options[i].getAttribute('title') == JSON.parse(feedbackAnswer)
+      ? options[i].classList.add('active')
+      : null
+    );
+  }
+
+  var clickFunction = function(event){
+    var page = window.location.pathname;
+    var value = event.currentTarget.getAttribute('title');
+    var eventValue = value == 'yes' ? 1 : 0;
+
+    if(!event.currentTarget.classList.contains('active')) {
+      localStorage.setItem('feedback-answer-' + page, JSON.stringify(value == 'yes' ? 'yes' : 'no'));
+      feedbackValue = value;
+
+      gtag('event', 'feedback', {
+        'event_category': 'Docs Feedback',
+        'event_label': page,
+        'event_value': eventValue,
+      });
+
+      Object.keys(options).map(i => options[i].classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      feedbackThumbs.style.display = "none";
+      feedbackMessage.style.display = "flex";
+    };
+  };
+
+  skip = function() {
+    feedbackMessage.style.display = "none";
+    feedbackThumbs.style.display = "flex";
+    feedbackMessage.innerHTML = initialFeedbackMessageContents;
+  }
+
+  sendMessage = function(){
+    var feedbackBody = document.querySelector(".feedback-body").value;
+
+    if (feedbackBody) {
+      var message = "Page url: " + window.location.pathname + "\n\n"
+        + "Feedback positive?: " + feedbackValue + "\n\n" +  "Feedback Message: " + feedbackBody;
+      var link = "mailto:docs-feedback@starburst.io?subject=" + encodeURIComponent("Feedback")+"&body="
+        + encodeURIComponent(message);
+
+      window.location.href = link;
+      feedbackMessage.innerHTML = "<p>Thank you!</p>";
+
+      setTimeout(function(){
+          skip();
+      }, 5000);
+    } else {
+      if(!document.querySelector("#feedback-skip")) {
+        var alertMessage = document.createElement("p");
+        alertMessage.id = "feedback-skip";
+        alertMessage.style.color = "red";
+        alertMessage.style.position = "absolute";
+        alertMessage.style.bottom = "-0.5rem";
+        alertMessage.innerHTML = "Please provide a message.";
+        feedbackMessage.appendChild(alertMessage);
+
+        setTimeout(function(){
+          alertMessage.remove();
+        }, 3000);
+      }
+    }
+  }
+
+  Object.keys(options).map(i => options[i].addEventListener('click', clickFunction , false));
+}
+
+feedback();
+</script>
 
   <footer class="md-footer">
     <div class="md-footer-nav">
