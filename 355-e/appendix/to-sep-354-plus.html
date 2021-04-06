@@ -556,21 +556,21 @@ SEP is available in the following sections.</p>
 
 <h2 id="general-advice">General advice<a class="headerlink" href="#general-advice" title="Permalink to this headline">#</a></h2>
 <p>Upgrading software is always an important step to gain access to new features,
-bug fixes, performance improvements and other enhancements of the software.</p>
+bug fixes, performance improvements, and other enhancements of the software.</p>
 <p>When choosing your upgrade path and strategy, you must take into account how
 business critical your deployment of SEP is to your company. It is generally
 advisable to perform a test upgrade in a non-critical environment, and
-especially advised when making the complex update jumping from SEP &lt;= 350-e to
-SEP &gt;= 354-e.</p>
+especially advised when making the complex update from SEP &lt;= 350-e to SEP
+&gt;= 354-e.</p>
 <p>The following is a rough guide to use as a blueprint for your specific upgrade
 plan:</p>
 <p><strong>Step 1: Understand your current usage</strong></p>
 <ul class="simple">
 <li><p>To understand the scope of the changes, it is important to review the
-<a class="reference internal" href="../release.html"><span class="doc">release notes</span></a> for all versions. This means you must have a
-look at multiple release notes, especially if you are jumping from an older
-LTS release. Pay special attention to any breaking changes, and changes on
-connectors and other features you are actually using.</p></li>
+<a class="reference internal" href="../release.html"><span class="doc">release notes</span></a> for all versions, including multiple Trino and
+SEP release notes, especially if you are upgrading from an older release.
+Pay special attention to any breaking changes, and changes on connectors and
+other features you are actually using.</p></li>
 <li><p>Make sure that your users are using recent client versions. Ideally, upgrade
 them all to version 350 before the upgrade. You can check the HTTP request
 logs for the coordinator to see what client versions are in use.</p></li>
@@ -620,16 +620,24 @@ for your rollout of the upgrade to prevent any problems.</p>
 
 <h3 id="java-runtime">Java runtime<a class="headerlink" href="#java-runtime" title="Permalink to this headline">#</a></h3>
 <p>There is a <a class="reference internal" href="../installation/deployment.html#requirements-java"><span class="std std-ref">strict requirement for the Java runtime version</span></a> of SEP in place, so be sure to include an update of your
-Java runtime. For SEP 354-e Java 11.0.7 or higher is required.</p>
+Java runtime. For SEP 354-e Java 11, patch version 11.0.7 or higher, is
+required.</p>
 
 
 <span id="http-client-protocol"></span><h3 id="client-tool-incompatibility">Client tool incompatibility<a class="headerlink" href="#client-tool-incompatibility" title="Permalink to this headline">#</a></h3>
 <p>The update changes the HTTP client protocol headers to start with <code class="docutils literal notranslate"><span class="pre">X-Trino-</span></code>,
-which breaks all interaction from legacy clients using <code class="docutils literal notranslate"><span class="pre">X-Presto-</span></code>. Legacy
-clients can be temporarily supported by setting the configuration property
-<code class="docutils literal notranslate"><span class="pre">protocol.v1.alternate-header-name</span></code> to <code class="docutils literal notranslate"><span class="pre">Presto</span></code>. The preferred approach is
-to update all clients together with the release, or immediately afterwards, and
-then remove usage of the property.</p>
+compared to the old <code class="docutils literal notranslate"><span class="pre">X-Presto-</span></code>. The SEP version 350-e, as well as 354-e and
+all newer versions, accepts and supports client processes that use either
+header. As a result you can use any older client tool that supports the Presto,
+or newer ones that support Trino.</p>
+<p>For example, you can use the Trino JDBC driver 354-e, that uses the <code class="docutils literal notranslate"><span class="pre">X-Trino-</span></code>
+headers with SEP 350-e, 354-e and newer version. Note that this does not work
+with older SEP LTS releases such as 345. Therefore an upgrade to 350-e can be
+an intermediate upgrade step to allow time for the client tool updates.</p>
+<p>Ideally you work with your data consumers to update all clients together with
+the release, or immediately afterwards. This ensures best compatibility with
+regards to data types (e.g. high precision timestamps) and newer authentication,
+such as <a class="reference internal" href="../security/oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a>.</p>
 <p>Make sure you use this property only as a temporary measure to assist in your
 migration efforts, such as when continuing to operate clusters with an older
 version of SEP. In addition, use at least the 350-e version of the relevant
@@ -737,7 +745,7 @@ nested loggers</span></a>.</p>
 
 <h3 id="jmx-diagnostics-and-monitoring">JMX diagnostics and monitoring<a class="headerlink" href="#jmx-diagnostics-and-monitoring" title="Permalink to this headline">#</a></h3>
 <p>SEP exposes many metrics for <a class="reference internal" href="../admin/jmx.html"><span class="doc">monitoring and diagnostics with JMX</span></a>. With the upgrade the metric names changed to start with <code class="docutils literal notranslate"><span class="pre">trino</span></code>
-instead of <code class="docutils literal notranslate"><span class="pre">presto</span></code>, and make sure you update all uses of metrics names.</p>
+instead of <code class="docutils literal notranslate"><span class="pre">presto</span></code>. Make sure you update all uses of metrics names.</p>
 <p>As a temporary workaround, you can configure the base name of the metrics to use
 the old name with the following property setting in <code class="docutils literal notranslate"><span class="pre">config.properties</span></code>:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">jmx.base-name</span><span class="o">=</span><span class="s">presto</span>
@@ -745,9 +753,11 @@ the old name with the following property setting in <code class="docutils litera
 </div>
 <p>Similarly, the metrics for connectors now start with <code class="docutils literal notranslate"><span class="pre">trino.plugin</span></code> instead of
 <code class="docutils literal notranslate"><span class="pre">presto.plugin</span></code>. Again, you might need to update these names in your
-monitoring system, or you can revert to the old name. For example, for the Hive
-connector, you must add the following configuration to each catalog properties
-file that uses the Hive connector:</p>
+monitoring system.</p>
+<p>Alternatively, you can configure SEP to use the old name. This must be done
+for each plugin usage individually, since they are using separate class loaders.
+For example, for the Hive connector, you must add the following configuration to
+each catalog properties file that uses the Hive connector:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">jmx.base-name</span><span class="o">=</span><span class="s">presto.plugin.hive</span>
 </pre></div>
 </div>
@@ -808,7 +818,7 @@ and is detailed in the following sections.</p>
 <p>Connectors change regularly with each release, and you must make sure you
 understand the changes for all connectors you are actively using in your
 catalogs and clusters.</p>
-<p>For example. the Redshift connector changed the JDBC driver to use, and you
+<p>For example, the Redshift connector changed the JDBC driver to use, and you
 therefore must update the connection URL in the relevant catalog files.</p>
 <p>The following connectors specifically changed as part of changing to Trino:</p>
 
@@ -857,16 +867,16 @@ SEP to execute these queries.</p>
 are detailed in the following sections:</p>
 
 <h3 id="sql">SQL<a class="headerlink" href="#sql" title="Permalink to this headline">#</a></h3>
-<p>The 354-e upgrade brings no changes to the SQL language, SQL functions, and
-session properties. As a result, all your queries continue to work unchanged.</p>
+<p>The 354-e upgrade brings no incompatible changes to the SQL language, SQL
+functions, and session properties. As a result, all your queries continue to
+work unchanged.</p>
 
 
 <h3 id="cli">CLI<a class="headerlink" href="#cli" title="Permalink to this headline">#</a></h3>
-<p>The new CLI requires the <a class="reference internal" href="#http-client-protocol"><span class="std std-ref">new client protocol header</span></a> and is not compatible with older releases. If you
-use the <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a>, you must upgrade to a new version of the
-CLI.</p>
-<p>If your cluster is configured to use the old client protocol header, you must
-use an older CLI. We recommend the last released version before the rename, 350.</p>
+<p>If you use the <a class="reference internal" href="../installation/cli.html"><span class="doc">CLI</span></a>, you must upgrade to a new version
+of the CLI to gain access to new features. It uses the <a class="reference internal" href="#http-client-protocol"><span class="std std-ref">new client protocol
+header</span></a>, and is only compatible with releases 350-e,
+354-e, and newer releases.</p>
 <p>With the update to the new CLI, the recommended command changes from <code class="docutils literal notranslate"><span class="pre">presto</span></code>
 to <code class="docutils literal notranslate"><span class="pre">trino</span></code>. The prompt value and the returned version also changes to use
 <code class="docutils literal notranslate"><span class="pre">trino/Trino</span></code>. Otherwise all behavior remains unchanged.</p>
@@ -875,23 +885,24 @@ workflows that invoke the CLI.</p>
 
 
 <h3 id="jdbc-driver-and-dependent-applications">JDBC driver and dependent applications<a class="headerlink" href="#jdbc-driver-and-dependent-applications" title="Permalink to this headline">#</a></h3>
-<p>The new JDBC driver requires the <a class="reference internal" href="#http-client-protocol"><span class="std std-ref">new client protocol header</span></a> and is not compatible with older releases.</p>
+<p>The new JDBC driver uses the <a class="reference internal" href="#http-client-protocol"><span class="std std-ref">new client protocol header</span></a>, and is is only compatible with releases 350-e,
+354-e, and newer releases. It is not compatible with older releases.</p>
 <p>As a user of the <a class="reference internal" href="../installation/jdbc.html"><span class="doc">JDBC driver</span></a> in your custom
 application, or as the driver in an open source or commercial client
 application, you must upgrade to the new JDBC driver:</p>
 <ul class="simple">
 <li><p>Download and install the new JDBC driver. The specific steps vary
 depending on your client application.</p></li>
-<li><p>Make sure your cluster uses the new client protocol headers by confirming with
-your <a class="reference internal" href="#platform-administrator"><span class="std std-ref">platform administrator</span></a>.</p></li>
+<li><p>Make sure your cluster uses the new client protocol headers by confirming the
+SEP version with your <a class="reference internal" href="#platform-administrator"><span class="std std-ref">platform administrator</span></a>.</p></li>
 <li><p>Update any JDBC connection URL configuration from using <code class="docutils literal notranslate"><span class="pre">jdbc:presto:</span></code> to
 <code class="docutils literal notranslate"><span class="pre">jdbc:trino:</span></code>.</p></li>
 <li><p>Update the classname for the main driver class to
 <code class="docutils literal notranslate"><span class="pre">io.trino.jdbc.TrinoDriver</span></code>.</p></li>
 </ul>
-<p>The JDBC driver for 350-e and earlier is not compatible with 354-e and newer
-releases. At the same time, the newer driver cannot be used to query older
-clusters.</p>
+<p>The JDBC driver versions for 350-e and earlier are not compatible with 354-e and
+newer releases. At the same time, the newer driver cannot be used to query older
+clusters before 350-e.</p>
 <p>If you are using the JDBC driver in an application’s source code, you must
 adjust to the new driver with these additional steps:</p>
 <ul class="simple">
@@ -907,7 +918,7 @@ source or commercial client applications, you must upgrade to the new ODBC
 driver.</p>
 <p>The ODBC driver for 350-e and earlier, is not compatible with 354-e and newer
 releases. At the same time the newer driver cannot be used to query older
-clusters.</p>
+clusters before 350-e.</p>
 
 
 <h3 id="other-client-tools-and-applications">Other client tools and applications<a class="headerlink" href="#other-client-tools-and-applications" title="Permalink to this headline">#</a></h3>
@@ -919,11 +930,14 @@ accordingly.</p>
 <li><p>Change from the presto-python-client to the <a class="reference external" href="https://github.com/trinodb/trino-python-client">trino-python-client</a></p></li>
 <li><p>Change from the presto-go-client to the <a class="reference external" href="https://github.com/trinodb/trino-go-client">trino-go-client</a></p></li>
 </ul>
-<p>The following tools are known to support Trino:</p>
+<p>The following tools are known to explicitly support Trino, and therefore SEP
+354-e and newer:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="../../data-consumer/clients/dbeaver.html">DBeaver</a></p></li>
-<li><p>Apache Superset</p></li>
+<li><p><a class="reference external" href="https://superset.apache.org/docs/databases/trino">Apache Superset</a></p></li>
+<li><p><a class="reference external" href="https://sqlpad.github.io/sqlpad/#/">SQLPad</a></p></li>
 </ul>
+<p>Many other tools work with upgraded drivers and connection details.</p>
 
 
 
