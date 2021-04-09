@@ -377,7 +377,7 @@ without an enterprise contract:</p>
     </ul>
 
     <p>OpenShift from Red Hat Marketplace (RHM) is a container platform using
-Kubernetes Helm charts that automate the provisioning, management, and scaling
+Kubernetes operators that automate the provisioning, management, and scaling
 of applications to any cloud platform or even on-prem. Starburst Enterprise platform (SEP)
 is available on
 <a href="https://marketplace.redhat.com/en-us/products/starburst-presto-enterprise">RHM</a>
@@ -405,7 +405,6 @@ as of OpenShift version 4.</p>
 Elastic IPs</li>
   <li>Previously installed and configured Kubernetes, including access to
 <code class="language-plaintext highlighter-rouge">kubectl</code></li>
-  <li>A Helm chart repository for your organization</li>
   <li>An editor suitable for editing YAML files</li>
   <li>Your SEP license file</li>
 </ul>
@@ -464,19 +463,12 @@ are several steps to getting SEP installed and deployed:</p>
 <ul>
   <li>Installing the SEP cluster</li>
   <li>Installing the Hive Metastore Service (HMS)</li>
-  <li>Installing Apache Ranger (optional)</li>
 </ul>
 
 <p>You must install the HMS to connect and query any objects storage with the Hive
 connector. This is typically a core use case for SEP, and then a
 required step. The HMS is used by SEP to manage the metadata of
 any objects storage.</p>
-
-<p>Once these installations are complete, you need to assign containers to specific
-nodes or pods in your cluster.</p>
-
-<p>Read more about installation and node assignments in our Kubernetes with Helm
-<a href="https://docs.starburst.io/350-e/k8s/installation.html">installation guide</a>.</p>
       <h3 id="configuration">
         
         
@@ -486,21 +478,38 @@ nodes or pods in your cluster.</p>
       </h3>
     
 
-<p>When your installations are complete and the nodes are assigned containers, you
-must configure your cluster. Just like with installation, there are several
-steps to configuring Starburst Enterprise:</p>
+<p>When the operator installation is complete, you can proceed to deploy two custom
+resources:</p>
+
+<ul>
+  <li><a href="./samples/starburst-enterprise-values.yaml">Starburst Enterprise</a></li>
+  <li><a href="./samples/starburst-hive.yaml">Starburst Hive</a></li>
+</ul>
+
+<p>Just like with installation, there are several steps to configuring
+Starburst Enterprise:</p>
 
 <ul>
   <li><a href="https://docs.starburst.io/350-e/k8s/sep-configuration.html">Configuring SEP</a></li>
   <li><a href="https://docs.starburst.io/350-e/k8s/hms-configuration.html">Configuring the Hive metastore</a></li>
-  <li><a href="https://docs.starburst.io/350-e/k8s/ranger-configuration.html">Configuring Apache Ranger</a> (if installed)</li>
 </ul>
 
-<p>Each of these steps uses a specific Helm chart. Click on the links for detailed
-instructions on configuring each of the SEP Helm charts.</p>
+<p>Each of these steps uses a specific Helm chart <code class="language-plaintext highlighter-rouge">values.yaml</code> configuration.
+Click on the links for detailed instructions on configuring each of the custom
+resources.</p>
 
-<p>Make sure to configure your desired data sources as catalogs when you configure
-the SEP chart.</p>
+<p>The following setup steps are required:</p>
+
+<ul>
+  <li>Configure the resource requirements based on your cluster and node sizes</li>
+  <li>Update the image repository and tags to use the RedHat registry:
+    <ul>
+      <li>Presto: <code class="language-plaintext highlighter-rouge">registry.connect.redhat.com/starburst/presto:350-e.1-ubi</code></li>
+      <li>Presto-init: <code class="language-plaintext highlighter-rouge">registry.connect.redhat.com/starburst/presto-init:350.1.1-ubi</code></li>
+      <li>HMS: <code class="language-plaintext highlighter-rouge">registry.connect.redhat.com/starburst/metastore:350.1.1-ubi</code></li>
+    </ul>
+  </li>
+</ul>
       <h2 id="next-steps">
         
         
@@ -510,8 +519,8 @@ the SEP chart.</p>
       </h2>
     
 
-<p>Your cluster is now operational! You can now connect to it with your client
-tools and start querying your data sources.</p>
+<p>Your cluster is now operational! You can now connect to it with your <a href="../../data-consumer/clients/index.html">client
+tools</a> and start querying your data sources.</p>
 
 <p>We’ve created an <a href="https://docs.starburst.io/350-e/k8s/operation.html">operations guide</a> to
 get you started with common first steps in cluster operations.</p>
@@ -536,22 +545,16 @@ resources:</p>
   <li><a href="https://docs.starburst.io/350-e/security/ldap.html?#troubleshooting">LDAP authentication</a></li>
   <li><a href="../../data-consumer/index.html">Data consumer guide with clients, SQL and other tips</a></li>
 </ul>
-      <h2 id="faqs">
+      <h2 id="faq">
         
         
-          FAQs <a href="#faqs" class="titleAnchor">#</a>
+          FAQ <a href="#faq" class="titleAnchor">#</a>
         
         
       </h2>
     
-      <h3 id="q-once-its-deployed-how-do-i-access-my-cluster">
-        
-        
-          Q: Once it’s deployed, how do I access my cluster? <a href="#q-once-its-deployed-how-do-i-access-my-cluster" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+
+<p><strong>Q: Once it’s deployed, how do I access my cluster?</strong></p>
 
 <p><strong>A:</strong> You can use the <a href="../../data-consumer/clients/cli.html">CLI on a
 terminal</a> or the <a href="https://docs.starburst.io/350-e/admin/web-interface.html">Web
@@ -571,14 +574,9 @@ example-presto-presto.apps.demo.rht-sbu.io --catalog hive</code></p>
 be connected, and used to run queries, created dashboards and more.</p>
   </li>
 </ul><hr />
-      <h3 id="q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster">
-        
-        
-          Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster? <a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+
+<p><strong>Q: I need to make administrative changes that require a shell prompt. How to I
+get a command line shell prompt in a container within my cluster?</strong></p>
 
 <p><strong>A:</strong> On OCP, you’ll get a shell prompt for a pod. To get a shell
 prompt for a pod, you’ll need the name of the pod you want to work from. To do
@@ -609,26 +607,15 @@ shell:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>sh-4.4<span class="err">$</span>
 </code></pre></div></div><hr />
-      <h3 id="q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console">
-        
-        
-          Q: Is there a way to get a shell prompt through the OCP web console? <a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+
+<p><strong>Q: Is there a way to get a shell prompt through the OCP web console?</strong></p>
 
 <p><strong>A:</strong> Yes. Log in to your OCP web console and navigate to
 <strong>Workloads &gt; Pods</strong>. Select the pod you want a terminal for, and click the
 <strong>Terminal</strong> tab.</p><hr />
-      <h3 id="q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it">
-        
-        
-          Q: I’ve added a new data source. How do I update the configuration to recognize it? <a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+
+<p><strong>Q: I’ve added a new data source. How do I update the configuration to
+recognize it?</strong></p>
 
 <p><strong>A:</strong> Using the <a href="#configuration">making configuration
 changes</a> section to edit your YAML configuration,
@@ -644,8 +631,7 @@ example, to add a PostgreSQL data source called <code class="language-plaintext 
 
 <p>Once your changes are complete, click <code class="language-plaintext highlighter-rouge">Save</code> and then <code class="language-plaintext highlighter-rouge">Reload</code> to deploy
 your changes. Note that this restarts the coordinator and all workers on the
-cluster, and might take a little while.
-&lt;/div&gt;</p>
+cluster, and might take a little while.</p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -746,7 +732,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#red-hat-marketplace">Red Hat Marketplace</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#quick-start">Quick start</a></li><li><a href="#getting-up-and-running">Getting up and running</a><ul><li><a href="#installation">Installation</a></li><li><a href="#configuration">Configuration</a></li></ul></li><li><a href="#next-steps">Next steps</a></li><li><a href="#troubleshooting">Troubleshooting</a></li><li><a href="#faqs">FAQs</a><ul><li><a href="#q-once-its-deployed-how-do-i-access-my-cluster">Q: Once it’s deployed, how do I access my cluster?</a></li><li><a href="#q-i-need-to-make-administrative-changes-that-require-a-shell-prompt-how-to-i-get-a-command-line-shell-prompt-in-a-container-within-my-cluster">Q: I need to make administrative changes that require a shell prompt. How to I get a command line shell prompt in a container within my cluster?</a></li><li><a href="#q-is-there-a-way-to-get-a-shell-prompt-through-the-ocp-web-console">Q: Is there a way to get a shell prompt through the OCP web console?</a></li><li><a href="#q-ive-added-a-new-data-source-how-do-i-update-the-configuration-to-recognize-it">Q: I’ve added a new data source. How do I update the configuration to recognize it?</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#red-hat-marketplace">Red Hat Marketplace</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#quick-start">Quick start</a></li><li><a href="#getting-up-and-running">Getting up and running</a><ul><li><a href="#installation">Installation</a></li><li><a href="#configuration">Configuration</a></li></ul></li><li><a href="#next-steps">Next steps</a></li><li><a href="#troubleshooting">Troubleshooting</a></li><li><a href="#faq">FAQ</a></li></ul></li></ul>
 
         </div>
       </div>
