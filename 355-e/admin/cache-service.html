@@ -791,7 +791,7 @@ URLs are supported</p></td>
 <td><p>10</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">service-database.connection-pool.idle-timeout</span></code></p></td>
-<td><p>Maximum time an idle connection will be kept in the pool</p></td>
+<td><p>Maximum time an idle connection is kept in the pool</p></td>
 <td><p>10m</p></td>
 </tr>
 </tbody>
@@ -1008,7 +1008,8 @@ following is a sample showing the supported ways of configuring redirections.</p
       <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"events"</span><span class="p">,</span>
       <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"2m"</span><span class="p">,</span>
       <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"15m"</span><span class="p">,</span>
-      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_id"</span>
+      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_id"</span><span class="p">,</span>
+      <span class="nt">"deletePredicate"</span><span class="p">:</span> <span class="s2">"event_date &lt; date_add('day', -31, CURRENT_DATE)"</span>
     <span class="p">},</span>
     <span class="p">{</span>
       <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"postgresql"</span><span class="p">,</span>
@@ -1062,9 +1063,9 @@ by the service to avoid loading the same data again.</p></li>
 </ol>
 <p>The initial refresh for an incrementally cached table is a bulk load.
 Modification of <code class="docutils literal notranslate"><span class="pre">columns</span></code>, <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code>,
-<code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>, <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> or <code class="docutils literal notranslate"><span class="pre">predicate</span></code> field
-results in the creation of a new cached table which is re-populated from the
-source table from scratch.</p>
+<code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>, <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>, <code class="docutils literal notranslate"><span class="pre">predicate</span></code>
+or <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> field results in the creation of a new cached table
+which is re-populated from the source table from scratch.</p>
 <p>For bulk loaded cached tables, ttl is the time until the table expires. The
 service removes cached tables when they are no longer needed, such as when a
 newer redirection is present or ttl expired. The service waits for the
@@ -1077,6 +1078,12 @@ corresponding redirection rule is removed or modified in <code class="docutils l
 cached table can not be successfully refreshed according to the specified
 refresh frequency, it is not used for table scan redirection so that queries on
 stale data are avoided.</p>
+<p>The redirection rule for an incrementally cached table can also optionally
+specify a <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> to clean up old data from the cached table. The
+<code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> is used to run a <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span> <span class="pre">cachedTable</span> <span class="pre">WHERE</span>
+<span class="pre">&lt;deletePredicate&gt;</span></code> query at every <code class="docutils literal notranslate"><span class="pre">cleanup-interval</span></code>. The connector used to
+store the cached table must support the <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span></code> statement configured
+through <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code>.</p>
 <p>The grace period can be specified for all cached tables using
 <code class="docutils literal notranslate"><span class="pre">defaultGracePeriod</span></code>, and overridden within each rule using <code class="docutils literal notranslate"><span class="pre">gracePeriod</span></code>.</p>
 <p>The target catalog for all cached tables can be defined using
