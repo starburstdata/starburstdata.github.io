@@ -277,6 +277,8 @@
         <li class="md-nav__item"><a href="#docker-registry" class="md-nav__link">Docker registry</a>
         </li>
         <li class="md-nav__item"><a href="#license" class="md-nav__link">License</a>
+        </li>
+        <li class="md-nav__item"><a href="#helm-troubleshooting-tips" class="md-nav__link">Helm troubleshooting tips</a>
         </li></ul>
             </nav>
         </li>
@@ -302,7 +304,7 @@
     <li class="md-nav__item">
     
     
-      <a href="hms-configuration.html" class="md-nav__link">Configuring the Hive metastore in Kubernetes</a>
+      <a href="hms-configuration.html" class="md-nav__link">Configuring the Hive Metastore Service in Kubernetes</a>
       
     
     </li>
@@ -456,6 +458,8 @@
         <li class="md-nav__item"><a href="#docker-registry" class="md-nav__link">Docker registry</a>
         </li>
         <li class="md-nav__item"><a href="#license" class="md-nav__link">License</a>
+        </li>
+        <li class="md-nav__item"><a href="#helm-troubleshooting-tips" class="md-nav__link">Helm troubleshooting tips</a>
         </li></ul>
             </nav>
         </li>
@@ -478,7 +482,7 @@ options.</p>
 following sections detail the specific requirements for SEP deployments on
 k8s.</p>
 
-<h2 id="k8s-cluster-requirements">K8s cluster requirements<a class="headerlink" href="#k8s-cluster-requirements" title="Permalink to this headline">#</a></h2>
+<span id="id1"></span><h2 id="k8s-cluster-requirements">K8s cluster requirements<a class="headerlink" href="#k8s-cluster-requirements" title="Permalink to this headline">#</a></h2>
 <p>The following k8s versions are supported:</p>
 <ul class="simple">
 <li><p>1.18</p></li>
@@ -504,6 +508,11 @@ standard k8s tools.</p>
 </ul>
 <p>The recommended approach to achieve this is a dedicated cluster or namespace for
 all SEP nodes.</p>
+<p>Additionally, take advantage of our SEP <a class="reference external" href="../../starburst-enterprise/data-engineer/query-performance.html">performance tuning training
+video</a> for
+in-depth information on topics such as cluster and machine sizing, workload
+tuning and resource management to help you make informed choices while planning
+your implementation.</p>
 <p>If your cluster is required to be shared with other applications, you need to
 ensure that the exclusive node access for SEP is guaranteed. You can
 <a class="reference internal" href="installation.html#helm-node-assignment"><span class="std std-ref">use nodegroups, taints and tolerations, or pod affinity and anti-affinity</span></a> to achieve this. This approach is not recommended, since
@@ -544,6 +553,10 @@ ingress appropriately.</p>
 </ul>
 <p>In addition we strongly recommend <a class="reference external" href="https://octant.dev/">Octant</a> to simplify
 cluster workload visualization and management. The <a class="reference external" href="https://github.com/bloodorangeio/octant-helm">Octant Helm plugin</a> can simplify usage further.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Check out our <a class="reference internal" href="#helm-troubleshooting-tips"><span class="std std-ref">Helm troubleshooting tips</span></a>.</p>
+</div>
 
 
 <span id="k8s-helm-repository"></span><h2 id="helm-chart-repository">Helm chart repository<a class="headerlink" href="#helm-chart-repository" title="Permalink to this headline">#</a></h2>
@@ -588,15 +601,8 @@ docker images.</p>
 <p>Create a <code class="docutils literal notranslate"><span class="pre">values.yml</span></code> for each Helm chart you want to install in a cluster.
 This file contains the configuration for the specific chart in the specific
 cluster.</p>
-<p>As a minimum you need one file for the SEP Helm chart for each cluster.</p>
-<p>Configure your credentials in the <code class="docutils literal notranslate"><span class="pre">values.yml</span></code> as a minimum configuration:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">registryCredentials</span><span class="p">:</span>
-  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-  <span class="nt">registry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">harbor.starburstdata.net/starburstdata</span>
-  <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yourusername</span>
-  <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">yourpassword</span>
-</pre></div>
-</div>
+<p>As a minimum you need the <a class="reference internal" href="installation.html#minimal-values-yaml-file"><span class="std std-ref">YAML file for registry credentials</span></a> and a separate YAML file for each chart and each
+cluster.</p>
 <p>More details, including using your own Docker registry, are available in the
 <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Docker image and registry section for the Helm chart</span></a> for
 SEP.</p>
@@ -604,6 +610,31 @@ SEP.</p>
 
 <h2 id="license">License<a class="headerlink" href="#license" title="Permalink to this headline">#</a></h2>
 <p>You need to ensure you get a license file from Starburst <a class="reference internal" href="sep-configuration.html#helm-sep-license"><span class="std std-ref">and configure it</span></a>, if you intend to use features of SEP.</p>
+
+
+<span id="id2"></span><h2 id="helm-troubleshooting-tips">Helm troubleshooting tips<a class="headerlink" href="#helm-troubleshooting-tips" title="Permalink to this headline">#</a></h2>
+<p>Here are some things to keep in mind as you implement SEP with Kubernetes and
+Helm in your organization.</p>
+<ul class="simple">
+<li><p>Helm is space-sensitive and tabs are not valid. Our default
+<code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file uses 2-space indents. Ensure that your code editor
+preserves the correct indentation as it copies and pastes text.</p></li>
+<li><p>If your <code class="docutils literal notranslate"><span class="pre">YAML</span></code> files fail to parse, Helm provides <a class="reference external" href="https://helm.sh/docs/chart_template_guide/debugging/">several tools to
+debug this issue</a>.</p></li>
+<li><p>Sometimes problems can arise from improperly formatted <code class="docutils literal notranslate"><span class="pre">YAML</span></code> files.
+SEP uses Helm to build its <code class="docutils literal notranslate"><span class="pre">*.properties</span></code> files from <code class="docutils literal notranslate"><span class="pre">YAML</span></code> both with
+<code class="docutils literal notranslate"><span class="pre">YAML</span></code> key-value pairs and with multi-line strings. We recommend that you
+review the <a class="reference external" href="https://helm.sh/docs/chart_template_guide/yaml_techniques/">YAML techniques</a>
+used in Helm to ensure that you are comfortable with using the Helm multi-line
+strings feature, and to understand the importance of consistent indentation.</p></li>
+<li><p>Units can also be a source of confusion. We strongly suggest that you pay
+close attention to any units regarding memory and storage. In general, units
+provided for multiline strings that feed into SEP configuration files are in
+traditional metric bytes, such as megabytes (MB) and gigabytes (GB) as used by
+SEP. However, machine sizing and other values  are in binary multiples such
+as mebibytes (Mi) and gibibytes (Gi), since these are used directly by Helm
+and Kubernetes.</p></li>
+</ul>
 
 
 

@@ -73,7 +73,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Configuring the Hive metastore in Kubernetes" href="hms-configuration.html" />
+    <link rel="next" title="Configuring the Hive Metastore Service in Kubernetes" href="hms-configuration.html" />
     <link rel="prev" title="Installing Starburst Enterprise in a Kubernetes cluster" href="installation.html" />
   
    
@@ -276,6 +276,8 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#k8s-sep-configuration--page-root" class="md-nav__link">Configuring Starburst Enterprise in Kubernetes</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#customization-troubleshooting-tips" class="md-nav__link">Customization troubleshooting tips</a>
+        </li>
         <li class="md-nav__item"><a href="#docker-image-and-registry" class="md-nav__link">Docker image and registry</a>
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a><nav class="md-nav">
@@ -342,7 +344,7 @@
     <li class="md-nav__item">
     
     
-      <a href="hms-configuration.html" class="md-nav__link">Configuring the Hive metastore in Kubernetes</a>
+      <a href="hms-configuration.html" class="md-nav__link">Configuring the Hive Metastore Service in Kubernetes</a>
       
     
     </li>
@@ -481,6 +483,8 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#k8s-sep-configuration--page-root" class="md-nav__link">Configuring Starburst Enterprise in Kubernetes</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#customization-troubleshooting-tips" class="md-nav__link">Customization troubleshooting tips</a>
+        </li>
         <li class="md-nav__item"><a href="#docker-image-and-registry" class="md-nav__link">Docker image and registry</a>
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a><nav class="md-nav">
@@ -552,10 +556,10 @@
 <h1 id="k8s-sep-configuration--page-root">Configuring Starburst Enterprise in Kubernetes<a class="headerlink" href="#k8s-sep-configuration--page-root" title="Permalink to this headline">#</a></h1>
 <p>The <code class="docutils literal notranslate"><span class="pre">starburst-enterprise</span></code> Helm chart configures the Starburst Enterprise platform (SEP) coordinator
 and worker nodes in the cluster with the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file detailed in the
-following sections.</p>
-<p>A minimal values file <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">adds the registry credentials</span></a>, overrides any defaults to suitable values and adds
-configuration for <a class="reference internal" href="#helm-sep-catalogs"><span class="std std-ref">catalogs</span></a> and other information as
-desired.</p>
+following sections. We strongly suggest that you <a class="reference internal" href="overview.html#k8s-best-practices"><span class="std std-ref">follow best practices</span></a> when customizing your cluster. Create a minimal values
+file for <a class="reference internal" href="installation.html#minimal-values-yaml-file"><span class="std std-ref">registry credentials</span></a>, and any other
+small, targeted override files as needed to change defaults to suitable
+values and add <a class="reference internal" href="#helm-sep-catalogs"><span class="std std-ref">catalog configurations</span></a>.</p>
 <p>The top level nodes are as follows, in order of appearance in the default
 <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file embedded in the Helm chart. Click on a section header to be
 taken to the relevant documentation:</p>
@@ -693,6 +697,33 @@ and other tools.</p></td>
 </tbody>
 </table>
 
+<span id="helm-customization-troubleshooting"></span><h2 id="customization-troubleshooting-tips">Customization troubleshooting tips<a class="headerlink" href="#customization-troubleshooting-tips" title="Permalink to this headline">#</a></h2>
+<p>SEP is highly customizable and complex. Here are some things to keep in mind
+as you implement SEP in your organization.</p>
+<ul class="simple">
+<li><p>Helm is space-sensitive and tabs are not allowed. Our default
+<code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file uses 2-space indents. Ensure that your code editor
+preserves the correct indentation as it copies and pastes text.</p></li>
+<li><p>When you are first starting a new install, a configuration change, or an
+upgrade to a new release, launch your cluster with the new binaries and
+configuration, and <code class="docutils literal notranslate"><span class="pre">tail</span></code> the SEP <code class="docutils literal notranslate"><span class="pre">server.log</span></code> file as SEP starts. All
+errors must be addressed before the SEP server can start.</p></li>
+<li><p>If your <code class="docutils literal notranslate"><span class="pre">YAML</span></code> files fail to parse, Helm provides <a class="reference external" href="https://helm.sh/docs/chart_template_guide/debugging/">several tools to
+debug this issue</a>.</p></li>
+<li><p>Sometimes problems can arise from improperly formatted <code class="docutils literal notranslate"><span class="pre">YAML</span></code> files.
+SEP uses Helm to build its <code class="docutils literal notranslate"><span class="pre">*.properties</span></code> files from <code class="docutils literal notranslate"><span class="pre">YAML</span></code> both with
+<code class="docutils literal notranslate"><span class="pre">YAML</span></code> key-value pairs and with multi-line strings. We recommend that you
+review the <a class="reference external" href="https://helm.sh/docs/chart_template_guide/yaml_techniques/">YAML techniques</a>
+used in Helm to ensure that you are comfortable with using the Helm multi-line
+strings feature, and to understand the importance of consistent indentation.</p></li>
+<li><p>Units can also be a source of confusion. We strongly suggest that you pay
+close attention to any units regarding memory and storage. In general, units
+provided for multiline strings are in traditional metric bytes, such as
+megabytes (MB) and gigabytes (GB). However, machine sizing is in binary
+multiples such as mebibytes (Mi) and gibibytes (Gi).</p></li>
+</ul>
+
+
 <span id="helm-sep-image"></span><h2 id="docker-image-and-registry">Docker image and registry<a class="headerlink" href="#docker-image-and-registry" title="Permalink to this headline">#</a></h2>
 <p>The default configuration automatically contains the details for the relevant
 Docker image on the Starburst Harbor instance.</p>
@@ -716,8 +747,8 @@ Docker image on the Starburst Harbor instance.</p>
  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span>
 </pre></div>
 </div>
-<p>You need to add your credentials to access the registry as shown in <a class="reference internal" href="requirements.html#k8s-docker-registry"><span class="std std-ref">the
-Docker requirements section</span></a>.</p>
+<p>These nodes should be added to the <code class="docutils literal notranslate"><span class="pre">registry-credentials.yaml</span></code> file to access
+the registry as shown in the <a class="reference internal" href="installation.html#minimal-values-yaml-file"><span class="std std-ref">best practices guide</span></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">image</span></code></p>
 <p>The <code class="docutils literal notranslate"><span class="pre">image</span></code> section controls the Docker image to use including the version.
 Typically, the Helm chart version reflects the SEP version. Specifically, the
@@ -1942,12 +1973,12 @@ feedback();
             </a>
           
           
-            <a href="hms-configuration.html" title="Configuring the Hive metastore in Kubernetes"
+            <a href="hms-configuration.html" title="Configuring the Hive Metastore Service in Kubernetes"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> Next </span> Configuring the Hive metastore in Kubernetes </span>
+                class="md-footer-nav__direction"> Next </span> Configuring the Hive Metastore Service in Kubernetes </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
