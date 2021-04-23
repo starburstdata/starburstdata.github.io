@@ -450,7 +450,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#standard-jdbc-catalog-properties" class="md-nav__link">Standard JDBC catalog properties</a>
         </li>
-        <li class="md-nav__item"><a href="#additional-configuration-properties" class="md-nav__link">Additional configuration properties</a>
+        <li class="md-nav__item"><a href="#jdbc-type-mapping-and-metadata-cache" class="md-nav__link">JDBC type mapping and metadata cache</a>
         </li></ul>
             </nav>
         </li>
@@ -797,7 +797,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#standard-jdbc-catalog-properties" class="md-nav__link">Standard JDBC catalog properties</a>
         </li>
-        <li class="md-nav__item"><a href="#additional-configuration-properties" class="md-nav__link">Additional configuration properties</a>
+        <li class="md-nav__item"><a href="#jdbc-type-mapping-and-metadata-cache" class="md-nav__link">JDBC type mapping and metadata cache</a>
         </li></ul>
             </nav>
         </li>
@@ -850,7 +850,7 @@
             
   
 <h1 id="connector-starburst-shared-features--page-root">Starburst shared connector features<a class="headerlink" href="#connector-starburst-shared-features--page-root" title="Permalink to this headline">#</a></h1>
-<p>A number of Starburst Enterprise platform (SEP) connectors shared features and behavior. For example,
+<p>A number of Starburst Enterprise platform (SEP) connectors share features and behavior. For example,
 some use JDBC connections to the data source, support identical configuration
 option, performance improvements, or security features. These are all documented
 in the following sections and linked from the connectors which implement a
@@ -865,7 +865,7 @@ following properties:</p>
 <span class="na">connector.name</span><span class="o">=</span><span class="s">generic-jdbc</span>
 
 <span class="c"># Connection URL (required for JDBC connectors)</span>
-<span class="na">connection-url</span><span class="o">=</span><span class="s">[connectorprotocol]//&lt;host&gt;:&lt;port&gt;;database=&lt;database&gt;</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">[connectorprotocol]//&lt;host&gt;:&lt;port&gt;</span>
 
 <span class="c"># Connection credentials</span>
 <span class="na">connection-user</span><span class="o">=</span><span class="s">USERNAME</span>
@@ -873,18 +873,22 @@ following properties:</p>
 </pre></div>
 </div>
 <p>While the <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> is the only required property in a catalog file,
-JDBC connectors need a specified <code class="docutils literal notranslate"><span class="pre">connection-url</span></code>. Typically, username and
-password credentials are also required.</p>
-<p>Once the catalog properties file is established, you can add any additional
-configuration properties as needed.</p>
+JDBC connectors need a specified <code class="docutils literal notranslate"><span class="pre">connection-url</span></code>. The connections string
+differs and the supported parameters differs for each connector and depends on
+the use JDBC driver. The driver is typically included. Documentation for each
+driver is available with the supplier of the driver. For example, the PostgreSQL
+connector uses the PostgreSQL JDBC driver and you can learn details from the
+<a class="reference external" href="https://jdbc.postgresql.org/">PostgreSQL JDBC driver documentation</a>.</p>
+<p>Typically, username and password credentials are also required and are specified
+with the separate properties, if desired as <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a>.</p>
 
 
-<span id="shared-config-properties"></span><h3 id="additional-configuration-properties">Additional configuration properties<a class="headerlink" href="#additional-configuration-properties" title="Permalink to this headline">#</a></h3>
-<p>After establishing a base catalog properties file, you can add other
-configuration properties. Connector-specific properties are defined in the
-documentation for each connector.</p>
+<span id="shared-jdbc-type-mapping"></span><h3 id="jdbc-type-mapping-and-metadata-cache">JDBC type mapping and metadata cache<a class="headerlink" href="#jdbc-type-mapping-and-metadata-cache" title="Permalink to this headline">#</a></h3>
+<p>The following properties can be used to configure how data types from the
+connected data source are mapped to Trino data types and how the metadata is
+cached in Trino.</p>
 <table id="id3">
-<caption><span class="caption-text">Available config properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">JDBC type mapping and metadata cache configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -897,25 +901,38 @@ documentation for each connector.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">unsupported-type-handling</span></code></p></td>
+<td><p>Configures how unsupported column data types are handled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">IGNORE</span></code>, column is not accessible.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CONVERT_TO_VARCHAR</span></code>, column is converted to unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>.</p></li>
+</ul>
+<p>The respective catalog session property is <code class="docutils literal notranslate"><span class="pre">unsupported_type_handling</span></code>.</p>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IGNORE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching</span></code></p></td>
 <td><p>Supports case insensitive database and collection names</p></td>
 <td><p>False</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.cache-ttl</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.cache-ttl</span></code></p></td>
 <td></td>
 <td><p>1 minute</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">jdbc-types-mapped-to-varchar</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">jdbc-types-mapped-to-varchar</span></code></p></td>
 <td><p>Allow forced mapping of comma separated lists of data types to convert to
 unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-ttl</span></code></p></td>
-<td><p>Duration for which metadata, including table and column statistics, is
-cached</p></td>
-<td><p>0 - disabled caching</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-ttl</span></code></p></td>
+<td><dl class="simple">
+<dt>Duration for which metadata, including table and column statistics, is</dt><dd><p>cached</p>
+</dd>
+</dl>
+</td>
+<td><p>0 (disabled caching)</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-missing</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-missing</span></code></p></td>
 <td><p>Cache the fact that metadata, including table and column statistics, is
 not available</p></td>
 <td><p>False</p></td>
