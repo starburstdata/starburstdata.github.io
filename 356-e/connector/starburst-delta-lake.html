@@ -360,6 +360,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#special-columns" class="md-nav__link">Special columns</a>
         </li>
+        <li class="md-nav__item"><a href="#creating-schemas" class="md-nav__link">Creating schemas</a>
+        </li>
         <li class="md-nav__item"><a href="#creating-tables" class="md-nav__link">Creating tables</a>
         </li>
         <li class="md-nav__item"><a href="#write-support" class="md-nav__link">Write support</a>
@@ -791,6 +793,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#special-columns" class="md-nav__link">Special columns</a>
         </li>
+        <li class="md-nav__item"><a href="#creating-schemas" class="md-nav__link">Creating schemas</a>
+        </li>
         <li class="md-nav__item"><a href="#creating-tables" class="md-nav__link">Creating tables</a>
         </li>
         <li class="md-nav__item"><a href="#write-support" class="md-nav__link">Write support</a>
@@ -1042,20 +1046,41 @@ directly or used in conditional statements.</p>
 </ul>
 
 
+<h3 id="creating-schemas">Creating schemas<a class="headerlink" href="#creating-schemas" title="Permalink to this headline">#</a></h3>
+<p>The connector supports creating metastore schemas, optionally with a location
+specified.</p>
+<p>You can create a schema without a location with the base
+<a class="reference internal" href="../sql/create-schema.html"><span class="doc">CREATE SCHEMA</span></a> statement. Tables in this schema must have a location
+included when you create them. The data files for these tables are not removed
+if the table is dropped:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">delta</span><span class="p">.</span><span class="n">my_schema</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Optionally, a location can be specified. Tables in this schema do not need to
+have a location. By default they are located in a subdirectory under the schema
+location. The data files for tables in this schema using the default location
+are cleaned up if the table is dropped:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">delta</span><span class="p">.</span><span class="n">my_schema</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">);</span>
+</pre></div>
+</div>
+
+
 <h3 id="creating-tables">Creating tables<a class="headerlink" href="#creating-tables" title="Permalink to this headline">#</a></h3>
 <p>When Delta tables exist in storage, but not in the metastore, SEP can be used
 to register them:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">delta</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">my_table</span> <span class="p">(</span>
-   <span class="n">dummy</span> <span class="nb">bigint</span>
- <span class="p">)</span>
+  <span class="n">dummy</span> <span class="nb">bigint</span>
+<span class="p">)</span>
 <span class="k">WITH</span> <span class="p">(</span>
-   <span class="k">location</span> <span class="o">=</span> <span class="s1">'...'</span>
+  <span class="k">location</span> <span class="o">=</span> <span class="s1">'...'</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 <p>Columns listed in the DDL, such as <code class="docutils literal notranslate"><span class="pre">dummy</span></code> in the above example, are ignored.
 The table schema is read from the transaction log, instead. If the schema is
 changed by an external system, SEP automatically uses the new schema.</p>
+<p>The Delta Lake connector also supports creating tables using the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span>
+<span class="pre">AS</span></code> syntax. There are two table properties available for use in table creation.</p>
 <p>The connector automatically writes the initial transaction log entries and
 registers the table in the metastore, when creating a new table. As a result any
 Databricks engine can write to the table:</p>
@@ -1063,15 +1088,15 @@ Databricks engine can write to the table:</p>
 </pre></div>
 </div>
 <p>The connector also supports creating tables using the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code>
-syntax. There are two table properties available for use in table creation. A
-set of partition columns can be provided using the <code class="docutils literal notranslate"><span class="pre">partitioned_by</span></code> table
+syntax. There are two table properties available for use in table creation.</p>
+<p>A set of partition columns can be provided using the <code class="docutils literal notranslate"><span class="pre">partitioned_by</span></code> table
 property, and the checkpoint entry interval can be provided using the
 <code class="docutils literal notranslate"><span class="pre">checkpoint_interval</span></code> table property:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">delta</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">my_partitioned_table</span>
 <span class="k">WITH</span> <span class="p">(</span>
-   <span class="k">location</span> <span class="o">=</span> <span class="s1">'...'</span><span class="p">,</span>
-   <span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
-   <span class="n">checkpoint_interval</span> <span class="o">=</span> <span class="mi">5</span>
+  <span class="k">location</span> <span class="o">=</span> <span class="s1">'...'</span><span class="p">,</span>
+  <span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
+  <span class="n">checkpoint_interval</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="p">)</span>
 <span class="k">AS</span> <span class="k">SELECT</span> <span class="n">name</span><span class="p">,</span> <span class="k">comment</span><span class="p">,</span> <span class="n">regionkey</span> <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
 </pre></div>
@@ -1079,7 +1104,7 @@ property, and the checkpoint entry interval can be provided using the
 
 
 <span id="delta-lake-write-support"></span><h3 id="write-support">Write support<a class="headerlink" href="#write-support" title="Permalink to this headline">#</a></h3>
-<p>You can use the the connector to insert, delete and update data in Delta Lake
+<p>You can use the connector to insert, delete and update data in Delta Lake
 tables.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
@@ -1096,6 +1121,11 @@ corruption.</p>
 <li><p>S3 compatible storage</p></li>
 <li><p>Azure ADLS Gen2</p></li>
 </ul>
+<p>Writing checkpoint files as part of any write operation is enabled by default.
+Writing statistics to the checkpoint files drops statistics for <code class="docutils literal notranslate"><span class="pre">ROW</span></code> types.
+This does not impact JSON transaction log entries. You can disable checkpoint
+writing by setting the <code class="docutils literal notranslate"><span class="pre">delta.experimental.checkpoint-writing.enabled</span></code> config
+property to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 
 
 
