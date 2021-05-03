@@ -306,9 +306,17 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a>
-        </li>
+        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#join-pushdown" class="md-nav__link">Join pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#limit-pushdown" class="md-nav__link">Limit pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#top-n-pushdown" class="md-nav__link">Top-N pushdown</a>
         </li></ul>
             </nav>
         </li>
@@ -403,9 +411,17 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a>
-        </li>
+        <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#join-pushdown" class="md-nav__link">Join pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#limit-pushdown" class="md-nav__link">Limit pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#top-n-pushdown" class="md-nav__link">Top-N pushdown</a>
         </li></ul>
             </nav>
         </li>
@@ -433,7 +449,7 @@ for processing.</p>
 <p>Support for pushdown is specific to each connector and the relevant underlying
 database or storage system.</p>
 
-<h2 id="aggregation-pushdown">Aggregation pushdown<a class="headerlink" href="#aggregation-pushdown" title="Permalink to this headline">#</a></h2>
+<span id="id1"></span><h2 id="aggregation-pushdown">Aggregation pushdown<a class="headerlink" href="#aggregation-pushdown" title="Permalink to this headline">#</a></h2>
 <p>Aggregation pushdown can take place provided the following conditions are satisfied:</p>
 <ul class="simple">
 <li><p>If aggregation pushdown is generally supported by the connector.</p></li>
@@ -537,9 +553,8 @@ Fragment 2 [SOURCE]
 </pre></div>
 </div>
 
-
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
-<p>Pushdown does not support a number of more complex statements:</p>
+<h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h3>
+<p>Aggregation pushdown does not support a number of more complex statements:</p>
 <ul class="simple">
 <li><p>complex grouping operations such as <code class="docutils literal notranslate"><span class="pre">ROLLUP</span></code>, <code class="docutils literal notranslate"><span class="pre">CUBE</span></code>, or <code class="docutils literal notranslate"><span class="pre">GROUPING</span> <span class="pre">SETS</span></code></p></li>
 <li><p>expressions inside the aggregation function call: <code class="docutils literal notranslate"><span class="pre">sum(a</span> <span class="pre">*</span> <span class="pre">b)</span></code></p></li>
@@ -547,6 +562,41 @@ Fragment 2 [SOURCE]
 <li><p><a class="reference internal" href="../functions/aggregate.html#aggregate-function-ordering-during-aggregation"><span class="std std-ref">aggregations with ordering</span></a></p></li>
 <li><p><a class="reference internal" href="../functions/aggregate.html#aggregate-function-filtering-during-aggregation"><span class="std std-ref">aggregations with filter</span></a></p></li>
 </ul>
+
+
+
+<span id="id2"></span><h2 id="join-pushdown">Join pushdown<a class="headerlink" href="#join-pushdown" title="Permalink to this headline">#</a></h2>
+<p>Join pushdown allows the connector to delegate the table join operation to the
+underlying data source. This can result in performance gains, and allows Trino
+to perform the remaining query processing on a smaller amount of data.</p>
+<p>The specifics for the supported pushdown of table joins varies for each data
+source, and therefore for each connector.</p>
+
+
+<span id="id3"></span><h2 id="limit-pushdown">Limit pushdown<a class="headerlink" href="#limit-pushdown" title="Permalink to this headline">#</a></h2>
+<p>A <a class="reference internal" href="../sql/select.html#limit-clause"><span class="std std-ref">LIMIT or FETCH FIRST clause</span></a> reduces the number of returned records for a statement.
+Limit pushdown enables a connector to push processing of such queries of
+unsorted record to the underlying data source.</p>
+<p>A pushdown of this clause can improve the performance of the query and
+significantly reduce the amount of data transferred from the data source to
+Trino.</p>
+<p>Queries include sections such as <code class="docutils literal notranslate"><span class="pre">LIMIT</span> <span class="pre">N</span></code> or <code class="docutils literal notranslate"><span class="pre">FETCH</span> <span class="pre">FIRST</span> <span class="pre">N</span> <span class="pre">ROWS</span></code>.</p>
+<p>Implementation and support is connector-specific since different data sources have varying capabilities.</p>
+
+
+<span id="topn-pushdown"></span><h2 id="top-n-pushdown">Top-N pushdown<a class="headerlink" href="#top-n-pushdown" title="Permalink to this headline">#</a></h2>
+<p>The combination of a <a class="reference internal" href="../sql/select.html#limit-clause"><span class="std std-ref">LIMIT or FETCH FIRST clause</span></a> with an <a class="reference internal" href="../sql/select.html#order-by-clause"><span class="std std-ref">ORDER BY clause</span></a> creates
+a small set of records to return out of a large sorted dataset. It relies on the
+order to determine which records need to be returned, and is therefore quite
+different to optimize compared to a <a class="reference internal" href="#limit-pushdown"><span class="std std-ref">Limit pushdown</span></a>.</p>
+<p>The pushdown for such a query is called a Top-N pushdown, since the operation is
+returning the top N rows. It enables a connector to push processing of such
+queries to the underlying data source, and therefore significantly reduces the
+amount of data transferred to and processed by Trino.</p>
+<p>Queries include sections such as <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span> <span class="pre">...</span> <span class="pre">LIMIT</span> <span class="pre">N</span></code> or <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span> <span class="pre">...</span>
+<span class="pre">FETCH</span> <span class="pre">FIRST</span> <span class="pre">N</span> <span class="pre">ROWS</span></code>.</p>
+<p>Implementation and support is connector-specific since different data sources
+support different SQL syntax and processing.</p>
 
 
 
