@@ -844,18 +844,29 @@ when the result set returned from Snowflake is small.</p>
 <p>When larger result sets are extracted from Snowflake, the
 <code class="docutils literal notranslate"><span class="pre">snowflake-distributed</span></code> connector may be a better choice. Instead of
 requesting query results over a JDBC connection, the connector asks Snowflake to
-export them to S3 and SEP reads them from there. Since both the write and the
-read are parallelized, this approach scales better for large data sets, but has
-a higher latency.</p>
+export them to object storage and SEP reads them from there. Since write and
+read operations are parallelized, this approach scales better for large data
+sets, but has a higher latency.</p>
 <p>A requirement of using the distributed connector is that your Snowflake
-deployment runs on AWS. The connector automatically creates <a class="reference external" href="https://docs.snowflake.com/en/sql-reference/sql/create-stage.html">temporary stages</a> in
-temporary S3 buckets using Snowflake.</p>
+deployment runs on AWS or Azure. The connector automatically creates <a class="reference external" href="https://docs.snowflake.com/en/sql-reference/sql/create-stage.html">temporary
+stages</a> in
+temporary storage buckets using Snowflake.</p>
 <p>Create the catalog properties file with the following contents, replacing the
 connection properties as appropriate for your setup (for example, replace
 <code class="docutils literal notranslate"><span class="pre">&lt;account_name&gt;</span></code> with the full name of your account, as provided by
 Snowflake).</p>
+<p>For AWS:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake-jdbc or snowflake-distributed&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.snowflakecomputing.com/
+connection-user=&lt;user_name&gt;
+connection-password=&lt;password&gt;
+snowflake.warehouse=&lt;warehouse_name&gt;
+snowflake.database=&lt;database_name&gt;
+</pre></div>
+</div>
+<p>For Azure:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake-jdbc or snowflake-distributed&gt;
+connection-url=jdbc:snowflake://&lt;account_name&gt;.&lt;azure_region&gt;.azure.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
 snowflake.warehouse=&lt;warehouse_name&gt;
@@ -994,10 +1005,18 @@ credentials, and use the default Snowflake user role.</p>
 role.</p>
 </dd>
 </dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Impersonation using Okta is not supported for Azure.</p>
+</div>
 
 
 <h3 id="authentication-with-okta">Authentication with Okta<a class="headerlink" href="#authentication-with-okta" title="Permalink to this headline">#</a></h3>
 <p>The Snowflake connector supports the usage of the <a class="reference external" href="https://www.okta.com/">Okta Single Sign-On</a> system to authenticate users via SEP to Snowflake.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Okta authentication is not supported for Azure.</p>
+</div>
 <p>The setup allows users to authenticate to SEP using their LDAP credentials
 and use the same credentials to authenticate to Snowflake through Okta. The same
 credentials are used by SEP when accessing data in Snowflake.</p>
