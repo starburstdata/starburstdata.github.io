@@ -388,6 +388,8 @@
         </li>
         <li class="md-nav__item"><a href="#oauth-2-0-authentication" class="md-nav__link">OAuth 2.0 authentication</a>
         </li>
+        <li class="md-nav__item"><a href="#oauth-2-0-token-pass-through" class="md-nav__link">OAuth 2.0 token pass-through</a>
+        </li>
         <li class="md-nav__item"><a href="#scram-authentication" class="md-nav__link">SCRAM authentication</a>
         </li></ul>
             </nav>
@@ -831,6 +833,8 @@
         </li>
         <li class="md-nav__item"><a href="#oauth-2-0-authentication" class="md-nav__link">OAuth 2.0 authentication</a>
         </li>
+        <li class="md-nav__item"><a href="#oauth-2-0-token-pass-through" class="md-nav__link">OAuth 2.0 token pass-through</a>
+        </li>
         <li class="md-nav__item"><a href="#scram-authentication" class="md-nav__link">SCRAM authentication</a>
         </li></ul>
             </nav>
@@ -866,10 +870,11 @@ the following features:</p>
 <ul class="simple">
 <li><p>TLS/SSL encryption (1-way SSL)</p></li>
 <li><dl class="simple">
-<dt>Additional authentication mechanisms:</dt><dd><ul>
+<dt>Additional authentication and access control mechanisms:</dt><dd><ul>
 <li><p>TLS/SSL authentication (2-way SSL)</p></li>
 <li><p>Basic authentication</p></li>
 <li><p>OAuth 2.0</p></li>
+<li><p>OAuth 2.0 token pass-through</p></li>
 <li><p>SCRAM</p></li>
 <li><p>Kerberos</p></li>
 </ul>
@@ -1039,7 +1044,7 @@ configuration to your catalog file to use TLS/SSL:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>kafka.security-protocol=SSL
 </pre></div>
 </div>
-<p>You need to set the following required configuration properties:</p>
+<p>You must set the following required configuration properties:</p>
 <table id="id4">
 <caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
@@ -1077,7 +1082,7 @@ kafka.ssl.key.password=private_key_password
 
 <span id="kafka-sasl-authentication"></span><h3 id="sasl-authentication">SASL authentication<a class="headerlink" href="#sasl-authentication" title="Permalink to this headline">#</a></h3>
 <p>With SASL authentication, the connector authenticates with the Kafka server
-using one of the following, supported authentication mechanisms:</p>
+using one of the following supported authentication mechanisms:</p>
 <table id="id5">
 <caption><span class="caption-text">Authentication mechanisms</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
@@ -1104,11 +1109,15 @@ using one of the following, supported authentication mechanisms:</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">OAUTHBEARER</span></code></p></td>
 <td><p><a class="reference internal" href="#kafka-oauth2-authentication"><span class="std std-ref">OAuth 2.0 authentication</span></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SCRAM_SHA_256</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DELEGATED_OAUTH2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OAUTHBEARER</span></code></p></td>
+<td><p><a class="reference internal" href="#kafka-oauth2-passthrough"><span class="std std-ref">OAuth 2.0 token pass-through</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SCRAM_SHA_256</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SCRAM-SHA-256</span></code></p></td>
 <td><p><a class="reference internal" href="#kafka-scram-authentication"><span class="std std-ref">SCRAM authentication</span></a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SCRAM_SHA_512</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SCRAM_SHA_512</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SCRAM-SHA-512</span></code></p></td>
 <td><p><a class="reference internal" href="#kafka-scram-authentication"><span class="std std-ref">SCRAM authentication</span></a></p></td>
 </tr>
@@ -1273,6 +1282,25 @@ authorization server certificate</p></td>
 </tr>
 </tbody>
 </table>
+
+
+<span id="kafka-oauth2-passthrough"></span><h4 id="oauth-2-0-token-pass-through">OAuth 2.0 token pass-through<a class="headerlink" href="#oauth-2-0-token-pass-through" title="Permalink to this headline">#</a></h4>
+<p>The Kafka connector supports <a class="reference internal" href="../security/oauth2-passthrough.html"><span class="doc">OAuth 2.0 token pass-through</span></a>.</p>
+<p>Configure this option the same as <a class="reference internal" href="#kafka-oauth2-authentication"><span class="std std-ref">OAuth 2.0 authentication</span></a>, except
+for the settings described in this section.</p>
+<p>Set the authentication type in the coordinator’s <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">config properties
+file</span></a>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">DELEGATED_OAUTH2</span>
+</pre></div>
+</div>
+<p>Additionally enable <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> in the catalog properties file using
+the Kafka connector:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">kafka.authentication.type</span><span class="o">=</span><span class="s">OAUTH2_PASSTHROUGH</span>
+</pre></div>
+</div>
+<p>In addition, the SASL mechanism must be enabled with
+<code class="docutils literal notranslate"><span class="pre">kafka.security-protocol=SASL_SSL</span></code> or
+<code class="docutils literal notranslate"><span class="pre">kafka.security-protocol=SASL_PLAINTEXT</span></code> as described in the previous section.</p>
 
 
 <span id="kafka-scram-authentication"></span><h4 id="scram-authentication">SCRAM authentication<a class="headerlink" href="#scram-authentication" title="Permalink to this headline">#</a></h4>
