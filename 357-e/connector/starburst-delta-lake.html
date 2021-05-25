@@ -917,8 +917,9 @@ contains a valid transaction log entry when creating a new table.</p></td>
 <td><p>true</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.enable-non-concurrent-writes</span></code></p></td>
-<td><p>Enable <a class="reference internal" href="#delta-lake-write-support"><span class="std std-ref">write support</span></a>, specifically
-take note of the warning about concurrency and checkpoints.</p></td>
+<td><p>Enable <a class="reference internal" href="#delta-lake-write-support"><span class="std std-ref">write support</span></a> for all supported
+file systems, specifically take note of the warning about concurrency
+and checkpoints.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.default-checkpoint-writing-interval</span></code></p></td>
@@ -1114,27 +1115,23 @@ property, and the checkpoint entry interval can be provided using the
 
 
 <span id="delta-lake-write-support"></span><h3 id="write-support">Write support<a class="headerlink" href="#write-support" title="Permalink to this headline">#</a></h3>
-<p>You can use the connector to insert, delete and update data in Delta Lake
-tables.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>SEP does not enforce isolation against the Databricks or open source Delta
-Lake runtimes as a result of limitations in Delta Lake and its concurrency
-control. You need to make sure that no concurrent data modifications are run
-to avoid data corruption.</p>
-</div>
-<p>To enable write support in the connector you have to set
-<code class="docutils literal notranslate"><span class="pre">delta.enable-non-concurrent-writes</span></code> config property to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
-<p>Write operations are only supported for tables stored on:</p>
-<ul class="simple">
-<li><p>S3 compatible storage</p></li>
-<li><p>Azure ADLS Gen2</p></li>
+<p>You can use the connector to <a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a>, <a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a> and
+<a class="reference internal" href="../sql/update.html"><span class="doc">UPDATE</span></a> data in Delta Lake tables.</p>
+<p>Write operations are supported for tables stored on the following systems:</p>
+<ul>
+<li><p>Azure ADLS Gen2</p>
+<p>Writes to the Azure ADLS Gen2 file system are enabled by default. SEP
+detects write collisions on ADLS Gen2 when writing from multiple SEP
+clusters, or from as any number of open source Delta Lake clusters.</p>
+</li>
+<li><p>S3 compatible storage</p>
+<p>Writes to AWS S3 must be enabled with the
+<code class="docutils literal notranslate"><span class="pre">delta.enable-non-concurrent-writes</span></code> property. Writes to S3 can safely be
+made from multiple SEP clusters, however write collisions are not detected
+when writing concurrently from other Delta Lake engines. You need to make sure
+that no concurrent data modifications are run to avoid data corruption.</p>
+</li>
 </ul>
-<p>Writing checkpoint files as part of any write operation is enabled by default.
-Writing statistics to the checkpoint files drops statistics for <code class="docutils literal notranslate"><span class="pre">ROW</span></code> types.
-This does not impact JSON transaction log entries. You can disable checkpoint
-writing by setting the <code class="docutils literal notranslate"><span class="pre">delta.experimental.checkpoint-writing.enabled</span></code> config
-property to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 
 
 
