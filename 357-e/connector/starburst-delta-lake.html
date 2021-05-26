@@ -371,6 +371,8 @@
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
+        </li>
+        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a>
         </li></ul>
             </nav>
         </li>
@@ -813,6 +815,8 @@
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
+        </li>
+        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a>
         </li></ul>
             </nav>
         </li>
@@ -1197,6 +1201,38 @@ catalog properties file to call the <code class="docutils literal notranslate"><
 </table>
 <p>More information about the <code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> procedure in Databricks is available in
 the <a class="reference external" href="https://docs.databricks.com/spark/latest/spark-sql/language-manual/delta-optimize.html">documentation</a>.</p>
+
+
+<h3 id="memory-usage">Memory usage<a class="headerlink" href="#memory-usage" title="Permalink to this headline">#</a></h3>
+<p>The Delta Lake connector is memory intensive and the amount of required memory
+grows with the size of Delta Lake transaction logs of any accessed tables. It is
+important to take that into account when provisioning the coordinator.</p>
+<p>You need to decrease memory usage by keeping the number of active data files in
+table low by running <code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> and <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> in Delta Lake regularly.</p>
+<p>When using the Delta Lake connector you need to monitor memory usage on the
+coordinator. Specifically monitor JVM heap utilization using standard tools as
+part of routine operation of the cluster.</p>
+<p>A good proxy for memory usage is the cache utilization of Delta Lake caches. It
+is exposed by the connector with the
+<code class="docutils literal notranslate"><span class="pre">plugin.deltalake.transactionlog:name=transactionlogaccess</span></code> JMX bean.</p>
+<p>You can access it with any standard monitoring software with JMX support, or use
+the <a class="reference internal" href="jmx.html"><span class="doc">JMX connector</span></a> with the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">jmx</span><span class="p">.</span><span class="k">current</span><span class="p">.</span><span class="ss">"*.plugin.deltalake.transactionlog:name=transactionlogaccess"</span>
+</pre></div>
+</div>
+<p>Following is an example result:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>datafilemetadatacachestats.hitrate      | 0.97
+datafilemetadatacachestats.missrate     | 0.03
+datafilemetadatacachestats.requestcount | 3232
+metadatacachestats.hitrate              | 0.98
+metadatacachestats.missrate             | 0.02
+metadatacachestats.requestcount         | 6783
+node                                    | sep-master
+object_name                             | com.starburstdata.presto.plugin.deltalake.transactionlog:name=TransactionLogAccess
+</pre></div>
+</div>
+<p>In a healthy system both <code class="docutils literal notranslate"><span class="pre">datafilemetadatacachestats.hitrate</span></code> and
+<code class="docutils literal notranslate"><span class="pre">metadatacachestats.hitrate</span></code> are close to <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
 
 
 
