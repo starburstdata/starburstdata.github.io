@@ -264,7 +264,7 @@
         </li>
         <li class="md-nav__item"><a href="#license" class="md-nav__link">License</a>
         </li>
-        <li class="md-nav__item"><a href="#rbac-enabled-clusters" class="md-nav__link">RBAC enabled clusters</a>
+        <li class="md-nav__item"><a href="#rbac-enabled-clusters" class="md-nav__link">RBAC-enabled clusters</a>
         </li>
         <li class="md-nav__item"><a href="#helm-troubleshooting-tips" class="md-nav__link">Helm troubleshooting tips</a>
         </li></ul>
@@ -482,7 +482,7 @@
         </li>
         <li class="md-nav__item"><a href="#license" class="md-nav__link">License</a>
         </li>
-        <li class="md-nav__item"><a href="#rbac-enabled-clusters" class="md-nav__link">RBAC enabled clusters</a>
+        <li class="md-nav__item"><a href="#rbac-enabled-clusters" class="md-nav__link">RBAC-enabled clusters</a>
         </li>
         <li class="md-nav__item"><a href="#helm-troubleshooting-tips" class="md-nav__link">Helm troubleshooting tips</a>
         </li></ul>
@@ -651,61 +651,16 @@ SEP.</p>
 <p>You need to ensure you get a license file from Starburst <a class="reference internal" href="sep-config-examples.html#helm-sep-license"><span class="std std-ref">and configure it</span></a>, if you intend to use features of SEP.</p>
 
 
-<span id="id2"></span><h2 id="rbac-enabled-clusters">RBAC enabled clusters<a class="headerlink" href="#rbac-enabled-clusters" title="Permalink to this headline">#</a></h2>
-<p>Kubernetes by default provides the <em>ClusterRole</em> <code class="docutils literal notranslate"><span class="pre">edit</span></code>. It includes all
-necessary permissions to deploy and work with Helm charts that consist of common
-resources. Starburst Enterprise uses one additional custom kind called
-<em>ExternalSecrets</em>. However, this CustomResourceDefinition has to be deployed to
-the cluster with its own chart and it is only required in a specific use case.</p>
-<p>Let’s assume that user <code class="docutils literal notranslate"><span class="pre">steve</span></code> should be permitted to work with Starburst
-Enterprise in a namespace called <code class="docutils literal notranslate"><span class="pre">dev-sandbox</span></code>. In order to achieve this you
-have to perform the following steps:</p>
-<ul>
-<li><p>Create <em>RoleBinding</em> <code class="docutils literal notranslate"><span class="pre">steve-edit</span></code> to bind the edit ClusterRole to the user
-in the specific namespace:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl create rolebinding steve-edit <span class="se">\</span>
-  --clusterrole edit <span class="se">\</span>
-  --user steve <span class="se">\</span>
-  --namespace dev-sandbox
-</pre></div>
-</div>
-</li>
-<li><p>If external-secrets are in use, then a role with the following permissions
-has to be additionally bound to the user:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">kind</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">ClusterRole</span>
-<span class="nt">apiVersion</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
-<span class="nt">metadata</span><span class="p">:</span>
-  <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">external-secrets-edit</span>
-<span class="nt">rules</span><span class="p">:</span>
-<span class="p p-Indicator">-</span> <span class="nt">apiGroups</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">kubernetes-client.io</span>
-  <span class="nt">resources</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">externalsecrets</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">externalsecrets/status</span>
-  <span class="nt">verbs</span><span class="p">:</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">create</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">get</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">list</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">watch</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">update</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">patch</span>
-    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">delete</span>
-</pre></div>
-</div>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl create rolebinding steve-external-secrets-edit <span class="se">\</span>
-  --clusterrole external-secrets-edit <span class="se">\</span>
-  --user steve <span class="se">\</span>
-  --namespace dev-sandbox
-</pre></div>
-</div>
-</li>
-</ul>
-<p>The Starburst Enterprise Helm chart does not provide functionality to use a
-ServiceAccount for deployments. None of the containers deployed to the cluster
-needs access to the Kubernetes API.</p>
+<span id="k8s-rbac-clusters"></span><h2 id="rbac-enabled-clusters">RBAC-enabled clusters<a class="headerlink" href="#rbac-enabled-clusters" title="Permalink to this headline">#</a></h2>
+<p>Kubernetes by default provides the <em>ClusterRole</em> <code class="docutils literal notranslate"><span class="pre">edit</span></code>. This role includes
+all necessary permissions to deploy and work with Helm charts that consist of
+common resources. SEP uses one additional custom type through use of the
+<code class="docutils literal notranslate"><span class="pre">externalSecrets:</span></code> node. However, this custom resource definition must be
+deployed to the cluster with its own chart. It is only required in specific
+use cases, as in <a class="reference internal" href="sep-config-examples.html#k8s-ex-rbac-enabled-clusters"><span class="std std-ref">this example</span></a>.</p>
 
 
-<span id="id3"></span><h2 id="helm-troubleshooting-tips">Helm troubleshooting tips<a class="headerlink" href="#helm-troubleshooting-tips" title="Permalink to this headline">#</a></h2>
+<span id="id2"></span><h2 id="helm-troubleshooting-tips">Helm troubleshooting tips<a class="headerlink" href="#helm-troubleshooting-tips" title="Permalink to this headline">#</a></h2>
 <p>Here are some things to keep in mind as you implement SEP with Kubernetes and
 Helm in your organization.</p>
 <ul class="simple">
