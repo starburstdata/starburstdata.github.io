@@ -1477,7 +1477,7 @@ file to include the authentication type:</p>
 Band</a> to
 annotate any query from SEP in Teradata with the SEP query identifier. If
 <code class="docutils literal notranslate"><span class="pre">teradata.query-band.query-id.enabled=true</span></code> each Teradata query has
-<code class="docutils literal notranslate"><span class="pre">PRESTO_QUERY_ID=&lt;presto_query_id&gt;</span></code> with the current identifier added. This
+<code class="docutils literal notranslate"><span class="pre">QUERY_ID=&lt;query_id&gt;</span></code> with the current identifier added. This
 allows you to determine which queries originated from SEP, and specifically
 also details such as user submitting the query, for audit purposes.</p>
 <table id="id7">
@@ -1569,7 +1569,7 @@ properties file. e.g. <code class="docutils literal notranslate"><span class="pr
 connection-url=jdbc:teradata://HOST
 connection-user=USERNAME
 connection-password=PASSWORD
-teradata-direct.table-operator.name=some_schema.presto_table_operator
+teradata-direct.table-operator.name=some_schema.table_operator
 teradata-direct.http.port=9000
 teradata-direct.http.host=hostname.accessible.from.teradata.instance
 </pre></div>
@@ -1686,12 +1686,12 @@ with a command such as <code class="docutils literal notranslate"><span class="p
 <li><p>Create the table operator function in the desired schema. We recommend a
 dedicated database for the current operator version.</p>
 <blockquote>
-<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">FUNCTION</span> <span class="n">some_database</span><span class="p">.</span><span class="n">presto_table_operator</span><span class="p">()</span>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">FUNCTION</span> <span class="n">some_database</span><span class="p">.</span><span class="n">table_operator</span><span class="p">()</span>
 <span class="k">RETURNS</span> <span class="k">TABLE</span> <span class="nb">VARYING</span> <span class="k">USING</span> <span class="k">FUNCTION</span> <span class="n">starburst_teradata_contract</span>
 <span class="k">LANGUAGE</span> <span class="k">C</span>
 <span class="k">NO</span> <span class="k">SQL</span>
 <span class="k">PARAMETER</span> <span class="n">STYLE</span> <span class="n">SQLTABLE</span>
-<span class="k">EXTERNAL</span> <span class="n">NAME</span> <span class="s1">'SP!/opt/presto/libstarburst_teradata.so!F!starburst_teradata'</span><span class="p">;</span>
+<span class="k">EXTERNAL</span> <span class="n">NAME</span> <span class="s1">'SP!/opt/starburst/libstarburst_teradata.so!F!starburst_teradata'</span><span class="p">;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -1702,28 +1702,28 @@ dedicated database for the current operator version.</p>
 <p>Do not install the native table operator in the <code class="docutils literal notranslate"><span class="pre">syslib</span></code> database.</p>
 </div>
 <p>No Teradata restart is needed for the changes to take effect.</p>
-<p>The path and access for the <code class="docutils literal notranslate"><span class="pre">.so</span></code> file, for example <code class="docutils literal notranslate"><span class="pre">/opt/presto</span></code>, has to be adjusted
+<p>The path and access for the <code class="docutils literal notranslate"><span class="pre">.so</span></code> file, for example <code class="docutils literal notranslate"><span class="pre">/opt/starburst</span></code>, has to be adjusted
 to a suitable location on your Teradata servers.</p>
 <p>Each user that connects to Teradata from SEP needs to be granted sufficient
 access:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">GRANT</span> <span class="k">EXECUTE</span> <span class="k">ON</span> <span class="k">SPECIFIC</span> <span class="k">FUNCTION</span> <span class="n">some_database</span><span class="p">.</span><span class="n">presto_table_operator</span> <span class="k">TO</span> <span class="n">your_user</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">GRANT</span> <span class="k">EXECUTE</span> <span class="k">ON</span> <span class="k">SPECIFIC</span> <span class="k">FUNCTION</span> <span class="n">some_database</span><span class="p">.</span><span class="n">table_operator</span> <span class="k">TO</span> <span class="n">your_user</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>Alternatively access to table operator UDF can be granted via ROLE</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CREATE ROLE presto_table_operator_users;
-GRANT EXECUTE ON SPECIFIC FUNCTION some_database.presto_table_operator
-  TO presto_table_operator_users;
-GRANT presto_table_operator_users TO your_user;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CREATE ROLE table_operator_users;
+GRANT EXECUTE ON SPECIFIC FUNCTION some_database.table_operator
+  TO table_operator_users;
+GRANT table_operator_users TO your_user;
 </pre></div>
 </div>
 <p>This also requires to set the role for any impersonated user, this could be
 achieved with the below in the catalog file:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>teradata.impersonation-role=presto_table_operator_users
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>teradata.impersonation-role=table_operator_users
 </pre></div>
 </div>
 <p>Updates and removal:</p>
 <p>It is important to remove the function before any updates:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DROP FUNCTION some_database.presto_table_operator;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DROP FUNCTION some_database.table_operator;
 </pre></div>
 </div>
 <p>Additional recommendations for successful upgrades:</p>
