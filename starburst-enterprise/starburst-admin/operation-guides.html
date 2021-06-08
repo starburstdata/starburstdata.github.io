@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Trying Starburst Enterprise</title>
+    <title>Starburst | Starburst Admin operation guides</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Trying Starburst Enterprise">
+    <meta property="og:title" content="Starburst - Starburst Admin operation guides">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -266,7 +266,7 @@ SimpleJekyllSearch({
 
 
 
-<li  class="active" 
+<li 
     onclick="toggle_navigation_visibility('try');">
   <a>
     Try Starburst Enterprise
@@ -274,13 +274,13 @@ SimpleJekyllSearch({
   </a>
 </li>
 
-<ul id="try" class="doc-subnav ">
+<ul id="try" class="doc-subnav hidden">
   
   
     
     
     
-  <li class="active"
+  <li 
       
     >
     <a href="/starburst-enterprise/try/index.html" >Overview</a>
@@ -330,7 +330,7 @@ SimpleJekyllSearch({
 
 
 
-<li 
+<li  class="active" 
     onclick="toggle_navigation_visibility('starburst-admin');">
   <a>
     Starburst Admin
@@ -338,7 +338,7 @@ SimpleJekyllSearch({
   </a>
 </li>
 
-<ul id="starburst-admin" class="doc-subnav hidden">
+<ul id="starburst-admin" class="doc-subnav ">
   
   
     
@@ -366,7 +366,7 @@ SimpleJekyllSearch({
     
     
     
-  <li 
+  <li class="active"
       
     >
     <a href="/starburst-enterprise/starburst-admin/operation-guides.html" >Operation guides</a>
@@ -562,144 +562,251 @@ SimpleJekyllSearch({
     
   
     
-      <a href="/starburst-enterprise/try/"
+      <a href="/starburst-enterprise/starburst-admin/"
         style="text-transform: uppercase"
-      > try</a> >
+      > starburst admin</a> >
     
   
     
-      Trying Starburst Enterprise
+      Starburst Admin operation guides
     
   </p>
 </div>
 
-        <h1 id="trying-starburst-enterprise">
+        <h1 id="starburst-admin-operation-guides">
         
         
-          Trying Starburst Enterprise <a href="#trying-starburst-enterprise" class="titleAnchor">#</a>
+          Starburst Admin operation guides <a href="#starburst-admin-operation-guides" class="titleAnchor">#</a>
         
         
       </h1>
     
 
-<p>Starburst makes it easy to set up trial configurations of
-Starburst Enterprise platform (SEP).</p>
-      <h2 id="up-and-running-fast">
+<p>After satisfying the <a href="./index.html#requirements">initial requirements for the control machine and all the
+machines in the cluster</a> you can get a cluster up and
+running with the <a href="./installation-guide.html">help of the installation guide</a>.</p>
+
+<p>A fully configured deployment requires a bit more configuration and work. It is
+typically performed incrementally and you use Starburst Admin to help you
+for a number of scenarios. They range from simple tasks like changing a
+configuration in a catalog file to more complex ones such as adding a new
+catalog file, scaling the cluster up or down, or adding security configuration.</p>
+
+<p>The following sections includes these and many other scenarios and refers to the
+<a href="./playbook-reference.html">playbook reference</a> and other sections as necessary.</p>
+      <h2 id="targeting-specific-hosts">
         
         
-          Up and running fast <a href="#up-and-running-fast" class="titleAnchor">#</a>
+          Targeting specific hosts <a href="#targeting-specific-hosts" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Use a <a href="#localmachinetrials">local machine</a> installation to get
-Starburst Enterprise running quickly as a demo or trial system for your
-site’s developers.</p>
+<p>By default, Ansible runs the tasks defined in the playbooks on all cluster nodes
+defined in the inventory <code class="language-plaintext highlighter-rouge">hosts</code> file.</p>
 
-<p>On any Linux distro, you can:</p>
+<p>You can target specific host groups or even specific hosts with the <code class="language-plaintext highlighter-rouge">-l</code> option.
+The example hosts files uses the groups <code class="language-plaintext highlighter-rouge">coordinator</code> and <code class="language-plaintext highlighter-rouge">worker</code> to target the
+groups. Individual hosts are targeted with the IP address.</p>
+
+<p><strong>Example: Roll out configuration changes to workers only</strong></p>
 
 <ul>
-  <li>
-    <p>Set up SEP as a cluster of one or more
-<a href="./docker.html">Docker containers</a></p>
+  <li>Update the relevant configuration files in <code class="language-plaintext highlighter-rouge">files/worker</code>, for example changed
+JVM configuration.</li>
+  <li>Push the configuration only to the workers
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l worker playbooks/push-configs.yml
+</code></pre></div>    </div>
   </li>
-  <li>
-    <p>Set up SEP with the <a href="./any-linux.html"><code class="language-plaintext highlighter-rouge">tar.gz</code> installation</a></p>
+  <li>Restart only the workers
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l worker playbooks/restart.yml
+</code></pre></div>    </div>
   </li>
 </ul>
 
-<p>Both installation methods can be installed without a SEP license,
-or to unlock the performance and security enhancements of SEP,
-you can request a license as described in the linked pages above.</p>
+<p><strong>Example: Update security configuration on the coordinator</strong></p>
 
-<p><em>For initial evaluation only</em>, you can use either method on recent releases of
-macOS. MacOS is explicitly <strong>not supported</strong> to run SEP services
-for any other purpose.</p><hr />
+<ul>
+  <li>Update the relevant configuration files in <code class="language-plaintext highlighter-rouge">files/coordinator</code>, for example
+updated certificate files.</li>
+  <li>Push the configuration only to the coordinator
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l coordinator playbooks/push-configs.yml
+</code></pre></div>    </div>
+  </li>
+  <li>Restart only the coordinator
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l coordinator playbooks/restart.yml
+</code></pre></div>    </div>
+  </li>
+</ul>
 
-<p>Consider the following ways to install and evaluate SEP,
-listed in ease of use order.</p>
-      <h2 id="sep-on-cloud-provider-infrastructure">
+<p><strong>Example: Restart or remove a misbehaving worker only</strong></p>
+
+<ul>
+  <li>Determine the worker that has problem, for example from <a href="./playbook-reference.html#collect-logs">collecting the
+logs</a> or <a href="./playbook-reference.html#check-status">checking the service
+status</a></li>
+  <li>Attempt a restart of the one worker that seems to have problems
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.3 playbooks/restart.yml
+</code></pre></div>    </div>
+  </li>
+  <li>Check status after restart
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.3 playbooks/check-status.yml
+</code></pre></div>    </div>
+  </li>
+  <li>Check the logs after restart
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.3 playbooks/collect-logs.yml
+</code></pre></div>    </div>
+  </li>
+</ul>
+      <h2 id="adding-removing-and-updating-catalogs">
         
         
-          SEP on cloud provider infrastructure <a href="#sep-on-cloud-provider-infrastructure" class="titleAnchor">#</a>
+          Adding, removing and updating catalogs <a href="#adding-removing-and-updating-catalogs" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>You can deploy and run Starburst Enterprise on the infrastructure of many
-cloud providers using their <a href="../../marketplace/index.html">marketplace
-offerings</a>.</p>
-      <h2 id="sep-managed-on-a-kubernetes-cluster">
+<p>You can add a new catalog, update an existing catalog or even remove a catalog
+and roll that change out across the cluster with the following steps:</p>
+
+<ul>
+  <li>Perform the desired changes in the <code class="language-plaintext highlighter-rouge">files/catalog</code> directory.</li>
+  <li><a href="./playbook-reference.html#stop">Stop the cluster</a>.</li>
+  <li><a href="./playbook-reference.html#push-configs">Push the configuration</a>.</li>
+  <li><a href="./playbook-reference.html#start">Start the cluster</a>.</li>
+</ul>
+
+<p>A full cluster restart of the coordinator and all workers is necessary to apply
+the updated configuration.</p>
+      <h2 id="changing-other-configuration">
         
         
-          SEP managed on a Kubernetes cluster <a href="#sep-managed-on-a-kubernetes-cluster" class="titleAnchor">#</a>
+          Changing other configuration <a href="#changing-other-configuration" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>You can install Starburst Enterprise on a Kubernetes cluster, taking
-advantage of Kubernetes abstractions to free you from the details of servers,
-hosts, and IP addresses.</p>
-
-<p>Starburst recommends using <a href="https://helm.sh">Helm charts</a> to configure
-your Kubernetes cluster as described in <a href="https://docs.starburst.io/latest/k8s.html">Kubernetes with
-Helm</a>.</p>
-
-<p>You can install Starburst Enterprise on a private Kubernetes configuration on
-a local network or on a cloud provider’s Kubernetes offering, including:</p>
-
 <ul>
-  <li><a href="../../marketplace/amazon/index.html">Amazon Elastic Kubernetes Service (EKS)</a></li>
-  <li><a href="../../marketplace/google/index.html">Google Kubernetes Engine (GKE)</a></li>
-  <li><a href="../../marketplace/microsoft/index.html">Microsoft Azure Kubernetes Service (AKS)</a></li>
-  <li><a href="../../marketplace/redhat/index.html">Red Hat OpenShift</a></li>
+  <li>Perform the desired changes in the <code class="language-plaintext highlighter-rouge">files</code> subdirectories and files.</li>
+  <li><a href="./playbook-reference.html#stop">Stop the cluster</a> or selectively the
+coordinator or all workers.</li>
+  <li><a href="./playbook-reference.html#push-configs">Push the configuration</a>.</li>
+  <li><a href="./playbook-reference.html#start">Start the cluster</a> or selectively the
+coordinator or all workers..</li>
 </ul>
 
-<p>You must provide:</p>
-
-<ul>
-  <li>Access credentials from your cloud provider.</li>
-  <li>The URLs and access credentials for the data sources you want your
-Kubernetes-hosted SEP cluster to access.</li>
-</ul>
-      <h2 id="sep-with-full-local-control">
+<p>The safest option is to restart the complete cluster. Depending on the
+configuration changes it can be possible to just restart all the workers or the
+coordinator only. For example, for authentication configuration to
+SEP a coordinator restart can be sufficient.</p>
+      <h2 id="upgrading-starburst-enterprise">
         
         
-          SEP with full local control <a href="#sep-with-full-local-control" class="titleAnchor">#</a>
+          Upgrading Starburst Enterprise <a href="#upgrading-starburst-enterprise" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>You can install and configure a Starburst Enterprise cluster yourself on a
-local network or on a cloud installation that you control.</p>
+<p>Upgrading SEP using Ansible is similar to initial installation. The process has
+to be performed without any users running queries.</p>
 
-<p>The advantage of this is that you manage and control all aspects of your
-SEP cluster.</p>
-
-<p>The disadvantage is the same: troubleshooting cluster problems requires
-knowledge of and access to your configuration settings.</p>
-
-<p>You can configure a local Starburst Enterprise cluster:</p>
+<p>Use the following steps to perform the update:</p>
 
 <ul>
-  <li>On a local Kubernetes cluster <a href="https://docs.starburst.io/latest//k8s.html">using Helm charts</a>.</li>
-  <li>On a local network of individual machines without Kubernetes.</li>
+  <li>Download the binary package for the new version and place it in <code class="language-plaintext highlighter-rouge">files</code>.</li>
+  <li>Update the version number in <code class="language-plaintext highlighter-rouge">vars.yml</code></li>
+  <li>Update all the configuration and add any new configuration files.</li>
+  <li><a href="./playbook-reference.html#stop">Stop the cluster</a>.</li>
+  <li><a href="./playbook-reference.html#install">Install the new packages to the cluster</a>.</li>
+  <li><a href="./playbook-reference.html#push-configs">Push the configuration</a>.</li>
+  <li><a href="./playbook-reference.html#start">Start the cluster</a>.</li>
 </ul>
 
-<p><a name="localmachinetrials">
-To install on one or more local machines, you have several options:</a></p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook playbooks/stop.yml
+ansible-playbook playbooks/install.yml
+ansible-playbook playbooks/push-configs.yml
+ansible-playbook playbooks/start.yml
+</code></pre></div></div>
+
+<p>To rollback the upgrade, revert any configuration changes, change the value
+of <code class="language-plaintext highlighter-rouge">version</code> to the previous one, and execute the same playbooks above.</p>
+
+<p>Note that because all nodes in the cluster must use the same version,
+it is not possible to perform a rolling restart and avoid interruptions.
+To minimize down time, we recommend installing the new version on a set
+of new hosts, and reconfigure clients to connect to this cluster or update
+DNS entries to point to it. Old cluster can be decommissioned after all queries
+running on it are done.</p>
+
+<p>To manage separate installations on more than one sets of hosts, copy
+the <code class="language-plaintext highlighter-rouge">hosts</code> file and update values inside it. Then, to use the new file,
+add the <code class="language-plaintext highlighter-rouge">-i &lt;new-hosts&gt;</code> parameter when running the <code class="language-plaintext highlighter-rouge">ansible-playbook</code> command.</p>
+      <h2 id="adding-or-removing-workers">
+        
+        
+          Adding or removing workers <a href="#adding-or-removing-workers" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>You can use Starburst Admin to help with scaling your cluster up and
+down by adding or removing workers with the following steps.</p>
+
+<p><strong>Scaling up</strong></p>
 
 <ul>
-  <li>For RPM-based Linux distros, use the
-<a href="https://docs.starburst.io/latest/installation/rpm.html">presto-admin tool</a>.</li>
-  <li>For any Linux distro, set up SEP with the
-<a href="/starburst-enterprise/try/any-linux"><code class="language-plaintext highlighter-rouge">tar.gz</code> installation</a>.</li>
-  <li>For any Linux distro, set up SEP as a cluster of
-<a href="/starburst-enterprise/try/docker">Docker containers</a>.</li>
+  <li>Provision the new machine with <a href="./index.html#requirements">necessary requirements for cluster
+nodes</a>.</li>
+  <li>Add the IP address and access details to the <code class="language-plaintext highlighter-rouge">worker</code> section in the <code class="language-plaintext highlighter-rouge">hosts</code>
+file.</li>
+  <li>Install on the new node</li>
+  <li>Push configuration to the new node</li>
+  <li>Start the new node</li>
+  <li>Check the log of the new node</li>
+</ul>
+
+<p>For example, if you add the new host at <code class="language-plaintext highlighter-rouge">172.28.0.5</code> as worker you can run the
+installation just to this node:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[coordinator]
+172.28.0.2 ansible_user=root ansible_password=changeme
+
+[worker]
+172.28.0.3 ansible_user=root ansible_password=changeme
+172.28.0.4 ansible_user=root ansible_password=changeme
+172.28.0.5 ansible_user=root ansible_password=changeme
+</code></pre></div></div>
+
+<p>Playbook invocations:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.5 install.yml
+ansible-playbook -l 172.28.0.5 push-configs.yml
+ansible-playbook -l 172.28.0.5 start.yml
+</code></pre></div></div>
+
+<p>Specifying the host is optional and can be omitted since the playbooks can run
+without side effects if the desired state is already reached. As a result you
+can add a number of workers and then just install, push configuration and start
+them all together.</p>
+
+<p><strong>Scaling down</strong></p>
+
+<ul>
+  <li>Stop the worker or perform a graceful shutdown.
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Hard stop
+ansible-playbook -l 172.28.0.5 stop.yml
+
+# Graceful shutdown
+ansible-playbook -l 172.28.0.5 graceful-shutdown.yml
+</code></pre></div>    </div>
+  </li>
+  <li>Optionally run uninstall.</li>
+  <li>Remove the worker from <code class="language-plaintext highlighter-rouge">hosts</code></li>
 </ul>
 
         <div class="feedback-container">
@@ -801,7 +908,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#trying-starburst-enterprise">Trying Starburst Enterprise</a><ul><li><a href="#up-and-running-fast">Up and running fast</a></li><li><a href="#sep-on-cloud-provider-infrastructure">SEP on cloud provider infrastructure</a></li><li><a href="#sep-managed-on-a-kubernetes-cluster">SEP managed on a Kubernetes cluster</a></li><li><a href="#sep-with-full-local-control">SEP with full local control</a></li></ul></li></ul>
+          <ul><li><a href="#starburst-admin-operation-guides">Starburst Admin operation guides</a><ul><li><a href="#targeting-specific-hosts">Targeting specific hosts</a></li><li><a href="#adding-removing-and-updating-catalogs">Adding, removing and updating catalogs</a></li><li><a href="#changing-other-configuration">Changing other configuration</a></li><li><a href="#upgrading-starburst-enterprise">Upgrading Starburst Enterprise</a></li><li><a href="#adding-or-removing-workers">Adding or removing workers</a></li></ul></li></ul>
 
         </div>
       </div>
