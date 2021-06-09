@@ -270,7 +270,7 @@
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a>
         </li>
-        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a>
+        <li class="md-nav__item"><a href="#exposing-the-cluster" class="md-nav__link">Exposing the cluster</a>
         </li>
         <li class="md-nav__item"><a href="#coordinator" class="md-nav__link">Coordinator</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -503,7 +503,7 @@
         </li>
         <li class="md-nav__item"><a href="#internal-communication" class="md-nav__link">Internal communication</a>
         </li>
-        <li class="md-nav__item"><a href="#exposing-the-cluster-to-an-outside-network" class="md-nav__link">Exposing the cluster to an outside network</a>
+        <li class="md-nav__item"><a href="#exposing-the-cluster" class="md-nav__link">Exposing the cluster</a>
         </li>
         <li class="md-nav__item"><a href="#coordinator" class="md-nav__link">Coordinator</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -695,7 +695,7 @@ need to restart.</p></td>
 <tr class="row-even"><td><p><strong>SEP cache, disk and memory management</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">query:</span></code> <a class="reference internal" href="#helm-sep-query-memory"><span class="std std-ref">node</span></a></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">query:</span></code> <a class="reference internal" href="#helm-sep-concurrent-queries"><span class="std std-ref">node</span></a></p></td>
 <td><p>Specifies query processing and management configuration properties.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">spilling:</span></code> <a class="reference internal" href="#helm-sep-spilling"><span class="std std-ref">node</span></a></p></td>
@@ -856,11 +856,11 @@ coordinator</span></a> is used.</p></td>
 </ul>
 
 
-<span id="helm-sep-expose"></span><h2 id="exposing-the-cluster-to-an-outside-network">Exposing the cluster to an outside network<a class="headerlink" href="#exposing-the-cluster-to-an-outside-network" title="Permalink to this headline">#</a></h2>
+<span id="helm-sep-expose"></span><h2 id="exposing-the-cluster">Exposing the cluster<a class="headerlink" href="#exposing-the-cluster" title="Permalink to this headline">#</a></h2>
 <p>You must expose the cluster to allow users to connect to the SEP coordinator
 with tools such as the CLI, applications using JDBC/ODBC drivers and any other
-client application. This service type configuration is defined in the <code class="docutils literal notranslate"><span class="pre">expose</span></code>
-section. You can choose from four different mechanisms by setting the <code class="docutils literal notranslate"><span class="pre">type</span></code>
+client application. This service-type configuration is defined by the <code class="docutils literal notranslate"><span class="pre">expose</span></code>
+top level node. You can choose from four different mechanisms by setting the <code class="docutils literal notranslate"><span class="pre">type</span></code>
 value to the <a class="reference external" href="https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types">common configurations in k8s</a>.</p>
 <p>Depending on your choice, you only have to configure the identically-named
 sections.</p>
@@ -878,20 +878,26 @@ sections.</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">clusterIp</span></code></p></td>
 <td><p><a class="reference internal" href="sep-config-examples.html#k8s-defaults-external-comms"><span class="std std-ref">Default value</span></a>. Only exposes the
-coordinator on a k8s cluster internal IP.</p></td>
+coordinator internally within the k8s cluster using an IP address internal
+to the cluster. Use this in the early stages of configuration.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nodePort</span></code></p></td>
-<td><p>Configure the internal <code class="docutils literal notranslate"><span class="pre">port</span></code> of the coordinator outside the cluster on
-the <code class="docutils literal notranslate"><span class="pre">nodePort</span></code> port number.</p></td>
+<td><p>Configures the internal port number of the coordinator for requests from
+outside the cluster on the <code class="docutils literal notranslate"><span class="pre">nodePort</span></code> port number. External
+service requests are made to <code class="docutils literal notranslate"><span class="pre">&lt;nodeIP&gt;:&lt;nodePort&gt;</span></code>. The <code class="docutils literal notranslate"><span class="pre">clusterIP</span></code>
+service is automatically created to supply all internal IP addresses.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">loadBalancer</span></code></p></td>
-<td><p>Can be automatically created and configured by your k8s platform.</p></td>
+<td><p>Used with platforms that provide a load balancer. This
+option automatically creates <code class="docutils literal notranslate"><span class="pre">nodePort</span></code> and <code class="docutils literal notranslate"><span class="pre">clusterIP</span></code> services , to
+which the external load balancer routes requests.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ingress</span></code></p></td>
-<td><p>Allows a load balancer to route to multiple apps in the cluster, and
+<td><p>This option provides a production-level, securable configuration. It
+allows a load balancer to route to multiple apps in the cluster, and
 may provide load balancing, SSL termination, and name-based virtual
 hosting. For example, the SEP coordinator and Ranger server can be
-in the same cluster, and can be exposed via ingress configuration.</p></td>
+in the same cluster, and can be exposed via <code class="docutils literal notranslate"><span class="pre">ingress:</span></code> configuration.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1282,9 +1288,13 @@ video</a>
 before customizing your SEP security configuration.</p>
 </div>
 
-<span id="helm-sep-query-memory"></span><h3 id="query-memory-usage-control">Query memory usage control<a class="headerlink" href="#query-memory-usage-control" title="Permalink to this headline">#</a></h3>
-<p>The top level <code class="docutils literal notranslate"><span class="pre">query:</span></code> node allows you to configure (<a class="reference internal" href="sep-config-examples.html#k8s-ex-sep-query-memory"><span class="std std-ref">example</span></a>) SEP’s <a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">query processing properties</span></a>. Only <code class="docutils literal notranslate"><span class="pre">maxConcurrentQueries</span></code> is set
-<a class="reference internal" href="sep-config-examples.html#k8s-defaults-performance-query"><span class="std std-ref">by default</span></a>.</p>
+<span id="helm-sep-concurrent-queries"></span><h3 id="query-memory-usage-control">Query memory usage control<a class="headerlink" href="#query-memory-usage-control" title="Permalink to this headline">#</a></h3>
+<p>The top level <code class="docutils literal notranslate"><span class="pre">query:</span></code> node allows you to set the <code class="docutils literal notranslate"><span class="pre">maxConcurrentQueries</span></code>
+configuration property. All other <a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">query processing properties</span></a> must be set using the
+<code class="docutils literal notranslate"><span class="pre">additionalProperties:</span></code> node <a class="reference internal" href="#helm-sep-coordinator"><span class="std std-ref">on the coordinator</span></a>.</p>
+<p>You can view the <a class="reference internal" href="sep-config-examples.html#k8s-defaults-performance-query"><span class="std std-ref">default setting</span></a> and an
+<a class="reference internal" href="sep-config-examples.html#k8s-ex-sep-concurrent-queries"><span class="std std-ref">example</span></a> of how to increase the maximum
+allowable number of concurrent queries.</p>
 
 
 <span id="helm-sep-spilling"></span><h3 id="spilling">Spilling<a class="headerlink" href="#spilling" title="Permalink to this headline">#</a></h3>
