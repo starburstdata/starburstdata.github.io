@@ -1,0 +1,58 @@
+apiVersion: charts.starburstdata.com/v1alpha1
+kind: StarburstEnterprise
+metadata:
+  name: your-cr-name
+spec:
+  image:
+    repository: "registry.connect.redhat.com/starburst/starburst-enterprise"
+    tag: "354-e-ubi"
+    pullPolicy: "IfNotPresent"
+
+  initImage:
+    repository: "registry.connect.redhat.com/starburst/starburst-enterprise-init"
+    tag: "354.0.0-ubi"
+    pullPolicy: "IfNotPresent"
+
+  ## registryCredentials set access to container images
+  registryCredentials:
+    enabled: true
+    # Replace this with Docker Registry that you use
+    registry: "registry.connect.redhat.com"
+    username:
+    password:
+  coordinator:
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: 2
+      limits:
+        memory: "2Gi"
+        cpu: 2
+    # size of container memory headroom, needs to be less than resource allocation limit for memory
+    nodeMemoryHeadroom: "1Gi"
+    # Percentage of container memory reduced with headroom assigned to Java heap, must be less than 100
+    heapSizePercentage: 90
+    # Headroom of Java heap memory not tracked by Presto during query execution, must be less than 100
+    heapHeadroomPercentage: 30    
+  worker:
+    replicas: 1
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+    deploymentTerminationGracePeriodSeconds: 300 # 5 minutes
+    prestoWorkerShutdownGracePeriodSeconds: 120 # 2 minutes
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: 2
+      limits:
+        memory: "2Gi"
+        cpu: 2
+    # size of container memory headroom, needs to be less that resource allocation limit for memory
+    nodeMemoryHeadroom: "1Gi"
+    # Percentage of container memory reduced with headroom assigned to Java heap, must be less than 100
+    heapSizePercentage: 90
+    # Headroom of Java heap memory not tracked by Presto during query execution, must be less than 100
+    heapHeadroomPercentage: 30
