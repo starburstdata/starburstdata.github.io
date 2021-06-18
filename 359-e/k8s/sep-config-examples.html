@@ -277,7 +277,7 @@
         </li>
         <li class="md-nav__item"><a href="#controlling-sep-releases" class="md-nav__link">Controlling SEP releases</a>
         </li>
-        <li class="md-nav__item"><a href="#using-internal-docker-registries" class="md-nav__link">Using internal Docker registries</a>
+        <li class="md-nav__item"><a href="#using-private-registries" class="md-nav__link">Using private registries</a>
         </li>
         <li class="md-nav__item"><a href="#using-imagepullsecrets" class="md-nav__link">Using <code class="docutils literal notranslate"><span class="pre">imagePullSecrets</span></code></a>
         </li></ul>
@@ -601,7 +601,7 @@
         </li>
         <li class="md-nav__item"><a href="#controlling-sep-releases" class="md-nav__link">Controlling SEP releases</a>
         </li>
-        <li class="md-nav__item"><a href="#using-internal-docker-registries" class="md-nav__link">Using internal Docker registries</a>
+        <li class="md-nav__item"><a href="#using-private-registries" class="md-nav__link">Using private registries</a>
         </li>
         <li class="md-nav__item"><a href="#using-imagepullsecrets" class="md-nav__link">Using <code class="docutils literal notranslate"><span class="pre">imagePullSecrets</span></code></a>
         </li></ul>
@@ -832,42 +832,69 @@ keep the rest of the chart configuration unchanged:</p>
 </div>
 
 
-<span id="k8s-ex-internal-registries"></span><h3 id="using-internal-docker-registries">Using internal Docker registries<a class="headerlink" href="#using-internal-docker-registries" title="Permalink to this headline">#</a></h3>
-<p><strong>&lt;&lt;</strong> <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Return</span></a> to section in k8s configuration
+<span id="k8s-ex-private-registries"></span><h3 id="using-private-registries">Using private registries<a class="headerlink" href="#using-private-registries" title="Permalink to this headline">#</a></h3>
+<p><strong>&lt;&lt;</strong> Return to <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Docker images</span></a> or <a class="reference internal" href="sep-configuration.html#helm-sep-registry"><span class="std std-ref">Docker
+registry access</span></a> section in k8s configuration
 documentation.</p>
-<p>If you need to use an internal Docker registry, you can do the following:</p>
+<p>In some organizations you need to <a class="reference internal" href="installation.html#k8s-private-registries"><span class="std std-ref">use private registries and repositories
+instead of Starburst Harbor</span></a>. They are often hosted on
+a private Harbor instance or in a repository manager. You can publish the Helm
+charts and Docker containers to your private setup, or use a proxying setup.
+Steps to set this up vary widely based on your tools, and require both Docker
+and Helm expertise:</p>
 <ul class="simple">
 <li><p>Pull the Docker image from the Starburst Harbor registry with your credentials</p></li>
 <li><p>Tag the image as desired for your internal registry</p></li>
 <li><p>Push the image to your registry</p></li>
-<li><p>Add the <code class="docutils literal notranslate"><span class="pre">image</span></code> section to your values YAML file:</p></li>
+<li><p>Download the Helm charts</p></li>
+<li><p>Publish the Helm charts to your Helm repository</p></li>
 </ul>
+<p>You can use your private setup with the following steps:</p>
+<ul class="simple">
+<li><p>Add your private Helm chart repository using <a class="reference internal" href="requirements.html#k8s-helm-repository"><span class="std std-ref">these same
+steps</span></a> as for adding the Starburst repository, but
+replacing the values with those of your private repository.</p></li>
+<li><p>Update your <a class="reference internal" href="#k8s-ex-private-registries"><span class="std std-ref">registry credentials with
+details for your private Docker registry</span></a>.</p></li>
+</ul>
+<p>The following example overrides Docker registry to use your private registry:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">image</span><span class="p">:</span>
   <span class="nt">repository</span><span class="p">:</span> <span class="s">"docker.example.com/thirdparty"</span>
   <span class="nt">tag</span><span class="p">:</span> <span class="s">"359-e"</span>
   <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">"IfNotPresent"</span>
-
-<span class="nt">registryCredentials</span><span class="p">:</span>
+</pre></div>
+</div>
+<p>You also need to update your registry access configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">registryCredentials</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
   <span class="nt">registry</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">docker.example.com</span>
   <span class="nt">username</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">myusername</span>
   <span class="nt">password</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">mypassword</span>
 </pre></div>
 </div>
+<p>You can also use <code class="docutils literal notranslate"><span class="pre">imagePullSecrets:</span></code> with private registries instead of
+<code class="docutils literal notranslate"><span class="pre">registryCredentials</span></code>.</p>
+<p>If you changed the Docker image organization, name, or version tags, you also
+need to override these details in your YAML configuration files. For example,
+update <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">image and initImage for SEP</span></a>. Similar steps are
+necessary if you are using the HMS or Ranger charts.</p>
 
 
 <span id="k8s-ex-imagepullsecrets"></span><h3 id="using-imagepullsecrets">Using <code class="docutils literal notranslate"><span class="pre">imagePullSecrets</span></code><a class="headerlink" href="#using-imagepullsecrets" title="Permalink to this headline">#</a></h3>
-<p><strong>&lt;&lt;</strong> <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Return</span></a> to section in k8s configuration
+<p><strong>&lt;&lt;</strong> Return to <a class="reference internal" href="sep-configuration.html#helm-sep-image"><span class="std std-ref">Docker images</span></a> or <a class="reference internal" href="sep-configuration.html#helm-sep-registry"><span class="std std-ref">Docker
+registry access</span></a> section in k8s configuration
 documentation.</p>
-<p>You can use <code class="docutils literal notranslate"><span class="pre">imagePullSecrets</span></code> to authenticate with a Docker registry as an
-alternative to <code class="docutils literal notranslate"><span class="pre">registryCredentials</span></code>. You can pass an array list of Kubernetes
-secret names of type <code class="docutils literal notranslate"><span class="pre">kubernetes.io/dockerconfigjson</span></code> with the following
-format:</p>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">imagePullSecrets:</span></code> to authenticate with a Docker registry as an
+alternative to using <code class="docutils literal notranslate"><span class="pre">registryCredentials:</span></code>. You can pass an array list of
+Kubernetes secret names of type <code class="docutils literal notranslate"><span class="pre">kubernetes.io/dockerconfigjson</span></code> with the
+following format:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">imagePullSecrets</span><span class="p">:</span>
  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secret1</span>
  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">secret2</span>
 </pre></div>
 </div>
+<p>Detailed instructions for using private registries with pull secrets can be
+found in the <a class="reference external" href="https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/">Kubernetes documentation</a>.</p>
 
 
 
