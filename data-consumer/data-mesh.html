@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Starburst Insights and Worksheet query editor</title>
+    <title>Starburst | Data mesh with Starburst</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Starburst Insights and Worksheet query editor">
+    <meta property="og:title" content="Starburst - Data mesh with Starburst">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -136,7 +136,7 @@ SimpleJekyllSearch({
 
 
 
-<li  class="active" 
+<li 
     onclick="toggle_navigation_visibility('clients');">
   <a>
     Clients
@@ -144,7 +144,7 @@ SimpleJekyllSearch({
   </a>
 </li>
 
-<ul id="clients" class="doc-subnav ">
+<ul id="clients" class="doc-subnav hidden">
   
   
     
@@ -172,7 +172,7 @@ SimpleJekyllSearch({
     
     
     
-  <li class="active"
+  <li 
       
     >
     <a href="/data-consumer/clients/insights.html" >Starburst Insights</a>
@@ -252,7 +252,7 @@ SimpleJekyllSearch({
  
   
   
-<li >
+<li class="active">
   <a href="/data-consumer/data-mesh.html" >Data mesh</a>
 </li>
 
@@ -430,130 +430,66 @@ SimpleJekyllSearch({
     
   
     
-      <a href="/data-consumer/clients/"
-        style="text-transform: uppercase"
-      > clients</a> >
-    
-  
-    
-      Starburst Insights and Worksheet query editor
+      Data mesh with Starburst
     
   </p>
 </div>
 
-        <h1 id="starburst-insights-and-worksheet-query-editor">
+        <h1 id="data-mesh-with-starburst">
         
         
-          Starburst Insights and Worksheet query editor <a href="#starburst-insights-and-worksheet-query-editor" class="titleAnchor">#</a>
+          Data mesh with Starburst <a href="#data-mesh-with-starburst" class="titleAnchor">#</a>
         
         
       </h1>
     
 
-<p>Insights is a web-based interface providing an intuitive query
-editor and data browser, along with a visual overview of important query
-statistics. It is available as part of Starburst Enterprise, and needs to be
-<a href="https://docs.starburst.io/latest//insights.html">activated and configured</a> by your platform
-administrator.</p>
-      <h2 id="access">
-        
-        
-          Access <a href="#access" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+<p>Starburst Enterprise is the world’s fastest distributed SQL query engine. It
+lets data consumers query anything, anywhere, and get the data they need in a
+single query, no matter where it lives. This idea of combining data from
+disparate sources is called a <em>data mesh</em>. Specifically Starburst Enterprise
+supports query federation where a query access many different datasources at the
+same time. These data sources are <a href="../data-engineer/catalogs.html">defined as catalogs and expose data in
+schemas and tables</a>.</p>
 
-<p>To access Insights, get the Starburst Enterprise cluster URL
-from your platform administrator, for instance:</p>
+<p>It allows you to combine, for instance, historical data from HDFS or
+objects stores with the most recent incoming data from Kafka one query.</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://my.internal.url/
+<p>Federating data is simple. You just need to use the fully-qualified name of the
+tables in your <code class="language-plaintext highlighter-rouge">FROM</code> clause. Table names are fully-qualified when they include
+the catalog and schema name:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;catalog&gt;.&lt;schema&gt;.&lt;table&gt;
+</code></pre></div></div>
+<p>A <em>catalog</em> defines the schemas in a data source such as Snowflake,
+Oracle and Hive.</p>
+
+<p>Here’s an example of data from two different sources, Hive and MySQL, federated
+into a single query:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+    <span class="n">sfm</span><span class="p">.</span><span class="n">account_number</span>
+<span class="k">FROM</span>
+    <span class="n">hive_sales</span><span class="p">.</span><span class="n">order_entries</span><span class="p">.</span><span class="n">orders</span> <span class="n">oeo</span>
+<span class="k">JOIN</span>
+    <span class="n">mysql_crm</span><span class="p">.</span><span class="n">sf_history</span><span class="p">.</span><span class="n">customer_master</span> <span class="n">sfm</span>
+<span class="k">ON</span> <span class="n">sfm</span><span class="p">.</span><span class="n">account_number</span> <span class="o">=</span> <span class="n">oeo</span><span class="p">.</span><span class="n">customer_id</span>
+<span class="k">WHERE</span> <span class="n">sfm</span><span class="p">.</span><span class="n">sf_industry</span> <span class="o">=</span> <span class="nv">`medical`</span> <span class="k">AND</span> <span class="n">oeo</span><span class="p">.</span><span class="n">order_total</span> <span class="o">&gt;</span> <span class="mi">300</span>
+<span class="k">LIMIT</span> <span class="mi">2</span><span class="p">;</span>
 </code></pre></div></div>
 
-<p>The Insights URL is that URL with <code class="language-plaintext highlighter-rouge">/ui/insights</code> appended:</p>
+<p>This query uses data from the following sources:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://my.internal.url/ui/insights
-</code></pre></div></div>
+<ul>
+  <li>The <code class="language-plaintext highlighter-rouge">orders</code> table in the <code class="language-plaintext highlighter-rouge">order_entries</code> schema defined in the <code class="language-plaintext highlighter-rouge">hive_sales</code> catalog</li>
+  <li>The <code class="language-plaintext highlighter-rouge">customer_master</code> table in the <code class="language-plaintext highlighter-rouge">sf_history</code> schema defined in the <code class="language-plaintext highlighter-rouge">mysql_crm</code> catalog</li>
+</ul>
 
-<p>Login with the same credentials you use to access Starburst Enterprise with
-the CLI or any other client.</p>
-      <h2 id="easy-data-exploration-with-worksheet">
-        
-        
-          Easy data exploration with Worksheet <a href="#easy-data-exploration-with-worksheet" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>Insights includes an ad hoc querying tool, Worksheet. Worksheet
-is a powerful, web-based tabbed query editor and data source explorer. It
-allows you to run multiple ad hoc queries and, with a click, drill down into the
-information you need to optimize it.</p>
-
-<p><button type="button" class="button-img" data-toggle="modal" data-target="#insight-worksheet">
-    <img src="../../assets/img/general/insights-worksheet.png" alt="Insights Worksheet" class="img-fluid" description="" width="650px" /><br />
-  </button>
-  <!-- The Modal --></p>
-<div class="modal fade" id="insight-worksheet" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <!-- Modal content -->
-      <div class="modal-content" id="insight-worksheet">
-          <div class="modal-header" style="border:none;">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">×</span>
-              </button>
-          </div>
-          <img src="../../assets/img/general/insights-worksheet.png" class="img-fluid center-block" />
-      </div>
-    </div>
-  </div>
-
-<p>Worksheet is meant for quick exploration and query validation. If your result
-set is very wide, or is greater than 1000 rows, it is truncated. Queries and
-results are only available until a new query is run in a tab, or your page or
-tab is closed or refreshed, whichever comes first.</p>
-      <h2 id="detailed-views-of-query-statistics">
-        
-        
-          Detailed views of query statistics <a href="#detailed-views-of-query-statistics" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>You can also drill down into query details, including step-by-step execution
-statistics to help you optimize query performance.</p>
-
-<p><button type="button" class="button-img" data-toggle="modal" data-target="#insights-query-details">
-    <img src="../../assets/img/general/insights-query-details.png" alt="Insights query details" class="img-fluid" description="" width="650px" /><br />
-  </button>
-  <!-- The Modal --></p>
-<div class="modal fade" id="insights-query-details" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <!-- Modal content -->
-      <div class="modal-content" id="insights-query-details">
-          <div class="modal-header" style="border:none;">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">×</span>
-              </button>
-          </div>
-          <img src="../../assets/img/general/insights-query-details.png" class="img-fluid center-block" />
-      </div>
-    </div>
-  </div>
-      <h2 id="other-features-and-details">
-        
-        
-          Other features and details <a href="#other-features-and-details" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>Insights includes <a href="https://docs.starburst.io/latest//insights.html">numerous other
-features</a> that allow your platform administrator
-to understand the performance and usage of your Starburst Enterprise cluster.</p>
+<p>To help you learn how Starburst uses federated queries in popular
+analytics tools, here is a handy walk-through of federating queries for rapid
+visualization in
+<a href="https://www.starburstdata.com/presto-videos/query-federation-using-looker-and-starburst-presto/">Looker</a>
+with Starburst Enterprise.</p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -654,7 +590,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#starburst-insights-and-worksheet-query-editor">Starburst Insights and Worksheet query editor</a><ul><li><a href="#access">Access</a></li><li><a href="#easy-data-exploration-with-worksheet">Easy data exploration with Worksheet</a></li><li><a href="#detailed-views-of-query-statistics">Detailed views of query statistics</a></li><li><a href="#other-features-and-details">Other features and details</a></li></ul></li></ul>
+          <ul><li><a href="#data-mesh-with-starburst">Data mesh with Starburst</a></li></ul>
 
         </div>
       </div>
