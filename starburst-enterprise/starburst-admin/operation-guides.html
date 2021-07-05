@@ -461,9 +461,10 @@ SimpleJekyllSearch({
       </h1>
     
 
-<p>After satisfying the <a href="./index.html#requirements">initial requirements for the control machine and all the
-machines in the cluster</a> you can get a cluster up and
-running with the <a href="./installation-guide.html">help of the installation guide</a>.</p>
+<p>After satisfying the <a href="./index.html#requirements">initial requirements</a> for the
+control node and all the managed nodes in the cluster, you can get a cluster up
+and running with the help of the
+<a href="./installation-guide.html">installation guide</a>.</p>
 
 <p>A fully configured deployment requires a bit more configuration and work. It is
 typically performed incrementally and you use Starburst Admin to help you
@@ -597,7 +598,8 @@ to be performed without any users running queries.</p>
 
 <ul>
   <li>Download the binary package for the new version and place it in <code class="language-plaintext highlighter-rouge">files</code>.</li>
-  <li>Update the version number in <code class="language-plaintext highlighter-rouge">vars.yml</code></li>
+  <li>Alternatively place the binary package on a server and update the installer URL.</li>
+  <li>Update the version number in <code class="language-plaintext highlighter-rouge">vars.yml</code>.</li>
   <li>Update all the configuration and add any new configuration files.</li>
   <li><a href="./playbook-reference.html#stop">Stop the cluster</a>.</li>
   <li><a href="./playbook-reference.html#install">Install the new packages to the cluster</a>.</li>
@@ -624,6 +626,37 @@ running on it are done.</p>
 <p>To manage separate installations on more than one sets of hosts, copy
 the <code class="language-plaintext highlighter-rouge">hosts</code> file and update values inside it. Then, to use the new file,
 add the <code class="language-plaintext highlighter-rouge">-i &lt;new-hosts&gt;</code> parameter when running the <code class="language-plaintext highlighter-rouge">ansible-playbook</code> command.</p>
+      <h3 id="bluegreen-deployments-and-upgrades">
+        
+        
+          Blue/Green deployments and upgrades <a href="#bluegreen-deployments-and-upgrades" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>With sufficient resources you can significantly improve your upgrade process by
+managing two productions cluster behind a load balancer (LB) with a defined
+fully qualified domain name (FQDN). The upgrade process can then follow a
+blue-green deployment process:</p>
+
+<ul>
+  <li>Current production cluster in use is <em>green</em> and LB uses the FQDN to point
+users to it.</li>
+  <li>Update all configuration and resources for the inactive <em>blue</em> cluster to the
+new version and configuration.</li>
+  <li>Install, push configuration and start the <em>blue</em> cluster.</li>
+  <li>Test the <em>blue</em> cluster with the direct IP address or an alternative FQDN
+configured on the LB.</li>
+  <li>Switch the LB configuration to point the <em>blue</em> cluster.</li>
+  <li>Shut down the <em>green</em> cluster.</li>
+</ul>
+
+<p>For the next upgrade the process is the identical, just the role of the two
+clusters is reversed.</p>
+
+<p>The inactive cluster can be kept running for failover and high availability
+usage or decommissioned and recreated again for future upgrades.</p>
       <h2 id="adding-or-removing-workers">
         
         
@@ -663,9 +696,9 @@ installation just to this node:</p>
 
 <p>Playbook invocations:</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.5 install.yml
-ansible-playbook -l 172.28.0.5 push-configs.yml
-ansible-playbook -l 172.28.0.5 start.yml
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.5 playbooks/install.yml
+ansible-playbook -l 172.28.0.5 playbooks/push-configs.yml
+ansible-playbook -l 172.28.0.5 playbooks/start.yml
 </code></pre></div></div>
 
 <p>Specifying the host is optional and can be omitted since the playbooks can run
@@ -678,15 +711,60 @@ them all together.</p>
 <ul>
   <li>Stop the worker or perform a graceful shutdown.
     <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Hard stop
-ansible-playbook -l 172.28.0.5 stop.yml
+ansible-playbook -l 172.28.0.5 playbooks/stop.yml
 
 # Graceful shutdown
-ansible-playbook -l 172.28.0.5 graceful-shutdown.yml
+ansible-playbook -l 172.28.0.5 playbooks/graceful-shutdown.yml
 </code></pre></div>    </div>
   </li>
-  <li>Optionally run uninstall.</li>
+  <li>Optionally run <a href="#uninstall">uninstall</a> for the specific worker only
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ansible-playbook -l 172.28.0.5 playbooks/uninstall.yml
+</code></pre></div>    </div>
+  </li>
   <li>Remove the worker from <code class="language-plaintext highlighter-rouge">hosts</code></li>
 </ul>
+      <h2 id="configuring-tls">
+        
+        
+          Configuring TLS <a href="#configuring-tls" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>You can configure <a href="../../latest/security/tls.html">TLS for the coordinator</a> as
+well as <a href="../../latest/security/internal-communication.html">cluster internal authentication and
+TLS</a> as usual.</p>
+
+<p>For the functionality of the playbooks you need to additionally update the ports
+configured in <code class="language-plaintext highlighter-rouge">vars.yml</code> so that they can continue to interoperate with the
+nodes for status checks and other aspects.</p>
+
+<p>Using 8443 on the coordinator and workers:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>coordinator_port: 8443
+worker_port: 8443
+</code></pre></div></div>
+      <h2 id="using-secrets">
+        
+        
+          Using secrets <a href="#using-secrets" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>You can use <a href="../../latest/security/secrets.html">secrets in environment
+variables</a> to avoid clear text password and
+other sensitive data in the configuration files.</p>
+
+<p>To inject a secret value into an environment variable, you can modify the
+<code class="language-plaintext highlighter-rouge">env.sh</code> shell scripts in <code class="language-plaintext highlighter-rouge">files/worker</code> and <code class="language-plaintext highlighter-rouge">files/coordinator</code>. The script is
+executed before SEP is started. For example, you can insert code
+to retrieve secret values from a secret manager such as <a href="https://www.hashicorp.com/products/vault">Hashicorp
+ Vault</a>,
+<a href="https://github.com/square/keywhiz">Keywhiz</a>, or a secret manager from your
+cloud provider.</p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -787,7 +865,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#starburst-admin-operation-guides">Starburst Admin operation guides</a><ul><li><a href="#targeting-specific-hosts">Targeting specific hosts</a></li><li><a href="#adding-removing-and-updating-catalogs">Adding, removing and updating catalogs</a></li><li><a href="#changing-other-configuration">Changing other configuration</a></li><li><a href="#upgrading-starburst-enterprise">Upgrading Starburst Enterprise</a></li><li><a href="#adding-or-removing-workers">Adding or removing workers</a></li></ul></li></ul>
+          <ul><li><a href="#starburst-admin-operation-guides">Starburst Admin operation guides</a><ul><li><a href="#targeting-specific-hosts">Targeting specific hosts</a></li><li><a href="#adding-removing-and-updating-catalogs">Adding, removing and updating catalogs</a></li><li><a href="#changing-other-configuration">Changing other configuration</a></li><li><a href="#upgrading-starburst-enterprise">Upgrading Starburst Enterprise</a><ul><li><a href="#bluegreen-deployments-and-upgrades">Blue/Green deployments and upgrades</a></li></ul></li><li><a href="#adding-or-removing-workers">Adding or removing workers</a></li><li><a href="#configuring-tls">Configuring TLS</a></li><li><a href="#using-secrets">Using secrets</a></li></ul></li></ul>
 
         </div>
       </div>
