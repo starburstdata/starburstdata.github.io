@@ -646,66 +646,65 @@
   
 <h1 id="security-event-logger--page-root">Event logger<a class="headerlink" href="#security-event-logger--page-root" title="Permalink to this headline">#</a></h1>
 <p>The event logger allows query completion events and all related Starburst Enterprise platform (SEP)
-information to be logged into a PostgreSQL database.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Event logger requires a valid <a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>.</p>
-</div>
-<p>Event logger data is used to provide cluster performance history, including:</p>
-<ul class="simple">
-<li><p>CPU and memory usage</p></li>
-<li><p>Cluster size</p></li>
-<li><p>Query load</p></li>
-</ul>
-<p>In addition to cluster performance data, the event logger also provides query
-history and performance data. Once the event logger is running, use the
-<a class="reference internal" href="../insights/index.html"><span class="doc">Insights user interface</span></a> to view cluster and query
-data.</p>
+information to be logged into a database. Once the event logger is running,
+use the <a class="reference internal" href="../insights/index.html"><span class="doc">Insights user interface</span></a> to explore query
+history.</p>
 
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
+<p>To use the event logger, you need:</p>
 <ul class="simple">
-<li><p>PostgreSQL database, version 9.6 or higher</p></li>
-<li><p>Network connectivity between the coordinator and the PostgreSQL server</p></li>
+<li><p>Externally managed database. The following RDBMS are supported:</p>
+<ul>
+<li><p>MySQL 8.0.12+</p></li>
+<li><p>PostgreSQL 9.6+</p></li>
+<li><p>OracleDB 12.2.0.1+</p></li>
 </ul>
-<p>Connectivity between SEP and the PostgreSQL database can be verified
-on the coordinator.</p>
-<p>You can use <code class="docutils literal notranslate"><span class="pre">ping</span></code> to verify the hostname:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ ping postgresql.example.com
-</pre></div>
-</div>
-<p>You can use <code class="docutils literal notranslate"><span class="pre">telnet</span></code> with the hostname and port of the database to confirm
-PostgreSQL is listening on the configured port.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ telnet postgresql.example.com:5432
-</pre></div>
-</div>
+</li>
+<li><p>Network access from the Trino coordinator to the external database.</p></li>
+<li><p>A valid <a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>.</p></li>
+</ul>
 
 
 <span id="ev-log-install-config"></span><h2 id="installation-and-configuration">Installation and configuration<a class="headerlink" href="#installation-and-configuration" title="Permalink to this headline">#</a></h2>
-<p>The event logger is implemented as a <a class="reference internal" href="../develop/event-listener.html"><span class="doc">event listener implementation</span></a> and can be enabled by creating a configuration file
-called <code class="docutils literal notranslate"><span class="pre">etc/event-listener.properties</span></code> on the coordinator. The name needs to
-be set to <code class="docutils literal notranslate"><span class="pre">event-logger</span></code>. The configuration includes the JDBC connection URL
-with hostname, port and database name as well as username and password for
-accessing the PostgreSQL database.</p>
+<p>The event logger is an <a class="reference internal" href="../develop/event-listener.html"><span class="doc">event listener implementation</span></a>. It can be enabled by creating a configuration file
+called <code class="docutils literal notranslate"><span class="pre">etc/event-listener.properties</span></code> on the coordinator. Alternatively, you
+can use a file name such as <code class="docutils literal notranslate"><span class="pre">etc/event-logger.properties</span></code> and <a class="reference internal" href="../develop/event-listener.html#multiple-listeners"><span class="std std-ref">configure
+the config file name</span></a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">event-listener.name</span></code> needs to be set to <code class="docutils literal notranslate"><span class="pre">event-logger</span></code>. The
+configuration includes the JDBC connection URL with hostname, port and database
+name as well as username and password for accessing the database.</p>
+<p>You must restart the cluster after creating the configuration files. At first
+usage, the table <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> is automatically created in the
+database. Once the table is created, logging is activated and running.</p>
+<p>Instructions for configuring event logger for Kubernetes deployments are
+available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-event-logger"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
+<p><strong>Example configuration for PostgreSQL</strong></p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">event-logger</span>
 <span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:postgresql://postgresql.example.com:5432/event_logger</span>
 <span class="na">jdbc.user</span><span class="o">=</span><span class="s">test_psql</span>
 <span class="na">jdbc.password</span><span class="o">=</span><span class="s">test12</span>
 </pre></div>
 </div>
-<p>You must have sufficient rights to create tables and insert data in the
-configured schema.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>It is not good practice to use the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema. Configure the user to
-use a different schema by default. See the <a class="reference external" href="https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATTERNS">PostgreSQL documentation</a>
+<p>It is not good practice to use the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema. Configure the user to use
+a different schema by default. See the <a class="reference external" href="https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATTERNS">PostgreSQL documentation</a>
 for details.</p>
+<p><strong>Example configuration for Oracle</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">event-logger</span>
+<span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:oracle:thin:@oracle.example.com:1521/event_logger</span>
+<span class="na">jdbc.user</span><span class="o">=</span><span class="s">test_ora</span>
+<span class="na">jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
 </div>
-<p>You must restart the cluster after creating the configuration files. At first
-usage, the table <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> is automatically created in the
-PostgreSQL database.</p>
-<p>Once the table is created, logging is activated and running.</p>
-<p>Instructions for configuring event logger for Kubernetes deployments are
-available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-event-logger"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
+<p><strong>Example configuration for MySQL</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">event-logger</span>
+<span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:mysql://mysql.example.com:3306/event_logger?sessionVariables=sql_mode=ANSI</span>
+<span class="na">jdbc.user</span><span class="o">=</span><span class="s">test_mysql</span>
+<span class="na">jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p>You must specify <code class="docutils literal notranslate"><span class="pre">sql_mode=ANSI</span></code> in the <code class="docutils literal notranslate"><span class="pre">jdbc.url</span></code> configuration. The
+configured user must have sufficient rights to create tables and insert data in
+the configured schema.</p>
 
 
 <h2 id="logged-information">Logged information<a class="headerlink" href="#logged-information" title="Permalink to this headline">#</a></h2>
@@ -961,7 +960,7 @@ hoc analysis and more.</p>
 
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permalink to this headline">#</a></h2>
 <p>Generate event logger data by running a query.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; CREATE TABLE memory.default.country AS
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>trino&gt; CREATE TABLE memory.default.country AS
         SELECT n.name nation_name, r.name region_name
         FROM delta.sf1.nation n JOIN delta.sf1.region r ON n.regionkey = r.regionkey;
 CREATE TABLE: 25 rows
@@ -977,7 +976,7 @@ PostgreSQL database.</p>
 and the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema contains the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table. The
 <code class="docutils literal notranslate"><span class="pre">query_id</span></code> from the execution is used to locate the correct record. The output
 in the following example has been trimmed.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; SELECT *
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>trino&gt; SELECT *
         FROM event_logger.public.completed_queries
         WHERE query_id = '20201209_021306_00003_qsyab';
 -[ RECORD 1 ]-------------------------+---------------------------------------
@@ -987,7 +986,7 @@ schema                                | NULL
 principal                             | demo
 user_agent                            | StatementClientV1/345
 client_info                           | NULL
-source                                | presto-cli
+source                                | trino-cli
 environment                           | demo
 remote_client_address                 | 127.0.0.1
 server_version                        | 350-e
@@ -1035,7 +1034,7 @@ scheduled_time                        | 1263
 </div>
 <p>The tables accessed by the query are recorded in the <code class="docutils literal notranslate"><span class="pre">query_tables</span></code> table and
 can be identified using the same <code class="docutils literal notranslate"><span class="pre">query_id</span></code>.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>presto&gt; SELECT *
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>trino&gt; SELECT *
         FROM event_logger.public.query_tables
         WHERE query_id = '20201209_021306_00003_qsyab';
           query_id           | catalog_name | schema_name | table_name | physical_bytes | physical_rows | is_output
