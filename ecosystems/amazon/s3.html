@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Working with data in Amazon S3</title>
+    <title>Starburst | Amazon S3</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Working with data in Amazon S3">
+    <meta property="og:title" content="Starburst - Amazon S3">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -472,23 +472,44 @@ SimpleJekyllSearch({
     
   
     
-      Working with data in Amazon S3
+      Amazon S3
     
   </p>
 </div>
 
-        <h1 id="working-with-data-in-amazon-s3">
+        <h1 id="amazon-s3">
         
         
-          Working with data in Amazon S3 <a href="#working-with-data-in-amazon-s3" class="titleAnchor">#</a>
+          Amazon S3 <a href="#amazon-s3" class="titleAnchor">#</a>
         
         
       </h1>
     
-      <h2 id="prerequisites">
+
+<p>You can query data stored on the Amazon Simple Storage Service (Amazon S3) with
+Starburst Enterprise platform (SEP). The most common usage is with the <a href="../../latest/connector/starburst-hive.html">Hive
+connector</a> and the dedicated
+<a href="../../latest/connector/starburst-hive-s3.html">configuration options for
+S3-access</a>.</p>
+
+<p>In addition, you need to store the meta data about the object storage. Typically
+this is done with <a href="./glue.html">AWS Glue</a>, but you can also use your own Hive
+Metastore Service (HMS).</p>
+
+<p>Amazon S3 can also be used as storage backend with other systems, and then
+queried with the dedicated connector:</p>
+
+<ul>
+  <li><a href="../../latest/connector/starburst-delta-lake.html">Delta Lake</a></li>
+  <li><a href="../../latest/connector/iceberg.html">Iceberg</a></li>
+  <li><a href="../../latest/connector/starburst-snowflake.html">Snowflake</a></li>
+</ul>
+
+<p>Ensure the requirements for the connector are fulfilled.</p>
+      <h2 id="requirements">
         
         
-          Prerequisites <a href="#prerequisites" class="titleAnchor">#</a>
+          Requirements <a href="#requirements" class="titleAnchor">#</a>
         
         
       </h2>
@@ -500,106 +521,100 @@ must be met:</p>
 <ul>
   <li>Your SEP cluster must have the necessary permissions needed to
 access your S3 data.</li>
-  <li>A Hive catalog and Hive Metastore (HMS) must be configured.</li>
+  <li>Requirements of the connector used for the catalog you use to access S3 need
+to be fulfilled. Typically this includes a meta store, either <a href="./glue.html">AWS
+Glue</a>, or a HMS.</li>
 </ul>
-      <h3 id="ensuring-sep-access-to-s3">
+      <h2 id="ensuring-sep-access-to-s3">
         
         
           Ensuring SEP access to S3 <a href="#ensuring-sep-access-to-s3" class="titleAnchor">#</a>
         
         
-      </h3>
+      </h2>
     
 
 <p>If your S3 data is publicly available, you do not need to do anything. However,
 S3 data is not typically publicly available, and you must grant
-SEP access to it. To accomplish this, you must <a href="../../latest/aws/prerequisites.html#instance-profiles">select an
-appropriate instance
-profile</a> when creating
-a cluster.</p>
+SEP access to it.</p>
 
-<p>When this is done, validate that the selected instance profile is sufficient for
-SEP to read S3 data by opening an SSH connection to the
-coordinator and issuing the following commands:</p>
+<p>With the CFT support, you must <a href="../../latest/aws/prerequisites.html#instance-profiles">select an appropriate instance
+profile</a> when creating a
+cluster.</p>
+
+<p>Validate that the selected instance profile is sufficient for SEP
+to read S3 data by opening an SSH connection to the coordinator and issuing the
+following commands:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>aws s3 <span class="nb">ls </span>s3://your-bucket/path/to/dataset/
 <span class="nv">$ </span>aws s3 <span class="nb">cp </span>s3://your-bucket/path/to/dataset/data-file - <span class="o">&gt;</span> /dev/null
 </code></pre></div></div>
-      <h3 id="configuring-the-hive-catalog-and-hms">
+      <h3 id="configuring-a-catalog-and-meta-store">
         
         
-          Configuring the Hive catalog and HMS <a href="#configuring-the-hive-catalog-and-hms" class="titleAnchor">#</a>
+          Configuring a catalog and meta store <a href="#configuring-a-catalog-and-meta-store" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>A <a href="../../data-engineer/catalogs.html">Hive catalog must be created</a> for your S3
-bucket, along with an HMS, as the connector uses an HMS for data discovery. You
-can use an existing HMS or start a new one, and it must have an instance profile
-granting access to S3.</p>
+<p>A <a href="../../data-engineer/catalogs.html">catalog must be created</a> for your S3
+bucket.</p>
 
-<p>You can <a href="../../latest/aws/metastore.html">create a new metastore</a>
-for SEP via a CloudFormation template.</p>
-
-<p>To use an existing HMS:</p>
+<p>Users of the CFT can  <a href="../../latest/aws/metastore.html">create a new HMS</a>
+via a CloudFormation template. It must have an instance profile
+granting access to S3. Alternatively, you can use an existing HMS:</p>
 
 <ol>
-  <li>
-    <p>Set the <strong>MetastoreType</strong> parameter to <code class="language-plaintext highlighter-rouge">External Hive Metastore
-  Service</code> and <strong>ExternalMetastoreHost</strong> to IP address of your Hive
-  Metastore Service (see :doc:<code class="language-plaintext highlighter-rouge">/aws/metastore</code> section).</p>
-  </li>
-  <li>
-    <p>If the Metastore uses authentication, review the Hive connector security
-<a href="../../latest/connector/hive-security.html">documentation</a> to configure
-the connector for your environment.</p>
-  </li>
+  <li>Set the <strong>MetastoreType</strong> parameter to <code class="language-plaintext highlighter-rouge">External Hive Metastore
+  Service</code> and <strong>ExternalMetastoreHost</strong> to IP address of your HMS.</li>
 </ol>
-      <h2 id="accessing-s3-data-from-sep">
+
+<p>Users of the [Kubernetes support(../../latest/k8s.html) can perform similar
+configuration.</p>
+
+<p>If the HMS uses authentication, review the Hive connector security
+<a href="../../latest/connector/hive-security.html">documentation</a> to configure the
+connector for your environment.</p>
+      <h2 id="reading-data-from-s3">
         
         
-          Accessing S3 Data from SEP <a href="#accessing-s3-data-from-sep" class="titleAnchor">#</a>
+          Reading data from S3 <a href="#reading-data-from-s3" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>If you chose an existing HMS instance when configuring the Hive
-catalog, chances are that your S3 data is already mapped to SQL tables in the
-Metastore. In that case, you should be able to query it immediately.</p>
+<p>If you chose an existing HMS instance when configuring the Hive catalog, chances
+are that your S3 data is already mapped to SQL tables in the HMS. In that case,
+you should be able to query it immediately.</p>
 
 <p>If you created a new HMS instance, it is likely that your S3 data is not yet
-mapped. In the Hive Metastore you must provide the schema of the data, the file
-format, and the data location. For example, if you have ORC or Parquet files in
-an S3 bucket, <code class="language-plaintext highlighter-rouge">my_bucket</code>, execute a command similar to the
-following to create a queryable table:</p>
+mapped. In the HMS you must provide the schema of the data, the file format, and
+the data location. For example, if you have ORC or Parquet files in an S3
+bucket, <code class="language-plaintext highlighter-rouge">my_bucket</code>, create a queryable table in the desired schema of your
+catalog.</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  trino&gt; <span class="nt">--</span> <span class="k">select </span>schema <span class="k">in </span>which the table will be defined, must already exist
-  trino&gt; USE hive.default<span class="p">;</span>
-  USE
-
-  trino&gt; <span class="nt">--</span> create table
-  trino&gt; CREATE TABLE orders <span class="o">(</span>
-       -&gt;     orderkey bigint,
-       -&gt;     custkey bigint,
-       -&gt;     orderstatus varchar<span class="o">(</span>1<span class="o">)</span>,
-       -&gt;     totalprice double,
-       -&gt;     orderdate <span class="nb">date</span>,
-       -&gt;     orderpriority varchar<span class="o">(</span>15<span class="o">)</span>,
-       -&gt;     clerk varchar<span class="o">(</span>15<span class="o">)</span>,
-       -&gt;     shippriority integer,
-       -&gt;     comment varchar<span class="o">(</span>79<span class="o">)</span>
-       -&gt; <span class="o">)</span> WITH <span class="o">(</span>
-       -&gt;     external_location <span class="o">=</span> <span class="s1">'s3://my_bucket/path/to/folder'</span>,
-       -&gt;     format <span class="o">=</span> <span class="s1">'ORC'</span> <span class="nt">--</span> or <span class="s1">'PARQUET'</span>
-       -&gt; <span class="o">)</span><span class="p">;</span>
-  CREATE TABLE
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  USE hive.default<span class="p">;</span>
+  CREATE TABLE orders <span class="o">(</span>
+       orderkey bigint,
+       custkey bigint,
+       orderstatus varchar<span class="o">(</span>1<span class="o">)</span>,
+       totalprice double,
+       orderdate <span class="nb">date</span>,
+       orderpriority varchar<span class="o">(</span>15<span class="o">)</span>,
+       clerk varchar<span class="o">(</span>15<span class="o">)</span>,
+       shippriority integer,
+       comment varchar<span class="o">(</span>79<span class="o">)</span>
+    <span class="o">)</span> WITH <span class="o">(</span>
+      external_location <span class="o">=</span> <span class="s1">'s3://my_bucket/path/to/folder'</span>,
+      format <span class="o">=</span> <span class="s1">'ORC'</span> <span class="nt">--</span> or <span class="s1">'PARQUET'</span>
+    <span class="o">)</span><span class="p">;</span>
 </code></pre></div></div>
 
 <p>Query the newly mapped table as usual:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  trino&gt; SELECT <span class="k">*</span> FROM orders<span class="p">;</span>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  SELECT <span class="k">*</span> FROM orders<span class="p">;</span>
 </code></pre></div></div>
       <h2 id="statistics">
         
@@ -615,15 +630,14 @@ into performance issues. This is because SEP does not know the
 statistical properties of the data necessary for the cost-based optimizer’s
 decisions.</p>
 
-<p>To gather table statistics for tables in the Hive connector, execute the
-following command:</p>
+<p>To gather table statistics, execute the following command:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  trino&gt; ANALYZE orders<span class="p">;</span>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  ANALYZE orders<span class="p">;</span>
 </code></pre></div></div>
-      <h2 id="writing-s3-data-with-sep">
+      <h2 id="writing-data-to-s3">
         
         
-          Writing S3 data with SEP <a href="#writing-s3-data-with-sep" class="titleAnchor">#</a>
+          Writing data to S3 <a href="#writing-data-to-s3" class="titleAnchor">#</a>
         
         
       </h2>
@@ -635,14 +649,14 @@ following command:</p>
 them to export data to S3. If you don’t want to use existing schemas (or there
 are no appropriate schemas in the HMS), create a new one.</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  trino&gt; CREATE SCHEMA hive.s3_export WITH <span class="o">(</span>location <span class="o">=</span> <span class="s1">'s3://my_bucket/some/path'</span><span class="o">)</span><span class="p">;</span>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  CREATE SCHEMA hive.s3_export WITH <span class="o">(</span>location <span class="o">=</span> <span class="s1">'s3://my_bucket/some/path'</span><span class="o">)</span><span class="p">;</span>
 </code></pre></div></div>
 
 <p>Once you have a schema pointing to a location where you want to export the data,
 export data using a <code class="language-plaintext highlighter-rouge">CREATE TABLE AS</code> statement that specifies your
 desired file format:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  trino&gt; CREATE TABLE hive.s3_export.my_table
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  CREATE TABLE hive.s3_export.my_table
   WITH <span class="o">(</span>format <span class="o">=</span> <span class="s1">'ORC'</span><span class="o">)</span>
   AS &lt;<span class="nb">source </span>query&gt;<span class="p">;</span>
 </code></pre></div></div>
@@ -751,7 +765,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#working-with-data-in-amazon-s3">Working with data in Amazon S3</a><ul><li><a href="#prerequisites">Prerequisites</a><ul><li><a href="#ensuring-sep-access-to-s3">Ensuring SEP access to S3</a></li><li><a href="#configuring-the-hive-catalog-and-hms">Configuring the Hive catalog and HMS</a></li></ul></li><li><a href="#accessing-s3-data-from-sep">Accessing S3 Data from SEP</a></li><li><a href="#statistics">Statistics</a></li><li><a href="#writing-s3-data-with-sep">Writing S3 data with SEP</a></li></ul></li></ul>
+          <ul><li><a href="#amazon-s3">Amazon S3</a><ul><li><a href="#requirements">Requirements</a></li><li><a href="#ensuring-sep-access-to-s3">Ensuring SEP access to S3</a><ul><li><a href="#configuring-a-catalog-and-meta-store">Configuring a catalog and meta store</a></li></ul></li><li><a href="#reading-data-from-s3">Reading data from S3</a></li><li><a href="#statistics">Statistics</a></li><li><a href="#writing-data-to-s3">Writing data to S3</a></li></ul></li></ul>
 
         </div>
       </div>
