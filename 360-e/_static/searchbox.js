@@ -1,33 +1,34 @@
-const searchClient = algoliasearch(
-  '0X4IAR77M1', // Algolia ID
-  'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
-);
+document.addEventListener('DOMContentLoaded', function () {
+  const searchClient = algoliasearch(
+    '0X4IAR77M1', // Algolia ID
+    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+  );
 
-const hitsContainer = document.querySelector('#hits');
-const statsContainer = document.querySelector('#stats');
-const refinementContainer = document.querySelector('#refinement-list');
+  const hitsContainer = document.querySelector('#hits');
+  const statsContainer = document.querySelector('#stats');
+  const refinementContainer = document.querySelector('#refinement-list');
 
-const search = instantsearch({
-  indexName: 'All',
-  searchClient,
-  searchFunction: function (helper) {
-    if (helper.state.query.length < 2) {
-      hitsContainer.style.display = 'none';
-      statsContainer.style.display = 'none';
-      refinementContainer.style.display = 'none';
-    } else {
-      hitsContainer.style.display = 'block';
-      statsContainer.style.display = 'flex';
-      refinementContainer.style.display = 'flex';
-      helper.search();
-    }
-  },
-});
+  const search = instantsearch({
+    indexName: 'All',
+    searchClient,
+    searchFunction: function (helper) {
+      if (helper.state.query.length < 2) {
+        hitsContainer.style.display = 'none';
+        statsContainer.style.display = 'none';
+        refinementContainer.style.display = 'none';
+      } else {
+        hitsContainer.style.display = 'block';
+        statsContainer.style.display = 'flex';
+        refinementContainer.style.display = 'flex';
+        helper.search();
+      }
+    },
+  });
 
-const renderHits = (renderOptions, isFirstRender) => {
-  const { hits, widgetParams } = renderOptions;
+  const renderHits = (renderOptions, isFirstRender) => {
+    const { hits, widgetParams } = renderOptions;
 
-  widgetParams.container.innerHTML = `
+    widgetParams.container.innerHTML = `
     <ul class="search-hits">
       ${hits
         .map(
@@ -67,50 +68,51 @@ const renderHits = (renderOptions, isFirstRender) => {
         .join('')}
     </ul>
   `;
-};
+  };
 
-const renderStats = (renderOptions, isFirstRender) => {
-  const { nbHits, query } = renderOptions;
+  const renderStats = (renderOptions, isFirstRender) => {
+    const { nbHits, query } = renderOptions;
 
-  if (nbHits > 5) {
-    document.querySelector('#stats').innerHTML = `
+    if (nbHits > 5) {
+      document.querySelector('#stats').innerHTML = `
       <a href='/search.html?q=${query}' class="view-more-button">View more results</a>
     `;
-  } else {
-    document.querySelector('#stats').innerHTML = ``;
-  }
-};
+    } else {
+      document.querySelector('#stats').innerHTML = ``;
+    }
+  };
 
-const customHits = instantsearch.connectors.connectHits(renderHits);
-const customStats = instantsearch.connectors.connectStats(renderStats);
+  const customHits = instantsearch.connectors.connectHits(renderHits);
+  const customStats = instantsearch.connectors.connectStats(renderStats);
 
-search.addWidgets([
-  instantsearch.widgets.configure({
-    attributesToSnippet: ['content'],
-    hitsPerPage: 5,
-  }),
+  search.addWidgets([
+    instantsearch.widgets.configure({
+      attributesToSnippet: ['content'],
+      hitsPerPage: 5,
+    }),
 
-  instantsearch.widgets.searchBox({
-    container: '#searchbox',
-    showLoadingIndicator: true,
-    showReset: true,
-    placeholder: 'Search documentation',
-  }),
+    instantsearch.widgets.searchBox({
+      container: '#searchbox',
+      showLoadingIndicator: true,
+      showReset: true,
+      placeholder: 'Search documentation',
+    }),
 
-  instantsearch.widgets.refinementList({
-    container: '#refinement-list',
-    attribute: 'type',
-    showMore: true,
-    sortBy: ['name:desc', 'count:desc'],
-  }),
+    instantsearch.widgets.refinementList({
+      container: '#refinement-list',
+      attribute: 'type',
+      showMore: true,
+      sortBy: ['name:desc', 'count:desc'],
+    }),
 
-  customHits({
-    container: document.querySelector('#hits'),
-  }),
+    customHits({
+      container: document.querySelector('#hits'),
+    }),
 
-  customStats({
-    container: document.querySelector('#stats'),
-  }),
-]);
+    customStats({
+      container: document.querySelector('#stats'),
+    }),
+  ]);
 
-search.start();
+  search.start();
+});

@@ -1,8 +1,9 @@
-var resultsContainer = document.querySelector('#search-results');
+document.addEventListener('DOMContentLoaded', function () {
+  var resultsContainer = document.querySelector('#search-results');
 
-// Hijack Sphinx search template container and inject HTML
-if (resultsContainer) {
-  resultsContainer.innerHTML = `
+  // Hijack Sphinx search template container and inject HTML
+  if (resultsContainer) {
+    resultsContainer.innerHTML = `
     <div class="search-results-content">
       <div id="resultsSearchbox"></div>
       <div class="filter-stats-container">
@@ -16,36 +17,37 @@ if (resultsContainer) {
       <div id="pagination"></div>
     </div>
   `;
-}
 
-function searchResults() {
-  const searchClient = algoliasearch(
-    '0X4IAR77M1', // Algolia ID
-    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
-  );
+    function searchResults() {
+      const searchClient = algoliasearch(
+        '0X4IAR77M1', // Algolia ID
+        'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+      );
 
-  const hitsContainer = document.querySelector('#resultsHits');
-  const refinementContainer = document.querySelector('.filter-stats-container');
+      const hitsContainer = document.querySelector('#resultsHits');
+      const refinementContainer = document.querySelector(
+        '.filter-stats-container'
+      );
 
-  const searchResults = instantsearch({
-    indexName: 'All',
-    searchClient,
-    searchFunction: function (helper) {
-      if (helper.state.query.length < 2) {
-        hitsContainer.style.display = 'none';
-        refinementContainer.style.display = 'none';
-      } else {
-        hitsContainer.style.display = 'block';
-        refinementContainer.style.display = 'flex';
-        helper.search(); // trigger search
-      }
-    },
-  });
+      const searchResults = instantsearch({
+        indexName: 'All',
+        searchClient,
+        searchFunction: function (helper) {
+          if (helper.state.query.length < 2) {
+            hitsContainer.style.display = 'none';
+            refinementContainer.style.display = 'none';
+          } else {
+            hitsContainer.style.display = 'block';
+            refinementContainer.style.display = 'flex';
+            helper.search(); // trigger search
+          }
+        },
+      });
 
-  const renderHits = (renderOptions, isFirstRender) => {
-    const { hits, widgetParams } = renderOptions;
+      const renderHits = (renderOptions, isFirstRender) => {
+        const { hits, widgetParams } = renderOptions;
 
-    widgetParams.container.innerHTML = `
+        widgetParams.container.innerHTML = `
       <ul class="search-hits">
         ${hits
           .map(
@@ -90,61 +92,65 @@ function searchResults() {
           .join('')}
       </ul>
     `;
-  };
+      };
 
-  const renderStats = (renderOptions, isFirstRender) => {
-    const { nbHits, query } = renderOptions;
+      const renderStats = (renderOptions, isFirstRender) => {
+        const { nbHits, query } = renderOptions;
 
-    document.querySelector('#resultsStats').innerHTML = `
+        document.querySelector('#resultsStats').innerHTML = `
       <p>Found ${nbHits} results</p>`;
-  };
+      };
 
-  const customHits = instantsearch.connectors.connectHits(renderHits);
-  const customStats = instantsearch.connectors.connectStats(renderStats);
+      const customHits = instantsearch.connectors.connectHits(renderHits);
+      const customStats = instantsearch.connectors.connectStats(renderStats);
 
-  searchResults.addWidgets([
-    instantsearch.widgets.configure({
-      attributesToSnippet: ['content:50'],
-    }),
+      searchResults.addWidgets([
+        instantsearch.widgets.configure({
+          attributesToSnippet: ['content:50'],
+        }),
 
-    instantsearch.widgets.searchBox({
-      container: '#resultsSearchbox',
-      showLoadingIndicator: true,
-      showReset: true,
-      placeholder: 'Search documentation',
-    }),
+        instantsearch.widgets.searchBox({
+          container: '#resultsSearchbox',
+          showLoadingIndicator: true,
+          showReset: true,
+          placeholder: 'Search documentation',
+        }),
 
-    instantsearch.widgets.refinementList({
-      container: '#resultsRefinementList',
-      attribute: 'type',
-      showMore: true,
-      sortBy: ['name:desc', 'count:desc'],
-    }),
+        instantsearch.widgets.refinementList({
+          container: '#resultsRefinementList',
+          attribute: 'type',
+          showMore: true,
+          sortBy: ['name:desc', 'count:desc'],
+        }),
 
-    instantsearch.widgets.pagination({
-      container: '#pagination',
-    }),
+        instantsearch.widgets.pagination({
+          container: '#pagination',
+        }),
 
-    customHits({
-      container: document.querySelector('#resultsHits'),
-    }),
+        customHits({
+          container: document.querySelector('#resultsHits'),
+        }),
 
-    customStats({
-      container: document.querySelector('#resultsStats'),
-    }),
-  ]);
+        customStats({
+          container: document.querySelector('#resultsStats'),
+        }),
+      ]);
 
-  searchResults.start();
+      searchResults.start();
 
-  const queryParameter = new URLSearchParams(window.location.search).get('q');
+      const queryParameter = new URLSearchParams(window.location.search).get(
+        'q'
+      );
 
-  // If a query parameter was passed in the url, show results based on query
-  queryParameter &&
-    searchResults.setUiState({
-      All: {
-        query: queryParameter,
-      },
-    });
-}
+      // If a query parameter was passed in the url, show results based on query
+      queryParameter &&
+        searchResults.setUiState({
+          All: {
+            query: queryParameter,
+          },
+        });
+    }
+  }
 
-searchResults();
+  searchResults();
+});
