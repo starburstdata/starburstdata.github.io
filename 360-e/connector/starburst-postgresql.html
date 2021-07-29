@@ -396,6 +396,14 @@
         <li class="md-nav__item"><a href="#kerberos-credential-pass-through" class="md-nav__link">Kerberos credential pass-through</a>
         </li>
         <li class="md-nav__item"><a href="#password-credential-pass-through" class="md-nav__link">Password credential pass-through</a>
+        </li>
+        <li class="md-nav__item"><a href="#iam-authentication" class="md-nav__link">IAM authentication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#authentication" class="md-nav__link">Authentication</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -795,6 +803,14 @@
         <li class="md-nav__item"><a href="#kerberos-credential-pass-through" class="md-nav__link">Kerberos credential pass-through</a>
         </li>
         <li class="md-nav__item"><a href="#password-credential-pass-through" class="md-nav__link">Password credential pass-through</a>
+        </li>
+        <li class="md-nav__item"><a href="#iam-authentication" class="md-nav__link">IAM authentication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#authentication" class="md-nav__link">Authentication</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -915,6 +931,125 @@ file to include the authentication type:</p>
 </div>
 <p>For more information about configurations and limitations, see
 <a class="reference internal" href="../security/password-passthrough.html"><span class="doc">Password credential pass-through</span></a>.</p>
+
+
+<h3 id="iam-authentication">IAM authentication<a class="headerlink" href="#iam-authentication" title="Permalink to this headline">#</a></h3>
+<p>When the PostgreSQL database is deployed as an <a class="reference external" href="https://aws.amazon.com/rds/">AWS RDS instance</a>,
+the connector can use IAM authentication. This enhancement allows you to manage
+access control from SEP with IAM policies.</p>
+
+<h4 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h4>
+<p>To enable IAM authentication, add the following configuration properties to the
+catalog configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">postgresql.authentication.type</span><span class="o">=</span><span class="s">AWS</span>
+<span class="na">connection-user</span><span class="o">=</span><span class="s">&lt;RDS username&gt;</span>
+<span class="na">aws.region-name</span><span class="o">=</span><span class="s">&lt;AWS region&gt;</span>
+<span class="na">aws.token-expiration-timeout</span><span class="o">=</span><span class="s">10m</span>
+</pre></div>
+</div>
+<p>You can also configure the connector to assume a specific IAM role for
+authentication before creating the access token, in order to apply policies
+specific to SEP. Alongside this role, you must include an (informal)
+external identifier of a user to assume this role.</p>
+<p>To apply an IAM role to the connector, add the following configuration
+properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">aws.iam-role</span><span class="o">=</span><span class="s">&lt;role_arn&gt;</span>
+<span class="na">aws.external-id</span><span class="o">=</span><span class="s">&lt;external_id&gt;</span>
+</pre></div>
+</div>
+<p>This table describes the configuration properties for IAM
+authentication:</p>
+<table id="id1">
+<caption><span class="caption-text">IAM configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 63%"/>
+<col style="width: 5%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connection-user</span></code></p></td>
+<td><p>The database account used to access the RDS database instance.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.region-name</span></code></p></td>
+<td><p>The name of the AWS region in which the RDS instance is deployed.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.iam-role</span></code></p></td>
+<td><p>(<em>Optional</em>) Set an IAM role to assume for authentication before creating
+the access token. If set, <code class="docutils literal notranslate"><span class="pre">aws.external-id</span></code> must be configured as
+well.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.external-id</span></code></p></td>
+<td><p>(<em>Optional</em>) The informal identifier of the user who assumes
+the IAM role set in <code class="docutils literal notranslate"><span class="pre">aws.iam-role</span></code>.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.token-expiration-timeout</span></code></p></td>
+<td><p>The amount of time to keep the generated RDS access tokens for each user
+before they are regenerated. The maximum value is 15 minutes.</p></td>
+<td><p>10m</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.access-key</span></code></p></td>
+<td><p>The access key of the principal to authenticate with for the token
+generator service. Used for fixed authentication, setting this property
+disables automatic authentication.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.secret-key</span></code></p></td>
+<td><p>The secret key of the principal to authenticate with for the token
+generator service. Used for fixed authentication, setting this property
+disables automatic authentication.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.session-token</span></code></p></td>
+<td><p>(<em>Optional</em>) A session token for temporary credentials, such as
+credentials obtained from SSO. Used for fixed authentication, setting this
+property disables automatic authentication.</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+<h4 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">#</a></h4>
+<p>By default the connector attempts to automatically obtain its authentication
+credentials from the environment. The default credential provider chain attempts
+to obtain credentials from the following sources, in order:</p>
+<ol class="arabic simple">
+<li><p><strong>Environment variables</strong>: <code class="docutils literal notranslate"><span class="pre">AWS_ACCESS_KEY_ID</span></code> and <code class="docutils literal notranslate"><span class="pre">AWS_SECRET_ACCESS_KEY</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">AWS_ACCESS_KEY</span></code> and <code class="docutils literal notranslate"><span class="pre">AWS_SECRET_KEY</span></code>.</p></li>
+<li><p><strong>Java system properties</strong>: <code class="docutils literal notranslate"><span class="pre">aws.accessKeyId</span></code> and <code class="docutils literal notranslate"><span class="pre">aws.secretKey</span></code>.</p></li>
+<li><p><strong>Web identity token</strong>: credentials from the environment or container.</p></li>
+<li><p><strong>Credential profiles file</strong>: a profiles file at the default location
+(<code class="docutils literal notranslate"><span class="pre">~/.aws/credentials</span></code>) shared by all AWS SDKs and the AWS CLI.</p></li>
+<li><p><strong>EC2 service credentials</strong>: credentials delivered through the Amazon EC2
+container service, assuming the security manager has permission to access the
+value of the <code class="docutils literal notranslate"><span class="pre">AWS_CONTAINER_CREDENTIALS_RELATIVE_URI</span></code> environment variable.</p></li>
+<li><p><strong>Instance profile credentials</strong>: credentials delievered through the Amazon
+EC2 metadata service.</p></li>
+</ol>
+<p>If the SEP cluster is running on an EC2 instance, these credentials most
+likely come from the metadata service.</p>
+<p>Alternatively, you can set fixed credentials for authentication. This option
+disables the container’s automatic attempt to locate credentials. To use
+fixed credentials for authentication, set the following configuration
+properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">aws.access-key</span><span class="o">=</span><span class="s">&lt;access_key&gt;</span>
+<span class="na">aws.secret-key</span><span class="o">=</span><span class="s">&lt;secret_key&gt;</span>
+
+<span class="c"># (Optional) You can use temporary credentials. For example, you can use temporary credentials from SSO</span>
+<span class="na">aws.session-token</span><span class="o">=</span><span class="s">&lt;session_token&gt;</span>
+</pre></div>
+</div>
+
 
 
 
