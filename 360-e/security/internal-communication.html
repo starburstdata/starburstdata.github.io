@@ -327,6 +327,13 @@
     <li class="md-nav__item">
     
     
+      <a href="certificate.html" class="md-nav__link">Certificate authentication</a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
       <a href="jwt.html" class="md-nav__link">JWT authentication</a>
       
     
@@ -459,7 +466,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#internal-authentication" class="md-nav__link">Internal authentication</a>
         </li>
-        <li class="md-nav__item"><a href="#internal-ssl-tls-configuration" class="md-nav__link">Internal SSL/TLS configuration</a>
+        <li class="md-nav__item"><a href="#internal-tls-configuration" class="md-nav__link">Internal TLS configuration</a>
         </li>
         <li class="md-nav__item"><a href="#performance-with-ssl-tls-enabled" class="md-nav__link">Performance with SSL/TLS enabled</a>
         </li>
@@ -602,7 +609,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#internal-authentication" class="md-nav__link">Internal authentication</a>
         </li>
-        <li class="md-nav__item"><a href="#internal-ssl-tls-configuration" class="md-nav__link">Internal SSL/TLS configuration</a>
+        <li class="md-nav__item"><a href="#internal-tls-configuration" class="md-nav__link">Internal TLS configuration</a>
         </li>
         <li class="md-nav__item"><a href="#performance-with-ssl-tls-enabled" class="md-nav__link">Performance with SSL/TLS enabled</a>
         </li>
@@ -621,12 +628,14 @@
             
   
 <h1 id="security-internal-communication--page-root">Secure internal communication<a class="headerlink" href="#security-internal-communication--page-root" title="Permalink to this headline">#</a></h1>
-<p>The Trino cluster can be configured to use secured communication. Communication
-between Trino nodes can be secured with SSL/TLS.</p>
+<p>The Trino cluster can be configured to use secured communication with internal
+authentication of the nodes in the cluster, and optionally added security with
+<a class="reference internal" href="../appendix/glossary.html#glosstls"><span class="std std-ref">TLS</span></a>.</p>
 
 <h2 id="internal-authentication">Internal authentication<a class="headerlink" href="#internal-authentication" title="Permalink to this headline">#</a></h2>
 <p>Requests between Trino nodes are authenticated using a shared secret. For secure
-internal communication, the shared secret must be configured on all nodes in the cluster:</p>
+internal communication, the shared secret must be set to the same value on all
+nodes in the cluster:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>internal-communication.shared-secret=&lt;secret&gt;
 </pre></div>
 </div>
@@ -637,98 +646,51 @@ command:</p>
 </div>
 
 
-<h2 id="internal-ssl-tls-configuration">Internal SSL/TLS configuration<a class="headerlink" href="#internal-ssl-tls-configuration" title="Permalink to this headline">#</a></h2>
-<p>SSL/TLS is configured in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file.  The SSL/TLS on the
-worker and coordinator nodes are configured using the same set of properties.
-Every node in the cluster must be configured. Nodes that have not been
-configured, or are configured incorrectly, are not able to communicate with
-other nodes in the cluster.</p>
-<p>To enable SSL/TLS for Trino internal communication, do the following:</p>
+<h2 id="internal-tls-configuration">Internal TLS configuration<a class="headerlink" href="#internal-tls-configuration" title="Permalink to this headline">#</a></h2>
+<p>You can configure the coordinator and all workers to encrypt all communication
+with each other using TLS. Every node in the cluster must be configured. Nodes
+that have not been configured, or are configured incorrectly, are not able to
+communicate with other nodes in the cluster.</p>
+<p>In typical deployments, you should enable <a class="reference internal" href="tls.html#https-secure-directly"><span class="std std-ref">TLS directly on the coordinator</span></a> for fully encrypted access to the cluster by client
+tools.</p>
+<p>Now you can enable TLS for internal communication with the following
+configuration identical on all cluster nodes.</p>
 <ol class="arabic">
-<li><p>Disable HTTP endpoint.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.http.enabled=false
+<li><p>Configure a shared secret for internal communication as described in
+the preceding section.</p></li>
+<li><p>Enable automatic certificate creation and trust setup in
+<code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">internal-communication.https.required</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
+</li>
+<li><p>Change the URI for the discovery service to use HTTPS and point to the IP
+address of the coordinator in <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">discovery.uri</span><span class="o">=</span><span class="s">https://&lt;coordinator ip address&gt;:&lt;https port&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Enable the HTTPS endpoint on all workers.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.https.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">http-server.https.port</span><span class="o">=</span><span class="s">&lt;https port&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Restart all nodes.</p></li>
+</ol>
+<p>Certificates are automatically created and used to ensure all communication
+inside the cluster is secured with TLS.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>You can enable HTTPS, while leaving HTTP enabled. In most cases this is a
-security hole. If you are certain you want to use this configuration, you
-should consider using an firewall to limit access to the HTTP endpoint to
-only those hosts that should be allowed to use it.</p>
-</div>
-</li>
-<li><p>Configure the cluster to communicate using the fully qualified domain name (fqdn)
-of the cluster nodes. This can be done in either of the following ways:</p>
-<ul>
-<li><p>If the DNS service is configured properly, we can just let the nodes
-introduce themselves to the coordinator using the hostname taken from
-the system configuration (<code class="docutils literal notranslate"><span class="pre">hostname</span> <span class="pre">--fqdn</span></code>)</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>node.internal-address-source=FQDN
-</pre></div>
-</div>
-</li>
-<li><p>It is also possible to specify each node’s fully-qualified hostname manually.
-This is different for every host. Hosts should be in the same domain to
-make it easy to create the correct SSL/TLS certificates.
-e.g.: <code class="docutils literal notranslate"><span class="pre">coordinator.example.com</span></code>, <code class="docutils literal notranslate"><span class="pre">worker1.example.com</span></code>, <code class="docutils literal notranslate"><span class="pre">worker2.example.com</span></code>.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>node.internal-address=&lt;node fqdn&gt;
-</pre></div>
-</div>
-</li>
+<p>Older versions of Trino required you to manually manage all the certificates
+on the nodes. If you upgrade from this setup, you must remove the following
+configuration properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">internal-communication.https.keystore.path</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">internal-communication.https.truststore.path</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">node.internal-address-source</span></code></p></li>
 </ul>
-</li>
-<li><p>Generate a Java Keystore File. Every Trino node must be able to connect to
-any other node within the same cluster. It is possible to create unique
-certificates for every node using the fully-qualified hostname of each host,
-create a keystore that contains all the public keys for all of the hosts,
-and specify it for the client (see step #8 below). In most cases it is
-simpler to use a wildcard in the certificate as shown below.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>keytool -genkeypair -alias example.com -keyalg RSA -keystore keystore.jks
-Enter keystore password:
-Re-enter new password:
-What is your first and last name?
-  [Unknown]:  *.example.com
-What is the name of your organizational unit?
-  [Unknown]:
-What is the name of your organization?
-  [Unknown]:
-What is the name of your City or Locality?
-  [Unknown]:
-What is the name of your State or Province?
-  [Unknown]:
-What is the two-letter country code for this unit?
-  [Unknown]:
-Is CN=*.example.com, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown correct?
-  [no]:  yes
-</pre></div>
 </div>
-</li>
-<li><p>Distribute the Java Keystore File across the Trino cluster.</p></li>
-<li><p>Enable the HTTPS endpoint.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>http-server.https.enabled=true
-http-server.https.port=&lt;https port&gt;
-http-server.https.keystore.path=&lt;keystore path&gt;
-http-server.https.keystore.key=&lt;keystore password&gt;
-</pre></div>
-</div>
-</li>
-<li><p>Change the discovery uri to HTTPS.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>discovery.uri=https://&lt;coordinator fqdn&gt;:&lt;https port&gt;
-</pre></div>
-</div>
-</li>
-<li><p>Configure the internal communication to require HTTPS.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>internal-communication.https.required=true
-</pre></div>
-</div>
-</li>
-<li><p>Configure the internal communication to use the Java keystore file.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>internal-communication.https.keystore.path=&lt;keystore path&gt;
-internal-communication.https.keystore.key=&lt;keystore password&gt;
-</pre></div>
-</div>
-</li>
-</ol>
 
 
 <h2 id="performance-with-ssl-tls-enabled">Performance with SSL/TLS enabled<a class="headerlink" href="#performance-with-ssl-tls-enabled" title="Permalink to this headline">#</a></h2>

@@ -513,22 +513,28 @@ most of the probe-side rows as the join criteria is highly selective.</p>
 from the processed dimension table on the right side of join. In the case of broadcast joins,
 the runtime predicates generated from this collection are pushed into the local table scan
 on the left side of the join running on the same worker.</p>
-<p>Dynamic filtering is enabled by default using the <code class="docutils literal notranslate"><span class="pre">enable-dynamic-filtering</span></code>
-configuration property. To disable dynamic filtering, set the configuration
-property to <code class="docutils literal notranslate"><span class="pre">false</span></code>. Alternatively, use the session property
-<code class="docutils literal notranslate"><span class="pre">enable_dynamic_filtering</span></code>.</p>
 <p>Additionally, these runtime predicates are communicated to the coordinator over the network
 so that dynamic filtering can also be performed on the coordinator during enumeration of
 table scan splits.</p>
 <p>For example, in the case of the Hive connector, dynamic filters are used
 to skip loading of partitions which don’t match the join criteria.
 This is known as <strong>dynamic partition pruning</strong>.</p>
+<p>After completing the collection of dynamic filters, the coordinator also distributes them
+to worker nodes over the network for partitioned joins. This allows push down of dynamic
+filters from partitioned joins into the table scans on the left side of that join.
+Distribution of dynamic filters from the coordinator to workers is enabled by default.
+It can be disabled by setting either the <code class="docutils literal notranslate"><span class="pre">enable-coordinator-dynamic-filters-distribution</span></code>
+configuration property, or the session property
+<code class="docutils literal notranslate"><span class="pre">enable_coordinator_dynamic_filters_distribution</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 <p>The results of dynamic filtering optimization can include the following benefits:</p>
 <ul class="simple">
 <li><p>improved overall query performance</p></li>
 <li><p>reduced network traffic between Trino and the data source</p></li>
 <li><p>reduced load on the remote data source</p></li>
 </ul>
+<p>Dynamic filtering is enabled by default. It can be disabled by setting either the
+<code class="docutils literal notranslate"><span class="pre">enable-dynamic-filtering</span></code> configuration property, or the session property
+<code class="docutils literal notranslate"><span class="pre">enable_dynamic_filtering</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 <p>Support for push down of dynamic filters is specific to each connector,
 and the relevant underlying database or storage system. The documentation for
 specific connectors with support for dynamic filtering includes further details,
@@ -716,7 +722,6 @@ of selected rows from the dimension table.</p>
 
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
 <ul class="simple">
-<li><p>Push down of dynamic filters into local table scan on worker nodes is limited to broadcast joins.</p></li>
 <li><p>Min-max dynamic filter collection is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and unorderable data types.</p></li>
 <li><p>Dynamic filtering is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> and <code class="docutils literal notranslate"><span class="pre">REAL</span></code> data types when using <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">DISTINCT</span> <span class="pre">FROM</span></code> predicate.</p></li>
 <li><p>Dynamic filtering is supported when the join key contains a cast from the build key type to the
