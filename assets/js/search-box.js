@@ -8,6 +8,9 @@ function toggleSearch() {
   searchTrigger.addEventListener('mouseover', (e) => {
     searchMenu.classList.toggle('show');
   });
+  // need to debug this
+  //var searchInput = document.querySelector('.ais-SearchBox-input');
+  //searchInput.focus();
 }
 
 function closeSearch() {
