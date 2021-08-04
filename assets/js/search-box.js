@@ -1,6 +1,6 @@
 function toggleSearch() {
   var searchTrigger = document.querySelector('#dropdownSearch');
-  var searchMenu = document.querySelector('.dropdown-menu');
+  var searchMenu = document.querySelector('#dropdownSearchDisplay');
 
   searchTrigger.addEventListener('click', (e) => {
     searchMenu.classList.toggle('show');
@@ -8,7 +8,7 @@ function toggleSearch() {
 }
 
 function closeSearch() {
-  var searchMenu = document.querySelector('.dropdown-menu');
+  var searchMenu = document.querySelector('#dropdownSearchDisplay');
   searchMenu.classList.remove('show');
 }
 
