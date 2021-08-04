@@ -5,11 +5,15 @@ function toggleSearch() {
   searchTrigger.addEventListener('click', (e) => {
     searchMenu.classList.toggle('show');
   });
+  searchTrigger.addEventListener('mouseover', (e) => {
+    searchMenu.classList.toggle('show');
+  });
 }
 
 function closeSearch() {
   var searchMenu = document.querySelector('#dropdownSearchDisplay');
   searchMenu.classList.remove('show');
+  searchMenu.style.display = 'none';
 }
 
 const searchClient = algoliasearch(
