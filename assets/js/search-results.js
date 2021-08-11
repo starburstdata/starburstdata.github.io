@@ -1,36 +1,41 @@
 function searchResults() {
-  const searchClient = algoliasearch(
-    '0X4IAR77M1', // Algolia ID
-    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
-  );
+  const resultsSearchBox = document.querySelector('#resultsSearchbox');
 
-  const hitsContainer = document.querySelector('#resultsHits');
-  const statsContainer = document.querySelector('#resultsStats');
-  const refinementContainer = document.querySelector('.filter-stats-container');
+  if (resultsSearchBox) {
+    const searchClient = algoliasearch(
+      '0X4IAR77M1', // Algolia ID
+      'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+    );
 
-  const queryParameter = new URLSearchParams(window.location.search).get('q');
+    const hitsContainer = document.querySelector('#resultsHits');
+    const statsContainer = document.querySelector('#resultsStats');
+    const refinementContainer = document.querySelector(
+      '.filter-stats-container'
+    );
 
-  const searchResults = instantsearch({
-    indexName: 'All',
-    searchClient,
-    searchFunction: function (helper) {
-      if (helper.state.query.length < 2) {
-        hitsContainer.style.display = 'none';
-        statsContainer.style.display = 'none';
-        refinementContainer.style.display = 'none';
-      } else {
-        hitsContainer.style.display = 'block';
-        statsContainer.style.display = 'flex';
-        refinementContainer.style.display = 'flex';
-        helper.search(); // trigger search
-      }
-    },
-  });
+    const queryParameter = new URLSearchParams(window.location.search).get('q');
 
-  const renderHits = (renderOptions, isFirstRender) => {
-    const { hits, widgetParams } = renderOptions;
+    const searchResults = instantsearch({
+      indexName: 'All',
+      searchClient,
+      searchFunction: function (helper) {
+        if (helper.state.query.length < 2) {
+          hitsContainer.style.display = 'none';
+          statsContainer.style.display = 'none';
+          refinementContainer.style.display = 'none';
+        } else {
+          hitsContainer.style.display = 'block';
+          statsContainer.style.display = 'flex';
+          refinementContainer.style.display = 'flex';
+          helper.search(); // trigger search
+        }
+      },
+    });
 
-    widgetParams.container.innerHTML = `
+    const renderHits = (renderOptions) => {
+      const { hits, widgetParams } = renderOptions;
+
+      widgetParams.container.innerHTML = `
       <ul class="search-hits">
         ${hits
           .map(
@@ -75,58 +80,59 @@ function searchResults() {
           .join('')}
       </ul>
     `;
-  };
+    };
 
-  const renderStats = (renderOptions, isFirstRender) => {
-    const { nbHits, query } = renderOptions;
+    const renderStats = (renderOptions) => {
+      const { nbHits } = renderOptions;
 
-    document.querySelector('#resultsStats').innerHTML = `
+      document.querySelector('#resultsStats').innerHTML = `
       <p>Found ${nbHits} results</p>`;
-  };
+    };
 
-  const customHits = instantsearch.connectors.connectHits(renderHits);
-  const customStats = instantsearch.connectors.connectStats(renderStats);
+    const customHits = instantsearch.connectors.connectHits(renderHits);
+    const customStats = instantsearch.connectors.connectStats(renderStats);
 
-  searchResults.addWidgets([
-    instantsearch.widgets.configure({
-      attributesToSnippet: ['content:50'],
-    }),
+    searchResults.addWidgets([
+      instantsearch.widgets.configure({
+        attributesToSnippet: ['content:50'],
+      }),
 
-    instantsearch.widgets.searchBox({
-      container: '#resultsSearchbox',
-      showLoadingIndicator: true,
-      showReset: true,
-      placeholder: 'Search documentation',
-    }),
+      instantsearch.widgets.searchBox({
+        container: '#resultsSearchbox',
+        showLoadingIndicator: true,
+        showReset: true,
+        placeholder: 'Search documentation',
+      }),
 
-    instantsearch.widgets.refinementList({
-      container: '#resultsRefinementList',
-      attribute: 'type',
-      showMore: true,
-      sortBy: ['name:desc', 'count:desc'],
-    }),
+      instantsearch.widgets.refinementList({
+        container: '#resultsRefinementList',
+        attribute: 'type',
+        showMore: true,
+        sortBy: ['name:desc', 'count:desc'],
+      }),
 
-    instantsearch.widgets.pagination({
-      container: '#pagination',
-    }),
+      instantsearch.widgets.pagination({
+        container: '#pagination',
+      }),
 
-    customHits({
-      container: document.querySelector('#resultsHits'),
-    }),
+      customHits({
+        container: document.querySelector('#resultsHits'),
+      }),
 
-    customStats({
-      container: document.querySelector('#resultsStats'),
-    }),
-  ]);
+      customStats({
+        container: document.querySelector('#resultsStats'),
+      }),
+    ]);
 
-  searchResults.start();
+    searchResults.start();
 
-  queryParameter &&
-    searchResults.setUiState({
-      All: {
-        query: queryParameter,
-      },
-    });
+    queryParameter &&
+      searchResults.setUiState({
+        All: {
+          query: queryParameter,
+        },
+      });
+  }
 }
 
 searchResults();

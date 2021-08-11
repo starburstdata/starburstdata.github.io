@@ -1,24 +1,3 @@
-function toggleSearch() {
-  var searchTrigger = document.querySelector('#dropdownSearch');
-  var searchMenu = document.querySelector('#dropdownSearchDisplay');
-
-  searchTrigger.addEventListener('click', (e) => {
-    searchMenu.classList.toggle('show');
-  });
-  searchTrigger.addEventListener('mouseover', (e) => {
-    searchMenu.classList.toggle('show');
-  });
-  // need to debug this
-  //var searchInput = document.querySelector('.ais-SearchBox-input');
-  //searchInput.focus();
-}
-
-function closeSearch() {
-  var searchMenu = document.querySelector('#dropdownSearchDisplay');
-  searchMenu.classList.remove('show');
-  searchMenu.style.display = 'none';
-}
-
 const searchClient = algoliasearch(
   '0X4IAR77M1', // Algolia ID
   'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia API Key
@@ -45,7 +24,7 @@ const search = instantsearch({
   },
 });
 
-const renderHits = (renderOptions, isFirstRender) => {
+const renderHits = (renderOptions) => {
   const { hits, widgetParams } = renderOptions;
 
   widgetParams.container.innerHTML = `
@@ -87,7 +66,7 @@ const renderHits = (renderOptions, isFirstRender) => {
   `;
 };
 
-const renderStats = (renderOptions, isFirstRender) => {
+const renderStats = (renderOptions) => {
   const { nbHits, query } = renderOptions;
 
   if (nbHits > 5) {
@@ -132,5 +111,3 @@ search.addWidgets([
 ]);
 
 search.start();
-toggleSearch();
-closeSearch();
