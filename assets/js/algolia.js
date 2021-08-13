@@ -15103,4 +15103,3 @@
     Fs
   );
 });
-//# sourceMappingURL=instantsearch.production.min.js.map
