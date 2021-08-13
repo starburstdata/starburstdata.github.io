@@ -356,6 +356,8 @@
         <li class="md-nav__item"><a href="#relational-database" class="md-nav__link">Relational database</a>
         </li>
         <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a>
+        </li>
+        <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a>
         </li></ul>
             </nav>
         </li>
@@ -379,7 +381,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-refresh-rules" class="md-nav__link">Cache refresh rules</a>
+        <li class="md-nav__item"><a href="#cache-refresh-rules-for-redirections" class="md-nav__link">Cache refresh rules for redirections</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#incremental-refreshes" class="md-nav__link">Incremental refreshes</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a>
         </li>
@@ -540,6 +546,8 @@
         <li class="md-nav__item"><a href="#relational-database" class="md-nav__link">Relational database</a>
         </li>
         <li class="md-nav__item"><a href="#table-scan-redirection" class="md-nav__link">Table scan redirection</a>
+        </li>
+        <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a>
         </li></ul>
             </nav>
         </li>
@@ -563,7 +571,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-refresh-rules" class="md-nav__link">Cache refresh rules</a>
+        <li class="md-nav__item"><a href="#cache-refresh-rules-for-redirections" class="md-nav__link">Cache refresh rules for redirections</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#incremental-refreshes" class="md-nav__link">Incremental refreshes</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a>
         </li>
@@ -585,7 +597,8 @@
   
 <h1 id="admin-cache-service--page-root">Cache service<a class="headerlink" href="#admin-cache-service--page-root" title="Permalink to this headline">#</a></h1>
 <p>The Starburst Enterprise platform (SEP) cache service provides the ability to configure and automate the
-management of <a class="reference internal" href="table-scan-redirection.html"><span class="doc">table scan redirections</span></a>.</p>
+management of <a class="reference internal" href="table-scan-redirection.html"><span class="doc">table scan redirections</span></a> and
+materialized views in supported connectors.</p>
 <p>The service connects to an existing SEP installation to run queries for
 copying data from the source catalog to the target catalog. The target catalog
 is regularly synchronized with the source and used as a cache.</p>
@@ -622,8 +635,9 @@ such as Java 12 or 13 are not supported – they may work, but are not tested.</
 
 
 <span id="cache-service-external-rdbms"></span><h3 id="relational-database">Relational database<a class="headerlink" href="#relational-database" title="Permalink to this headline">#</a></h3>
-<p>The cache service requires an externally managed database for storing table
-scan redirections data. The following RDBMS are supported:</p>
+<p>The cache service requires an externally managed database for storing table scan
+redirections data and materialized view definitions. The following RDBMS are
+supported:</p>
 <ul class="simple">
 <li><p>MySQL 8.0.12 or higher</p></li>
 <li><p>PostgreSQL 9.6 or higher</p></li>
@@ -632,7 +646,14 @@ scan redirections data. The following RDBMS are supported:</p>
 
 
 <h3 id="table-scan-redirection">Table scan redirection<a class="headerlink" href="#table-scan-redirection" title="Permalink to this headline">#</a></h3>
-<p>The cache service requires <a class="reference internal" href="table-scan-redirection.html"><span class="doc">configured table scan redirection</span></a> for each source catalog.</p>
+<p>The cache service requires <a class="reference internal" href="table-scan-redirection.html"><span class="doc">configured table scan redirection</span></a> for each source catalog where table scans are
+desired.</p>
+
+
+<h3 id="materialized-views">Materialized views<a class="headerlink" href="#materialized-views" title="Permalink to this headline">#</a></h3>
+<p>The cache service handles materialized view refreshes. To support this, each
+supported catalog where storage tables reside must be <a class="reference internal" href="../connector/starburst-hive.html#sb-hive-mv-catalog-config"><span class="std std-ref">configured to allow
+the creation of these tables</span></a>.</p>
 
 
 
@@ -737,13 +758,14 @@ following sections.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.user</span></code></p></td>
-<td><p>username to connect to the SEP cluster for executing queries to refresh
-the cached tables</p></td>
+<td><p>Username to connect to the SEP cluster for executing queries to refresh
+the cached tables. This user must also be able to read the source tables
+for any materialized views it refreshes.</p></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.password</span></code></p></td>
-<td><p>password to connect to the SEP cluster when password based
-authentication is enabled on the SEP cluster</p></td>
+<td><p>Password to connect to the SEP cluster when password based
+authentication is enabled on the SEP cluster.</p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.jdbc-url</span></code></p></td>
@@ -753,35 +775,39 @@ the connection. For example, use <code class="docutils literal notranslate"><spa
 for a cluster secured with TLS.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rules.file</span></code></p></td>
-<td><p>path to the JSON file containing rules for identifying source tables and
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cache-service.uri</span></code></p></td>
+<td><p>URI of the cache service, including the hostname and port number.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rules.file</span></code></p></td>
+<td><p>Path to the JSON file containing rules for identifying source tables and
 target connector for caching. It also specifies a schedule for refreshing
 cached tables.</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">rules.refresh-period</span></code></p></td>
-<td><p>Frequency at which cache rules are refreshed from the <code class="docutils literal notranslate"><span class="pre">rules.file</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">rules.refresh-period</span></code></p></td>
+<td><p>Frequency at which cache rules are refreshed from the <code class="docutils literal notranslate"><span class="pre">rules.file</span></code>.</p></td>
 <td><p>1m</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max-table-import-threads</span></code></p></td>
-<td><p>Maximum number of table import jobs that can be run in parallel</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max-table-import-threads</span></code></p></td>
+<td><p>Maximum number of table import jobs that can be run in parallel.</p></td>
 <td><p>20</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">refresh-interval</span></code></p></td>
-<td><p>Frequency at which the cache service triggers refresh of cached tables</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">refresh-interval</span></code></p></td>
+<td><p>Frequency at which the cache service triggers refresh of cached tables.</p></td>
 <td><p>2m</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">refresh-initial-delay</span></code></p></td>
-<td><p>Initial delay for startup of the refresh</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">refresh-initial-delay</span></code></p></td>
+<td><p>Initial delay for startup of the refresh.</p></td>
 <td><p>0s</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup-interval</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup-interval</span></code></p></td>
 <td><p>Frequency at which cache service triggers cleanup of expired tables in the
-cache</p></td>
+cache.</p></td>
 <td><p>5m</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup-initial-delay</span></code></p></td>
-<td><p>Initial delay for startup of the cleanup</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup-initial-delay</span></code></p></td>
+<td><p>Initial delay for startup of the cleanup.</p></td>
 <td><p>0s</p></td>
 </tr>
 </tbody>
@@ -830,9 +856,10 @@ URLs are supported</p></td>
 </tbody>
 </table>
 <p>The following optional properties allow you to configure the table import
-configuration used when running queries on SEP to populate the cached table.</p>
+configuration used when running queries on SEP to populate the cached table
+projection.</p>
 <table id="id3">
-<caption><span class="caption-text">Cache service database related configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">Cache service cached table projection import properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 32%"/>
 <col style="width: 63%"/>
@@ -998,7 +1025,7 @@ thus the above example does not actually change anything. There are four levels:
 
 
 
-<span id="cache-service-refresh-rules"></span><h2 id="cache-refresh-rules">Cache refresh rules<a class="headerlink" href="#cache-refresh-rules" title="Permalink to this headline">#</a></h2>
+<span id="cache-service-refresh-rules"></span><h2 id="cache-refresh-rules-for-redirections">Cache refresh rules for redirections<a class="headerlink" href="#cache-refresh-rules-for-redirections" title="Permalink to this headline">#</a></h2>
 <p>A JSON file, <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>, is used to define rules for which tables are cached
 by the service, the target catalog, and the schedule for refreshing them. The
 following is a sample showing the supported ways of configuring redirections.</p>
@@ -1106,10 +1133,19 @@ A rule must either specify <code class="docutils literal notranslate"><span clas
 <p>For each rule, the frequency of refreshing cached table can be defined either by
 specifying a time duration in <code class="docutils literal notranslate"><span class="pre">refreshInterval</span></code>, or by a cron expression in
 <code class="docutils literal notranslate"><span class="pre">cronExpression</span></code>.</p>
+<p>For bulk loaded cached tables, ttl is the time until the table expires. The
+service removes cached tables when they are no longer needed, such as when a
+newer redirection is present or ttl expired. The service waits for the
+<code class="docutils literal notranslate"><span class="pre">grace-period</span></code> before removing the cached table. This allows any running
+queries, which started just before the cached table is expired, to finish
+gracefully. The ttl is computed so that the service performs a complete source
+table import before the current cached table expires.</p>
+
+<span id="cache-service-incremental-refreshes"></span><h3 id="incremental-refreshes">Incremental refreshes<a class="headerlink" href="#incremental-refreshes" title="Permalink to this headline">#</a></h3>
 <p>By default, each refresh of a cached table results in all the rows from the
 specified columns of the source table getting bulk loaded into the cached table.
-When the source table is large and requires frequent refreshes, the rule can be
-configured to load data from the source table incrementally.</p>
+When the source table is large and requires frequent refreshes, the refresh can
+be configured to load data from the source table incrementally.</p>
 <p>For incrementally refreshed cached tables, an <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> must be
 specified. This column is used by the service to apply a <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span> <span class="pre">&gt;</span>
 <span class="pre">(SELECT</span> <span class="pre">max(incrementalColumn)</span> <span class="pre">FROM</span> <span class="pre">cachedTable)</span></code> filter when loading data
@@ -1137,13 +1173,6 @@ Modification of <code class="docutils literal notranslate"><span class="pre">col
 <code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>, <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>, <code class="docutils literal notranslate"><span class="pre">predicate</span></code>
 or <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> field results in the creation of a new cached table
 which is re-populated from the source table from scratch.</p>
-<p>For bulk loaded cached tables, ttl is the time until the table expires. The
-service removes cached tables when they are no longer needed, such as when a
-newer redirection is present or ttl expired. The service waits for the
-<code class="docutils literal notranslate"><span class="pre">grace-period</span></code> before removing the cached table. This allows any running
-queries, which started just before the cached table is expired, to finish
-gracefully. The ttl is computed so that the service performs a complete source
-table import before the current cached table expires.</p>
 <p>For incrementally cached tables, the cached table is not removed until the
 corresponding redirection rule is removed or modified in <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>. If the
 cached table can not be successfully refreshed according to the specified
@@ -1190,6 +1219,7 @@ change must be followed with expiring the cache with the
 <code class="docutils literal notranslate"><span class="pre">expire_redirection</span></code> command from <a class="reference internal" href="cache-service-cli.html"><span class="doc">the cache service CLI</span></a> to create a new redirection with the updated table
 definition.</p>
 </div>
+
 
 
 <span id="cache-service-type-mapping-rules"></span><h2 id="cache-type-mapping-rules">Cache type mapping rules<a class="headerlink" href="#cache-type-mapping-rules" title="Permalink to this headline">#</a></h2>
