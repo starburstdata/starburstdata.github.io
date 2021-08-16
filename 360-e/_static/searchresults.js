@@ -1,22 +1,22 @@
 document.addEventListener('DOMContentLoaded', function () {
-  var resultsContainer = document.querySelector('#search-results');
+  const resultsContainer = document.querySelector('#search-results');
 
   // Hijack Sphinx search template container and inject HTML
   if (resultsContainer) {
     resultsContainer.innerHTML = `
-    <div class="search-results-content">
-      <div id="resultsSearchbox"></div>
-      <div class="filter-stats-container">
-        <div class="filter-options">
-          <h3>Filter:</h3>
-          <div id="resultsRefinementList"></div>
+      <div class="search-results-content">
+        <div id="resultsSearchbox"></div>
+        <div class="filter-stats-container">
+          <div class="filter-options">
+            <h3>Filter:</h3>
+            <div id="resultsRefinementList"></div>
+          </div>
+          <div id="resultsStats"></div>
         </div>
-        <div id="resultsStats"></div>
+        <div id="resultsHits"></div>
+        <div id="pagination"></div>
       </div>
-      <div id="resultsHits"></div>
-      <div id="pagination"></div>
-    </div>
-  `;
+    `;
 
     function searchResults() {
       const searchClient = algoliasearch(
@@ -29,22 +29,35 @@ document.addEventListener('DOMContentLoaded', function () {
         '.filter-stats-container'
       );
 
+      const pathName = window.location.pathname;
+      const pathArray = pathName.split('/');
+      const pathSegment = pathArray[1];
+
       const searchResults = instantsearch({
-        indexName: 'All',
+        indexName: 'AllDocs',
         searchClient,
         searchFunction: function (helper) {
+          helper.state.facetFilters = [
+            [`version:${pathSegment}`, 'type: guides'],
+          ];
+          // if less than 2 character, don't trigger search and hide inner content
           if (helper.state.query.length < 2) {
             hitsContainer.style.display = 'none';
             refinementContainer.style.display = 'none';
           } else {
             hitsContainer.style.display = 'block';
             refinementContainer.style.display = 'flex';
-            helper.search(); // trigger search
+            helper.search();
           }
+        },
+        searchParameters: {
+          facetFilters: [
+            [`version:${pathSegment}`, 'type: guides'],
+          ],
         },
       });
 
-      const renderHits = (renderOptions, isFirstRender) => {
+      const renderHits = (renderOptions) => {
         const { hits, widgetParams } = renderOptions;
 
         widgetParams.container.innerHTML = `
@@ -52,9 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ${hits
           .map(
             (item) =>
-              `<a href="` +
-              item.url +
-              `"><li class="hit-item">
+              `<a href="${item.url}"><li class="hit-item">
                   <h2>
                     ${instantsearch.highlight({
                       attribute: 'title',
@@ -94,8 +105,8 @@ document.addEventListener('DOMContentLoaded', function () {
     `;
       };
 
-      const renderStats = (renderOptions, isFirstRender) => {
-        const { nbHits, query } = renderOptions;
+      const renderStats = (renderOptions) => {
+        const { nbHits } = renderOptions;
 
         document.querySelector('#resultsStats').innerHTML = `
       <p>Found ${nbHits} results</p>`;
@@ -145,12 +156,12 @@ document.addEventListener('DOMContentLoaded', function () {
       // If a query parameter was passed in the url, show results based on query
       queryParameter &&
         searchResults.setUiState({
-          All: {
+          AllDocs: {
             query: queryParameter,
           },
         });
     }
-  }
 
-  searchResults();
+    searchResults();
+  }
 });

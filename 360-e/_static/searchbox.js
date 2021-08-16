@@ -8,10 +8,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const statsContainer = document.querySelector('#stats');
   const refinementContainer = document.querySelector('#refinement-list');
 
+  const pathName = window.location.pathname;
+  const pathArray = pathName.split('/');
+  const pathSegment = pathArray[1];
+
   const search = instantsearch({
-    indexName: 'All',
+    indexName: 'AllDocs',
     searchClient,
     searchFunction: function (helper) {
+      helper.state.facetFilters = [
+        [`version:${pathSegment}`, 'type: guides'],
+      ];
+      // if less than 2 character, don't trigger search and hide inner content
       if (helper.state.query.length < 2) {
         hitsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
@@ -23,20 +31,22 @@ document.addEventListener('DOMContentLoaded', function () {
         helper.search();
       }
     },
+    searchParameters: {
+      facetFilters: [
+        [`version:${pathSegment}`, 'type: guides'],
+      ],
+    },
   });
 
-  const renderHits = (renderOptions, isFirstRender) => {
+  const renderHits = (renderOptions) => {
     const { hits, widgetParams } = renderOptions;
 
-    widgetParams.container.innerHTML = `
-    <ul class="search-hits">
+    widgetParams.container.innerHTML = `<ul class="search-hits">
       ${hits
         .map(
           (item) =>
             `<li class="hit-item">
-              <a href="` +
-            item.url +
-            `">
+              <a href="${item.url}">
                 <h2>
                   ${instantsearch.highlight({ attribute: 'title', hit: item })}
                 </h2>
@@ -66,11 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
             `
         )
         .join('')}
-    </ul>
-  `;
+    </ul>`;
   };
 
-  const renderStats = (renderOptions, isFirstRender) => {
+  const renderStats = (renderOptions) => {
     const { nbHits, query } = renderOptions;
 
     if (nbHits > 5) {
