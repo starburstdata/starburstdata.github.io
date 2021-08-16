@@ -16,9 +16,11 @@ function searchResults() {
     const queryParameter = new URLSearchParams(window.location.search).get('q');
 
     const searchResults = instantsearch({
-      indexName: 'All',
+      indexName: 'AllDocs',
       searchClient,
       searchFunction: function (helper) {
+        helper.state.facetFilters = [['version: latest', 'type: guides']];
+        // if less than 2 character, don't trigger search and hide inner content
         if (helper.state.query.length < 2) {
           hitsContainer.style.display = 'none';
           statsContainer.style.display = 'none';
@@ -29,6 +31,9 @@ function searchResults() {
           refinementContainer.style.display = 'flex';
           helper.search(); // trigger search
         }
+      },
+      searchParameters: {
+        facetFilters: [['version: latest', 'type: guides']],
       },
     });
 
@@ -128,7 +133,7 @@ function searchResults() {
 
     queryParameter &&
       searchResults.setUiState({
-        All: {
+        AllDocs: {
           query: queryParameter,
         },
       });
