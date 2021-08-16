@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (nbHits > 5) {
       document.querySelector('#stats').innerHTML = `
-      <a href='/search.html?q=${query}' class="view-more-button">View more results</a>
+      <a href='./search.html?q=${query}' class="view-more-button">View more results</a>
     `;
     } else {
       document.querySelector('#stats').innerHTML = ``;
