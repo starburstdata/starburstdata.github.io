@@ -1000,18 +1000,59 @@ following requirements:</p>
 <p>In the underlying system, each materialized view consists of a view definition
 and a storage table. The storage table name is stored as a materialized view
 property. The materialized data is stored in that storage table.</p>
-<p>Materialized views are refreshed manually with the
-<a class="reference internal" href="../sql/refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> command or automatically by the cache
-service. The automatic refresh is configured with properties set in the
-<a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">WITH clause parameters</span></a> of the
+<p>Materialized views are populated with data and refreshed manually with the
+<a class="reference internal" href="../sql/refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> command, or by the
+<a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">Automated materialized view management</span></a>. Storage configuration for the storage
+tables must be supplied with the standard Hive connector table properties in the
+<code class="docutils literal notranslate"><span class="pre">WITH</span></code> statement:</p>
+<table id="id4">
+<caption><span class="caption-text">Hive connector storage table properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 63%"/>
+<col style="width: 5%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></td>
+<td><p>File format to use in the storage. Valid values include <code class="docutils literal notranslate"><span class="pre">ORC</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PARQUET</span></code>, <code class="docutils literal notranslate"><span class="pre">CSV</span></code>, <code class="docutils literal notranslate"><span class="pre">JSON</span></code> and others. The catalog property
+<code class="docutils literal notranslate"><span class="pre">hive.storage-format</span></code> sets the default value to <code class="docutils literal notranslate"><span class="pre">ORC</span></code> and can be used
+to set a different default.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ORC</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">partitioned_by</span></code></p></td>
+<td><p>Partitioning column for the storage table.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bucketed_by</span></code></p></td>
+<td><p>Bucketing column for the storage table.  Must be used with
+<code class="docutils literal notranslate"><span class="pre">bucketed_count</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_count</span></code></p></td>
+<td><p>Number of buckets to group data into. Must be used with <code class="docutils literal notranslate"><span class="pre">bucketed_by</span></code>.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sorted_by</span></code></p></td>
+<td><p>Column to sort by to determine bucketing for row.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The automatic refresh is configured with <a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">properties set in the
+WITH clause</span></a> of the
 <a class="reference internal" href="../sql/create-materialized-view.html"><span class="doc">CREATE MATERIALIZED VIEW</span></a> statement.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement specifies the query to define the
 data for the materialized view, the refresh schedule, and other parameters used
-by the cache service.</p>
-<p>Once a materialized view is created, it is accessed as if it were a table.</p>
-<p>You can update the data in the materialized view with
-<a class="reference internal" href="../sql/refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> manually, or let the <a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">cache service
-handle the updates automatically</span></a>.</p>
+by the cache service. The query can access any available catalog and schema.</p>
+<p>Once a materialized view is created, it is accessed like a table using the name
+of the materialized view.</p>
 <p>Use the  <a class="reference internal" href="../sql/show-create-materialized-view.html"><span class="doc">SHOW CREATE MATERIALIZED VIEW</span></a> statement to view the
 complete <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement for a materialized view,
 including the properties in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause.</p>
@@ -1028,8 +1069,8 @@ catalog.</p>
 <span class="na">cache-service-uri</span><span class="o">=</span><span class="s">http://&lt;my-cache-service-hostname&gt;:8180</span>
 </pre></div>
 </div>
-<table id="id4">
-<caption><span class="caption-text">Catalog configuration properties for materialized views</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Catalog configuration properties for materialized views</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 32%"/>
 <col style="width: 63%"/>
@@ -1116,8 +1157,8 @@ it again.</p>
 <p>The connector uses the <a class="reference internal" href="../admin/cache-service.html#cache-service-config-properties"><span class="std std-ref">cache service</span></a> to
 automate the maintenance of materialized views. Configuration properties are
 specified in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause when creating a materialized view:</p>
-<table id="id5">
-<caption><span class="caption-text">Supported <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause properties for materialized creation</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Properties for automated materialized view management</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 32%"/>
 <col style="width: 63%"/>
@@ -1159,23 +1200,6 @@ you must specify a value greater than the <code class="docutils literal notransl
 in the cache service. Specifying a value less than the default results in
 error.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10.00m</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">partitioned_by</span></code></p></td>
-<td><p>Partitioning column for the storage table.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bucketed_by</span></code></p></td>
-<td><p>Bucketing column for the storage table.  Must be used with
-<code class="docutils literal notranslate"><span class="pre">bucketed_count</span></code>.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bucket_count</span></code></p></td>
-<td><p>Number of buckets to group data into. Must be used with <code class="docutils literal notranslate"><span class="pre">bucketed_by</span></code>.</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sorted_by</span></code></p></td>
-<td><p>Column to sort by to determine bucketing for row.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">incremental_column</span></code></p></td>
 <td><p>Column used during incremental refresh by the service to apply an
