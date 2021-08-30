@@ -151,9 +151,9 @@
       
           <a title="345-e LTS" href="/345-e/">345-e LTS</a>
       
-          <a title="Latest STS (359-e)" href="/359-e/">Latest STS (359-e)</a>
+          <a title="Latest STS (361-e)" href="/361-e/">Latest STS (361-e)</a>
       
-          <a title="358-e STS" href="/358-e/">358-e STS</a>
+          <a title="359-e STS" href="/359-e/">359-e STS</a>
       
     </div>
   </div>
@@ -550,6 +550,8 @@
         <li class="md-nav__item"><a href="#array-types" class="md-nav__link">Array types</a>
         </li>
         <li class="md-nav__item"><a href="#date-types" class="md-nav__link">Date types</a>
+        </li>
+        <li class="md-nav__item"><a href="#raw-json-transform" class="md-nav__link">Raw JSON transform</a>
         </li></ul>
             </nav>
         </li>
@@ -870,6 +872,8 @@
         <li class="md-nav__item"><a href="#array-types" class="md-nav__link">Array types</a>
         </li>
         <li class="md-nav__item"><a href="#date-types" class="md-nav__link">Date types</a>
+        </li>
+        <li class="md-nav__item"><a href="#raw-json-transform" class="md-nav__link">Raw JSON transform</a>
         </li></ul>
             </nav>
         </li>
@@ -1109,6 +1113,10 @@ property definition to the <code class="docutils literal notranslate"><span clas
 <span class="s1">}'</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not allowed to use <code class="docutils literal notranslate"><span class="pre">asRawJson</span></code> and <code class="docutils literal notranslate"><span class="pre">isArray</span></code> flags simultaneously for the same column.</p>
+</div>
 
 
 <h3 id="date-types">Date types<a class="headerlink" href="#date-types" title="Permalink to this headline">#</a></h3>
@@ -1117,6 +1125,79 @@ property definition to the <code class="docutils literal notranslate"><span clas
 The Elasticsearch connector supports only the default <code class="docutils literal notranslate"><span class="pre">date</span></code> type. All other
 date formats including <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html#built-in-date-formats">built-in date formats</a> and <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html#custom-date-formats">custom date formats</a> are
 not supported. Dates with the <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html#mapping-date-format">format</a> property are ignored.</p>
+
+
+<h3 id="raw-json-transform">Raw JSON transform<a class="headerlink" href="#raw-json-transform" title="Permalink to this headline">#</a></h3>
+<p>There are many occurrences where documents in Elasticsearch have more complex
+structures that are not represented in the mapping. For instance, a single
+<code class="docutils literal notranslate"><span class="pre">keyword</span></code> field can have widely different content including a single
+<code class="docutils literal notranslate"><span class="pre">keyword</span></code> value, an array, or a multidimensional <code class="docutils literal notranslate"><span class="pre">keyword</span></code> array with any
+level of nesting.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl --request PUT <span class="se">\</span>
+    --url localhost:9200/doc/_mapping <span class="se">\</span>
+    --header <span class="s1">'content-type: application/json'</span> <span class="se">\</span>
+    --data <span class="s1">'</span>
+<span class="s1">{</span>
+<span class="s1">    "properties": {</span>
+<span class="s1">        "array_string_field":{</span>
+<span class="s1">            "type": "keyword"</span>
+<span class="s1">        }</span>
+<span class="s1">    }</span>
+<span class="s1">}'</span>
+</pre></div>
+</div>
+<p>Notice for the <code class="docutils literal notranslate"><span class="pre">array_string_field</span></code> that all the following documents are legal
+for Elasticsearch. See the <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/array.html">Elasticsearch array documentation</a>
+for more details.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="nt">"array_string_field"</span><span class="p">:</span> <span class="s2">"trino"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">"array_string_field"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"trino"</span><span class="p">,</span><span class="s2">"is"</span><span class="p">,</span><span class="s2">"the"</span><span class="p">,</span><span class="s2">"besto"</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">"array_string_field"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"trino"</span><span class="p">,[</span><span class="s2">"is"</span><span class="p">,</span><span class="s2">"the"</span><span class="p">,</span><span class="s2">"besto"</span><span class="p">]]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">"array_string_field"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"trino"</span><span class="p">,[</span><span class="s2">"is"</span><span class="p">,[</span><span class="s2">"the"</span><span class="p">,</span><span class="s2">"besto"</span><span class="p">]]]</span>
+    <span class="p">}</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<p>Further, Elasticsearch supports types, such as
+<a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/dense-vector.html">dense_vector</a>,
+that are not supported in Trino. New types are constantly emerging which can
+cause parsing exceptions for users that use of these types in Elasticsearch. To
+manage all of these scenarios, you can transform fields to raw JSON by
+annotating it in a Trino-specific structure in the <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-meta-field.html">_meta</a>
+section of the index mapping. This indicates to Trino that the field, and all
+nested fields beneath, need to be cast to a <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> field that contains
+the raw JSON content. These fields can be defined by using the following command
+to add the field property definition to the <code class="docutils literal notranslate"><span class="pre">_meta.presto</span></code> property of the
+target index mapping.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl --request PUT <span class="se">\</span>
+    --url localhost:9200/doc/_mapping <span class="se">\</span>
+    --header <span class="s1">'content-type: application/json'</span> <span class="se">\</span>
+    --data <span class="s1">'</span>
+<span class="s1">{</span>
+<span class="s1">    "_meta": {</span>
+<span class="s1">        "presto":{</span>
+<span class="s1">            "array_string_field":{</span>
+<span class="s1">                "asRawJson":true</span>
+<span class="s1">            }</span>
+<span class="s1">        }</span>
+<span class="s1">    }</span>
+<span class="s1">}'</span>
+</pre></div>
+</div>
+<p>This preceding configurations causes Trino to return the <code class="docutils literal notranslate"><span class="pre">array_string_field</span></code>
+field as a <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> containing raw JSON. You can parse these fields with the
+<a class="reference internal" href="../functions/json.html"><span class="doc">built-in JSON functions</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not allowed to use <code class="docutils literal notranslate"><span class="pre">asRawJson</span></code> and <code class="docutils literal notranslate"><span class="pre">isArray</span></code> flags simultaneously for the same column.</p>
+</div>
 
 
 

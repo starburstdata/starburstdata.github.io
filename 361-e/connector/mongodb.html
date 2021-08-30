@@ -151,9 +151,9 @@
       
           <a title="345-e LTS" href="/345-e/">345-e LTS</a>
       
-          <a title="Latest STS (359-e)" href="/359-e/">Latest STS (359-e)</a>
+          <a title="Latest STS (361-e)" href="/361-e/">Latest STS (361-e)</a>
       
-          <a title="358-e STS" href="/358-e/">358-e STS</a>
+          <a title="359-e STS" href="/359-e/">359-e STS</a>
       
     </div>
   </div>
@@ -601,9 +601,17 @@
         </li>
         <li class="md-nav__item"><a href="#table-definition" class="md-nav__link">Table definition</a>
         </li>
-        <li class="md-nav__item"><a href="#objectid" class="md-nav__link">ObjectId</a>
+        <li class="md-nav__item"><a href="#objectid" class="md-nav__link">ObjectId</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#objectid-timestamp-functions" class="md-nav__link">ObjectId timestamp functions</a>
+        </li></ul>
+            </nav>
         </li>
-        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#alter-table" class="md-nav__link">ALTER TABLE</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -849,9 +857,17 @@
         </li>
         <li class="md-nav__item"><a href="#table-definition" class="md-nav__link">Table definition</a>
         </li>
-        <li class="md-nav__item"><a href="#objectid" class="md-nav__link">ObjectId</a>
+        <li class="md-nav__item"><a href="#objectid" class="md-nav__link">ObjectId</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#objectid-timestamp-functions" class="md-nav__link">ObjectId timestamp functions</a>
+        </li></ul>
+            </nav>
         </li>
-        <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#alter-table" class="md-nav__link">ALTER TABLE</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -1014,7 +1030,7 @@ A pooled connection that has exceeded its idle time will be closed and replaced 
 
 <h3 id="mongodb-socket-keep-alive"><code class="docutils literal notranslate"><span class="pre">mongodb.socket-keep-alive</span></code><a class="headerlink" href="#mongodb-socket-keep-alive" title="Permalink to this headline">#</a></h3>
 <p>This flag controls the socket keep alive feature that keeps a connection alive through firewalls.</p>
-<p>This property is optional; the default is <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<p>This property is optional; the default is <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
 
 
 <h3 id="mongodb-ssl-enabled"><code class="docutils literal notranslate"><span class="pre">mongodb.ssl.enabled</span></code><a class="headerlink" href="#mongodb-ssl-enabled" title="Permalink to this headline">#</a></h3>
@@ -1190,12 +1206,57 @@ Or drop a collection by running <code class="docutils literal notranslate"><span
 </pre></div>
 </div>
 
+<h3 id="objectid-timestamp-functions">ObjectId timestamp functions<a class="headerlink" href="#objectid-timestamp-functions" title="Permalink to this headline">#</a></h3>
+<p>The first four bytes of each <a class="reference external" href="https://docs.mongodb.com/manual/reference/method/ObjectId">ObjectId</a> represent
+an embedded timestamp of its creation time. Trino provides a couple of functions to take advantage of this MongoDB feature.</p>
+<dl class="py function">
+<dt id="objectid_timestamp">
+<code class="sig-name descname">objectid_timestamp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ObjectId</span></em><span class="sig-paren">)</span> → timestamp<a class="headerlink" href="#objectid_timestamp" title="Permalink to this definition">#</a></dt>
+<dd><p>Extracts the timestamp with time zone from a given ObjectId:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">objectid_timestamp</span><span class="p">(</span><span class="n">ObjectId</span><span class="p">(</span><span class="s1">'507f191e810c19729de860ea'</span><span class="p">));</span>
+<span class="c1">-- 2012-10-17 20:46:22.000 UTC</span>
+</pre></div>
+</div>
+</dd></dl>
+<dl class="py function">
+<dt id="timestamp_objectid">
+<code class="sig-name descname">timestamp_objectid</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">timestamp</span></em><span class="sig-paren">)</span> → ObjectId<a class="headerlink" href="#timestamp_objectid" title="Permalink to this definition">#</a></dt>
+<dd><p>Creates an ObjectId from a timestamp with time zone:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">timestamp_objectid</span><span class="p">(</span><span class="k">TIMESTAMP</span> <span class="s1">'2021-08-07 17:51:36 +00:00'</span><span class="p">);</span>
+<span class="c1">-- 61 0e c8 28 00 00 00 00 00 00 00 00</span>
+</pre></div>
+</div>
+</dd></dl>
+<p>In MongoDB, you can filter all the documents created after <code class="docutils literal notranslate"><span class="pre">2021-08-07</span> <span class="pre">17:51:36</span></code>
+with a query like this:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>db.collection.find({"_id": {"$gt": ObjectId("610ec8280000000000000000")}})
+</pre></div>
+</div>
+<p>In Trino, the same can be achieved with this query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">collection</span>
+<span class="k">WHERE</span> <span class="n">_id</span> <span class="o">&gt;</span> <span class="n">timestamp_objectid</span><span class="p">(</span><span class="k">TIMESTAMP</span> <span class="s1">'2021-08-07 17:51:36 +00:00'</span><span class="p">);</span>
+</pre></div>
+</div>
 
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">#</a></h2>
-<p>The following operations are not supported:</p>
+
+
+<span id="mongodb-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this headline">#</a></h2>
+<p>The connector provides read and write access to data and metadata in
+MongoDB. In addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a>
+statements, the connector supports the following features:</p>
 <ul class="simple">
-<li><p>Row deletion with <a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/drop-table.html"><span class="doc">DROP TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/alter-table.html"><span class="doc">ALTER TABLE</span></a></p></li>
 </ul>
+
+<h3 id="alter-table">ALTER TABLE<a class="headerlink" href="#alter-table" title="Permalink to this headline">#</a></h3>
+<p>The connector does not support <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">RENAME</span></code> operations. Other uses of
+<code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span></code> are supported.</p>
+
 
 
 

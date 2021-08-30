@@ -151,9 +151,9 @@
       
           <a title="345-e LTS" href="/345-e/">345-e LTS</a>
       
-          <a title="Latest STS (359-e)" href="/359-e/">Latest STS (359-e)</a>
+          <a title="Latest STS (361-e)" href="/361-e/">Latest STS (361-e)</a>
       
-          <a title="358-e STS" href="/358-e/">358-e STS</a>
+          <a title="359-e STS" href="/359-e/">359-e STS</a>
       
     </div>
   </div>
@@ -387,7 +387,7 @@
     <li class="md-nav__item">
     
     
-      <a href="built-in-system-access-control.html" class="md-nav__link">Built-in system access control</a>
+      <a href="built-in-system-access-control.html" class="md-nav__link">System access control</a>
       
     
     </li>
@@ -652,6 +652,7 @@ to the coordinator’s <code class="docutils literal notranslate"><span class="p
 <span class="na">http-server.https.port</span><span class="o">=</span><span class="s">8443</span>
 <span class="na">http-server.https.enabled</span><span class="o">=</span><span class="s">true</span>
 
+<span class="na">http-server.authentication.oauth2.issuer</span><span class="o">=</span><span class="s">https://authorization-server.com</span>
 <span class="na">http-server.authentication.oauth2.auth-url</span><span class="o">=</span><span class="s">https://authorization-server.com/authorize</span>
 <span class="na">http-server.authentication.oauth2.token-url</span><span class="o">=</span><span class="s">https://authorization-server.com/token</span>
 <span class="na">http-server.authentication.oauth2.jwks-url</span><span class="o">=</span><span class="s">https://authorization-server.com/.well-known/jwks.json</span>
@@ -681,6 +682,13 @@ properties need to be added:</p>
 <td><p>The type of authentication to use. Must  be set to <code class="docutils literal notranslate"><span class="pre">oauth2</span></code> to enable
 OAuth2 authentication for the Trino coordinator.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code></p></td>
+<td><p>The issuer URL of the IdP. All issued tokens must have this in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> field.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.access-token-issuer</span></code></p></td>
+<td><p>The issuer URL of the IdP for access tokens, if different. All issued access tokens must
+have this in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> field. Defaults to <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></td>
 <td><p>The authorization URL. The URL a user’s browser will be redirected to in
 order to begin the OAuth 2.0 authorization process.</p></td>
@@ -694,41 +702,45 @@ obtain an access token.</p></td>
 server. It provides Trino the set of keys containing the public key
 to verify any JSON Web Token (JWT) from the authorization server.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.userinfo-url</span></code></p></td>
+<td><p>The URL of the IdPs <code class="docutils literal notranslate"><span class="pre">/userinfo</span></code> endpoint. If supplied then this URL is used
+to validate the OAuth access token and retrieve any associated claims. This
+is required if the IdP issues opaque tokens.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code></p></td>
 <td><p>The public identifier of the Trino client.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code></p></td>
 <td><p>The secret used to authorize Trino client with the authorization server.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.audience</span></code></p></td>
-<td><p>The audience of a JSON Web Token is used as the target audience of an
-access token requested by the Trino coordinator as well as the required
-audience of an access token included in user requests to the coordinator.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.additional-audiences</span></code></p></td>
+<td><p>Additional audiences to trust in addition to the client ID which is
+always a trusted audience.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code></p></td>
 <td><p>Scopes requested by the server during the authorization challenge. See:
 <a class="reference external" href="https://tools.ietf.org/html/rfc6749#section-3.3">https://tools.ietf.org/html/rfc6749#section-3.3</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.challenge-timeout</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.challenge-timeout</span></code></p></td>
 <td><p>Maximum duration of the authorization challenge. Default is <code class="docutils literal notranslate"><span class="pre">15m</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.state-key</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.state-key</span></code></p></td>
 <td><p>A secret key used by the SHA-256
 <a class="reference external" href="https://tools.ietf.org/html/rfc2104">HMAC</a>
 algorithm to sign the state parameter in order to ensure that the
 authorization request was not forged. Default is a random string
 generated during the coordinator start.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.user-mapping.pattern</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.user-mapping.pattern</span></code></p></td>
 <td><p>Regex to match against user. If matched, the user name is replaced with
 first regex group. If not matched, authentication is denied.  Default is
 <code class="docutils literal notranslate"><span class="pre">(.*)</span></code> which allows any user name.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.user-mapping.file</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.user-mapping.file</span></code></p></td>
 <td><p>File containing rules for mapping user. See <a class="reference internal" href="user-mapping.html"><span class="doc">User mapping</span></a>
 for more information.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.principal-field</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.principal-field</span></code></p></td>
 <td><p>The field of the access token used for the Trino user principal. Defaults to <code class="docutils literal notranslate"><span class="pre">sub</span></code>. Other commonly used fields include <code class="docutils literal notranslate"><span class="pre">sAMAccountName</span></code>, <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">upn</span></code>, and <code class="docutils literal notranslate"><span class="pre">email</span></code>.</p></td>
 </tr>
 </tbody>
