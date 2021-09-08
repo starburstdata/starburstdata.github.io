@@ -381,13 +381,25 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-refresh-rules-for-redirections" class="md-nav__link">Cache refresh rules for redirections</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#table-scan-refresh-and-redirection-rules" class="md-nav__link">Table scan refresh and redirection rules</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#full-refreshes" class="md-nav__link">Full refreshes</a>
+        </li>
         <li class="md-nav__item"><a href="#incremental-refreshes" class="md-nav__link">Incremental refreshes</a>
+        </li>
+        <li class="md-nav__item"><a href="#global-properties" class="md-nav__link">Global properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#rule-specific-properties" class="md-nav__link">Rule-specific properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#importconfig-properties" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">importConfig</span></code> properties</a>
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a>
+        <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#type-mapping-behavior" class="md-nav__link">Type mapping behavior</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#running-the-cache-service" class="md-nav__link">Running the cache service</a>
         </li>
@@ -571,13 +583,25 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-refresh-rules-for-redirections" class="md-nav__link">Cache refresh rules for redirections</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#table-scan-refresh-and-redirection-rules" class="md-nav__link">Table scan refresh and redirection rules</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#full-refreshes" class="md-nav__link">Full refreshes</a>
+        </li>
         <li class="md-nav__item"><a href="#incremental-refreshes" class="md-nav__link">Incremental refreshes</a>
+        </li>
+        <li class="md-nav__item"><a href="#global-properties" class="md-nav__link">Global properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#rule-specific-properties" class="md-nav__link">Rule-specific properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#importconfig-properties" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">importConfig</span></code> properties</a>
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a>
+        <li class="md-nav__item"><a href="#cache-type-mapping-rules" class="md-nav__link">Cache type mapping rules</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#type-mapping-behavior" class="md-nav__link">Type mapping behavior</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#running-the-cache-service" class="md-nav__link">Running the cache service</a>
         </li>
@@ -735,7 +759,7 @@ with the same properties.</p>
 <p>The following is a minimal configuration for the service:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>service-database.user=alice
 service-database.password=test123
-service-database.jdbc-url=jdbc:mysql://mysql-server:13306/redirections
+service-database.jdbc-url=jdbc:mysql://mysql-server:3306/redirections
 starburst.user=bob
 starburst.jdbc-url=jdbc:trino://coordinator:8080
 rules.file=etc/rules.json
@@ -1024,200 +1048,429 @@ thus the above example does not actually change anything. There are four levels:
 
 
 
-<span id="cache-service-refresh-rules"></span><h2 id="cache-refresh-rules-for-redirections">Cache refresh rules for redirections<a class="headerlink" href="#cache-refresh-rules-for-redirections" title="Permalink to this headline">#</a></h2>
-<p>A JSON file, <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>, is used to define rules for which tables are cached
-by the service, the target catalog, and the schedule for refreshing them. The
-following is a sample showing the supported ways of configuring redirections.</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="nt">"defaultGracePeriod"</span><span class="p">:</span> <span class="s2">"42m"</span><span class="p">,</span>
-  <span class="nt">"defaultMaxImportDuration"</span><span class="p">:</span> <span class="s2">"1m"</span><span class="p">,</span>
-  <span class="nt">"defaultCacheCatalog"</span><span class="p">:</span> <span class="s2">"default_cache_catalog"</span><span class="p">,</span>
-  <span class="nt">"defaultCacheSchema"</span><span class="p">:</span> <span class="s2">"default_cache_schema"</span><span class="p">,</span>
-  <span class="nt">"defaultUnpartitionedImportConfig"</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">"usePreferredWritePartitioning"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-    <span class="nt">"preferredWritePartitioningMinNumberOfPartitions"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">"writerCount"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
-    <span class="nt">"scaleWriters"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-    <span class="nt">"writerMinSize"</span><span class="p">:</span> <span class="s2">"110MB"</span>
-  <span class="p">},</span>
-  <span class="nt">"defaultPartitionedImportConfig"</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">"usePreferredWritePartitioning"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-    <span class="nt">"preferredWritePartitioningMinNumberOfPartitions"</span><span class="p">:</span> <span class="mi">40</span><span class="p">,</span>
-    <span class="nt">"writerCount"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="nt">"scaleWriters"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-    <span class="nt">"writerMinSize"</span><span class="p">:</span> <span class="s2">"52MB"</span>
-  <span class="p">},</span>
-  <span class="nt">"rules"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"test_catalog"</span><span class="p">,</span>
-      <span class="nt">"schemaNameLike"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
-      <span class="nt">"tableNameLike"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
-      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"10m"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"test_catalog"</span><span class="p">,</span>
-      <span class="nt">"schemaNameLike"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
-      <span class="nt">"tableNameLike"</span><span class="p">:</span> <span class="s2">"bar"</span><span class="p">,</span>
-      <span class="nt">"cronExpression"</span><span class="p">:</span> <span class="s2">"* * * 2 *"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"some_catalog"</span><span class="p">,</span>
-      <span class="nt">"schemaName"</span><span class="p">:</span> <span class="s2">"xyz"</span><span class="p">,</span>
-      <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"ijk"</span><span class="p">,</span>
-      <span class="nt">"columns"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"column1"</span><span class="p">,</span>
-        <span class="s2">"column2"</span><span class="p">,</span>
-        <span class="s2">"column3"</span>
-      <span class="p">],</span>
-      <span class="nt">"partitionColumns"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"column1"</span>
-      <span class="p">],</span>
-      <span class="nt">"bucketColumns"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"column2"</span>
-      <span class="p">],</span>
-      <span class="nt">"bucketCount"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-      <span class="nt">"sortColumns"</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">"column3"</span>
-      <span class="p">],</span>
-      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"123h"</span><span class="p">,</span>
-      <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"80m"</span><span class="p">,</span>
-      <span class="nt">"maxImportDuration"</span><span class="p">:</span> <span class="s2">"67h"</span><span class="p">,</span>
-      <span class="nt">"cacheCatalog"</span><span class="p">:</span> <span class="s2">"table_catalog"</span><span class="p">,</span>
-      <span class="nt">"cacheSchema"</span><span class="p">:</span> <span class="s2">"table_schema"</span><span class="p">,</span>
-      <span class="nt">"importConfig"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">"usePreferredWritePartitioning"</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-        <span class="nt">"preferredWritePartitioningMinNumberOfPartitions"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="nt">"writerCount"</span><span class="p">:</span> <span class="mi">32</span><span class="p">,</span>
-        <span class="nt">"scaleWriters"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-        <span class="nt">"writerMinSize"</span><span class="p">:</span> <span class="s2">"100MB"</span>
-      <span class="p">},</span>
-      <span class="nt">"incrementalImportConfig"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">"usePreferredWritePartitioning"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-        <span class="nt">"preferredWritePartitioningMinNumberOfPartitions"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="nt">"writerCount"</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="nt">"scaleWriters"</span><span class="p">:</span> <span class="kc">false</span><span class="p">,</span>
-        <span class="nt">"writerMinSize"</span><span class="p">:</span> <span class="s2">"100MB"</span>
-      <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"mysql"</span><span class="p">,</span>
-      <span class="nt">"schemaName"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
-      <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"events"</span><span class="p">,</span>
-      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"2m"</span><span class="p">,</span>
-      <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"15m"</span><span class="p">,</span>
-      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_id"</span><span class="p">,</span>
-      <span class="nt">"deletePredicate"</span><span class="p">:</span> <span class="s2">"event_date &lt; date_add('day', -31, CURRENT_DATE)"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"catalogName"</span><span class="p">:</span> <span class="s2">"postgresql"</span><span class="p">,</span>
-      <span class="nt">"schemaName"</span><span class="p">:</span> <span class="s2">"foo"</span><span class="p">,</span>
-      <span class="nt">"tableName"</span><span class="p">:</span> <span class="s2">"events"</span><span class="p">,</span>
-      <span class="nt">"refreshInterval"</span><span class="p">:</span> <span class="s2">"2m"</span><span class="p">,</span>
-      <span class="nt">"gracePeriod"</span><span class="p">:</span> <span class="s2">"15m"</span><span class="p">,</span>
-      <span class="nt">"incrementalColumn"</span><span class="p">:</span> <span class="s2">"event_hour"</span><span class="p">,</span>
-      <span class="nt">"predicate"</span><span class="p">:</span> <span class="s2">"event_hour &lt; (SELECT date_add('hour', -1, latest_event_hour) FROM (SELECT max(event_hour) AS latest_event_hour FROM postgresql.foo.events))"</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>Each rule in the <code class="docutils literal notranslate"><span class="pre">rules</span></code> array defines what is cached, where the cached table
-is located and a schedule for automated refresh. The source catalog is defined
-within each rule using <code class="docutils literal notranslate"><span class="pre">catalogName</span></code>. A specific source table can be defined
-by explicitly providing <code class="docutils literal notranslate"><span class="pre">schemaName</span></code> and <code class="docutils literal notranslate"><span class="pre">tableName</span></code>.
-<code class="docutils literal notranslate"><span class="pre">tableName</span></code> can point at either table or view. One rule can match
-multiple source tables using <code class="docutils literal notranslate"><span class="pre">schemaNameLike</span></code> and <code class="docutils literal notranslate"><span class="pre">tableNameLike</span></code> patterns.
-A rule must either specify <code class="docutils literal notranslate"><span class="pre">schemaName</span></code> and <code class="docutils literal notranslate"><span class="pre">tableName</span></code> or
-<code class="docutils literal notranslate"><span class="pre">schemaNameLike</span></code> and <code class="docutils literal notranslate"><span class="pre">tableNameLike</span></code>.</p>
-<p>For each rule, the frequency of refreshing cached table can be defined either by
-specifying a time duration in <code class="docutils literal notranslate"><span class="pre">refreshInterval</span></code>, or by a cron expression in
-<code class="docutils literal notranslate"><span class="pre">cronExpression</span></code>.</p>
-<p>For bulk loaded cached tables, ttl is the time until the table expires. The
-service removes cached tables when they are no longer needed, such as when a
-newer redirection is present or ttl expired. The service waits for the
-<code class="docutils literal notranslate"><span class="pre">grace-period</span></code> before removing the cached table. This allows any running
-queries, which started just before the cached table is expired, to finish
-gracefully. The ttl is computed so that the service performs a complete source
-table import before the current cached table expires.</p>
-
-<span id="cache-service-incremental-refreshes"></span><h3 id="incremental-refreshes">Incremental refreshes<a class="headerlink" href="#incremental-refreshes" title="Permalink to this headline">#</a></h3>
-<p>By default, each refresh of a cached table results in all the rows from the
-specified columns of the source table getting bulk loaded into the cached table.
-When the source table is large and requires frequent refreshes, the refresh can
-be configured to load data from the source table incrementally.</p>
-<p>For incrementally refreshed cached tables, an <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> must be
-specified. This column is used by the service to apply a <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span> <span class="pre">&gt;</span>
-<span class="pre">(SELECT</span> <span class="pre">max(incrementalColumn)</span> <span class="pre">FROM</span> <span class="pre">cachedTable)</span></code> filter when loading data
-incrementally from the source table. This facilitates loading only newer data
-from the source table instead of the entire table in each refresh iteration.</p>
-<p>Depending on the properties of the source table, incremental refresh can be
-setup in one of two ways shown in the example <code class="docutils literal notranslate"><span class="pre">rules.json</span></code> above:</p>
-<ol class="arabic simple">
-<li><p>Use a strictly incrementing column from the source table to detect new rows.
-The service depends on the property of strictly increasing values to
-copy only the rows from source table where the value of <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>
-is greater than the values already present in the cached table.
-Modifications or deletions of existing rows are ignored.</p></li>
-<li><p>Use a monotonically incrementing column from the source table in combination
-with a configured <code class="docutils literal notranslate"><span class="pre">predicate</span></code>. Fact tables often contain time/date based
-columns which have the property of monotonically increasing, but not strictly
-increasing values. The <code class="docutils literal notranslate"><span class="pre">predicate</span></code> field can be used to specify a filter
-condition that delays loading the latest data which could still be modified
-(e.g. new rows added or existing rows changed) in the source table. This
-filter is applied in addition to the filter applied on <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>
-by the service to avoid loading the same data again.</p></li>
-</ol>
-<p>The initial refresh for an incrementally cached table is a bulk load.
-Modification of <code class="docutils literal notranslate"><span class="pre">columns</span></code>, <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code>,
-<code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>, <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code>, <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code>, <code class="docutils literal notranslate"><span class="pre">predicate</span></code>
-or <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> field results in the creation of a new cached table
-which is re-populated from the source table from scratch.</p>
-<p>For incrementally cached tables, the cached table is not removed until the
-corresponding redirection rule is removed or modified in <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>. If the
-cached table can not be successfully refreshed according to the specified
-refresh frequency, it is not used for table scan redirection so that queries on
-stale data are avoided.</p>
-<p>The redirection rule for an incrementally cached table can also optionally
-specify a <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> to clean up old data from the cached table. The
-<code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> is used to run a <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span> <span class="pre">cachedTable</span> <span class="pre">WHERE</span>
-<span class="pre">&lt;deletePredicate&gt;</span></code> query at every <code class="docutils literal notranslate"><span class="pre">cleanup-interval</span></code>. The connector used to
-store the cached table must support the <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span></code> statement configured
-through <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code>.</p>
-<p>The grace period can be specified for all cached tables using
-<code class="docutils literal notranslate"><span class="pre">defaultGracePeriod</span></code>, and overridden within each rule using <code class="docutils literal notranslate"><span class="pre">gracePeriod</span></code>.</p>
-<p>The target catalog for all cached tables can be defined using
-<code class="docutils literal notranslate"><span class="pre">defaultCacheCatalog</span></code>, each rule can override it using <code class="docutils literal notranslate"><span class="pre">cacheCatalog</span></code>.</p>
-<p>The target schema for all cached tables can be defined using
-<code class="docutils literal notranslate"><span class="pre">defaultCacheSchema</span></code>, each rule can override it using <code class="docutils literal notranslate"><span class="pre">cacheSchema</span></code>.</p>
-<p>Max import duration is the maximum allowed execution time for a query used to
-populate the cached table. It can be defined globally using
-<code class="docutils literal notranslate"><span class="pre">defaultMaxImportDuration</span></code>, or for each rule using <code class="docutils literal notranslate"><span class="pre">maxImportDuration</span></code>. It
-must be smaller than the refresh interval and greater than or equal to 1m.
-This field is compulsory when <code class="docutils literal notranslate"><span class="pre">cronExpression</span></code> is used to define a schedule
-for refresh of cached tables.</p>
-<p>Each rule can optionally define partitioning for the target table by providing
-a comma separated list of column names in <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>.
-Similarly, bucketing and sorting can also be defined using <code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code>
-and <code class="docutils literal notranslate"><span class="pre">sortColumns</span></code> respectively. <code class="docutils literal notranslate"><span class="pre">bucketCount</span></code> must be provided when
-<code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code> are provided. Table bucketing must be provided when
-<code class="docutils literal notranslate"><span class="pre">sortColumns</span></code> are provided.</p>
-<p>The default import configuration for partitioned and non-partitioned cached
-tables can be specified in the <code class="docutils literal notranslate"><span class="pre">defaultUnpartitionedImportConfig</span></code> and
-<code class="docutils literal notranslate"><span class="pre">defaultPartitionedImportConfig</span></code> fields. Each rule can optionally specify an
-<code class="docutils literal notranslate"><span class="pre">importConfig</span></code>. It overrides the default import config when loading the cached
-tables defined by the rule. The rule can also include an
-<code class="docutils literal notranslate"><span class="pre">incrementalImportConfig</span></code> which applies for incremental imports.</p>
+<span id="cache-service-refresh-rules"></span><h2 id="table-scan-refresh-and-redirection-rules">Table scan refresh and redirection rules<a class="headerlink" href="#table-scan-refresh-and-redirection-rules" title="Permalink to this headline">#</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The definition of the source table or view must remain compatible with it’s
-corresponding redirection rule definition for incrementally cached tables. Any
-table and columns changes need be followed with an update of the relevant
-names to the caching rules. This includes rules that do not specify columns,
-if any columns are added, removed or renamed in the source table. Such a
-change must be followed with expiring the cache with the
-<code class="docutils literal notranslate"><span class="pre">expire_redirection</span></code> command from <a class="reference internal" href="cache-service-cli.html"><span class="doc">the cache service CLI</span></a> to create a new redirection with the updated table
-definition.</p>
+<p>The information in the section applies to table scan redirections only.
+Materialized view management is described in our <a class="reference internal" href="../connector/starburst-hive.html#sb-hive-materialized-views"><span class="std std-ref">Hive connector
+documentation</span></a>.</p>
 </div>
+<p>A JSON file, <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>, is used to define rules to configure which tables
+are cached by the service, the catalog where the tables are accessed from, and
+the schedule for refreshing them. Cached tables can be refreshed either
+<a class="reference internal" href="#cache-service-incremental-refreshes"><span class="std std-ref">incrementally</span></a>, or as a <a class="reference internal" href="#cache-service-full-refreshes"><span class="std std-ref">full
+refresh</span></a>.</p>
+<p>There are numerous properties available for use in creating rules discussed
+in this section that apply either <a class="reference internal" href="#cache-service-global-rules"><span class="std std-ref">globally</span></a>,
+or <a class="reference internal" href="#cache-service-rule-specific-properties"><span class="std std-ref">to a specific catalog</span></a>.</p>
+<p>Catalogs can have more than one rule, but a rule can apply to only one catalog.
+A rule can apply to one or more schemas and one or more tables within the named
+catalog.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Any changes to the sources tables and their columns require updates to the
+caching rules that use them. This includes rules that do not specify columns,
+if any columns are added, removed or renamed in the source table. Such changes
+require that the cache is expired with the <code class="docutils literal notranslate"><span class="pre">expire_redirection</span></code> command from
+<a class="reference internal" href="cache-service-cli.html"><span class="doc">the cache service CLI</span></a> to create a new
+redirection with the updated table definition.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To avoid queries on stale data, if a cached table can not be successfully
+refreshed, it is not used for table scan redirection. Instead, the query
+executes directly against the source data.</p>
+</div>
+
+<span id="cache-service-full-refreshes"></span><h3 id="full-refreshes">Full refreshes<a class="headerlink" href="#full-refreshes" title="Permalink to this headline">#</a></h3>
+<p>By default, each refresh of a cached table results in all the rows from the
+specified columns of the source table getting loaded into the cached table. This
+is called a full refresh. For cached tables that are completely refreshed, the
+cached table has a TTL (time to live) computed as the sum of the effective
+maximum import duration and the duration defined by its effective grace period.
+This allows any running query that started just before the cached table is
+expired to finish gracefully. After the TTL expires, the cache service removes
+older cached tables once the newer tables is available.</p>
+
+
+<span id="cache-service-incremental-refreshes"></span><h3 id="incremental-refreshes">Incremental refreshes<a class="headerlink" href="#incremental-refreshes" title="Permalink to this headline">#</a></h3>
+<p>When the source table is large and requires frequent refreshes, the refresh can
+be configured to load data from the source table incrementally. This incremental
+refresh approach is more performant, but not suitable for all source tables and
+data modifications. Specifically modifications or deletions of of existing rows are ignored.</p>
+<p>The initial refresh for an incrementally cached table is equivalent to a full
+refresh. It is a bulk load of all the rows from the source table. For
+incrementally cached tables, the cached table is not removed until the
+corresponding redirection rule is removed or modified in <code class="docutils literal notranslate"><span class="pre">rules.json</span></code>.</p>
+<p>Depending on the properties of the source table, incremental refresh can be
+set up in one of two ways:</p>
+<ul class="simple">
+<li><p>By specifying a strictly incrementing column used to detect new rows.</p></li>
+<li><p>By specifying a monotonically increasing column from the source table in
+combination with a configured predicate expression.</p></li>
+</ul>
+<p>When using a strictly incrementing column from the source table to detect new
+rows, the cache service copies only the rows from source table where the value
+of <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> is greater than the values already present in the
+cached table.</p>
+<p>The following example demonstrates this configuration:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "catalogName": "mysqlevents",
+  "schemaName": "web",
+  "tableName": "events",
+  "refreshInterval": "2m",
+  "gracePeriod": "15m",
+  "incrementalColumn": "event_id"
+},
+</pre></div>
+</div>
+<p>Fact tables often contain columns that increase monotonically. Examples are
+integer values for IDs, and date or datetime columns using the current time of
+record creation. To use such a column for incremental refreshes, you must
+specify a predicate expression as a filter condition. This filter is applied in
+addition to the filter applied on <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> by the cache service to
+avoid duplicating data and delay data collection until all updates to it are
+presumed to be complete, as shown in the following example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "catalogName": "postgresqlevents",
+  "schemaName": "web",
+  "tableName": "events",
+  "refreshInterval": "2m",
+  "gracePeriod": "15m",
+  "incrementalColumn": "event_hour",
+  "predicate": "event_hour &lt; (SELECT date_add('hour', -1, latest_event_hour) FROM (SELECT max(event_hour) AS latest_event_hour FROM postgresql.foo.events))"
+}
+</pre></div>
+</div>
+<p>In this example, the predicate is designed to create a one hour buffer after a
+record is created during which the data is subject to updates. After that buffer
+has expired, the data is loaded and all subsequent updates are ignored.</p>
+<p>Finally, incremental refreshes can also be assigned a predicate that removes
+data that is no longer needed. In the following example, events older than 31
+days are removed:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "catalogName": "mysqlevents",
+  "schemaName": "web",
+  "tableName": "events",
+  "refreshInterval": "2m",
+  "gracePeriod": "15m",
+  "incrementalColumn": "event_id"
+  "deletePredicate": "event_date &lt; date_add('day', -31, CURRENT_DATE)"
+},
+</pre></div>
+</div>
+
+
+<span id="cache-service-global-rules"></span><h3 id="global-properties">Global properties<a class="headerlink" href="#global-properties" title="Permalink to this headline">#</a></h3>
+<p>The global properties listed in this section, when defined, are applied to all
+rules that do not have a specific value set. For instance, if a rule does not
+have a specific <code class="docutils literal notranslate"><span class="pre">gracePeriod</span></code> defined, the <code class="docutils literal notranslate"><span class="pre">defaultGracePeriod</span></code> value, if
+set, is used. Some properties have a default value that is used when the
+property does not exist in the <code class="docutils literal notranslate"><span class="pre">rules.json</span></code> file.</p>
+<table id="id6">
+<caption><span class="caption-text">Global rules properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 63%"/>
+<col style="width: 5%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>defaultGracePeriod</p></td>
+<td><p>The duration which a previous version of a cached table is retained so
+that any active queries using it may complete, once the latest import
+is available. Can be overridden within a specific rule using
+<code class="docutils literal notranslate"><span class="pre">gracePeriod</span></code>.</p></td>
+<td><p>10m</p></td>
+</tr>
+<tr class="row-odd"><td><p>defaultMaxImportDuration</p></td>
+<td><p>The maximum allowed execution time for a query used to populate a cached
+table. Can be overridden within a specific rule using
+<code class="docutils literal notranslate"><span class="pre">maxImportDuration</span></code>. Must be smaller than the refresh interval, and
+greater than or equal to 1m. Note that this field is required when using
+<code class="docutils literal notranslate"><span class="pre">cronExpression</span></code> to define a refresh schedule.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>defaultCacheCatalog</p></td>
+<td><p>The default catalog that configures the data source where the cached
+tables are stored. Can be overridden within a specific rule using <code class="docutils literal notranslate"><span class="pre">cacheCatalog</span></code>.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>defaultCacheSchema</p></td>
+<td><p>The default schema where cached tables are stored. You must ensure that
+the schema exists and that the cache service user has permissions to read
+and write to it. Can be overridden within a specific rule using
+<code class="docutils literal notranslate"><span class="pre">cacheSchema</span></code>.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>defaultUnpartitionedImportConfig</p></td>
+<td><p>A collection of import properties applied by default when writing
+unpartitioned cached tables named in the rule. Uses nested
+<a class="reference internal" href="#cache-service-import-config-settings"><span class="std std-ref">importConfig settings</span></a>
+properties.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>defaultPartitionedImportConfig</p></td>
+<td><p>A collection of import properties applied by default when writing
+partitioned cached tables named in the rule. Uses nested
+<a class="reference internal" href="#cache-service-import-config-settings"><span class="std std-ref">importConfig settings</span></a>
+properties.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>cleanup-interval</p></td>
+<td><p>Interval at which the cache service removes stale cached tables and runs
+cleanup queries for rules where a <code class="docutils literal notranslate"><span class="pre">deletePredicate</span></code> is defined.</p></td>
+<td><p>5m</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example shows these properties used in a <code class="docutils literal notranslate"><span class="pre">rules.json</span></code> file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "defaultGracePeriod": "42m",
+  "defaultMaxImportDuration": "1m",
+  "defaultCacheCatalog": "default_cache_catalog",
+  "defaultCacheSchema": "default_cache_schema",
+  "defaultUnpartitionedImportConfig": {
+    "usePreferredWritePartitioning": false,
+    "preferredWritePartitioningMinNumberOfPartitions": 1,
+    "writerCount": 128,
+    "scaleWriters": false,
+    "writerMinSize": "110MB"
+  },
+  "defaultPartitionedImportConfig": {
+    "usePreferredWritePartitioning": true,
+    "preferredWritePartitioningMinNumberOfPartitions": 40,
+    "writerCount": 256,
+    "scaleWriters": false,
+    "writerMinSize": "52MB"
+  }
+}
+</pre></div>
+</div>
+
+
+<span id="cache-service-rule-specific-properties"></span><h3 id="rule-specific-properties">Rule-specific properties<a class="headerlink" href="#rule-specific-properties" title="Permalink to this headline">#</a></h3>
+<p>The rule-specific properties listed in this section override a similar available
+global property. For instance, if a rule sets a specific <code class="docutils literal notranslate"><span class="pre">maxImportDuration</span></code>,
+the global <code class="docutils literal notranslate"><span class="pre">defaultMaxImportDuration</span></code> value is ignored.</p>
+<table id="id7">
+<caption><span class="caption-text">Rule-specific properties</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 70%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>catalogName</p></td>
+<td><p>The name of the source catalog. Required.</p></td>
+</tr>
+<tr class="row-odd"><td><p>cacheCatalog</p></td>
+<td><p>The catalog that defines the data source where the cached tables are
+stored.</p></td>
+</tr>
+<tr class="row-even"><td><p>cacheSchema</p></td>
+<td><p>The schema where the cached tables are stored. You must ensure that the
+schema exists and that the cache service user has permissions to read and
+write to it.</p></td>
+</tr>
+<tr class="row-odd"><td><p>schemaName</p></td>
+<td><p>The specific schema to use within a rule. You must specify this or
+<code class="docutils literal notranslate"><span class="pre">schemaNameLike</span></code>, but not both.</p></td>
+</tr>
+<tr class="row-even"><td><p>schemaNameLike</p></td>
+<td><p>SQL <code class="docutils literal notranslate"><span class="pre">LIKE</span></code> expression to match multiple schema names. You must specify
+this or <code class="docutils literal notranslate"><span class="pre">schemaName</span></code>, but not both.</p></td>
+</tr>
+<tr class="row-odd"><td><p>tableName</p></td>
+<td><p>The specific table to use within a rule. You must specify this or
+<code class="docutils literal notranslate"><span class="pre">tableNameLike</span></code>, but not both.</p></td>
+</tr>
+<tr class="row-even"><td><p>tableNameLike</p></td>
+<td><p>SQL <code class="docutils literal notranslate"><span class="pre">LIKE</span></code> expression to match multiple table names. You must specify
+this or <code class="docutils literal notranslate"><span class="pre">tableName</span></code>, but not both.</p></td>
+</tr>
+<tr class="row-odd"><td><p>refreshInterval</p></td>
+<td><p>The time duration between refreshes. Cannot be used with
+<code class="docutils literal notranslate"><span class="pre">cronExpression</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>cronExpression</p></td>
+<td><p>A <a class="reference external" href="https://en.wikipedia.org/wiki/Cron">cron expression</a> defining the
+refresh schedule. Cannot be used with <code class="docutils literal notranslate"><span class="pre">refreshInterval</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>gracePeriod</p></td>
+<td><p>The duration which a previous version of a cached table is retained so
+that any active queries using it may complete. Overrides the global
+<code class="docutils literal notranslate"><span class="pre">defaultGracePeriod</span></code> if set.</p></td>
+</tr>
+<tr class="row-even"><td><p>maxImportDuration</p></td>
+<td><p>Overrides the global <code class="docutils literal notranslate"><span class="pre">defaultMaxImportDuration</span></code> if set. Must be smaller
+than the refresh interval, and greater than or equal to 1m. Note that this
+field is required when using <code class="docutils literal notranslate"><span class="pre">cronExpression</span></code> to define a refresh
+schedule.</p></td>
+</tr>
+<tr class="row-odd"><td><p>columns</p></td>
+<td><p>Comma-separated list of columns to be imported. If not specified, all
+available columns are imported. Note that redirections can only be used
+when all columns required by a given table scan are present.</p></td>
+</tr>
+<tr class="row-even"><td><p>partitionColumns</p></td>
+<td><p>Comma-separated list of columns to use for partitioning.</p></td>
+</tr>
+<tr class="row-odd"><td><p>bucketColumns</p></td>
+<td><p>Comma-separated list specifying the columns to be bucketed. Requires the
+use of <code class="docutils literal notranslate"><span class="pre">bucketCount</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>bucketCount</p></td>
+<td><p>Defines the number of buckets for data in the specified columns.</p></td>
+</tr>
+<tr class="row-odd"><td><p>sortColumns</p></td>
+<td><p>Comma separated list specifying the columns to sort on. Requires the use
+of <code class="docutils literal notranslate"><span class="pre">bucketColumns</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>incrementalColumn</p></td>
+<td><p>Required for incremental refresh; if not specified, a full refresh is
+performed. This column is used by the service to apply a
+<code class="docutils literal notranslate"><span class="pre">incrementalColumn</span> <span class="pre">&gt;</span> <span class="pre">(SELECT</span> <span class="pre">max(incrementalColumn)</span> <span class="pre">FROM</span> <span class="pre">cachedTable)</span></code>
+filter when loading data incrementally from the source table. This
+facilitates loading only newer data from the source table instead of the
+entire table in each refresh iteration.</p></td>
+</tr>
+<tr class="row-odd"><td><p>predicate</p></td>
+<td><p>SQL expression used in conjunction with <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> to delay
+loading data until all presumed updates are complete.</p></td>
+</tr>
+<tr class="row-even"><td><p>deletePredicate</p></td>
+<td><p>Optionally specifies a predicate clause to clean up old data from the
+cached table. It is used by the cache service to run a
+<code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span> <span class="pre">cachedTable</span> <span class="pre">WHERE</span> <span class="pre">&lt;deletePredicate&gt;</span></code> query at every
+<code class="docutils literal notranslate"><span class="pre">cleanup-interval</span></code>. Available where connector used to store the cached
+table supports <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">FROM</span></code> statements.</p></td>
+</tr>
+<tr class="row-odd"><td><p>importConfig</p></td>
+<td><p>Overrides the default import config (partitioned or unpartitioned,
+depending on the use of <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>) when loading the cached
+tables. If there is no <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> specified, only importConfig
+applies. If <code class="docutils literal notranslate"><span class="pre">incrementalColumn</span></code> is specified, then importConfig
+applies for the first bulk import, then subsequent incremental imports
+use <code class="docutils literal notranslate"><span class="pre">incrementalImportConfig</span></code>. Uses the nested fields described in
+<a class="reference internal" href="#cache-service-import-config-settings"><span class="std std-ref">importConfig settings</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p>incrementalImportConfig</p></td>
+<td><p>Overrides the default import config (partitioned or unpartitioned,
+depending on the use of <code class="docutils literal notranslate"><span class="pre">partitionColumns</span></code>) when loading the cached
+tables during incremental imports. Uses the nested fields described in
+<a class="reference internal" href="#cache-service-import-config-settings"><span class="std std-ref">importConfig settings</span></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example shows rules defined for several catalogs, using a variety
+of options:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "catalogName": "maketing_campaigns",
+  "schemaNameLike": "apac",
+  "tableNameLike": "organic",
+  "refreshInterval": "60m"
+  "gracePeriod": "15m",
+  "incrementalColumn": "event_id",
+  "deletePredicate": "event_date &lt; date_add('day', -31, CURRENT_DATE)"
+},
+{
+  "catalogName": "sales",
+  "schemaNameLike": "contacts",
+  "tableNameLike": "leads",
+  "cronExpression": "* * * 2 *"
+  "gracePeriod": "15m",
+  "incrementalColumn": "event_hour",
+  "predicate": "event_hour &lt; (SELECT date_add('hour', -1, latest_event_hour) FROM (SELECT max(event_hour) AS latest_event_hour FROM postgresql.foo.events))"
+},
+{
+  "catalogName": "telemetry",
+  "schemaName": "allproducts",
+  "tableName":  "events",
+  "columns": [
+    "pingtime",
+    "avgMem",
+    "apiCalls"
+  ],
+  "partitionColumns": [
+    "pingtime"
+  ],
+  "bucketColumns": [
+    "avgMem"
+  ],
+  "bucketCount": 5,
+  "sortColumns": [
+    "apiCalls"
+  ],
+  "refreshInterval": "123h",
+  "gracePeriod": "80m",
+  "maxImportDuration": "67h",
+  "cacheCatalog": "ctp_table_catalog",
+  "cacheSchema": "ctp_table_schema",
+  "importConfig": {
+    "usePreferredWritePartitioning": true,
+    "preferredWritePartitioningMinNumberOfPartitions": 4,
+    "writerCount": 32,
+    "scaleWriters": false,
+    "writerMinSize": "100MB"
+  },
+  "incrementalImportConfig": {
+    "usePreferredWritePartitioning": false,
+    "preferredWritePartitioningMinNumberOfPartitions": 1,
+    "writerCount": 4,
+    "scaleWriters": false,
+    "writerMinSize": "100MB"
+  }
+}
+</pre></div>
+</div>
+
+
+<span id="cache-service-import-config-settings"></span><h3 id="importconfig-properties"><code class="docutils literal notranslate"><span class="pre">importConfig</span></code> properties<a class="headerlink" href="#importconfig-properties" title="Permalink to this headline">#</a></h3>
+<p>The global properties for <code class="docutils literal notranslate"><span class="pre">defaultPartitionedImportConfig</span></code> and
+<code class="docutils literal notranslate"><span class="pre">defaultUnpartitionedImportConfig</span></code>, as well as the rule-specific
+<code class="docutils literal notranslate"><span class="pre">importConfig</span></code> and <code class="docutils literal notranslate"><span class="pre">incrementalImportConfig</span></code> properties use the following
+sub-properties:</p>
+<table id="id8">
+<caption><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">importConfig</span></code> properties</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>usePreferredWritePartitioning</p></td>
+<td><p>Implements
+<a class="reference internal" href="properties-write-partitioning.html"><span class="doc">use-preferred-write-partitioning</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>preferredWritePartitioningMinNumberOfPartitions</p></td>
+<td><p>Implements
+<a class="reference internal" href="properties-write-partitioning.html"><span class="doc">preferred-write-partitioning-min-number-of-partitions</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p>writerCount</p></td>
+<td><p>Implements <a class="reference internal" href="properties-task.html"><span class="doc">task.writer-count</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>scaleWriters</p></td>
+<td><p>Implements <a class="reference internal" href="properties-writer-scaling.html"><span class="doc">scale-writers</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p>writerMinSize</p></td>
+<td><p>Implements <a class="reference internal" href="properties-writer-scaling.html"><span class="doc">writer-min-size</span></a>.</p></td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -1225,7 +1478,7 @@ definition.</p>
 <p>You can <a class="reference internal" href="#cache-service-type-mapping"><span class="std std-ref">configure the type mapping</span></a> to use
 definitions in a JSON file, <code class="docutils literal notranslate"><span class="pre">type-mapping.json</span></code>, to define type
 casting rules used when the target catalog is created or updated. The following
-is a sample showing the supported ways of configuring redirections.</p>
+examples shows the supported ways of configuring redirections.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"rules"</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">"tpch"</span><span class="p">:</span> <span class="p">{</span>
@@ -1240,38 +1493,31 @@ is a sample showing the supported ways of configuring redirections.</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Each mapping in the <code class="docutils literal notranslate"><span class="pre">rules</span></code> map refers to a different target catalog
-where the data needs to be cast to a different type. The Trino name of any type
-that is supported by the source catalog can be used as a key in the type map.
-Map values must be Trino types supported by the target catalog.</p>
+<p>Each mapping in the <code class="docutils literal notranslate"><span class="pre">rules</span></code> map refers to a different target catalog where the
+data needs to be cast to a different type. The Trino name of any type that is
+supported by the source catalog can be used as a key in the type map. Map values
+must be Trino types supported by the target catalog.</p>
 <p>Type casting is applied to regular columns, partition columns, and the column
 used for incremental update.</p>
+
+<h3 id="type-mapping-behavior">Type mapping behavior<a class="headerlink" href="#type-mapping-behavior" title="Permalink to this headline">#</a></h3>
 <p>Columns can only be cast based on their type. It is impossible to cast one
 column of a given type without casting all columns of that same type.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
 <p>There are pre-configured type mappings <code class="docutils literal notranslate"><span class="pre">CAST_TIMESTAMPS_TO_MILLISECONDS</span></code>,
-<code class="docutils literal notranslate"><span class="pre">CAST_TIMESTAMPS_TO_MICROSECONDS</span></code> and <code class="docutils literal notranslate"><span class="pre">CAST_TIMESTAMPS_TO_NANOSECONDS</span></code>
-that can only be set using cache properties, not via the JSON type mapping.
-These mappings extend the precision of all timestamp-related types, they never
+<code class="docutils literal notranslate"><span class="pre">CAST_TIMESTAMPS_TO_MICROSECONDS</span></code> and <code class="docutils literal notranslate"><span class="pre">CAST_TIMESTAMPS_TO_NANOSECONDS</span></code> that
+can only be set using cache properties, not via the JSON type mapping. These
+mappings extend the precision of all timestamp-related types, they never
 truncate data, and ignore the target catalog name.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Some mappings, like <code class="docutils literal notranslate"><span class="pre">integer</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">varchar</span></code>, can change the semantics of
-the <code class="docutils literal notranslate"><span class="pre">max()</span></code> function used for calculating the contents of an incremental
-update. For example <code class="docutils literal notranslate"><span class="pre">"-1"</span> <span class="pre">&gt;</span> <span class="pre">"7"</span></code> because string lengths are compared first,
-so in incremental update the row with <code class="docutils literal notranslate"><span class="pre">"-1"</span></code> is added even if the table
-already contains data up to <code class="docutils literal notranslate"><span class="pre">"7"</span></code>.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Using timestamp columns for Hive partitioning is strongly discouraged.
-Timestamp partitions are silently changed to <code class="docutils literal notranslate"><span class="pre">timestamp(3)</span></code> while being
-written by Hive, which can result in  loss of precision for some columns.
-Additionally, it can lead to a huge amount of partitions, which
-negatively impacts performance.</p>
-</div>
+<p>Some mappings, like <code class="docutils literal notranslate"><span class="pre">integer</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">varchar</span></code>, can change the semantics of the
+<code class="docutils literal notranslate"><span class="pre">max()</span></code> function used for calculating the contents of an incremental update.
+For example <code class="docutils literal notranslate"><span class="pre">"-1"</span> <span class="pre">&gt;</span> <span class="pre">"7"</span></code> because string lengths are compared first, so in
+incremental update the row with <code class="docutils literal notranslate"><span class="pre">"-1"</span></code> is added even if the table already
+contains data up to <code class="docutils literal notranslate"><span class="pre">"7"</span></code>.</p>
+<p>Using timestamp columns for partitioning is strongly discouraged. Timestamp
+partitions are silently changed to <code class="docutils literal notranslate"><span class="pre">timestamp(3)</span></code> while being written. This
+behavior can result in  loss of precision for some columns. Additionally, it can
+lead to a huge amount of partitions, which negatively impacts performance.</p>
+
 
 
 <span id="running-cache-service"></span><h2 id="running-the-cache-service">Running the cache service<a class="headerlink" href="#running-the-cache-service" title="Permalink to this headline">#</a></h2>
