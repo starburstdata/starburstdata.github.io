@@ -279,7 +279,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#k8s-defaults-internal-comms" class="md-nav__link">Defaults</a>
         </li>
-        <li class="md-nav__item"><a href="#using-tls-for-internal-communication" class="md-nav__link">Using TLS for internal communication</a>
+        <li class="md-nav__item"><a href="#using-tls-for-internal-communication" class="md-nav__link">Using TLS for internal communication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuring-automatic-internal-tls" class="md-nav__link">Configuring automatic internal TLS</a>
+        </li>
+        <li class="md-nav__item"><a href="#manual-tls-configuration" class="md-nav__link">Manual TLS configuration</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#non-standard-https-port-numbers" class="md-nav__link">Non-standard HTTPS port numbers</a>
         </li></ul>
@@ -610,7 +616,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#k8s-defaults-internal-comms" class="md-nav__link">Defaults</a>
         </li>
-        <li class="md-nav__item"><a href="#using-tls-for-internal-communication" class="md-nav__link">Using TLS for internal communication</a>
+        <li class="md-nav__item"><a href="#using-tls-for-internal-communication" class="md-nav__link">Using TLS for internal communication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuring-automatic-internal-tls" class="md-nav__link">Configuring automatic internal TLS</a>
+        </li>
+        <li class="md-nav__item"><a href="#manual-tls-configuration" class="md-nav__link">Manual TLS configuration</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#non-standard-https-port-numbers" class="md-nav__link">Non-standard HTTPS port numbers</a>
         </li></ul>
@@ -908,6 +920,8 @@ YAML files for customizing SEP:</p>
 
 <span class="nt">environment</span><span class="p">:</span>
 
+<span class="nt">internalTls</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+
 <span class="nt">internal</span><span class="p">:</span>
   <span class="nt">ports</span><span class="p">:</span>
     <span class="nt">http</span><span class="p">:</span>
@@ -923,6 +937,33 @@ YAML files for customizing SEP:</p>
 configuration documentation.</p>
 <p>You can optionally enable TLS for <a class="reference internal" href="../security/internal-communication.html"><span class="doc">internal communication</span></a>, if the cluster is deemed insecure, or TLS
 is otherwise required and the performance overhead is acceptable.</p>
+
+<span id="k8s-automatic-internal-tls"></span><h4 id="configuring-automatic-internal-tls">Configuring automatic internal TLS<a class="headerlink" href="#configuring-automatic-internal-tls" title="Permalink to this headline">#</a></h4>
+<p>Set <code class="docutils literal notranslate"><span class="pre">internalTls</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> to configure SEP to enable TLS for internal
+communication. Certificates are automatically generated and used. You must
+configure the <code class="docutils literal notranslate"><span class="pre">environment:</span></code> and <code class="docutils literal notranslate"><span class="pre">sharedSecret:</span></code> top level nodes, as well as
+the <code class="docutils literal notranslate"><span class="pre">internal.ports.https.port:</span></code> to enable this feature.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">production</span>
+<span class="nt">sharedSecret</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AN0Qhhw9PsZmEgEXAMPLEkIj3AJZ5/Mnyy5iRANDOMceM+SSV+APSTiSTRING</span>
+<span class="nt">internalTls</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="nt">internal</span><span class="p">:</span>
+  <span class="nt">ports</span><span class="p">:</span>
+    <span class="nt">http</span><span class="p">:</span>
+      <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8080</span>
+    <span class="nt">https</span><span class="p">:</span>
+      <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8443</span>
+</pre></div>
+</div>
+
+
+<h4 id="manual-tls-configuration">Manual TLS configuration<a class="headerlink" href="#manual-tls-configuration" title="Permalink to this headline">#</a></h4>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>We <strong>very strongly suggest</strong> that you use the <a class="reference internal" href="#k8s-automatic-internal-tls"><span class="std std-ref">automatic internal TLS</span></a> as described in the preceding section. Manual
+TLS configuration is <strong>deprecated functionality</strong>. Using and configuring TLS
+for internal communication is very complex, requiring you to implement a
+certificate manager and managing certificates within the cluster.</p>
+</div>
 <p>All cluster nodes must have a fully qualified domain name (FQDN) that matches
 the Kubernetes naming scheme. When <code class="docutils literal notranslate"><span class="pre">node.internal-address-source</span></code> is set to
 <code class="docutils literal notranslate"><span class="pre">FQDN</span></code> (in both the the <code class="docutils literal notranslate"><span class="pre">coordinator.additionalProperties:</span></code> and
@@ -932,13 +973,6 @@ must match.</p>
 <p>The TLS certificates used must have <code class="docutils literal notranslate"><span class="pre">starburst</span></code>,
 <code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc</span></code> and <code class="docutils literal notranslate"><span class="pre">*.worker.&lt;namespace&gt;.svc</span></code> in the Subject
 Alternative Name (SAN) field. Replace <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> with a real value.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>We <strong>very strongly suggest</strong> that you take other measures to secure cluster
-communications in the normal way with HTTPS, as using TLS is very complex,
-requiring you to implement a certificate manager and managing certificates
-within the cluster.</p>
-</div>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
   <span class="nt">additionalProperties</span><span class="p">:</span> <span class="p p-Indicator">|</span>
     <span class="no">node.internal-address-source=FQDN</span>
@@ -948,6 +982,7 @@ within the cluster.</p>
     <span class="no">node.internal-address-source=FQDN</span>
 </pre></div>
 </div>
+
 
 
 <span id="k8s-ex-nonstd-https"></span><h3 id="non-standard-https-port-numbers">Non-standard HTTPS port numbers<a class="headerlink" href="#non-standard-https-port-numbers" title="Permalink to this headline">#</a></h3>
@@ -2146,7 +2181,7 @@ secret set for the license file with the <code class="docutils literal notransla
 coordinator. In this example, it increases the values for use with more
 powerful servers than the default.</p></li>
 </ul>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">MyProductionCluster</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">environment</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">production</span>
 <span class="nt">sharedSecret</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">AN0Qhhw9PsZmEgEXAMPLEkIj3AJZ5/Mnyy5iRANDOMceM+SSV+APSTiSTRING</span>
 
 <span class="nt">coordinator</span><span class="p">:</span>
