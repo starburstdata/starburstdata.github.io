@@ -657,11 +657,11 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
+        </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li>
         <li class="md-nav__item"><a href="#non-transactional-insert" class="md-nav__link">Non-transactional INSERT</a>
-        </li>
-        <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
         </li></ul>
             </nav>
         </li>
@@ -819,11 +819,11 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
+        </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li>
         <li class="md-nav__item"><a href="#non-transactional-insert" class="md-nav__link">Non-transactional INSERT</a>
-        </li>
-        <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
         </li></ul>
             </nav>
         </li>
@@ -894,15 +894,27 @@ Port 1521 is the default port.</p></li>
 <code class="docutils literal notranslate"><span class="pre">oracle.properties</span></code> in <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code>. Include the following connection
 properties in the file:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=oracle
-connection-url=jdbc:oracle:thin:@example.net:1521/ORCLCDB
+// The exact format of connection-url varies by Oracle version. Refer to
+// the Oracle Database documentation for version-specific information on the
+// JDBC Thin driver.
+connection-url=jdbc:oracle:thin:@//example.net:1521/ORCLCDB
 connection-user=root
 connection-password=secret
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> defines the connection information and parameters to pass
+to the Oracle JDBC Thin driver. See the <a class="reference external" href="https://docs.oracle.com/cd/B28359_01/java.111/b31224/urls.htm#BEIDHCBA">Oracle Database JDBC driver
+documentation</a>
+for more information.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-user</span></code> and <code class="docutils literal notranslate"><span class="pre">connection-password</span></code> are typically required and
+determine the user credentials for the connection, often a service user. You can
+use <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a> to avoid actual values in the catalog
+properties files.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Oracle does not expose metadata comment via <code class="docutils literal notranslate"><span class="pre">REMARKS</span></code> column by default
-in JDBC driver. You can enable it using <code class="docutils literal notranslate"><span class="pre">oracle.remarks-reporting.enabled</span></code> config option. See <a class="reference external" href="https://docs.oracle.com/en/database/oracle/oracle-database/19/jjdbc/performance-extensions.html#GUID-96A38C6D-A288-4E0B-9F03-E711C146632B">Additional Oracle Performance Extensions</a>
+in JDBC driver. You can enable it using <code class="docutils literal notranslate"><span class="pre">oracle.remarks-reporting.enabled</span></code>
+config option. See <a class="reference external" href="https://docs.oracle.com/en/database/oracle/oracle-database/19/jjdbc/performance-extensions.html#GUID-96A38C6D-A288-4E0B-9F03-E711C146632B">Additional Oracle Performance Extensions</a>
 for more details.</p>
 </div>
 <p>By default, the Oracle connector uses connection pooling for performance
@@ -917,6 +929,14 @@ them, change the properties in the catalog configuration file:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>oracle.connection-pool.enabled=false
 </pre></div>
 </div>
+
+<h3 id="multiple-oracle-servers">Multiple Oracle servers<a class="headerlink" href="#multiple-oracle-servers" title="Permalink to this headline">#</a></h3>
+<p>If you want to connect to multiple Oracle servers, configure another instance of
+the Oracle connector as a separate catalog.</p>
+<p>To add another Oracle catalog, create a new properties file. For example, if
+you name the property file <code class="docutils literal notranslate"><span class="pre">sales.properties</span></code>, Trino creates a catalog named
+<code class="docutils literal notranslate"><span class="pre">sales</span></code>.</p>
+
 
 <h3 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Permalink to this headline">#</a></h3>
 <p>The following table describes general configuration properties for the
@@ -952,6 +972,16 @@ cached</p></td>
 not available</p></td>
 <td><p>False</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-maximum-size</span></code></p></td>
+<td><p>Maximum number of objects stored in the metadata cache</p></td>
+<td><p>10000</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">write.batch-size</span></code></p></td>
+<td><p>Maximum number of statements in a batched execution.
+Do not change this setting from the default. Non-default values may
+negatively impact performance.</p></td>
+<td><p>1000</p></td>
+</tr>
 </tbody>
 </table>
 
@@ -966,14 +996,6 @@ or the corresponding <code class="docutils literal notranslate"><span class="pre
 <p>Note that with this property enabled, data can be corrupted in rare cases where
 exceptions occur during the insert operation. With transactions disabled, no
 rollback can be performed.</p>
-
-
-<h3 id="multiple-oracle-servers">Multiple Oracle servers<a class="headerlink" href="#multiple-oracle-servers" title="Permalink to this headline">#</a></h3>
-<p>If you want to connect to multiple Oracle servers, configure another instance of
-the Oracle connector as a separate catalog.</p>
-<p>To add another Oracle catalog, create a new properties file. For example, if
-you name the property file <code class="docutils literal notranslate"><span class="pre">sales.properties</span></code>, Trino creates a catalog named
-sales.</p>
 
 
 
@@ -1218,8 +1240,8 @@ than <code class="docutils literal notranslate"><span class="pre">1582-10-15</sp
 
 
 <span id="character-mapping"></span><h3 id="mapping-character-types">Mapping character types<a class="headerlink" href="#mapping-character-types" title="Permalink to this headline">#</a></h3>
-<p>Trino’s <code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code> maps to <code class="docutils literal notranslate"><span class="pre">VARCHAR2(n</span> <span class="pre">CHAR)</span></code> if <code class="docutils literal notranslate"><span class="pre">n</span></code> is no greater than
-4000. A larger or unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> maps to <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code>.</p>
+<p>Trino’s <code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code> maps to <code class="docutils literal notranslate"><span class="pre">VARCHAR2(n</span> <span class="pre">CHAR)</span></code> if <code class="docutils literal notranslate"><span class="pre">n</span></code> is no greater
+than 4000. A larger or unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> maps to <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code>.</p>
 <p>Trino’s <code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code> maps to <code class="docutils literal notranslate"><span class="pre">CHAR(n</span> <span class="pre">CHAR)</span></code> if <code class="docutils literal notranslate"><span class="pre">n</span></code> is no greater than 2000.
 A larger <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> maps to <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code>.</p>
 <p>Using <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> to create an <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code> column from a <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> value

@@ -296,6 +296,10 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown" class="md-nav__link">Predicate pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#projection-pushdown" class="md-nav__link">Projection pushdown</a>
+        </li>
         <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
@@ -401,6 +405,10 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#optimizer-pushdown--page-root" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown" class="md-nav__link">Predicate pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#projection-pushdown" class="md-nav__link">Projection pushdown</a>
+        </li>
         <li class="md-nav__item"><a href="#aggregation-pushdown" class="md-nav__link">Aggregation pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
@@ -427,19 +435,40 @@
   
 <h1 id="optimizer-pushdown--page-root">Pushdown<a class="headerlink" href="#optimizer-pushdown--page-root" title="Permalink to this headline">#</a></h1>
 <p>Trino can push down the processing of queries, or parts of queries, into the
-connected data source. This means that a specific predicate, aggregation function,
-or other operation, is passed through to the underlying database or storage system
-for processing.</p>
+connected data source. This means that a specific predicate, aggregation
+function, or other operation, is passed through to the underlying database or
+storage system for processing.</p>
 <p>The results of this pushdown can include the following benefits:</p>
 <ul class="simple">
-<li><p>improved overall query performance</p></li>
-<li><p>reduced network traffic between Trino and the data source</p></li>
-<li><p>reduced load on the remote data source</p></li>
+<li><p>Improved overall query performance</p></li>
+<li><p>Reduced network traffic between Trino and the data source</p></li>
+<li><p>Reduced load on the remote data source</p></li>
 </ul>
+<p>These benefits often result in significant cost reduction.</p>
 <p>Support for pushdown is specific to each connector and the relevant underlying
 database or storage system.</p>
 
-<span id="id1"></span><h2 id="aggregation-pushdown">Aggregation pushdown<a class="headerlink" href="#aggregation-pushdown" title="Permalink to this headline">#</a></h2>
+<span id="id1"></span><h2 id="predicate-pushdown">Predicate pushdown<a class="headerlink" href="#predicate-pushdown" title="Permalink to this headline">#</a></h2>
+<p>Predicate pushdown optimizes row-based filtering. It uses the inferred filter,
+typically resulting from a condition in a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause to omit unnecessary
+rows. The processing is pushed down to the data source by the connector and then
+processed by the data source.</p>
+<p>If predicate pushdown for a specific clause is succesful, the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> plan
+for the query does not include a <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> operation for that
+clause.</p>
+
+
+<span id="id2"></span><h2 id="projection-pushdown">Projection pushdown<a class="headerlink" href="#projection-pushdown" title="Permalink to this headline">#</a></h2>
+<p>Projection pushdown optimizes column-based filtering. It uses the columns
+specified in the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> clause and other parts of the query to limit access
+to these columns. The processing is pushed down to the data source by the
+connector and then the data source only reads and returns the neccessary
+columns.</p>
+<p>If projection pushdown is succesful, the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> plan for the query only
+accesses the relevant columns in the <code class="docutils literal notranslate"><span class="pre">Layout</span></code> of the <code class="docutils literal notranslate"><span class="pre">TableScan</span></code> operation.</p>
+
+
+<span id="id3"></span><h2 id="aggregation-pushdown">Aggregation pushdown<a class="headerlink" href="#aggregation-pushdown" title="Permalink to this headline">#</a></h2>
 <p>Aggregation pushdown can take place provided the following conditions are satisfied:</p>
 <ul class="simple">
 <li><p>If aggregation pushdown is generally supported by the connector.</p></li>
@@ -555,7 +584,7 @@ Fragment 2 [SOURCE]
 
 
 
-<span id="id2"></span><h2 id="join-pushdown">Join pushdown<a class="headerlink" href="#join-pushdown" title="Permalink to this headline">#</a></h2>
+<span id="id4"></span><h2 id="join-pushdown">Join pushdown<a class="headerlink" href="#join-pushdown" title="Permalink to this headline">#</a></h2>
 <p>Join pushdown allows the connector to delegate the table join operation to the
 underlying data source. This can result in performance gains, and allows Trino
 to perform the remaining query processing on a smaller amount of data.</p>
@@ -563,7 +592,7 @@ to perform the remaining query processing on a smaller amount of data.</p>
 source, and therefore for each connector.</p>
 
 
-<span id="id3"></span><h2 id="limit-pushdown">Limit pushdown<a class="headerlink" href="#limit-pushdown" title="Permalink to this headline">#</a></h2>
+<span id="id5"></span><h2 id="limit-pushdown">Limit pushdown<a class="headerlink" href="#limit-pushdown" title="Permalink to this headline">#</a></h2>
 <p>A <a class="reference internal" href="../sql/select.html#limit-clause"><span class="std std-ref">LIMIT or FETCH FIRST clause</span></a> reduces the number of returned records for a statement.
 Limit pushdown enables a connector to push processing of such queries of
 unsorted record to the underlying data source.</p>

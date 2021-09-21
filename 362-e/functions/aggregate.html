@@ -763,6 +763,61 @@ This function is equivalent to <code class="docutils literal notranslate"><span 
 <dd><p>Returns the geometric mean of all input values.</p>
 </dd></dl>
 <dl class="py function">
+<dt id="listagg">
+<code class="sig-name descname">listagg</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">separator</span></em><span class="sig-paren">)</span><a class="headerlink" href="#listagg" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns the concatenated input values, separated by the <code class="docutils literal notranslate"><span class="pre">separator</span></code> string.</p>
+<p>Synopsis:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">LISTAGG</span><span class="p">(</span> <span class="n">expression</span> <span class="p">[,</span> <span class="n">separator</span><span class="p">]</span> <span class="p">[</span><span class="k">ON</span> <span class="n">OVERFLOW</span> <span class="n">overflow_behaviour</span><span class="p">])</span>
+    <span class="n">WITHIN</span> <span class="k">GROUP</span> <span class="p">(</span><span class="k">ORDER</span> <span class="k">BY</span> <span class="n">sort_item</span><span class="p">,</span> <span class="p">[...])</span>
+</pre></div>
+</div>
+<p>If <code class="docutils literal notranslate"><span class="pre">separator</span></code> is not specified, the empty string will be used as <code class="docutils literal notranslate"><span class="pre">separator</span></code>.</p>
+<p>In its simplest form the function looks like:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">listagg</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">','</span><span class="p">)</span> <span class="n">WITHIN</span> <span class="k">GROUP</span> <span class="p">(</span><span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span><span class="p">)</span> <span class="n">csv_value</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">)</span> <span class="n">t</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>and results in:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">csv_value</span>
+<span class="c1">-----------</span>
+<span class="s1">'a,b,c'</span>
+</pre></div>
+</div>
+<p>The overflow behaviour is by default to throw an error in case that the length of the output
+of the function exceeds <code class="docutils literal notranslate"><span class="pre">1048576</span></code> bytes:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">listagg</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">','</span> <span class="k">ON</span> <span class="n">OVERFLOW</span> <span class="n">ERROR</span><span class="p">)</span> <span class="n">WITHIN</span> <span class="k">GROUP</span> <span class="p">(</span><span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span><span class="p">)</span> <span class="n">csv_value</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">)</span> <span class="n">t</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>There exists also the possibility to truncate the output <code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">COUNT</span></code> or <code class="docutils literal notranslate"><span class="pre">WITHOUT</span> <span class="pre">COUNT</span></code>
+of omitted non-null values in case that the length of the output of the
+function exceeds <code class="docutils literal notranslate"><span class="pre">1048576</span></code> bytes:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">LISTAGG</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">','</span> <span class="k">ON</span> <span class="n">OVERFLOW</span> <span class="k">TRUNCATE</span> <span class="s1">'.....'</span> <span class="k">WITH</span> <span class="k">COUNT</span><span class="p">)</span> <span class="n">WITHIN</span> <span class="k">GROUP</span> <span class="p">(</span><span class="k">ORDER</span> <span class="k">BY</span> <span class="n">value</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="s1">'a'</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">)</span> <span class="n">t</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>If not specified, the truncation filler string is by default <code class="docutils literal notranslate"><span class="pre">'...'</span></code>.</p>
+<p>This aggregation function can be also used in a scenario involving grouping:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">id</span><span class="p">,</span> <span class="n">LISTAGG</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">','</span><span class="p">)</span> <span class="n">WITHIN</span> <span class="k">GROUP</span> <span class="p">(</span><span class="k">ORDER</span> <span class="k">BY</span> <span class="n">o</span><span class="p">)</span> <span class="n">csv_value</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span>
+    <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">),</span>
+    <span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">)</span>
+<span class="p">)</span> <span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">o</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">id</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">id</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>results in:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> id  | csv_value
+-----+-----------
+ 100 | a
+ 200 | b,c
+</pre></div>
+</div>
+<p>The current implementation of <code class="docutils literal notranslate"><span class="pre">LISTAGG</span></code> function does not support window frames.</p>
+</dd></dl>
+<dl class="py function">
 <dt id="max">
 <code class="sig-name descname">max</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em><span class="sig-paren">)</span> → [same as input]<a class="headerlink" href="#max" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the maximum value of all input values.</p>

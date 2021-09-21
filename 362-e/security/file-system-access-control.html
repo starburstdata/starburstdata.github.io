@@ -899,6 +899,7 @@ table, or has permissions to set session properties in the catalog.</p></li>
 <p>Each catalog rule is composed of the following fields:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role</span></code> (optional): regex to match against role names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against group names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">catalog</span></code> (optional): regex to match against catalog name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (required): string indicating whether a user has access to the catalog.
@@ -908,6 +909,8 @@ system access control plugin.</p></li>
 </ul>
 <p>In order for a rule to apply the user name must match the regular expression
 specified in <code class="docutils literal notranslate"><span class="pre">user</span></code> attribute.</p>
+<p>For role names, a rule can be applied if at least one of the currently enabled roles
+matches the <code class="docutils literal notranslate"><span class="pre">role</span></code> regular expression.</p>
 <p>For group names, a rule can be applied if at least one group name of this user
 matches the <code class="docutils literal notranslate"><span class="pre">group</span></code> regular expression.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">all</span></code> value for <code class="docutils literal notranslate"><span class="pre">allow</span></code> means these rules do not restrict access in any way,
@@ -919,15 +922,15 @@ override this behavior by adding a rule.</p>
 <p>Boolean <code class="docutils literal notranslate"><span class="pre">true</span></code> and <code class="docutils literal notranslate"><span class="pre">false</span></code> are also supported as legacy values for <code class="docutils literal notranslate"><span class="pre">allow</span></code>,
 to support backwards compatibility.  <code class="docutils literal notranslate"><span class="pre">true</span></code> maps to <code class="docutils literal notranslate"><span class="pre">all</span></code>, and <code class="docutils literal notranslate"><span class="pre">false</span></code> maps to <code class="docutils literal notranslate"><span class="pre">none</span></code>.</p>
 </div>
-<p>For example, if you want to allow only the user <code class="docutils literal notranslate"><span class="pre">admin</span></code> to access the
+<p>For example, if you want to allow only the role <code class="docutils literal notranslate"><span class="pre">admin</span></code> to access the
 <code class="docutils literal notranslate"><span class="pre">mysql</span></code> and the <code class="docutils literal notranslate"><span class="pre">system</span></code> catalog, allow users from the <code class="docutils literal notranslate"><span class="pre">finance</span></code>
-and <code class="docutils literal notranslate"><span class="pre">admin</span></code> groups access to <code class="docutils literal notranslate"><span class="pre">postgres</span></code> catalog, allow all users to
+and <code class="docutils literal notranslate"><span class="pre">human_resources</span></code> groups access to <code class="docutils literal notranslate"><span class="pre">postgres</span></code> catalog, allow all users to
 access the <code class="docutils literal notranslate"><span class="pre">hive</span></code> catalog, and deny all other access, you can use the
 following rules:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"catalogs"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
       <span class="nt">"catalog"</span><span class="p">:</span> <span class="s2">"(mysql|system)"</span><span class="p">,</span>
       <span class="nt">"allow"</span><span class="p">:</span> <span class="s2">"all"</span>
     <span class="p">},</span>
@@ -961,19 +964,20 @@ following rules:</p>
 <p>Each schema rule is composed of the following fields:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role</span></code> (optional): regex to match against role names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against group names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">catalog</span></code> (optional): regex to match against catalog name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regex to match against schema name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">owner</span></code> (required): boolean indicating whether the user is to be considered
 an owner of the schema. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></li>
 </ul>
-<p>For example, to provide ownership of all schemas to user <code class="docutils literal notranslate"><span class="pre">admin</span></code>, treat all
+<p>For example, to provide ownership of all schemas to role <code class="docutils literal notranslate"><span class="pre">admin</span></code>, treat all
 users as owners of the <code class="docutils literal notranslate"><span class="pre">default.default</span></code> schema and prevent user <code class="docutils literal notranslate"><span class="pre">guest</span></code> from
 ownership of any schema, you can use the following rules:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"schemas"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
       <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">".*"</span><span class="p">,</span>
       <span class="nt">"owner"</span><span class="p">:</span> <span class="kc">true</span>
     <span class="p">},</span>
@@ -996,6 +1000,7 @@ ownership of any schema, you can use the following rules:</p>
 <p>Each table rule is composed of the following fields:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role</span></code> (optional): regex to match against role names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against group names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">catalog</span></code> (optional): regex to match against catalog name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regex to match against schema name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
@@ -1028,7 +1033,7 @@ ownership of any schema, you can use the following rules:</p>
 </div>
 <p>The example below defines the following table access policy:</p>
 <ul class="simple">
-<li><p>User <code class="docutils literal notranslate"><span class="pre">admin</span></code> has all privileges across all tables and schemas</p></li>
+<li><p>Role <code class="docutils literal notranslate"><span class="pre">admin</span></code> has all privileges across all tables and schemas</p></li>
 <li><p>User <code class="docutils literal notranslate"><span class="pre">banned_user</span></code> has no privileges</p></li>
 <li><p>All users have <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privileges on <code class="docutils literal notranslate"><span class="pre">default.hr.employees</span></code>, but the
 table is filtered to only the row for the current user.</p></li>
@@ -1038,7 +1043,7 @@ schema, except for the <code class="docutils literal notranslate"><span class="p
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"tables"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
       <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">,</span> <span class="s2">"INSERT"</span><span class="p">,</span> <span class="s2">"DELETE"</span><span class="p">,</span> <span class="s2">"OWNERSHIP"</span><span class="p">]</span>
     <span class="p">},</span>
     <span class="p">{</span>
@@ -1052,7 +1057,7 @@ schema, except for the <code class="docutils literal notranslate"><span class="p
       <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
       <span class="nt">"filter"</span><span class="p">:</span> <span class="s2">"user = current_user"</span><span class="p">,</span>
       <span class="nt">"filter_environment"</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
+        <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"system_user"</span>
       <span class="p">}</span>
     <span class="p">},</span>
     <span class="p">{</span>
@@ -1069,7 +1074,7 @@ schema, except for the <code class="docutils literal notranslate"><span class="p
             <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"SSN"</span><span class="p">,</span>
             <span class="nt">"mask"</span><span class="p">:</span> <span class="s2">"'XXX-XX-' + substring(credit_card, -4)"</span><span class="p">,</span>
             <span class="nt">"mask_environment"</span><span class="p">:</span> <span class="p">{</span>
-              <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
+              <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"system_user"</span>
             <span class="p">}</span>
          <span class="p">}</span>
       <span class="p">]</span>
@@ -1089,6 +1094,7 @@ setting the session property is denied. System session property rules are compos
 following fields:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role</span></code> (optional): regex to match against role names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against group names. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">property</span></code> (optional): regex to match against the property name. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (required): boolean indicating if the setting the session property should be allowed.</p></li>
@@ -1099,7 +1105,7 @@ following fields:</p>
 </ul>
 <p>The example below defines the following table access policy:</p>
 <ul class="simple">
-<li><p>User <code class="docutils literal notranslate"><span class="pre">admin</span></code> can set all session property</p></li>
+<li><p>Role <code class="docutils literal notranslate"><span class="pre">admin</span></code> can set all session property</p></li>
 <li><p>User <code class="docutils literal notranslate"><span class="pre">banned_user</span></code> can not set any session properties</p></li>
 <li><p>All users can set the <code class="docutils literal notranslate"><span class="pre">resource_overcommit</span></code> system session property, and the
 <code class="docutils literal notranslate"><span class="pre">bucket_execution_enabled</span></code> session property in the <code class="docutils literal notranslate"><span class="pre">hive</span></code> catalog.</p></li>
@@ -1107,7 +1113,7 @@ following fields:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">"system_session_properties"</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+            <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
             <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">true</span>
         <span class="p">},</span>
         <span class="p">{</span>
@@ -1121,7 +1127,7 @@ following fields:</p>
     <span class="p">],</span>
     <span class="nt">"catalog_session_properties"</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+            <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
             <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">true</span>
         <span class="p">},</span>
         <span class="p">{</span>
@@ -1154,13 +1160,13 @@ of the following fields:</p>
 <p class="admonition-title">Note</p>
 <p>Users always have permission to view or kill their own queries.</p>
 </div>
-<p>For example, if you want to allow the user <code class="docutils literal notranslate"><span class="pre">admin</span></code> full query access, allow the user <code class="docutils literal notranslate"><span class="pre">alice</span></code>
+<p>For example, if you want to allow the role <code class="docutils literal notranslate"><span class="pre">admin</span></code> full query access, allow the user <code class="docutils literal notranslate"><span class="pre">alice</span></code>
 to execute and kill queries, any user to execute queries, and deny all other access, you can use
 the following rules:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"queries"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
       <span class="nt">"allow"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"execute"</span><span class="p">,</span> <span class="s2">"kill"</span><span class="p">,</span> <span class="s2">"view"</span><span class="p">]</span>
     <span class="p">},</span>
     <span class="p">{</span>
@@ -1191,27 +1197,22 @@ so impersonation is allowed.  If neither impersonation nor principal rules are
 defined, impersonation is not allowed.</p>
 <p>Each impersonation rule is composed of the following fields:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">original_user</span></code> (required): regex to match against the user requesting the impersonation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">original_user</span></code> (optional): regex to match against the user requesting the impersonation. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">original_role</span></code> (optional): regex to match against role names of the requesting impersonation. Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">new_user</span></code> (required): regex to match against the user that will be impersonated.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (optional): boolean indicating if the authentication should be allowed.</p></li>
 </ul>
-<p>The following example allows the two admins, <code class="docutils literal notranslate"><span class="pre">alice</span></code> and <code class="docutils literal notranslate"><span class="pre">bob</span></code>, to impersonate
-any user, except they may not impersonate each other.  It also allows any user to
-impersonate the <code class="docutils literal notranslate"><span class="pre">test</span></code> user:</p>
+<p>The following example allows the <code class="docutils literal notranslate"><span class="pre">admin</span></code> role, to impersonate any user, except
+for <code class="docutils literal notranslate"><span class="pre">bob</span></code>.  It also allows any user to impersonate the <code class="docutils literal notranslate"><span class="pre">test</span></code> user:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
     <span class="nt">"impersonation"</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="nt">"original_user"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span>
+            <span class="nt">"original_role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
             <span class="nt">"new_user"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">,</span>
             <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">false</span>
         <span class="p">},</span>
         <span class="p">{</span>
-            <span class="nt">"original_user"</span><span class="p">:</span> <span class="s2">"bob"</span><span class="p">,</span>
-            <span class="nt">"new_user"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span>
-            <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">false</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="nt">"original_user"</span><span class="p">:</span> <span class="s2">"alice|bob"</span><span class="p">,</span>
+            <span class="nt">"original_role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
             <span class="nt">"new_user"</span><span class="p">:</span> <span class="s2">".*"</span>
         <span class="p">},</span>
         <span class="p">{</span>
@@ -1302,13 +1303,13 @@ no rule matches, system access is denied. Each rule is composed of the following
 will grant or deny the authorization based on the value of <code class="docutils literal notranslate"><span class="pre">allow</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (required): set of access permissions granted to user. Values: <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">write</span></code></p></li>
 </ul>
-<p>For example, if you want to allow only the user <code class="docutils literal notranslate"><span class="pre">admin</span></code> to read and write
+<p>For example, if you want to allow only the role <code class="docutils literal notranslate"><span class="pre">admin</span></code> to read and write
 system information, allow <code class="docutils literal notranslate"><span class="pre">alice</span></code> to read system information, and deny all other access, you
 can use the following rules:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
   <span class="nt">"system_information"</span><span class="p">:</span> <span class="p">[</span>
     <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
       <span class="nt">"allow"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"write"</span><span class="p">]</span>
     <span class="p">},</span>
     <span class="p">{</span>
