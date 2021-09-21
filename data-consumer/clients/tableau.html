@@ -425,7 +425,7 @@
 
     <p><a href="https://www.tableau.com">Tableau</a> is a popular analytics tool with powerful
 data visualization capabilities. There are three ways to connect recent releases
-of Tableau products to recent releases of an Starburst Enterprise platform (SEP) cluster:</p>
+of Tableau products to recent releases of a Starburst Enterprise platform (SEP) cluster:</p>
 
   </div>
 <div class="row-with-logo-image-container">
@@ -437,7 +437,7 @@ of Tableau products to recent releases of an Starburst Enterprise platform (SEP)
   <li>
     <p><strong><a href="#tableau-connector-with-jdbc-driver">Tableau data connector</a></strong>: The
 recommended connection method uses a Tableau data connector file paired with
-the Starburst JDBC driver</p>
+the Starburst JDBC driver.</p>
   </li>
   <li>
     <p><strong><a href="#odbc-driver-connection">ODBC connection</a></strong>: Starburst also
@@ -484,39 +484,49 @@ version</a>.</p>
 
 <p>You can connect recent releases of Tableau Desktop to recent SEP
 clusters with a combination of a Tableau data connector file and JDBC driver.
-This method requires Tableau Desktop 2021.1 or later, and SEP
-354-e or later.</p>
+This method requires:</p>
+
+<ul>
+  <li>SEP 354-e or later</li>
+  <li>Tableau Desktop 2020.4 or later</li>
+</ul>
 
 <p>Note that a Tableau data connector is not the same as an SEP
 Connector. The Tableau data connector is a bridge between Tableau and the
-standard SEP JDBC driver that together enable read-only access
-between Tableau and one or more SEP clusters.</p>
+standard Starburst JDBC driver. The two files work together to enable
+read-only access between Tableau and one or more SEP clusters.
+The Tableau data connector is a JAR file with name similar to
+<code class="language-plaintext highlighter-rouge">StarburstEnterprise.taco</code>.</p>
 
-<p>For Tableau Desktop 2021.1 and 2021.2, the Tableau data connector for Starburst
-does not appear in the integrated Extension Gallery within Tableau. Prepare
-your Tableau installation as described here before attempting to connect to a
-SEP cluster.</p>
+<p>The procedure to install and use the Tableau data connector for
+SEP depends on your Tableau Desktop version:</p>
 
-<p>Follow these steps to configure the Tableau data connector for Starburst:</p>
+<ul>
+  <li>
+    <p>For Tableau Desktop 2021.2.0 and later, select Starburst Enterprise
+directly from the <strong>To a Server</strong> menu and follow the <a href="#standard-data-connector-procedure">standard data connector
+procedure</a>.</p>
+  </li>
+  <li>
+    <p>For Tableau Desktop 2020.4 to 2021.1, you must first download the data
+connector file yourself, as described in
+<a href="#download-data-connector">download data connector</a>.</p>
+  </li>
+</ul>
+      <h2 id="standard-data-connector-procedure">
+        
+        
+          Standard data connector procedure <a href="#standard-data-connector-procedure" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>For Tableau Desktop 2021.2.0 or later, follow these steps:</p>
 
 <ol>
   <li>
-    <p>Download the Tableau data connector file with <code class="language-plaintext highlighter-rouge">.taco</code> extension from the
-<a href="https://extensiongallery.tableau.com/connectors/274">Starburst Enterprise
-page</a> of Tableau’s
-web-based Extension Gallery, using the <strong>Download</strong> button on the upper right
-of the page. This requires logging into Tableau’s site with a free login
-name.</p>
-  </li>
-  <li>
-    <p>Move the data connector file to:</p>
-
-    <dl>
-  <dt>Windows</dt>
-  <dd>C:\Users\<i>username</i>\Documents\My Tableau Repository\Connectors</dd>
-  <dt>macOS</dt>
-  <dd>/Users/<i>username</i>/Documents/My Tableau Repository/Connectors</dd>
-</dl>
+    <p>If Tableau Desktop is open, close it and exit.</p>
   </li>
   <li>
     <p>Download the latest Starburst <a href="../../latest/installation/jdbc.html">JDBC
@@ -543,7 +553,10 @@ Starburst JDBC driver.</p>
   </li>
   <li>
     <p>In the list of server types, select <strong>Starburst Enterprise by Starburst</strong>.
-This opens a connection dialog:</p>
+This opens a <strong>Connector Details</strong> dialog that describes the data connector.</p>
+  </li>
+  <li>
+    <p>Click <strong>Install</strong>. This opens a connection dialog:</p>
 
     <p>  
   <img src="../../assets/img/general/Tableau_initial-login-screen.png" alt="Tableau Connector login dialog" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
@@ -618,7 +631,7 @@ This opens a connection dialog:</p>
   </li>
   <li>
     <p>When the connection is made, the <strong>Connections</strong> panel shows a list of the
-catalogs configured on your cluster.</p>
+catalogs (data sources) configured in your cluster.</p>
 
     <p>  
   <img src="../../assets/img/general/Tableau_connections_catalogs.png" alt="Tableau Connector list of catalogs" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
@@ -671,57 +684,86 @@ it is possible to query more than one data source with a single Tableau
 connection.</p>
 
 <p>To query multiple catalogs, select <strong>New Custom SQL</strong> in Tableau, and then
-reference the fully qualified name of any table in the cluster using the full
+reference the fully-qualified name of any table in the cluster using the full
 <code class="language-plaintext highlighter-rouge">catalog.schema.table</code> syntax.</p>
 
-<p>The follow example query accesses the three catalogs <code class="language-plaintext highlighter-rouge">s3</code>, <code class="language-plaintext highlighter-rouge">mysql</code>, and
-<code class="language-plaintext highlighter-rouge">bigquery</code>:</p>
+<p>The following example query accesses four catalogs: <code class="language-plaintext highlighter-rouge">postgresql</code>, <code class="language-plaintext highlighter-rouge">hive</code>,
+<code class="language-plaintext highlighter-rouge">mysql</code>, and <code class="language-plaintext highlighter-rouge">sqlserver</code>.</p>
 
-<p><img src="../../assets/img/general/Tableau_example-sql-join.png" alt="Tableau, let SEP do the JOINs" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="k">c</span><span class="p">.</span><span class="n">custkey</span>
+  <span class="p">,</span> <span class="k">c</span><span class="p">.</span><span class="k">state</span>
+  <span class="p">,</span> <span class="k">c</span><span class="p">.</span><span class="n">estimated_income</span>
+  <span class="p">,</span> <span class="n">cp</span><span class="p">.</span><span class="n">customer_segment</span>
+  <span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">cc_number</span>
+  <span class="p">,</span> <span class="n">pp</span><span class="p">.</span><span class="n">cc_type</span>
+  <span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">mortgage_id</span>
+  <span class="p">,</span> <span class="n">a</span><span class="p">.</span><span class="n">auto_loan_id</span>
+<span class="k">FROM</span> <span class="n">postgresql</span><span class="p">.</span><span class="n">burst_bank</span><span class="p">.</span><span class="n">customer</span> <span class="k">c</span>
+<span class="k">JOIN</span> <span class="n">hive</span><span class="p">.</span><span class="n">burst_bank</span><span class="p">.</span><span class="n">account</span> <span class="n">a</span> <span class="k">on</span> <span class="k">c</span><span class="p">.</span><span class="n">custkey</span> <span class="o">=</span> <span class="n">a</span><span class="p">.</span><span class="n">custkey</span>
+<span class="k">JOIN</span> <span class="n">mysql</span><span class="p">.</span><span class="n">burst_bank</span><span class="p">.</span><span class="n">product_profile</span> <span class="n">pp</span> <span class="k">on</span> <span class="n">a</span><span class="p">.</span><span class="n">custkey</span> <span class="o">=</span> <span class="n">pp</span><span class="p">.</span><span class="n">custkey</span>
+<span class="k">JOIN</span> <span class="n">sqlserver</span><span class="p">.</span><span class="n">burst_bank</span><span class="p">.</span><span class="n">customer_profile</span> <span class="n">cp</span> <span class="k">on</span> <span class="k">c</span><span class="p">.</span><span class="n">custkey</span> <span class="o">=</span> <span class="n">cp</span><span class="p">.</span><span class="n">custkey</span>
+<span class="k">WHERE</span> <span class="k">c</span><span class="p">.</span><span class="n">country</span> <span class="o">=</span> <span class="s1">'US'</span>
+<span class="k">AND</span> <span class="k">c</span><span class="p">.</span><span class="k">state</span> <span class="k">NOT</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'AA'</span><span class="p">,</span> <span class="s1">'AE'</span><span class="p">,</span> <span class="s1">'AP'</span><span class="p">)</span>
+</code></pre></div></div>
 
 <p>This approach is faster because all data access is managed by
-SEP, and is executed on the cluster. Tableau can also pull
-data from multiple catalogs, but Tableau pulls all data into the local machine
-and performs its joins and other operations as local analysis.</p>
-      <h2 id="odbc-driver-connection">
+SEP, and is executed on the cluster. Tableau can also join data
+directly from multiple data sources, but this creates an unnecessary workload on
+Tableau, and can negatively impact Tableau performance.</p>
+      <h2 id="download-data-connector">
         
         
-          ODBC driver connection <a href="#odbc-driver-connection" class="titleAnchor">#</a>
+          Download data connector <a href="#download-data-connector" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Contact <a href="../../support.html">Starburst Support</a> to obtain access to the
-<a href="./odbc.html">Starburst ODBC driver</a>. This
-driver is supported for clusters running any supported SEP
-release. The Presto ODBC driver provided by Tableau is not supported.</p>
-
-<div class="alert alert-info" role="alert">
-  <i class="fa fa-info-circle"></i>
-  <b>Note: </b>
-  The preferred method to connect is using the
-Tableau data connector for Starburst file and the JDBC driver described in the
-preceding section.</div>
-
-<p>Open Tableau and begin the ODBC configuration. On Tableau’s startup page, select
-<strong>Other Databases (ODBC)</strong>, and configure as follows:</p>
+<p>For Tableau Desktop 2020.4 through 2021.1, the Tableau data connector for
+Starburst Enterprise does not appear automatically in the <strong>Additional
+Connectors</strong> list in the <strong>To a Server</strong> menu. To get Starburst Enterprise to
+appear in that list, either:</p>
 
 <ul>
-  <li>Driver: Starburst Presto ODBC Driver</li>
-  <li>Username: <code class="language-plaintext highlighter-rouge">&lt;username&gt;</code></li>
-  <li>String Extras: <code class="language-plaintext highlighter-rouge">Driver=Starburst Presto ODBC
-  Driver;Catalog=&lt;catalog&gt;;Host=&lt;host&gt;;Port=&lt;portDriver&gt;;</code></li>
+  <li>
+    <p>Upgrade Tableau Desktop to version 2021.2.0 or later, or</p>
+  </li>
+  <li>
+    <p>Prepare your Tableau installation as described here before attempting to
+connect to an SEP cluster.</p>
+  </li>
 </ul>
 
-<p>The <code class="language-plaintext highlighter-rouge">String Extras</code> field supports any of the ODBC connection properties from
-the Starburst ODBC driver.</p>
+<p>Follow these steps to manually download the Tableau data connector for
+Starburst Enterprise:</p>
 
-<p>Select <strong>Sign In</strong> to establish the connection. If you are prompted for a
-password, the server has authentication enabled.</p>
+<ol>
+  <li>
+    <p>Close and exit Tableau Desktop.</p>
+  </li>
+  <li>
+    <p>From the <a href="https://extensiongallery.tableau.com/connectors/274">Starburst Enterprise
+page</a> of Tableau’s
+web-based Extension Gallery, download the Tableau data connector file whose
+name is similar to <code class="language-plaintext highlighter-rouge">StarburstEnterprise.taco</code>. Use the <strong>Download</strong> button
+on the upper right of the page. This requires logging into Tableau’s site
+with a free login.</p>
+  </li>
+  <li>
+    <p>Move the data connector file to:</p>
 
-<p>The <a href="https://help.tableau.com/current/pro/desktop/en-us/examples_otherdatabases.htm">Tableau ODBC documentation</a>
-contains further information.</p>
+    <dl>
+  <dt>Windows</dt>
+  <dd>C:\Users\<i>username</i>\Documents\My Tableau Repository\Connectors</dd>
+  <dt>macOS</dt>
+  <dd>/Users/<i>username</i>/Documents/My Tableau Repository/Connectors</dd>
+</dl>
+  </li>
+  <li>
+    <p>Proceed from here to the <a href="#standard-data-connector-procedure">standard data connector
+procedure</a>.</p>
+  </li>
+</ol>
       <h2 id="legacy-jdbc-driver-connection">
         
         
@@ -762,9 +804,9 @@ version</a>.</p>
   <dd>/Users/<i>username</i>/Library/Tableau/Drivers</dd>
 </dl>
 
-    <p>Do not store more than one JDBC driver in this directory. Delete any older
-drivers when you update to a newer version. Connections to all
-SEP-connected data sources are made through the
+    <p>Do not store more than one Starburst JDBC driver in this directory.
+Delete any older drivers when you update to a newer version. Connections to
+all SEP-connected data sources are made through the
 Starburst JDBC driver.</p>
   </li>
   <li>
@@ -831,6 +873,45 @@ connection string.</p>
   <img src="../../assets/img/general/Tableau_other-databases-dialog-catalog.png" alt="Tableau Other Databases login dialog" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
   </li>
 </ol>
+      <h2 id="odbc-driver-connection">
+        
+        
+          ODBC driver connection <a href="#odbc-driver-connection" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Contact <a href="../../support.html">Starburst Support</a> to obtain access to the
+<a href="./odbc.html">Starburst ODBC driver</a>. The Presto ODBC driver provided by Tableau
+is not supported.</p>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  Instead of connecting with ODBC, the preferred
+connection method is to use the Tableau data connector plus JDBC driver, as
+described in the preceding section, <a href="#standard-data-connector-procedure">standard data connector
+procedure</a>.</div>
+
+<p>Open Tableau and begin the ODBC configuration. On Tableau’s startup page, select
+<strong>Other Databases (ODBC)</strong>, and configure as follows:</p>
+
+<ul>
+  <li>Driver: Starburst ODBC Driver</li>
+  <li>Username: <code class="language-plaintext highlighter-rouge">&lt;username&gt;</code></li>
+  <li>String Extras: <code class="language-plaintext highlighter-rouge">Driver=Starburst ODBC
+  Driver;Catalog=&lt;catalog&gt;;Host=&lt;host&gt;;Port=&lt;portDriver&gt;;</code></li>
+</ul>
+
+<p>The <code class="language-plaintext highlighter-rouge">String Extras</code> field supports any of the ODBC connection properties from
+the Starburst ODBC driver.</p>
+
+<p>Select <strong>Sign In</strong> to establish the connection. If you are prompted for a
+password, the SEP server has authentication enabled.</p>
+
+<p>The <a href="https://help.tableau.com/current/pro/desktop/en-us/examples_otherdatabases.htm">Tableau ODBC documentation</a>
+contains further information.</p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -931,7 +1012,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#tableau">Tableau</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector-with-jdbc-driver">Tableau data connector with JDBC driver</a><ul><li><a href="#customized-jdbc-connections">Customized JDBC connections</a></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li><li><a href="#odbc-driver-connection">ODBC driver connection</a></li><li><a href="#legacy-jdbc-driver-connection">Legacy JDBC driver connection</a></li></ul></li></ul>
+          <ul><li><a href="#tableau">Tableau</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector-with-jdbc-driver">Tableau data connector with JDBC driver</a></li><li><a href="#standard-data-connector-procedure">Standard data connector procedure</a><ul><li><a href="#customized-jdbc-connections">Customized JDBC connections</a></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li><li><a href="#download-data-connector">Download data connector</a></li><li><a href="#legacy-jdbc-driver-connection">Legacy JDBC driver connection</a></li><li><a href="#odbc-driver-connection">ODBC driver connection</a></li></ul></li></ul>
 
         </div>
       </div>
