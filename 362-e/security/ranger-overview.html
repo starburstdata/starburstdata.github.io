@@ -467,7 +467,7 @@
         </li>
         <li class="md-nav__item"><a href="#configuration-properties" class="md-nav__link">Configuration properties</a>
         </li>
-        <li class="md-nav__item"><a href="#ensuring-ranger-works-with-ssl" class="md-nav__link">Ensuring Ranger works with SSL</a>
+        <li class="md-nav__item"><a href="#ensure-ranger-works-with-tls" class="md-nav__link">Ensure Ranger works with TLS</a>
         </li>
         <li class="md-nav__item"><a href="#ensuring-ranger-works-with-your-authorization-service" class="md-nav__link">Ensuring Ranger works with your authorization service</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -702,7 +702,7 @@
         </li>
         <li class="md-nav__item"><a href="#configuration-properties" class="md-nav__link">Configuration properties</a>
         </li>
-        <li class="md-nav__item"><a href="#ensuring-ranger-works-with-ssl" class="md-nav__link">Ensuring Ranger works with SSL</a>
+        <li class="md-nav__item"><a href="#ensure-ranger-works-with-tls" class="md-nav__link">Ensure Ranger works with TLS</a>
         </li>
         <li class="md-nav__item"><a href="#ensuring-ranger-works-with-your-authorization-service" class="md-nav__link">Ensuring Ranger works with your authorization service</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1121,23 +1121,49 @@ supported for Hive access control only.</p></td>
 </table>
 
 
-<h2 id="ensuring-ranger-works-with-ssl">Ensuring Ranger works with SSL<a class="headerlink" href="#ensuring-ranger-works-with-ssl" title="Permalink to this headline">#</a></h2>
-<p>If your organization implements SSL, you must ensure that Ranger is correctly
-configured for it, as connectors also use the configuration via the
-<code class="docutils literal notranslate"><span class="pre">ranger.plugin-policy-ssl-config-file</span> <span class="pre">property</span></code>. The following is a sample of
+<span id="ranger-tls"></span><h2 id="ensure-ranger-works-with-tls">Ensure Ranger works with TLS<a class="headerlink" href="#ensure-ranger-works-with-tls" title="Permalink to this headline">#</a></h2>
+<p>If your organization implements TLS for network traffic between SEP and
+Ranger, you must ensure that both are correctly configured. You must add the
+SEP certificate to a JKS keystore and configure it in the Ranger SSL
+configuration file:</p>
+<p>All catalogs accessing Ranger must define the
+<code class="docutils literal notranslate"><span class="pre">ranger.plugin-policy-ssl-config-file</span></code> property and point to the XML
+configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">ranger.plugin-policy-ssl-config-file</span><span class="o">=</span><span class="s">/etc/starburst/ranger-policymgr-ssl.xml</span>
+</pre></div>
+</div>
+<p>If Ranger and SEP use globally trusted certificates, you can use the following
 Ranger SSL configuration file:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;configuration&gt;</span>
+<span class="c">&lt;!--  The following properties are used for 2-way SSL client server validation --&gt;</span>
+  <span class="nt">&lt;property&gt;</span>
+    <span class="nt">&lt;name&gt;</span>xasecure.policymgr.clientssl.keystore<span class="nt">&lt;/name&gt;</span>
+    <span class="nt">&lt;value&gt;</span>/etc/starburst/sb-admin-keystore.jks<span class="nt">&lt;/value&gt;</span><span class="c">&lt;!--coordinator's cert goes here--&gt;</span>
+  <span class="nt">&lt;/property&gt;</span>
+  <span class="nt">&lt;property&gt;</span>
+    <span class="nt">&lt;name&gt;</span>xasecure.policymgr.clientssl.keystore.credential.file<span class="nt">&lt;/name&gt;</span>
+    <span class="nt">&lt;value&gt;</span>jceks://file/etc/starburst/sb-admin-keystore.jceks<span class="nt">&lt;/value&gt;</span><span class="c">&lt;!--coordinators jks file password store--&gt;</span>
+  <span class="nt">&lt;/property&gt;</span>
+<span class="nt">&lt;/configuration&gt;</span>
+</pre></div>
+</div>
+<p>Without globally trusted certificates, you need to add Ranger’s certificate to a
+JKS truststore and link it in the XML file:</p>
 <div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;configuration&gt;</span>
     <span class="c">&lt;!--  The following properties are used for 2-way SSL client server validation --&gt;</span>
     <span class="nt">&lt;property&gt;</span>
         <span class="nt">&lt;name&gt;</span>xasecure.policymgr.clientssl.keystore<span class="nt">&lt;/name&gt;</span>
+        <span class="c">&lt;!--This a certificate. Store the file with the coordinator certificate and private key. --&gt;</span>
         <span class="nt">&lt;value&gt;</span>/etc/hive/conf/ranger-plugin-keystore.jks<span class="nt">&lt;/value&gt;</span>
     <span class="nt">&lt;/property&gt;</span>
     <span class="nt">&lt;property&gt;</span>
         <span class="nt">&lt;name&gt;</span>xasecure.policymgr.clientssl.truststore<span class="nt">&lt;/name&gt;</span>
+        <span class="c">&lt;!--This a certificate. Store the file with the coordinator certificate and private key. --&gt;</span>
         <span class="nt">&lt;value&gt;</span>/etc/hive/conf/ranger-plugin-truststore.jks<span class="nt">&lt;/value&gt;</span>
     <span class="nt">&lt;/property&gt;</span>
     <span class="nt">&lt;property&gt;</span>
         <span class="nt">&lt;name&gt;</span>xasecure.policymgr.clientssl.keystore.credential.file<span class="nt">&lt;/name&gt;</span>
+        <span class="c">&lt;!-- This file holds the password from Starburst keystore --&gt;</span>
         <span class="nt">&lt;value&gt;</span>jceks://file/etc/ranger/hivedev/cred.jceks<span class="nt">&lt;/value&gt;</span>
     <span class="nt">&lt;/property&gt;</span>
     <span class="nt">&lt;property&gt;</span>
@@ -1147,6 +1173,11 @@ Ranger SSL configuration file:</p>
 <span class="nt">&lt;/configuration&gt;</span>
 </pre></div>
 </div>
+<p>More information about working with certificates is available in
+<a class="reference internal" href="inspect-jks.html"><span class="doc">JKS files</span></a> and <a class="reference internal" href="inspect-pem.html"><span class="doc">PEM files</span></a>. Avoid renaming
+JCEKS files after generating them, since that invalidates them.</p>
+<p>When using the SEP Helm charts, you have to <a class="reference internal" href="../k8s/ranger-configuration.html#helm-ranger-tls"><span class="std std-ref">configure the XML file and
+the access control file inline of the YAML files</span></a>.</p>
 
 
 <h2 id="ensuring-ranger-works-with-your-authorization-service">Ensuring Ranger works with your authorization service<a class="headerlink" href="#ensuring-ranger-works-with-your-authorization-service" title="Permalink to this headline">#</a></h2>
