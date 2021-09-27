@@ -369,7 +369,13 @@
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
+        <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#fine-tuning" class="md-nav__link">Fine tuning</a>
+        </li>
+        <li class="md-nav__item"><a href="#disable-and-drop-extended-statistics" class="md-nav__link">Disable and drop extended statistics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
         </li>
@@ -819,7 +825,13 @@
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
+        <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#fine-tuning" class="md-nav__link">Fine tuning</a>
+        </li>
+        <li class="md-nav__item"><a href="#disable-and-drop-extended-statistics" class="md-nav__link">Disable and drop extended statistics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
         </li>
@@ -1187,19 +1199,55 @@ following sections:</p>
 
 <span id="sb-delta-lake-table-statistics"></span><h3 id="table-statistics">Table statistics<a class="headerlink" href="#table-statistics" title="Permalink to this headline">#</a></h3>
 <p>You can use <a class="reference internal" href="../sql/analyze.html"><span class="doc">ANALYZE</span></a> statements in SEP to populate the table
-statistics in Delta Lake. The <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">cost-based optimizer</span></a>
-then uses these statistics to improve query performance.</p>
+statistics in Delta Lake. The <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">cost-based optimizer</span></a> then uses these statistics to improve
+query performance.</p>
+<p>Extended statistics enable a broader set of optimizations, including join
+reordering. It is enabled by default.</p>
 <p>Each <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> statement updates the table statistics incrementally, so only
-data changed since the last <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> is counted. The table statistics are not
-automatically updated by write operations such as <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">DELETE</span></code>. You must manually run <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> again to update the table
+the data changed since the last <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> is counted. The table statistics are
+not automatically updated by write operations such as <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>. You must manually run <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> again to update the table
 statistics.</p>
 <p>To collect statistics for a table, execute the following statement:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">table_schema</span><span class="p">.</span><span class="k">table_name</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>To gain the most benefit from cost-based optimizations, run periodic
-<code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> statements on every large table that is frequently queried.</p>
+<p>To gain the most benefit from cost-based optimizations, run periodic <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code>
+statements on every large table that is frequently queried.</p>
+
+<h4 id="fine-tuning">Fine tuning<a class="headerlink" href="#fine-tuning" title="Permalink to this headline">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">files_modified_after</span></code> property is useful if you want to run the initial
+<code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> statement on a table that wasn’t previously analyzed. You can use it
+to limit the amount of data used to generate the table statistics:</p>
+<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">my_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">files_modified_after</span> <span class="o">=</span> <span class="k">TIMESTAMP</span> <span class="s1">'2021-08-23</span>
+<span class="s1">16:43:01.321 Z'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>As a result, only files newer than the specified time stamp are used in the
+analysis.</p>
+<p>You can also specify a set or subset of columns to analyze using the <code class="docutils literal notranslate"><span class="pre">columns</span></code>
+property:</p>
+<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">my_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'nationkey'</span><span class="p">,</span> <span class="s1">'regionkey'</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>To run <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> with <code class="docutils literal notranslate"><span class="pre">columns</span></code> more than once, the next <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> must
+run on the same set or a subset of the original columns used.</p>
+<p>To broaden the set of <code class="docutils literal notranslate"><span class="pre">columns</span></code>, drop the statistics and reanalyze the table.</p>
+
+
+<h4 id="disable-and-drop-extended-statistics">Disable and drop extended statistics<a class="headerlink" href="#disable-and-drop-extended-statistics" title="Permalink to this headline">#</a></h4>
+<p>You can disable extended statistics with the catalog configuration property
+<code class="docutils literal notranslate"><span class="pre">delta.extended-statistics.enabled</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>. Alternatively, you can
+disable it for a session, with the <a class="reference internal" href="../sql/set-session.html"><span class="doc">catalog session property</span></a> <code class="docutils literal notranslate"><span class="pre">extended_statistics_enabled</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<p>If a table is changed with many delete and update operation, calling <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code>
+does not result in accurate statistics. To correct the statistics you have to
+drop the extended stats and analyze table again.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">system.drop_extended_stats</span></code> procedure in the catalog to drop the
+extended statistics for a specified table in a specified schema:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">delta_catalog</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">drop_extended_stats</span><span class="p">(</span><span class="s1">'my_schema'</span><span class="p">,</span> <span class="s1">'my_table'</span><span class="p">)</span>
+</pre></div>
+</div>
+
 
 
 <h3 id="data-layout-optimization">Data layout optimization<a class="headerlink" href="#data-layout-optimization" title="Permalink to this headline">#</a></h3>
