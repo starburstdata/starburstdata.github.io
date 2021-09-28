@@ -1741,7 +1741,7 @@ dedicated database for the current operator version.</p>
 <span class="k">LANGUAGE</span> <span class="k">C</span>
 <span class="k">NO</span> <span class="k">SQL</span>
 <span class="k">PARAMETER</span> <span class="n">STYLE</span> <span class="n">SQLTABLE</span>
-<span class="k">EXTERNAL</span> <span class="n">NAME</span> <span class="s1">'SP!/opt/starburst/libstarburst_teradata.so!F!starburst_teradata'</span><span class="p">;</span>
+<span class="k">EXTERNAL</span> <span class="n">NAME</span> <span class="s1">'SP!/opt/starburst/starburst-direct-&lt;version&gt;.so!F!starburst_teradata'</span><span class="p">;</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -1773,20 +1773,47 @@ achieved with the below in the catalog file:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>teradata.impersonation-role=table_operator_users
 </pre></div>
 </div>
-<p><strong>Updates and removal</strong></p>
-<p>You need to update the native table operator with each version change of SEP.
-It is important to remove the function before any updates:</p>
+<p><strong>Updates</strong></p>
+<p>You must only update the native table operator when required in the release
+notes. The requirement can be in the specific release you are installing, or in
+a release that you are skipping over. For example, the requirement result from
+an STS release between two LTS releases. An update from one LTS to the other,
+skipping the STS, still includes the need to update the native table operator.
+Contact Starburst Support if you require specific guidance for your update.</p>
+<p>The following list details the necessary steps:</p>
+<ol class="arabic">
+<li><p>Download the new native table operator <code class="docutils literal notranslate"><span class="pre">starburst-direct-&lt;version&gt;.so</span></code>.
+The version needs to correspond to the version of the SEP cluster.</p></li>
+<li><p>Remove the function in Teradata before any updates:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DROP FUNCTION some_database.table_operator;
 </pre></div>
 </div>
-<p>Additional recommendations for successful upgrades:</p>
-<ul class="simple">
-<li><p>Drop the database used for the function</p></li>
-<li><p>Remove all old <code class="docutils literal notranslate"><span class="pre">.so</span></code> files from the Teradata servers</p></li>
-<li><p>Use a different filename for the <code class="docutils literal notranslate"><span class="pre">.so</span></code> file for the new version</p></li>
-<li><p>Use a new exclusive database for the function with the new version</p></li>
-<li><p>Restart the Teradata servers, if possible</p></li>
-</ul>
+</li>
+<li><p>Drop the database used for the function in Teradata with <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">DATABASE</span></code>.</p></li>
+<li><p>Remove all old <code class="docutils literal notranslate"><span class="pre">.so</span></code> files from all Teradata server nodes.</p></li>
+<li><p>Restart Teradata with <code class="docutils literal notranslate"><span class="pre">tparesert</span> <span class="pre">-force</span></code> to remove the native table
+operator from memory. This step may not be necessary and is solely
+determined by the memory management of Teradata. If you skip this step and
+run into an error like <code class="docutils literal notranslate"><span class="pre">[Error</span> <span class="pre">7559]</span> <span class="pre">[SQLState</span> <span class="pre">HY000]</span> <span class="pre">Memory</span> <span class="pre">(via</span> <span class="pre">malloc</span>
+<span class="pre">call)</span> <span class="pre">not</span> <span class="pre">freed</span> <span class="pre">before</span> <span class="pre">exiting</span> <span class="pre">UDF/XSP/UDM</span></code>, you must restart the upgrade
+process.</p></li>
+<li><p>Copy the new native table operator file to all Teradata server nodes. Use
+the original filename from the download. The filename is required to be
+different from each prior install.</p></li>
+<li><p>Proceed with the <a class="reference internal" href="#native-table-operator"><span class="std std-ref">same steps as performed during the initial
+installation</span></a>. Make sure you update the create
+function statement to the new database and <code class="docutils literal notranslate"><span class="pre">.so</span></code> file path.</p></li>
+<li><p>Update the catalog properties files to point to the new database on the SEP
+coordinator and all workers.</p></li>
+</ol>
+<blockquote>
+<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">teradata</span><span class="o">-</span><span class="n">direct</span><span class="p">.</span><span class="k">table</span><span class="o">-</span><span class="k">operator</span><span class="p">.</span><span class="n">name</span><span class="o">=</span><span class="n">new_database</span><span class="p">.</span><span class="n">table_operator</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="arabic simple" start="9">
+<li><p>Restart the SEP cluster.</p></li>
+</ol>
 
 
 
