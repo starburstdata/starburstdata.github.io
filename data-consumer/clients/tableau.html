@@ -451,16 +451,16 @@ recommended connection method uses a Tableau data connector file paired with
 the Starburst JDBC driver.</p>
   </li>
   <li>
-    <p><strong><a href="#odbc-driver-connection">ODBC connection</a></strong>: Starburst also
-supports connecting to SEP clusters with the Starburst
-ODBC driver.</p>
-  </li>
-  <li>
     <p><strong><a href="#legacy-jdbc-driver-connection">Legacy JDBC connection</a></strong>: For sites using
 a plain JDBC connection using the legacy “Other Databases (JDBC)” method,
 Starburst strongly recommends migrating to the <strong><a href="#tableau-data-connector-with-jdbc-driver">Tableau data
 connector</a></strong> method, but
 Starburst also supports continued use of the legacy method.</p>
+  </li>
+  <li>
+    <p><strong><a href="#odbc-driver-connection">ODBC connection</a></strong>: Starburst also
+supports connecting to SEP clusters with the Starburst
+ODBC driver.</p>
   </li>
 </ul>
       <h2 id="before-you-begin">
@@ -593,10 +593,11 @@ This opens a <strong>Connector Details</strong> dialog that describes the data c
      </tr>
      <tr>
        <td>Authentication</td>
-       <td>Use the drop-down list to select <strong>Username</strong> for a
-           cluster with no authentication or <strong>Username and
-           Password</strong> for a cluster with TLS enabled and a
-           password-based authentication method such as LDAP.</td>
+       <td>Use the drop-down list to select among three options:
+           <strong>Username</strong> for a cluster with no authentication,
+           <strong>Username and Password</strong> for a cluster with TLS
+           enabled and a password-based authentication method such as LDAP,
+           or <strong>Kerberos</strong>.</td>
      </tr>
      <tr>
        <td>Username</td>
@@ -619,6 +620,9 @@ This opens a <strong>Connector Details</strong> dialog that describes the data c
      </tr>
    </tbody>
  </table>
+
+    <p>If you select <strong>Kerberos</strong> in the <strong>Authentication</strong> drop-down, see <a href="#kerberos-authentication">Kerberos
+authentication</a>.</p>
 
     <p>The values for <strong>SSL Verification</strong> have the following meanings:</p>
 
@@ -660,6 +664,86 @@ available tables.</p>
 to specify one or more SQL statements to run on connection to the cluster. See
 the <strong>Learn More</strong> link in Tableau for information on the limitations of this
 feature.</p>
+      <h3 id="kerberos-authentication">
+        
+        
+          Kerberos authentication <a href="#kerberos-authentication" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>After selecting <strong>Kerberos</strong> in the <strong>Authentication</strong> drop-down, additional
+connection options appear in the Connection dialog.</p>
+
+<p><img src="../../assets/img/general/Tableau_connections_kerberos.png" alt="Tableau Connector login dialog with Kerberos authentication" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+
+<p>The first four fields including <strong>Username</strong> are the same as described above.
+The Kerberos-specific fields are described in the following table:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Kerberos Principal</td>
+      <td>The Kerberos principal to use when authenticating to the SEP
+          coordinator. If not set, the value is read from the keytab file.</td>
+    </tr>
+    <tr>
+      <td>Kerberos Remote Service Name</td>
+      <td>SEP coordinator Kerberos service name. This parameter is required
+          for Kerberos authentication.</td>
+    </tr>
+    <tr>
+      <td>Kerberos Service Principal Pattern</td>
+      <td>SEP coordinator Kerberos service principal pattern.
+          The default is ${SERVICE}@${HOST}. ${SERVICE} is replaced with
+          the value of <strong>Kerberos Remote Service Name</strong>
+          and ${HOST} is replaced with the hostname of the coordinator
+          (after canonicalization, if enabled).</td>
+    </tr>
+    <tr>
+      <td>Kerberos configuration file path</td>
+      <td>Local path to the Kerberos configuration file.</td>
+    </tr>
+    <tr>
+      <td>Kerberos keytab file path</td>
+      <td>Local path to the Kerberos keytab file.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Use the same paths for the keytab and configuration file are used after
+publishing a SEP data source to Tableau Server. If they are not specified,
+default locations are used.</p>
+
+<p>To troubleshoot Kerberos:</p>
+
+<ul>
+  <li>Set the <code class="language-plaintext highlighter-rouge">JAVA_TOOL_OPTIONS</code> environment variable to include:
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> -Dsun.security.krb5.debug=true -Dtrino.client.debugKerberos=true \
+ -Djava.security.debug=gssloginconfig,configfile,configparser,logincontext
+</code></pre></div>    </div>
+  </li>
+  <li>Check the log files that have <code class="language-plaintext highlighter-rouge">jprotocolserver</code> in their name, located in the
+<code class="language-plaintext highlighter-rouge">\data\tabsvc\logs\dataserver</code> directory on the SEP
+coordinator.</li>
+</ul>
+
+<p>For further information on configuring and troubleshooting Kerberos on Tableau
+products, see:</p>
+
+<ul>
+  <li><a href="https://help.tableau.com/current/server/en-us/kerberos.htm">Kerberos</a></li>
+  <li><a href="https://help.tableau.com/current/server/en-us/kerberos_runas_jdbc.htm">Enable Kerberos Run As Authentication for JDBC Connectors</a></li>
+  <li><a href="https://help.tableau.com/current/server/en-us/kerberos_delegation_jdbc.htm">Enable Kerberos Delegation for JDBC Connectors</a></li>
+  <li><a href="https://help.tableau.com/current/server/en-us/kerberos_trouble.htm">Troubleshoot Kerberos</a></li>
+</ul>
       <h3 id="customized-jdbc-connections">
         
         
@@ -1023,7 +1107,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#tableau">Tableau</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector-with-jdbc-driver">Tableau data connector with JDBC driver</a></li><li><a href="#standard-data-connector-procedure">Standard data connector procedure</a><ul><li><a href="#customized-jdbc-connections">Customized JDBC connections</a></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li><li><a href="#download-data-connector">Download data connector</a></li><li><a href="#legacy-jdbc-driver-connection">Legacy JDBC driver connection</a></li><li><a href="#odbc-driver-connection">ODBC driver connection</a></li></ul></li></ul>
+          <ul><li><a href="#tableau">Tableau</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector-with-jdbc-driver">Tableau data connector with JDBC driver</a></li><li><a href="#standard-data-connector-procedure">Standard data connector procedure</a><ul><li><a href="#kerberos-authentication">Kerberos authentication</a></li><li><a href="#customized-jdbc-connections">Customized JDBC connections</a></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li><li><a href="#download-data-connector">Download data connector</a></li><li><a href="#legacy-jdbc-driver-connection">Legacy JDBC driver connection</a></li><li><a href="#odbc-driver-connection">ODBC driver connection</a></li></ul></li></ul>
 
         </div>
       </div>
