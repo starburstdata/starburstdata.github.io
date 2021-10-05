@@ -651,10 +651,10 @@
             
   
 <h1 id="security-event-logger--page-root">Event logger<a class="headerlink" href="#security-event-logger--page-root" title="Permalink to this headline">#</a></h1>
-<p>The event logger allows query completion events and all related Starburst Enterprise platform (SEP)
-information to be logged into a database. Once the event logger is running,
-use the <a class="reference internal" href="../insights/index.html"><span class="doc">Insights user interface</span></a> to explore query
-history.</p>
+<p>The event logger is an implementation of the <a class="reference internal" href="../develop/event-listener.html"><span class="doc">event listener</span></a> plug-in that allows query completion events
+and all related Starburst Enterprise platform (SEP) information to be logged into a database. Once the
+event logger is running, use the <a class="reference internal" href="../insights/index.html"><span class="doc">Insights user interface</span></a>
+to explore query history.</p>
 
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
 <p>To use the event logger, you need:</p>
@@ -666,22 +666,45 @@ history.</p>
 <li><p>OracleDB 12.2.0.1+</p></li>
 </ul>
 </li>
-<li><p>Network access from the Trino coordinator to the external database.</p></li>
+<li><p>Network access from the coordinator to the external database.</p></li>
 <li><p>A valid <a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>.</p></li>
 </ul>
 
 
 <span id="ev-log-install-config"></span><h2 id="installation-and-configuration">Installation and configuration<a class="headerlink" href="#installation-and-configuration" title="Permalink to this headline">#</a></h2>
-<p>The event logger is an <a class="reference internal" href="../develop/event-listener.html"><span class="doc">event listener implementation</span></a>. It can be enabled by creating a configuration file
-called <code class="docutils literal notranslate"><span class="pre">etc/event-listener.properties</span></code> on the coordinator. Alternatively, you
-can use a file name such as <code class="docutils literal notranslate"><span class="pre">etc/event-logger.properties</span></code> and <a class="reference internal" href="../develop/event-listener.html#multiple-listeners"><span class="std std-ref">configure
-the config file name</span></a>.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">event-listener.name</span></code> needs to be set to <code class="docutils literal notranslate"><span class="pre">event-logger</span></code>. The
-configuration includes the JDBC connection URL with hostname, port and database
-name as well as username and password for accessing the database.</p>
-<p>You must restart the cluster after creating the configuration files. At first
-usage, the table <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> is automatically created in the
-database. Once the table is created, logging is activated and running.</p>
+<p>To enable the event logger, create an event listener configuration file called
+<code class="docutils literal notranslate"><span class="pre">etc/event-logger.properties</span></code> on the coordinator with the following contents:
+and value:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">event-logger</span>
+<span class="na">jdbc.url</span><span class="o">=</span><span class="s">jdbc:database://database.example.com:5432/event_logger</span>
+<span class="na">jdbc.user</span><span class="o">=</span><span class="s">test_user</span>
+<span class="na">jdbc.password</span><span class="o">=</span><span class="s">testpass123</span>
+</pre></div>
+</div>
+<p>In this file, configure the JDBC connection to an external database with the
+following properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">jdbc.url</span></code>: A complete JDBC connection string with a hostname, port, and
+database</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jdbc.user</span></code>: Username to access the database</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jdbc.password</span></code>: Password to access the database</p></li>
+</ul>
+<p>Add the following line to your coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file, to
+direct it to the new event listener configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.config-files</span><span class="o">=</span><span class="s">etc/event-logger.properties</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can run <a class="reference internal" href="../develop/event-listener.html#multiple-listeners"><span class="std std-ref">multiple listeners</span></a> on the coordinator
+by creating event logger configuration files for each listener and specifying
+them in the <code class="docutils literal notranslate"><span class="pre">event-listener.config-files</span></code> property as above, separated by
+commas.</p>
+</div>
+<p>You must restart the cluster after creating and updating the configuration
+files. When you run your first query, the event logger automatically creates the
+<code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table in the database. Logging is then activated and
+continues running.</p>
 <p>Instructions for configuring event logger for Kubernetes deployments are
 available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-event-logger"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
 <p><strong>Example configuration for PostgreSQL</strong></p>
