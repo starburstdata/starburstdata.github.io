@@ -325,14 +325,59 @@ sections, and provided links to the relevant parts of our documentation below.</
     </div>
   </div>
 </div><hr />
-      <h2 id="client-to-server-encryption">
+      <h2 id="client-to-server-encryption-with-tls">
         
         
-          Client to server encryption <a href="#client-to-server-encryption" class="titleAnchor">#</a>
+          Client to server encryption with TLS <a href="#client-to-server-encryption-with-tls" class="titleAnchor">#</a>
         
         
       </h2>
     
+
+<p>Enabling TLS to the coordinator can be handled from the load balancer in two
+ways:</p>
+
+<ul>
+  <li>Terminate TLS on the load balancer and use HTTP to the coordinator</li>
+  <li>Pass TLS through the load balancer and use HTTPS to the coordinator</li>
+</ul>
+
+<p>We highly recommend terminating HTTPS on the load balancer. In this case, the only
+property required in the Helm chart <code class="language-plaintext highlighter-rouge">coordinator.etcFiles.properties</code> section
+under <code class="language-plaintext highlighter-rouge">config.properties:</code> is as follows:</p>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">coordinator</span><span class="p">:</span>
+  <span class="py">etcFiles</span><span class="p">:</span>
+    <span class="py">properties</span><span class="p">:</span>
+      <span class="py">config.properties</span><span class="p">:</span> <span class="s">|</span>
+        <span class="py">http-server.process-forwarded</span><span class="p">=</span><span class="s">true</span>
+</code></pre></div></div>
+
+<p>For non-Kubernetes installs, the same property must be defined instead in the
+<code class="language-plaintext highlighter-rouge">config.properties</code> file.</p>
+
+<p>To pass TLS through the load balancer, you must configure TLS on the
+coordinator. Place a certificate or private key in the coordinator pod with
+HTTPS enabled. To do so:</p>
+
+<ol>
+  <li>Create a secret from the signed certificate or private key. This file can be
+a PEM, JKS, or PK12 keystore.</li>
+  <li>Follow the steps outlined in the reference documentation to <a href="../../security/tls.html#configure-the-coordinator">configure the
+coordinator</a>. Refer to
+your SSL secret as follows in the following snippet, which uses a PEM file
+as an example:</li>
+</ol>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">coordinator</span><span class="p">:</span>
+  <span class="py">etcFiles</span><span class="p">:</span>
+    <span class="py">properties</span><span class="p">:</span>
+      <span class="py">config.properties</span><span class="p">:</span> <span class="s">|</span>
+        <span class="py">http-server.https.keystore.path</span><span class="p">=</span><span class="s">secretRef:ssl-cert:yoursslcert.pem</span>
+</code></pre></div></div>
+
+<p>The following video provides an overview of client-to-server encryption in
+SEP:</p>
 
 <div class="container">
   <div class="row">
@@ -362,6 +407,73 @@ sections, and provided links to the relevant parts of our documentation below.</
         
       </h2>
     
+<p>f</p>
+      <h3 id="get-up-and-running">
+        
+        
+          Get up and running <a href="#get-up-and-running" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The SEP Helm chart has built-in support for file-based password
+authentication. In the following example, two users are created with very simple
+passwords:</p>
+
+<pre><code class="language-YAML">userDatabase:
+  enabled: true
+  users:
+    - username: admin
+      password: adM1nPassWord
+    - username: user1
+      password: Us4r1PassW0rd
+</code></pre>
+
+<p>File-based authentication is recommended only for your initial build-out. More
+detail is available in our <a href="../../latest/security/password-file.html">reference
+documentation</a>,
+including how to handle non-Kubernetes installs.</p>
+      <h3 id="implement-ldap">
+        
+        
+          Implement LDAP <a href="#implement-ldap" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Authentication via LDAP or Active Directory is configured in the
+<code class="language-plaintext highlighter-rouge">coordinator.etcFiles.properties</code> section of the Helm chart under
+<code class="language-plaintext highlighter-rouge">password-authenticator.properties:</code>.
+The following example shows the required Helm chart configuration:</p>
+
+<pre><code class="language-YAML">coordinator:
+  etcFiles:
+    properties:
+      password-authenticator.properties: |
+        password-authenticator.name=ldap ldap.url=ldaps://ldap-server:636
+        ldap.user-bind-pattern=uid=${USER},DC=example,DC=com
+        ldap.ssl-trust-certificate=secretRef:ldap-ca:ca.crt
+</code></pre>
+
+<p>In non-Kubernetes installs, the same properties must be defined instead in the
+<code class="language-plaintext highlighter-rouge">etc/password-authenticator.properties</code> file.</p>
+
+<p>More detail is available in our <a href="../../latest/security/ldap.html#password-authenticator-configuration">reference
+documentation</a>,
+including how to handle non-Kubernetes installs.</p>
+      <h3 id="learn-more">
+        
+        
+          Learn more <a href="#learn-more" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The following video provides an overview of authentication and authorization in
+SEP:</p>
 
 <div class="container">
   <div class="row">
@@ -574,7 +686,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#securing-starburst-enterprise">Securing Starburst Enterprise</a><ul><li><a href="#introduction">Introduction</a></li><li><a href="#client-to-server-encryption">Client to server encryption</a></li><li><a href="#authentication-and-authorization-in-sep">Authentication and authorization in SEP</a></li><li><a href="#securing-seps-internal-communications-and-management-endpoints">Securing SEP’s internal communications and management endpoints</a></li><li><a href="#hive-catalog-security">Hive catalog security</a></li></ul></li></ul>
+          <ul><li><a href="#securing-starburst-enterprise">Securing Starburst Enterprise</a><ul><li><a href="#introduction">Introduction</a></li><li><a href="#client-to-server-encryption-with-tls">Client to server encryption with TLS</a></li><li><a href="#authentication-and-authorization-in-sep">Authentication and authorization in SEP</a><ul><li><a href="#get-up-and-running">Get up and running</a></li><li><a href="#implement-ldap">Implement LDAP</a></li><li><a href="#learn-more">Learn more</a></li></ul></li><li><a href="#securing-seps-internal-communications-and-management-endpoints">Securing SEP’s internal communications and management endpoints</a></li><li><a href="#hive-catalog-security">Hive catalog security</a></li></ul></li></ul>
 
         </div>
       </div>

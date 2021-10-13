@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Connection parameters in CFT</title>
+    <title>Starburst | Configure IAM in EKS clusters</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Connection parameters in CFT">
+    <meta property="og:title" content="Starburst - Configure IAM in EKS clusters">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -142,7 +142,7 @@
  
   
   
-<li class="active">
+<li >
   <a href="/ecosystems/amazon/cft-connection-info.html" >Connection parameters in CFT</a>
 </li>
 
@@ -196,7 +196,7 @@
 
 
 
-<li 
+<li  class="active" 
     onclick="toggle_navigation_visibility('eks');">
   <a>
     EKS clusters
@@ -204,7 +204,7 @@
   </a>
 </li>
 
-<ul id="eks" class="doc-subnav hidden">
+<ul id="eks" class="doc-subnav ">
   
   
     
@@ -232,7 +232,7 @@
     
     
     
-  <li 
+  <li class="active"
       
     >
     <a href="/ecosystems/amazon/eks/eks-iam.html" >Configure IAM in EKS</a>
@@ -346,81 +346,51 @@
     
   
     
-      Connection parameters in CFT
+      <a href="/ecosystems/amazon/eks/"
+        style="text-transform: uppercase"
+      > eks</a> >
+    
+  
+    
+      Configure IAM in EKS clusters
     
   </p>
 </div>
 
-        <h1 id="connection-parameters-in-cft">
+        <h1 id="configure-iam-in-eks-clusters">
         
         
-          Connection parameters in CFT <a href="#connection-parameters-in-cft" class="titleAnchor">#</a>
+          Configure IAM in EKS clusters <a href="#configure-iam-in-eks-clusters" class="titleAnchor">#</a>
         
         
       </h1>
     
 
-<p>To run queries in Starburst Enterprise platform (SEP), you need the following connection
-parameters described in our <a href="../../data-consumer/clients/index.html#connection-information">client overview
-page</a>.</p>
-      <h2 id="locating-the-connection-information">
-        
-        
-          Locating the connection information <a href="#locating-the-connection-information" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+<p>The best practice for implementing <a href="https://aws.amazon.com/iam/">Amazon IAM</a> in
+an EKS cluster is to use an EKS service account. This setup works with the
+<code class="language-plaintext highlighter-rouge">hive.s3.iam-role</code> catalog property, or with an <a href="../../../latest/connector/hive-s3.html#s3-security-mapping">S3 security
+mapping</a>.</p>
 
-<p>To locate the IP address, protocol, and port of your coordinator, complete the
-following steps:</p>
+<p>Using S3 security mapping with EKS cluster versions prior to version 1.19
+requires a <code class="language-plaintext highlighter-rouge">securityContext:</code> definition in the Starburst Enterprise platform (SEP) Helm
+chart as in the following example:</p>
 
-<ol>
-  <li>Navigate to the <strong>CloudFormation console</strong> from <strong>Service &gt; Management Tools</strong>.</li>
-  <li>Select your stack name and click the associated tab labeled <strong>Outputs</strong>.</li>
-  <li>Note the value for the <code class="language-plaintext highlighter-rouge">StarburstCoordinatorURL</code>.</li>
-</ol>
-      <h2 id="accessing-the-coordinator">
-        
-        
-          Accessing the coordinator <a href="#accessing-the-coordinator" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">securityContext</span><span class="pi">:</span>
+  <span class="na">fsGroup</span><span class="pi">:</span> <span class="m">65534</span>
+</code></pre></div></div>
 
-<p>The <code class="language-plaintext highlighter-rouge">StarburstCoordinatorURL</code> is only accessible from within the same VPC as
-SEP. You must run your client tools from within the VPC, or
-with connectivity to the VPC. Your IT department can help you with connectivity
-issues.</p>
+<p>The SEP chart uses the default account for its defined namespace,
+therefore you must create the service account with the name “default”, as
+in the following example <code class="language-plaintext highlighter-rouge">eksctl</code> command:</p>
 
-<p>Any easy way to test connectivity from a network location is to access the <a href="../../latest/admin/web-interface.html">Web
-UI</a> using the
-<code class="language-plaintext highlighter-rouge">StarburstCoordinatorURL</code> in your browser.</p>
-      <h2 id="connecting-clients-to-sep">
-        
-        
-          Connecting clients to SEP <a href="#connecting-clients-to-sep" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>Once you have gathered the connection information, you can use <a href="../../data-consumer/clients/index.html">any
-client</a> supported by SEP
-to connect and query.</p>
-
-<p>For example, to connect and query with the Command Line Interface (CLI):</p>
-
-<ol>
-  <li>Download and install the <a href="../../data-consumer/clients/cli.html">CLI</a></li>
-  <li>Use the parameters determined in the preceding section.</li>
-  <li>Run the CLI with the URL and username supplied and activate the password
-dialog.</li>
-</ol>
-
-<p>Once connected you can check for available catalogs with <code class="language-plaintext highlighter-rouge">SHOW CATALOGS</code>, or
-run any other query.</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>eksctl create iamserviceaccount <span class="se">\</span>
+ <span class="nt">--name</span> default <span class="se">\</span>
+ <span class="nt">--namespace</span> dataservices <span class="se">\</span>
+ <span class="nt">--cluster</span> sepstaging <span class="se">\</span>
+ <span class="nt">--attach-policy-arn</span> arn:aws:iam::&lt;policyID&gt;:policy/eks_service_account_wm <span class="se">\</span>
+ <span class="nt">--approve</span> <span class="se">\</span>
+ <span class="nt">--override-existing-serviceaccounts</span>
+</code></pre></div></div>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -521,7 +491,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#connection-parameters-in-cft">Connection parameters in CFT</a><ul><li><a href="#locating-the-connection-information">Locating the connection information</a></li><li><a href="#accessing-the-coordinator">Accessing the coordinator</a></li><li><a href="#connecting-clients-to-sep">Connecting clients to SEP</a></li></ul></li></ul>
+          <ul><li><a href="#configure-iam-in-eks-clusters">Configure IAM in EKS clusters</a></li></ul>
 
         </div>
       </div>
