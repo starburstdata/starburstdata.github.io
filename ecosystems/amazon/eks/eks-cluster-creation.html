@@ -467,10 +467,40 @@ Spot instances</a>.
 alongside the <code class="language-plaintext highlighter-rouge">sep</code> managed node group. The support services managed node group
 runs HMS and Ranger, if those services are required in your environment.</p>
 
-<p>The first three IAM policy ARNs, shown below for both groups, are required by
-EKS. The IAM policy ARN for Glue illustrates using an additional policy to allow
-access to EKS, S3 and Glue in the account used for the EKS cluster
-without supplying credentials. It is not required.</p>
+<p>The coordinator is required for a functioning SEP cluster, and
+SEP architecture only allows for one coordinator at a time. You
+must ensure that resource availability is maximized. This can be done in two
+ways:</p>
+
+<ul>
+  <li><strong>Create a separate node group for the coordinator with two or more instances
+on cold standby.</strong> In the case that the instance the coordinator is running on
+goes down, having two or more instances allows the coordinator pod to be
+restarted on the unaffected instance.</li>
+  <li><strong>Define a priority class for the coordinator.</strong> This allows the cluster to
+eject a worker pod and start on that machine without waiting for a new node to
+start if the coordinator’s instance of the same size is lost. The worker’s
+termination grace period, which is five minutes by default, is still
+respected.</li>
+</ul>
+
+<div class="alert alert-danger" role="alert">
+  <i class="fa fa-radiation"></i> <b>Warning:</b>
+
+  AWS best practices typically recommend creating a
+cluster with three node groups, each in a different availability zone (AZ) to
+tolerate the loss of an AZ. This approach comes with significant performance and
+cost penalties for SEP, as internode traffic crosses availability zones.
+We <a href="./eks-networking.html#best-practice-use-a-single-availability-zone-inside-your-existing-vpc">strongly recommend all node groups remain within the same
+AZ</a>,
+with failure tolerance handled by using multiple clusters.
+
+</div>
+
+<p>EKS requires the first three IAM policy ARNs shown in the following example for
+both node groups. The fourth policy ARN for Glue illustrates using
+an additional policy to allow access to EKS, S3, and Glue in the account used for
+the EKS cluster without supplying credentials. It is not required.</p>
 
 <div class="alert alert-info" role="alert">
   <i class="fa fa-info-circle"></i>
