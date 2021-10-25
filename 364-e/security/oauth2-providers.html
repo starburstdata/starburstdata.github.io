@@ -115,7 +115,7 @@
            class="md-header-nav__button md-logo">
           
               <img src="../_static/Starburst_Logo_NoTag_White.png" height="26"
-                   alt="Starburst Enterprise 364-e (STS) logo">
+                   alt="Starburst Enterprise 364-e STS logo">
           
         </a>
       </div>
@@ -124,7 +124,7 @@
       </div>
       <div class="md-flex__cell md-flex__cell--stretch">
         <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-          <span class="md-header-nav__topic">Starburst Enterprise 364-e (STS)</span>
+          <span class="md-header-nav__topic">Starburst Enterprise 364-e STS</span>
           <span class="md-header-nav__topic"> OAuth 2.0 identity providers </span>
         </div>
       </div>
@@ -194,7 +194,7 @@
       
     </a>
     <a href="../index.html"
-       title="Starburst Enterprise">Starburst Enterprise 364-e (STS)</a>
+       title="Starburst Enterprise">Starburst Enterprise 364-e STS</a>
   </label>
   
 
@@ -326,6 +326,10 @@
         <li class="md-nav__item"><a href="#azure-active-directory" class="md-nav__link">Azure Active Directory</a>
         </li>
         <li class="md-nav__item"><a href="#active-directory-federation-services" class="md-nav__link">Active Directory Federation Services</a>
+        </li>
+        <li class="md-nav__item"><a href="#keycloak" class="md-nav__link">Keycloak</a>
+        </li>
+        <li class="md-nav__item"><a href="#google-oauth" class="md-nav__link">Google OAuth</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -627,6 +631,10 @@
         <li class="md-nav__item"><a href="#azure-active-directory" class="md-nav__link">Azure Active Directory</a>
         </li>
         <li class="md-nav__item"><a href="#active-directory-federation-services" class="md-nav__link">Active Directory Federation Services</a>
+        </li>
+        <li class="md-nav__item"><a href="#keycloak" class="md-nav__link">Keycloak</a>
+        </li>
+        <li class="md-nav__item"><a href="#google-oauth" class="md-nav__link">Google OAuth</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -702,6 +710,7 @@ Servers</strong>. Choose the authorization server for your application, open up
 
 <h3 id="azure-active-directory">Azure Active Directory<a class="headerlink" href="#azure-active-directory" title="Permalink to this headline">#</a></h3>
 <p><strong>Create an Azure AD app integration</strong></p>
+<p>You can skip this step if you use an existing app registration.</p>
 <ul class="simple">
 <li><p>Go to <strong>Microsoft Azure Portal &gt; Azure Active Directory &gt; App registrations &gt;
 New registration</strong>.</p></li>
@@ -711,22 +720,35 @@ New registration</strong>.</p></li>
 <code class="docutils literal notranslate"><span class="pre">https://&lt;trino-coordinator-domain-name&gt;/oauth2/callback</span></code>.</p></li>
 <li><p>Click <strong>Register</strong>.</p></li>
 </ul>
-<p>You can skip this step if you’re going to use an existing app registration.</p>
 <p><strong>Configure the client</strong></p>
 <ul class="simple">
 <li><p>Go to <strong>Certificates &amp; secrets</strong> and select <strong>New client secret</strong>.</p></li>
 <li><p>Enter description and set an expiration period.</p></li>
 <li><p>Copy the value of the secret to
 <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code>.</p></li>
+<li><p>By default Microsoft only adds the API for Microsoft Graph to the app
+registration. Consider adding other services, for example Azure Data Lake
+Storage with the <code class="docutils literal notranslate"><span class="pre">user_impersonation</span></code> permission. Additionally, you must expose an API for SEP:</p>
+<ul>
 <li><p>Go to <strong>Expose an API</strong> and click <strong>Set</strong> next to <strong>Application ID URI</strong>.</p></li>
-<li><p>The <strong>Application ID URI</strong> must be unique within your organization. For
-example: <code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1</span></code>.</p></li>
+<li><p>The <strong>Application ID URI</strong> must be unique within your organization.
+For example:
+<code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1</span></code>.
+Set it to match the URL of your SEP cluster</p></li>
 <li><p>Select <strong>Add a scope</strong> in the <strong>Scopes defined by this API</strong> section.</p></li>
 <li><p>Fill in a name, display name, and description. Choose <strong>Admins and users</strong> in
 from <strong>Who can consent?</strong> .</p></li>
 <li><p>Click <strong>Add a client application</strong> in <strong>Authorized client applications</strong>.</p></li>
 <li><p>Use the client ID and select the scope created in the previous step.</p></li>
-<li><p>Set <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes=https://your.company.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1/user,openid</span></code>.</p></li>
+<li><p>In <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code> include <code class="docutils literal notranslate"><span class="pre">openid</span></code>,
+but also remember about your scope, e.g.
+<code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1/scopename</span></code>.
+it should look like
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes=https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1/scopename,openid</span></code>.</p></li>
+<li><p>You can further read about it in <a class="reference external" href="https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis">Configure an application to expose a web
+API</a></p></li>
+</ul>
+</li>
 <li><p>Copy the value from <strong>Application (client) ID</strong> to
 <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code>.</p></li>
 <li><p>Go to <strong>Overview &gt; Endpoints</strong>, visit the URL under
@@ -759,10 +781,107 @@ secret</strong>, and copy the generated secret to the
 the URL under <strong>OpenID Connect Discovery</strong>  to configure the
 <a class="reference internal" href="#oauth2-providers-openid"><span class="std std-ref">OpenID Connect metadata</span></a>.</p>
 <p>In addition, set the following properties:</p>
-<p><code class="docutils literal notranslate"><span class="pre">`properties</span>
-<span class="pre">http-server.authentication.oauth2.additional-audiences=urn:microsoft:userinfo</span>
-<span class="pre">http-server.authentication.oauth2.scopes=openid</span>
-<span class="pre">`</span></code></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.additional-audiences</span><span class="o">=</span><span class="s">urn:microsoft:userinfo</span>
+<span class="na">http-server.authentication.oauth2.scopes</span><span class="o">=</span><span class="s">openid</span>
+</pre></div>
+</div>
+
+
+<h3 id="keycloak">Keycloak<a class="headerlink" href="#keycloak" title="Permalink to this headline">#</a></h3>
+<p>For Keycloak you need to operate within the realm. SEP can then be defined as
+your client with a dedicated ID and secret. Assuming your realm is named
+<code class="docutils literal notranslate"><span class="pre">kingdom</span></code> and Keycloak runs on <code class="docutils literal notranslate"><span class="pre">https://example.com</span></code>, your <code class="docutils literal notranslate"><span class="pre">{base}</span></code> below
+should be <code class="docutils literal notranslate"><span class="pre">https://example.com/auth/realms/kingdom</span></code></p>
+<table id="id2">
+<caption><span class="caption-text">Keycloak configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{base}</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{base}/protocol/openid-connect/auth</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{base}/protocol/openid-connect/token</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{base}/protocol/openid-connect/certs</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code></p></td>
+<td><p>Client ID from Keycloak</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code></p></td>
+<td><p>Client secret from Keycloak</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">openid</span></code></p></td>
+</tr>
+</tbody>
+</table>
+
+
+<h3 id="google-oauth">Google OAuth<a class="headerlink" href="#google-oauth" title="Permalink to this headline">#</a></h3>
+<p><strong>Defining a client</strong></p>
+<ul class="simple">
+<li><p>In <a class="reference external" href="https://console.cloud.google.com/">Google Cloud Platform</a>
+open <code class="docutils literal notranslate"><span class="pre">APIs</span> <span class="pre">&amp;</span> <span class="pre">Services</span></code> &gt; <code class="docutils literal notranslate"><span class="pre">Credentials</span></code></p></li>
+<li><p>Go for <code class="docutils literal notranslate"><span class="pre">+</span> <span class="pre">CREATE</span> <span class="pre">CREDENTIALS</span></code> and choose <code class="docutils literal notranslate"><span class="pre">OAuth</span> <span class="pre">client</span> <span class="pre">ID</span></code></p></li>
+<li><p>Choose <code class="docutils literal notranslate"><span class="pre">Web</span> <span class="pre">application</span></code>, provide a meaningful name and define
+<code class="docutils literal notranslate"><span class="pre">Authorized</span> <span class="pre">redirect</span> <span class="pre">URIs</span></code> pointing to SEP’s <code class="docutils literal notranslate"><span class="pre">oauth2/callback</span></code></p></li>
+<li><p>Use displayed <code class="docutils literal notranslate"><span class="pre">Client</span> <span class="pre">ID</span></code> and <code class="docutils literal notranslate"><span class="pre">Client</span> <span class="pre">Secret</span></code> as
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code> and
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code> properties.</p></li>
+</ul>
+<p><strong>Further configuration</strong></p>
+<p>You can base on <a class="reference external" href="https://accounts.google.com/.well-known/openid-configuration">https://accounts.google.com/.well-known/openid-configuration</a>:</p>
+<table id="id3">
+<caption><span class="caption-text">Google configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://accounts.google.com</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://accounts.google.com/o/oauth2/v2/auth</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://oauth2.googleapis.com/token</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.userinfo-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://openidconnect.googleapis.com/v1/userinfo</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://www.googleapis.com/oauth2/v3/certs</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.principal-field</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">email</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">openid,https://www.googleapis.com/auth/userinfo.email</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>As Google uses opaque tokens, <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.userinfo-url</span></code>
+property is required for validation.</p>
+<p>For more information, you can take a look at Google’s documentation about <a class="reference external" href="https://developers.google.com/identity/protocols/oauth2">Using
+OAuth 2.0 to Access Google APIs</a> and <a class="reference external" href="https://developers.google.com/identity/protocols/oauth2/openid-connect">OpenID Connect</a>.</p>
 
 
 
@@ -952,7 +1071,7 @@ feedback();
         <a href="https://www.starburst.io/" target="_blank">
           
             <img src="../_static/Starburst_Logo_NoTag_White.png" height="26"
-                  alt="Starburst Enterprise 364-e (STS) logo">
+                  alt="Starburst Enterprise 364-e STS logo">
         
         </a>
         <li class="footer-item" style="padding-right:10px;">
