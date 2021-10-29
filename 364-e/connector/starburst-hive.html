@@ -370,7 +370,7 @@
         </li>
         <li class="md-nav__item"><a href="#storage-caching" class="md-nav__link">Storage caching</a>
         </li>
-        <li class="md-nav__item"><a href="#starburst-cached-views" class="md-nav__link">Starburst Cached Views</a>
+        <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li>
         <li class="md-nav__item"><a href="#accelerated-parquet-reader" class="md-nav__link">Accelerated Parquet reader</a>
         </li></ul>
@@ -378,6 +378,8 @@
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#azure-ad-credential-pass-through" class="md-nav__link">Azure AD credential pass-through</a>
+        </li>
         <li class="md-nav__item"><a href="#authorization-options" class="md-nav__link">Authorization options</a>
         </li>
         <li class="md-nav__item"><a href="#hdfs-permissions" class="md-nav__link">HDFS permissions</a>
@@ -907,7 +909,7 @@
         </li>
         <li class="md-nav__item"><a href="#storage-caching" class="md-nav__link">Storage caching</a>
         </li>
-        <li class="md-nav__item"><a href="#starburst-cached-views" class="md-nav__link">Starburst Cached Views</a>
+        <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li>
         <li class="md-nav__item"><a href="#accelerated-parquet-reader" class="md-nav__link">Accelerated Parquet reader</a>
         </li></ul>
@@ -915,6 +917,8 @@
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#azure-ad-credential-pass-through" class="md-nav__link">Azure AD credential pass-through</a>
+        </li>
         <li class="md-nav__item"><a href="#authorization-options" class="md-nav__link">Authorization options</a>
         </li>
         <li class="md-nav__item"><a href="#hdfs-permissions" class="md-nav__link">HDFS permissions</a>
@@ -1018,15 +1022,20 @@ with Hive 3 for optimal compatibility.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.accelerated-parquet-reader.enabled</span></code></p></td>
-<td><p>Use the <a class="reference internal" href="#sb-hive-parquet-reader"><span class="std std-ref">accelerated Parquet reader</span></a>,
-Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p>Use the <a class="reference internal" href="#sb-hive-parquet-reader"><span class="std std-ref">accelerated Parquet reader</span></a>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.delta-lake-catalog-name</span></code></p></td>
-<td><p>Name of the catalog to which <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> queries are redirected when a
-Delta Lake table is detected</p></td>
+<td><p>Specifies the catalog name that <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> queries are redirected to when
+a Delta Lake table is detected.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.delta-catalog-name</span></code></p></td>
-<td><p>Deprecated, use <code class="docutils literal notranslate"><span class="pre">hive.delta-lake-catalog-name</span></code></p></td>
+<td><p>Deprecated. Use <code class="docutils literal notranslate"><span class="pre">hive.delta-lake-catalog-name</span></code> instead.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.azure.abfs.oauth2.passthrough</span></code></p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to reuse the <a class="reference internal" href="../security/oauth2-providers.html#azure-active-directory"><span class="std std-ref">Azure Active Directory (AD)</span></a> token for access to the Azure Blob
+Storage. For more information, see <a class="reference internal" href="#sb-hive-azure-ad-passthro"><span class="std std-ref">Azure AD credential
+pass-through</span></a>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1332,8 +1341,8 @@ have their own metadata tables located in the default schema of the <a class="re
 service database</span></a> that contain current state and
 other information. Metadata tables are named as the materialized view name with
 <code class="docutils literal notranslate"><span class="pre">$imports</span></code> added to the end. For example, given a materialized view,
-<code class="docutils literal notranslate"><span class="pre">myhive.myschema.customer_total_return</span></code>, run the following query to view the
-metadata for its refresh:</p>
+<code class="docutils literal notranslate"><span class="pre">myhive.myschema.customer_total_return</span></code>, run the following query to refresh
+and view the metadata for your materialized view:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">myhive</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="ss">"customer_total_return$imports"</span>
 </pre></div>
 </div>
@@ -1345,7 +1354,8 @@ parser handles the dollar sign correctly.</p>
 <p>The resulting metadata table contains the following fields:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">status</span></code> - Scheduled, Running, Finished, Failed, Timeout</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">max_import_duration</span></code> - The value originally set in the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">AS</span></code> statement</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_import_duration</span></code> - The value originally set in the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">AS</span></code>
+statement</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">start_time</span></code> - As computed from the <code class="docutils literal notranslate"><span class="pre">cron</span></code> or <code class="docutils literal notranslate"><span class="pre">refresh_interval</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">finish_time</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">row_count</span></code></p></li>
@@ -1428,7 +1438,7 @@ Privacera platform</span></a> is also enforced by the storage
 caching.</p>
 
 
-<h3 id="starburst-cached-views">Starburst Cached Views<a class="headerlink" href="#starburst-cached-views" title="Permalink to this headline">#</a></h3>
+<h3 id="sb-cached-views">Starburst Cached Views<a class="headerlink" href="#sb-cached-views" title="Permalink to this headline">#</a></h3>
 <p>The connector supports <a class="reference internal" href="../admin/starburst-cached-views.html"><span class="doc">Starburst Cached Views</span></a> and can therefore be
 configured for <a class="reference internal" href="../admin/table-scan-redirection.html"><span class="doc">table scan redirection</span></a> and
 <a class="reference internal" href="#sb-hive-materialized-views"><span class="std std-ref">materialized views</span></a> to improve performance.</p>
@@ -1452,6 +1462,41 @@ catalog properties file:</p>
 <span id="sb-hive-security"></span><h2 id="security">Security<a class="headerlink" href="#security" title="Permalink to this headline">#</a></h2>
 <p>The connector includes a number of security-related features, detailed in the
 following sections.</p>
+
+<span id="sb-hive-azure-ad-passthro"></span><h3 id="azure-ad-credential-pass-through">Azure AD credential pass-through<a class="headerlink" href="#azure-ad-credential-pass-through" title="Permalink to this headline">#</a></h3>
+<p>To use <a class="reference internal" href="../security/oauth2-providers.html#azure-active-directory"><span class="std std-ref">Azure Active Directory (AD)</span></a> with
+<a class="reference internal" href="../security/oauth2-passthrough.html"><span class="doc">credential pass-through</span></a>, you must include
+the following configuration in <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">Config properties</span></a>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.scopes</span><span class="o">=</span><span class="s">https://storage.azure.com/user_impersonation,openid</span>
+<span class="na">http-server.authentication.oauth2.additional-audiences</span><span class="o">=</span><span class="s">https://storage.azure.com</span>
+</pre></div>
+</div>
+<p>If you use the Azure AD as the identity provider when you integrate with Azure
+Storage, you can reuse the AD token to access Azure Storage blobs.</p>
+<p>To reuse the AD token, set the following access properties in the catalog
+properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hive.azure.abfs.oauth2.passthrough</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>Enable the OAuth 2.0 token pass-through <a class="reference internal" href="../security/authentication-types.html"><span class="doc">authentication type</span></a> with the following configuration in
+<a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">Config properties</span></a>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">delegated-oauth</span>
+</pre></div>
+</div>
+<p>You must grant the Azure application <code class="docutils literal notranslate"><span class="pre">user_impersonation</span></code> API permissions for
+Azure Storage. For more information about <code class="docutils literal notranslate"><span class="pre">delegated-oauth</span></code>, see
+<a class="reference internal" href="../security/oauth2-passthrough.html"><span class="doc">OAuth 2.0 token pass-through</span></a>.</p>
+<p>You can only set one type or group of access properties in the catalog
+properties file. Setting more than one prevents SEP from running properly. The
+possible, valid access property combination for the catalog properties file
+include the following:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.azure.abfs.oauth2.passthrough</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.azure.abfs-storage-account</span></code> and <code class="docutils literal notranslate"><span class="pre">hive.azure.abfs-access-key</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.azure.abfs.oauth.endpoint</span></code>, <code class="docutils literal notranslate"><span class="pre">hive.azure.abfs.oauth.client-id</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">hive.azure.abfs.oauth.secret</span></code>.</p></li>
+</ul>
+
 
 <h3 id="authorization-options">Authorization options<a class="headerlink" href="#authorization-options" title="Permalink to this headline">#</a></h3>
 <p>SEP includes provides several authorization options for use with the Hive
