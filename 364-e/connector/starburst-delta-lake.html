@@ -397,7 +397,13 @@
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
         </li>
-        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a>
+        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#vacuum" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#memory-monitoring" class="md-nav__link">Memory monitoring</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#accelerated-parquet-reader" class="md-nav__link">Accelerated Parquet reader</a>
         </li>
@@ -885,7 +891,13 @@
         </li>
         <li class="md-nav__item"><a href="#data-layout-optimization" class="md-nav__link">Data layout optimization</a>
         </li>
-        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a>
+        <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#vacuum" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#memory-monitoring" class="md-nav__link">Memory monitoring</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#accelerated-parquet-reader" class="md-nav__link">Accelerated Parquet reader</a>
         </li>
@@ -1407,6 +1419,30 @@ grows with the size of Delta Lake transaction logs of any accessed tables. It is
 important to take that into account when provisioning the coordinator.</p>
 <p>You need to decrease memory usage by keeping the number of active data files in
 table low by running <code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> and <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> in Delta Lake regularly.</p>
+
+<h4 id="vacuum"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code><a class="headerlink" href="#vacuum" title="Permalink to this headline">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> procedure removes all old files that are not in the transaction
+log, as well as files that are not needed to read table snapshots newer than the
+current time minus the retention period defined by the <code class="docutils literal notranslate"><span class="pre">retention</span> <span class="pre">period</span></code>
+parameter.</p>
+<p>Users with <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> permissions on a table can run <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code>
+as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CALL system.vacuum<span class="o">(</span><span class="s1">'myschemaname'</span>, <span class="s1">'mytablename'</span>, <span class="s1">'7d'</span><span class="o">)</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>All parameters are required, and must be presented in the following order:</p>
+<ul class="simple">
+<li><p>Schema name</p></li>
+<li><p>Table name</p></li>
+<li><p>Retention period</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">delta.vacuum.min_retention</span></code> config property provides a safety
+measure to ensure that files are retained as expected.  The minimum value for
+this property is <code class="docutils literal notranslate"><span class="pre">0s</span></code>. There is a minimum retention session property as well,
+<code class="docutils literal notranslate"><span class="pre">vacuum_min_retention</span></code>.</p>
+
+
+<h4 id="memory-monitoring">Memory monitoring<a class="headerlink" href="#memory-monitoring" title="Permalink to this headline">#</a></h4>
 <p>When using the Delta Lake connector you need to monitor memory usage on the
 coordinator. Specifically monitor JVM heap utilization using standard tools as
 part of routine operation of the cluster.</p>
@@ -1432,6 +1468,7 @@ object_name                             | com.starburstdata.presto.plugin.deltal
 </div>
 <p>In a healthy system both <code class="docutils literal notranslate"><span class="pre">datafilemetadatacachestats.hitrate</span></code> and
 <code class="docutils literal notranslate"><span class="pre">metadatacachestats.hitrate</span></code> are close to <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
+
 
 
 <span id="sb-delta-lake-parquet-reader"></span><h3 id="accelerated-parquet-reader">Accelerated Parquet reader<a class="headerlink" href="#accelerated-parquet-reader" title="Permalink to this headline">#</a></h3>
