@@ -301,6 +301,12 @@
         </li>
         <li class="md-nav__item"><a href="#cluster-resources" class="md-nav__link">Cluster resources</a>
         </li>
+        <li class="md-nav__item"><a href="#stages" class="md-nav__link">Stages</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tasks" class="md-nav__link">Tasks</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#advanced" class="md-nav__link">Advanced</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#tables" class="md-nav__link">Tables</a>
@@ -444,6 +450,12 @@
         </li>
         <li class="md-nav__item"><a href="#cluster-resources" class="md-nav__link">Cluster resources</a>
         </li>
+        <li class="md-nav__item"><a href="#stages" class="md-nav__link">Stages</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tasks" class="md-nav__link">Tasks</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#advanced" class="md-nav__link">Advanced</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#tables" class="md-nav__link">Tables</a>
@@ -517,6 +529,119 @@ interpret query execution data.</p>
 <p>The charts included in this view are similar to the ones on the <a class="reference internal" href="cluster-history.html"><span class="doc">cluster
 history pane</span></a>. They additionally show the time
 range when the query ran as a highlighted area on the timeline.</p>
+
+
+<span id="insights-query-detail-stages"></span><h2 id="stages">Stages<a class="headerlink" href="#stages" title="Permalink to this headline">#</a></h2>
+<p>The stages view shows a table of expandable information panels with details
+about query processing stages. A stage is the runtime incarnation of a plan
+fragment in a distributed query plan, and is identified by a stage number. The
+maximum number of stages in a query plan is defined by the
+<code class="docutils literal notranslate"><span class="pre">query.max-stage-count</span></code> <a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">configuration property</span></a>.</p>
+<img alt="Query details Stages pane" src="../_images/insights-query-detail-stages.png"/>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>This view is for advanced users with a very good understanding of query
+processing. The following materials can help you begin to understand the
+necessary concepts:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../overview/concepts.html"><span class="doc">Trino concepts</span></a></p></li>
+<li><p>Starburst <a class="reference external" href="../../videos/2020-08-12-query-performance.html">video training</a>
+to learn how SEP executes queries</p></li>
+<li><p><a class="reference external" href="https://trino.io/trino-the-definitive-guide.html">Trino: The Definitive Guide</a></p></li>
+</ul>
+</div>
+<p>Information is included in the view that applies to the query and its processing
+as a whole:</p>
+<ul class="simple">
+<li><p><strong>User:</strong> The user that is running the query.</p></li>
+<li><p><strong>Query state:</strong> Queued, planning, starting, running, blocked, finishing,
+finished, failed.</p></li>
+<li><p><strong>CPU time:</strong> Total CPU time used by this query, including the cumulative time
+used by all tasks. Can exceed wall time.</p></li>
+<li><p><strong>Elapsed time:</strong> The elapsed wall time for the query.</p></li>
+<li><p><strong>Active percentage:</strong> Percentage of stages in an active state, such as
+<code class="docutils literal notranslate"><span class="pre">RUNNING</span></code> and <code class="docutils literal notranslate"><span class="pre">FLUSHING</span></code>. A low active percentage generally indicates
+a bottleneck.</p></li>
+</ul>
+<p>Query statuses are dependent on the statuses of its stages and tasks. Generally,
+queries start in the <code class="docutils literal notranslate"><span class="pre">QUEUED</span></code> state, and move on briefly to the <code class="docutils literal notranslate"><span class="pre">PLANNING</span></code>
+state. Queries may return to <code class="docutils literal notranslate"><span class="pre">QUEUED</span></code> state if they must briefly wait for
+resources. If the resources are not available fast enough, the time period
+depending on a myriad of configuration properties, it moves into a <code class="docutils literal notranslate"><span class="pre">BLOCKED</span></code>
+state. If at least one worker task is running and nothing is blocked, the query
+is in the <code class="docutils literal notranslate"><span class="pre">RUNNING</span></code> state.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PLANNING</span></code> stage should be very brief for most queries. If you notice
+that queries are spending more than a brief amount of time in the <code class="docutils literal notranslate"><span class="pre">PLANNING</span></code>
+stage consistently, your cluster may have insufficient resources.</p>
+</div>
+<p>Stages encompass all the tasks of the work described by the stage’s plan
+fragment. Stages can be in one of several states:</p>
+<ul class="simple">
+<li><p><strong>Planned:</strong> The coordinator created the query plan, and from that, the
+distributed query plan.</p></li>
+<li><p><strong>Scheduling:</strong> The coordinator is scheduling tasks across workers.</p></li>
+<li><p><strong>Scheduling splits:</strong> The coordinator is scheduling tasks on workers using
+the list of splits.</p></li>
+<li><p><strong>Scheduled:</strong> All workers have tasks, and the coordinator is waiting for the
+first task to start running.</p></li>
+<li><p><strong>Running:</strong> There is at least one running task.</p></li>
+<li><p><strong>Flushing:</strong> Stage has finished executing and output being consumed. At least
+one of the tasks is flushing and the non-flushing tasks are finished.</p></li>
+<li><p><strong>Finished:</strong> The query has finished executing and all output has been
+consumed.</p></li>
+<li><p><strong>Canceled:</strong> The query was canceled by the user.</p></li>
+<li><p><strong>Aborted:</strong> Stage was aborted by the coordinator.</p></li>
+<li><p><strong>Failed:</strong> Query execution failed.</p></li>
+</ul>
+<p>Several similar statistics are shown for each stage as a whole:</p>
+<ul class="simple">
+<li><p>State</p></li>
+<li><p>CPU time</p></li>
+<li><p>Active percentage</p></li>
+<li><p>Input buffer</p></li>
+<li><p>Number of tasks</p></li>
+</ul>
+<p>Each stage can be expanded or collapsed with the chevron in its upper right
+corner.</p>
+
+<h3 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permalink to this headline">#</a></h3>
+<p>Stages can have multiple tasks, which have their own row with separate
+statistics and statuses in the stage panel. Tasks are assigned to workers
+to be executed in parallel. Tasks can be in one of the following states:</p>
+<ul class="simple">
+<li><p><strong>Planned:</strong> The plan has been created by the coordinator.</p></li>
+<li><p><strong>Running:</strong> The task is running.</p></li>
+<li><p><strong>Flushing:</strong> The task is flushing results after having been consumed.</p></li>
+<li><p><strong>Finished:</strong> The task is complete and its data passed on to the next split.</p></li>
+<li><p><strong>Canceled:</strong> The task was canceled by the coordinator due to a user action.</p></li>
+<li><p><strong>Aborted:</strong> The task was aborted by the worker or coordinator.</p></li>
+<li><p><strong>Failed:</strong> The task failed to execute.</p></li>
+</ul>
+<p>The following per-task statistics are displayed:</p>
+<ul class="simple">
+<li><p><strong>Host:</strong> URI of the node processing the task</p></li>
+<li><p><strong>State:</strong> State of the task</p></li>
+<li><p><strong>Queued splits:</strong> Number of splits in the task not yet running. This value
+fluctuates as the task runs.</p></li>
+<li><p><strong>Running splits:</strong> Number of splits in the task not yet complete. This value
+fluctuates as the task runs.</p></li>
+<li><p><strong>Blocked splits:</strong> Number of blocked splits in the task. This value
+fluctuates as the task runs.</p></li>
+<li><p><strong>Completed splits:</strong> Number of completed splits in the task</p></li>
+<li><p><strong>Rows:</strong> Number of rows read or written by the task; the number increases as
+the task runs.</p></li>
+<li><p><strong>Rows per second:</strong> Rate at which rows are read or written by the task</p></li>
+<li><p><strong>Bytes:</strong> Number of bytes read or written by the task; the number increases
+as the task runs.</p></li>
+<li><p><strong>Bytes per second:</strong> Rate at which bytes are read or written by the task</p></li>
+<li><p><strong>Elapsed:</strong> Time elapsed wall time since the task creation time</p></li>
+<li><p><strong>CPU time:</strong> CPU time used by this task</p></li>
+<li><p><strong>Buffered:</strong> Amount of data waiting to be sent to the next processing stage
+(high values may indicate that the upstream stage is slow)</p></li>
+</ul>
+
 
 
 <h2 id="advanced">Advanced<a class="headerlink" href="#advanced" title="Permalink to this headline">#</a></h2>
