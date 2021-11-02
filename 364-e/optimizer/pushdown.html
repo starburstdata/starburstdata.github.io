@@ -115,7 +115,7 @@
            class="md-header-nav__button md-logo">
           
               <img src="../_static/Starburst_Logo_NoTag_White.png" height="26"
-                   alt="Starburst Enterprise 364-e STS logo">
+                   alt="Starburst Enterprise 364-e LTS logo">
           
         </a>
       </div>
@@ -124,7 +124,7 @@
       </div>
       <div class="md-flex__cell md-flex__cell--stretch">
         <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-          <span class="md-header-nav__topic">Starburst Enterprise 364-e STS</span>
+          <span class="md-header-nav__topic">Starburst Enterprise 364-e LTS</span>
           <span class="md-header-nav__topic"> Pushdown </span>
         </div>
       </div>
@@ -194,7 +194,7 @@
       
     </a>
     <a href="../index.html"
-       title="Starburst Enterprise">Starburst Enterprise 364-e STS</a>
+       title="Starburst Enterprise">Starburst Enterprise 364-e LTS</a>
   </label>
   
 
@@ -597,6 +597,47 @@ underlying data source. This can result in performance gains, and allows Trino
 to perform the remaining query processing on a smaller amount of data.</p>
 <p>The specifics for the supported pushdown of table joins varies for each data
 source, and therefore for each connector.</p>
+<p>However, there are some generic conditions that must be met in order for a join
+to be pushed down:</p>
+<ul class="simple">
+<li><p>all predicates that are part of the join must be possible to be pushed down</p></li>
+<li><p>the tables in the join must be from the same catalog</p></li>
+</ul>
+<p>You can verify if pushdown for a specific join is performed by looking at the
+<a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN</span></a>  plan of the query. The explain plan does not
+show a <code class="docutils literal notranslate"><span class="pre">Join</span></code> operator, if the join is pushed down to the data source by the
+connector:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="k">c</span><span class="p">.</span><span class="n">custkey</span><span class="p">,</span> <span class="n">o</span><span class="p">.</span><span class="n">orderkey</span>
+<span class="k">FROM</span> <span class="n">orders</span> <span class="n">o</span> <span class="k">JOIN</span> <span class="n">customer</span> <span class="k">c</span> <span class="k">ON</span> <span class="k">c</span><span class="p">.</span><span class="n">custkey</span> <span class="o">=</span> <span class="n">o</span><span class="p">.</span><span class="n">custkey</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The following plan results from the PostgreSQL connector querying TPCH
+data in a PostgreSQL database. It does not show any <code class="docutils literal notranslate"><span class="pre">Join</span></code> operator as a
+result of the successful join push down.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Fragment 0 [SINGLE]
+    Output layout: [custkey, orderkey]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    Output[custkey, orderkey]
+    │   Layout: [custkey:bigint, orderkey:bigint]
+    │   Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: ?}
+    └─ RemoteSource[1]
+           Layout: [orderkey:bigint, custkey:bigint]
+
+Fragment 1 [SOURCE]
+    Output layout: [orderkey, custkey]
+    Output partitioning: SINGLE []
+    Stage Execution Strategy: UNGROUPED_EXECUTION
+    TableScan[postgres:Query[SELECT l."orderkey" AS "orderkey_0", l."custkey" AS "custkey_1", r."custkey" AS "custkey_2" FROM (SELECT "orderkey", "custkey" FROM "tpch"."orders") l INNER JOIN (SELECT "custkey" FROM "tpch"."customer") r O
+        Layout: [orderkey:bigint, custkey:bigint]
+        Estimates: {rows: ? (?), cpu: ?, memory: 0B, network: 0B}
+        orderkey := orderkey_0:bigint:int8
+        custkey := custkey_1:bigint:int8
+</pre></div>
+</div>
+<p>It is typically beneficial to push down a join. Pushing down a join can also
+increase the row count compared to the size of the input to the join. This
+may impact performance.</p>
 
 
 <span id="id5"></span><h2 id="limit-pushdown">Limit pushdown<a class="headerlink" href="#limit-pushdown" title="Permalink to this headline">#</a></h2>
@@ -811,7 +852,7 @@ feedback();
         <a href="https://www.starburst.io/" target="_blank">
           
             <img src="../_static/Starburst_Logo_NoTag_White.png" height="26"
-                  alt="Starburst Enterprise 364-e STS logo">
+                  alt="Starburst Enterprise 364-e LTS logo">
         
         </a>
         <li class="footer-item" style="padding-right:10px;">
