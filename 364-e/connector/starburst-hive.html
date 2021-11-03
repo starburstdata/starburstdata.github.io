@@ -356,8 +356,6 @@
         </li>
         <li class="md-nav__item"><a href="#automated-materialized-view-management" class="md-nav__link">Automated materialized view management</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#example" class="md-nav__link">Example</a>
-        </li>
         <li class="md-nav__item"><a href="#id2" class="md-nav__link">Troubleshooting</a>
         </li></ul>
             </nav>
@@ -895,8 +893,6 @@
         </li>
         <li class="md-nav__item"><a href="#automated-materialized-view-management" class="md-nav__link">Automated materialized view management</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#example" class="md-nav__link">Example</a>
-        </li>
         <li class="md-nav__item"><a href="#id2" class="md-nav__link">Troubleshooting</a>
         </li></ul>
             </nav>
@@ -1048,7 +1044,7 @@ connector documentation</span></a>.</p>
 SEP enhancements to the Trino connector.</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../language/sql-support.html#sql-materialized-views-management"><span class="std std-ref">Materialized views management</span></a>, see also
-<a class="reference internal" href="#sb-hive-materialized-views"><span class="std std-ref">Materialized views</span></a> and <a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">Automated materialized view management</span></a></p></li>
+<a class="reference internal" href="#sb-hive-materialized-views"><span class="std std-ref">Materialized views</span></a> and <a class="reference internal" href="#sb-hive-mv-automatic-refresh"><span class="std std-ref">Automated materialized view management</span></a></p></li>
 </ul>
 
 <span id="sb-hive-materialized-views"></span><h3 id="materialized-views">Materialized views<a class="headerlink" href="#materialized-views" title="Permalink to this headline">#</a></h3>
@@ -1066,11 +1062,7 @@ following requirements:</p>
 </ul>
 <p>In the underlying system, each materialized view consists of a view definition
 and a storage table. The storage table name is stored as a materialized view
-property. The materialized data is stored in that storage table. Review our
-cache service <a class="reference internal" href="../admin/cache-service.html#cache-service-type-mapping-rules"><span class="std std-ref">type mapping feature</span></a> to
-learn how to create type mapping rules so that your users can create
-materialized views without the need to perform type casting where there are
-type incompatibilities in the target catalog.</p>
+property. The materialized data is stored in that storage table.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If you are a data engineer or platform administrator, read our <a class="reference external" href="../../../data-engineer/cache-service.html">cache
@@ -1079,7 +1071,7 @@ overview of setting up the cache service and using materialized views.</p>
 </div>
 <p>Materialized views are populated with data and refreshed manually with the
 <a class="reference internal" href="../sql/refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> command, or by the
-<a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">Automated materialized view management</span></a>. Storage configuration for the storage
+<a class="reference internal" href="#sb-hive-mv-automatic-refresh"><span class="std std-ref">Automated materialized view management</span></a>. Storage configuration for the storage
 tables must be supplied with the standard Hive connector table properties in the
 <code class="docutils literal notranslate"><span class="pre">WITH</span></code> statement:</p>
 <table id="id4">
@@ -1122,14 +1114,14 @@ to set a different default.</p></td>
 </tr>
 </tbody>
 </table>
-<p>The automatic refresh is configured with <a class="reference internal" href="#sb-hive-mv-with-clause-parameters"><span class="std std-ref">properties set in the
+<p>The <a class="reference internal" href="#sb-hive-mv-automatic-refresh"><span class="std std-ref">automatic refresh is configured with properties set in the
 WITH clause</span></a> of the
 <a class="reference internal" href="../sql/create-materialized-view.html"><span class="doc">CREATE MATERIALIZED VIEW</span></a> statement.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement specifies the query to define the
 data for the materialized view, the refresh schedule, and other parameters used
 by the cache service. The query can access any available catalog and schema.</p>
-<p>Once a materialized view is created, it is accessed like a table using the name
-of the materialized view.</p>
+<p>Once the storage tables are populated, the materialized view is created, and
+you can access it like a table using the name of the materialized view.</p>
 <p>Use the  <a class="reference internal" href="../sql/show-create-materialized-view.html"><span class="doc">SHOW CREATE MATERIALIZED VIEW</span></a> statement to view the
 complete <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement for a materialized view,
 including the properties in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause.</p>
@@ -1226,6 +1218,27 @@ for any other table:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">myhive</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">my_materialized_view</span><span class="p">;</span>
 </pre></div>
 </div>
+<p>You can also use the materialized view in more complex queries, just like any
+other table.</p>
+<p>Access to a materialized view is much faster, since the data is readily
+available in the storage table and no computation is necessary. The data however
+does use storage in addition to the source data. Use the following query to
+determine the catalog, schema, and name of the storage table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">???</span> <span class="k">FROM</span> <span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">materialized_views</span> <span class="k">WHERE</span> <span class="o">???</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Then use the hidden properties of the storage table to compute an estimate for
+the used storage:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">SUM</span><span class="p">(</span><span class="k">size</span><span class="p">)</span> <span class="n">table_size</span><span class="p">,</span> <span class="k">COUNT</span><span class="p">(</span><span class="n">file</span><span class="p">)</span> <span class="n">num_files</span>
+<span class="k">FROM</span> <span class="p">(</span>
+  <span class="k">SELECT</span>
+    <span class="ss">"$path"</span> <span class="k">AS</span> <span class="n">file</span><span class="p">,</span>
+    <span class="ss">"$file_size"</span> <span class="k">AS</span> <span class="k">size</span>
+  <span class="k">FROM</span> <span class="o">&lt;</span><span class="n">storage_catalog</span><span class="o">&gt;</span><span class="p">.</span><span class="o">&lt;</span><span class="n">storage_schema</span><span class="o">&gt;</span><span class="p">.</span><span class="o">&lt;</span><span class="n">storage_table</span><span class="o">&gt;</span>
+<span class="p">)</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">file</span><span class="p">,</span> <span class="k">size</span><span class="p">;</span>
+</pre></div>
+</div>
 
 
 <h4 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">#</a></h4>
@@ -1236,10 +1249,18 @@ it again.</p>
 
 
 
-<span id="sb-hive-mv-with-clause-parameters"></span><h3 id="automated-materialized-view-management">Automated materialized view management<a class="headerlink" href="#automated-materialized-view-management" title="Permalink to this headline">#</a></h3>
+<span id="sb-hive-mv-automatic-refresh"></span><h3 id="automated-materialized-view-management">Automated materialized view management<a class="headerlink" href="#automated-materialized-view-management" title="Permalink to this headline">#</a></h3>
 <p>The connector uses the <a class="reference internal" href="../admin/cache-service.html#cache-service-config-properties"><span class="std std-ref">cache service</span></a> to
-automate the maintenance of materialized views. Configuration properties are
-specified in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause when creating a materialized view:</p>
+manage metadata and maintenance of materialized views, related storage
+tables, and other aspects.</p>
+<p>When the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement runs initially, the cache
+services picks up processing asynchronously after its <a class="reference internal" href="../admin/cache-service.html#cache-service-config-properties"><span class="std std-ref">configured
+refresh-interval and delay</span></a>, which defaults to
+two minutes. The defined query is then run and used to populate the storage
+tables. The processing time depends on the complexity of the query, the cluster
+performance, and the performance of the storage.</p>
+<p>Configuration properties are specified in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause when creating a
+materialized view:</p>
 <table id="id6">
 <caption><span class="caption-text">Properties for automated materialized view management</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
@@ -1258,13 +1279,16 @@ specified in the <code class="docutils literal notranslate"><span class="pre">WI
 <td><p>Frequency at which the cache service triggers refresh of the materialized
 view, for instance <code class="docutils literal notranslate"><span class="pre">refresh_interval</span> <span class="pre">=</span> <span class="pre">'1d'</span></code> for one day. Refresh
 interval must be greater than or equal to five minutes, and is defined as
-a <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a>. Cannot be used with <code class="docutils literal notranslate"><span class="pre">cron</span></code>.</p></td>
+a <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a>. Cannot be used with <code class="docutils literal notranslate"><span class="pre">cron</span></code>. The
+cache service <a class="reference internal" href="../admin/cache-service.html#cache-service-config-properties"><span class="std std-ref">refresh-interval and delay</span></a> defines the specific frequency when the
+need for a refresh is checked.</p></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cron</span></code></p></td>
 <td><p>Unix cron expression specifying a schedule for regular refresh of the
 materialized view, for example <code class="docutils literal notranslate"><span class="pre">30</span> <span class="pre">2</span> <span class="pre">*</span> <span class="pre">*</span> <span class="pre">*</span></code>. Cannot be used with
-<code class="docutils literal notranslate"><span class="pre">refresh-interval</span></code>.</p></td>
+<code class="docutils literal notranslate"><span class="pre">refresh-interval</span></code>. The cache service <a class="reference internal" href="../admin/cache-service.html#cache-service-config-properties"><span class="std std-ref">refresh-interval and delay</span></a> defines the specific frequency when the
+need for a refresh is checked.</p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_import_duration</span></code></p></td>
@@ -1303,8 +1327,6 @@ materialized views in a catalog.</p></td>
 </tr>
 </tbody>
 </table>
-
-<h4 id="example">Example<a class="headerlink" href="#example" title="Permalink to this headline">#</a></h4>
 <p>In the following example, a materialized view named <code class="docutils literal notranslate"><span class="pre">customer_total_return</span></code> in
 <code class="docutils literal notranslate"><span class="pre">myhive.myschema</span></code> is created to automatically refresh daily at 2:30AM:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="n">MATERIALIZED</span> <span class="k">VIEW</span> <span class="n">myhive</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">customer_total_return</span>
@@ -1330,7 +1352,6 @@ period, any new query requests that arrive after the new refresh is complete are
 run against the new contents. Query requests created before a refresh is
 complete are run against the previously existing contents until the effective
 grace period for that table is over.</p>
-
 
 <h4 id="id2">Troubleshooting<a class="headerlink" href="#id2" title="Permalink to this headline">#</a></h4>
 <p>When you first create a materialized view, it is helpful to be able to determine
