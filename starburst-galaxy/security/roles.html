@@ -527,10 +527,11 @@
       </h1>
     
 
-<p>IThe <a href="./index.html">security system of Starburst Galaxy</a> uses roles to bundle
+<p>The <a href="./index.html">security system of Starburst Galaxy</a> uses roles to bundle
 together one or more privileges to perform actions. A role has a name and an
-optional description. <a href="./privileges.html">Privileges</a> configure actions and
-access to <a href="./entities.html">entities</a> like catalogs and warehouses.</p>
+optional description. <a href="./privileges.html">Privileges</a> can be granted
+to roles to configure actions and access to <a href="./entities.html">entities</a> like
+catalogs and warehouses.</p>
 
 <p>Users are assigned one or more roles, and by selecting a role gain the rights
 defined by the role’s privileges. You can see the role you are currently using,
@@ -555,14 +556,29 @@ restriction on role grants is that they are not allowed to create grant loops. A
 role can have zero or more child roles, and always has one or more parent roles.
 As a result roles form a <code class="language-plaintext highlighter-rouge">directed acyclic graph
 &lt;https://en.wikipedia.org/wiki/Directed_acyclic_graph&gt;</code>_. The collection of all
-descendant roles is called the <em>dynasty</em> of the starting role.</p>
+descendant roles is called the <em>active role set</em> of the starting role.</p>
 
-<p>A role has all the privileges of all roles in its dynasty. That means all the
-privileges of those child roles, plus the privileges of their children, and so
-on.</p>
+<p>A role has all the privileges of all roles in its active role set. That means
+all the privileges of those child roles, plus the privileges of their children,
+and so on.</p>
 
 <p>You can grant one or more roles to a role <a href="../admin/roles-privileges.html">in the user
 interface</a>.</p>
+      <h2 id="roles-and-entity-ownership">
+        
+        
+          Roles and entity ownership <a href="#roles-and-entity-ownership" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>All entities are <em>owned</em> by exactly one role. When a new entity is created, the
+owner is set to the active role, and is granted all privileges on the entity.</p>
+
+<p>If a role or any role in the role’s active role set owns an entity, that role
+has the rights to delete or update the entity, and the right to grant privileges
+on the owned entity to another role.</p>
       <h2 id="user-roles">
         
         
@@ -576,7 +592,10 @@ interface</a>.</p>
 role <code class="language-plaintext highlighter-rouge">public</code>. At any moment a user assumes a single role, chosen using the role
 selection dropdown always shown in the upper right corner of the screen. By
 assuming a role, the user has all the privileges of that role, plus all the
-privileges of all roles that are descendants of that role.</p>
+privileges of all roles that are descendants of that role, and so on. The set of
+all roles transitively granted to the currently set role is called the <em>active
+role set</em>. The user session has the privileges of all roles in the active role
+set, and has ownership on any entity owned by a role in the active role set.</p>
       <h2 id="predefined-roles">
         
         
@@ -590,31 +609,18 @@ privileges of all roles that are descendants of that role.</p>
 privileges be revoked:</p>
 
 <ul>
-  <li><code class="language-plaintext highlighter-rouge">_system</code> is defined by the SQL specification to be grantor of privileges to
-all newly-created entities.  It has no other function in the RBAC system.</li>
-  <li><code class="language-plaintext highlighter-rouge">accountadmin</code> is granted all privileges on all entities. It can literally do
-anything, and its privileges may not be revoked. Only a limited list of users
-should be granted the <code class="language-plaintext highlighter-rouge">accountadmin</code> role. Best practice is to create new
-roles appropriate to the needs of your organization, and grant these new roles
-only the necessary privileges needed to perform their tasks.</li>
+  <li><code class="language-plaintext highlighter-rouge">accountadmin</code> is granted the MANAGE_SECURITY privileges and it can therefore
+assign any access to itself. It can literally do anything. Only a limited list
+of users should be granted the <code class="language-plaintext highlighter-rouge">accountadmin</code> role. Best practice is to create
+new roles appropriate to the needs of your organization, and grant these new
+roles only the necessary privileges needed to perform their tasks.</li>
   <li><code class="language-plaintext highlighter-rouge">public</code> is the name of the predefined default role that is implicitly
 granted to every user and cannot be revoked. Administrators can assign
 additional privileges to the public role.</li>
+  <li><code class="language-plaintext highlighter-rouge">_system</code> is defined by the SQL specification to be grantor of privileges to
+all newly-created entities. It has no other function in the RBAC system, and
+it can not be granted to other roles.</li>
 </ul>
-      <h2 id="roles-and-entity-ownership">
-        
-        
-          Roles and entity ownership <a href="#roles-and-entity-ownership" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>All entities are owned by a role, and all entities, including roles, have
-exactly one owner.  If a role or any role in the role’s dynasty owns an entity,
-that role has the privileges inherent in ownership of the entity. The only
-privileges conveyed by ownership are the rights to delete the entity, and the
-right to grant privileges on the owned entity to another role.</p>
       <h2 id="roles-should-fit-user-communities">
         
         
@@ -627,13 +633,12 @@ right to grant privileges on the owned entity to another role.</p>
 <p>Picking the new roles and their corresponding privileges starts with identifying
 the different communities of users. In a typical organization most users do not
 need to create or manage catalogs or warehouses, they just want to run queries.
-They need nothing beyond USE_WAREHOUSE on one or more warehouses, or
-USE_ALL_WAREHOUSES.</p>
+They need nothing beyond USE_WAREHOUSE on one or more warehouses.</p>
 
-<p>For these users, it makes sense to create a <code class="language-plaintext highlighter-rouge">data_consumer</code> role with only those
-USE_WAREHOUSE privileges or the USE_ALL_WAREHOUSES privilege.  Users granted the
-role <code class="language-plaintext highlighter-rouge">data_consumer</code> can run SQL queries on warehouses, but can not do any
-damage to any Starburst Galaxy setup.</p>
+<p>For these users, it makes sense to create a <code class="language-plaintext highlighter-rouge">data_consumer</code> role with only the
+USE_WAREHOUSE privilege on one or more warehouses.  Users granted the role
+<code class="language-plaintext highlighter-rouge">data_consumer</code> can run SQL queries on warehouses, but can not do any damage
+to any Starburst Galaxy setup.</p>
 
 <p>If users need only one specific warehouse at a time, it can make sense to create
 a role for each warehouse with USE_WAREHOUSE on that warehouse, and perhaps
@@ -653,15 +658,16 @@ organizations can start with this traditional division of administrative
 responsibility among roles:</p>
 
 <ul>
-  <li><code class="language-plaintext highlighter-rouge">sysadmin</code>, in charge or catalogs and warehouses, with privileges
-MANAGE_ALL_WAREHOUSES, CREATE_WAREHOUSE, MANAGE_ALL_CATALOGS
-and CREATE_CATALOG.  <code class="language-plaintext highlighter-rouge">sysadmin</code> has no rights to manage users or roles.</li>
-  <li><code class="language-plaintext highlighter-rouge">securityadmin</code>, in charge of roles and privileges, with the privilege
-MANAGE_ALL_ROLES.  <code class="language-plaintext highlighter-rouge">securityadmin</code> can create and delete roles, and grant or
-revoke any privilege on any role. <code class="language-plaintext highlighter-rouge">securityadmin</code> has no privileges to manage
-or even access catalogs, warehouses or users.</li>
-  <li><code class="language-plaintext highlighter-rouge">useradmin</code>, with privilege MANAGE_ALL_USERS. <code class="language-plaintext highlighter-rouge">useradmin</code> can only
-manage users, and has no privileges to control catalogs or warehouses.</li>
+  <li><code class="language-plaintext highlighter-rouge">data_admin</code>, the owner of all catalogs and warehouses, with privileges,
+CREATE_WAREHOUSE, CREATE_CATALOG. <code class="language-plaintext highlighter-rouge">sysadmin</code> has no rights to manage users or
+roles.</li>
+  <li><code class="language-plaintext highlighter-rouge">security_admin</code>, the owner of all custom roles, with the privilege
+CREATE_ROLE. <code class="language-plaintext highlighter-rouge">securityadmin</code> can create and delete roles, and grant or revoke
+any privilege on any role. <code class="language-plaintext highlighter-rouge">securityadmin</code> has no privileges to manage or even
+access catalogs, warehouses or users.</li>
+  <li><code class="language-plaintext highlighter-rouge">user_admin</code>, the owner of all users, with privilege CREATE_USER. <code class="language-plaintext highlighter-rouge">useradmin</code>
+can only manage users, and has no privileges to control catalogs or
+warehouses.</li>
 </ul>
 
         <div class="feedback-container">
@@ -763,7 +769,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#roles">Roles</a><ul><li><a href="#role-grants">Role grants</a></li><li><a href="#user-roles">User roles</a></li><li><a href="#predefined-roles">Predefined roles</a></li><li><a href="#roles-and-entity-ownership">Roles and entity ownership</a></li><li><a href="#roles-should-fit-user-communities">Roles should fit user communities</a></li><li><a href="#administrative-roles">Administrative roles</a></li></ul></li></ul>
+          <ul><li><a href="#roles">Roles</a><ul><li><a href="#role-grants">Role grants</a></li><li><a href="#roles-and-entity-ownership">Roles and entity ownership</a></li><li><a href="#user-roles">User roles</a></li><li><a href="#predefined-roles">Predefined roles</a></li><li><a href="#roles-should-fit-user-communities">Roles should fit user communities</a></li><li><a href="#administrative-roles">Administrative roles</a></li></ul></li></ul>
 
         </div>
       </div>
