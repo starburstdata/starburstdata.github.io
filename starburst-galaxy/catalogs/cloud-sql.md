@@ -16,7 +16,7 @@ The database on Cloud SQL needs to fulfill the following requirements:
 
 * Configured for **Public IP**, available in the Cloud SQL console for your
   database in **Connections** - **Public IP** with an **Authorized network**
-  configured with the CIDR to allow Starburst Galaxy access. The specific IP
+  configured with the CIDR to allow {{site.terms.sg}} access. The specific IP
   address range/CIDR is dependent on your Google Cloud region, and displayed
   after a **Test connection** execution.
 * **Zonal availability** set to **Single zone**.

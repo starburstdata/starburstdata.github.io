@@ -1,6 +1,6 @@
 ### Select a cloud provider
 
-The **Cloud provider** configuration is necessary to allow Starburst Galaxy to
+The **Cloud provider** configuration is necessary to allow {{site.terms.sg}} to
 correctly match catalogs and warehouses.
 
 The data source configured in a catalog, and the warehouse must operate in

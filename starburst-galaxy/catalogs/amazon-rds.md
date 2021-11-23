@@ -19,7 +19,7 @@ The database on Amazon RDS needs to fulfill the following requirements:
 
 * Configured for **Public access**, available in the Amazon RDS console for your
   database in **Connectivity** - **Additional configuration**
-* **VPC security group** configured to allow Starburst Galaxy access. The
+* **VPC security group** configured to allow {{site.terms.sg}} access. The
   specific IP address range/CIDR is dependent on your AWS region, and displayed
   after a **Test connection** execution. Add it as an inbound rule to allow the
   range.

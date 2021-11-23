@@ -16,6 +16,6 @@ The database on Azure Database needs to fulfill the following requirements:
 The database on Cloud SQL needs to fulfill the following requirements from the
 **Connection security** section of the **Settings** for the database:
 
-* A firewall rule configured for the Starburst Galaxy IP address range with
+* A firewall rule configured for the {{site.terms.sg}} IP address range with
   **Start IP** and **End IP** configured with a random **Firewall rule name**.
 * **TLS setting** configured for the **Minimum TLS version** as 1.2
