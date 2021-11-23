@@ -10,5 +10,5 @@ Use the {{site.terms.sg}} metastore in **Metastore configuration** by selecting
 Provide the name of the object store **bucket name** and **directory name**. The
 location is then used to store the metastore data with the object storage.
 
-Note that deletion of the catalog also results in removal of the Starburst
-Galaxy metastore data.
+Note that deletion of the catalog also results in removal of the
+{{site.terms.sg}} metastore data.
