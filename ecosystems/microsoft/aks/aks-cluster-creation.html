@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Azure Database</title>
+    <title>Starburst | Create an AKS cluster</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Azure Database">
+    <meta property="og:title" content="Starburst - Create an AKS cluster">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -156,7 +156,7 @@
 
 
 
-<li  class="active" 
+<li 
     onclick="toggle_navigation_visibility('data');">
   <a>
     Data sources
@@ -164,7 +164,7 @@
   </a>
 </li>
 
-<ul id="data" class="doc-subnav ">
+<ul id="data" class="doc-subnav hidden">
   
   
     
@@ -192,7 +192,7 @@
     
     
     
-  <li class="active"
+  <li 
       
     >
     <a href="/ecosystems/microsoft/data-sources/azure-database.html" >Azure Database</a>
@@ -209,7 +209,7 @@
 
 
 
-<li 
+<li  class="active" 
     onclick="toggle_navigation_visibility('aks');">
   <a>
     Microsoft AKS
@@ -217,7 +217,7 @@
   </a>
 </li>
 
-<ul id="aks" class="doc-subnav hidden">
+<ul id="aks" class="doc-subnav ">
   
   
     
@@ -234,7 +234,7 @@
     
     
     
-  <li 
+  <li class="active"
       
     >
     <a href="/ecosystems/microsoft/aks/aks-cluster-creation.html" >Cluster creation</a>
@@ -320,76 +320,141 @@
     
   
     
-      <a href="/ecosystems/microsoft/data-sources/"
+      <a href="/ecosystems/microsoft/aks/"
         style="text-transform: uppercase"
-      > data sources</a> >
+      > aks</a> >
     
   
     
-      Azure Database
+      Create an AKS cluster
     
   </p>
 </div>
 
-        <h1 id="azure-database">
+        <h1 id="create-an-aks-cluster">
         
         
-          Azure Database <a href="#azure-database" class="titleAnchor">#</a>
+          Create an AKS cluster <a href="#create-an-aks-cluster" class="titleAnchor">#</a>
         
         
       </h1>
     
 
-<p>You can query data stored on relational databases hosted on Azure Database with
-Starburst Enterprise platform (SEP) and Starburst Galaxy.</p>
-      <h2 id="starburst-enterprise">
-        
-        
-          Starburst Enterprise <a href="#starburst-enterprise" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+<p>This page describes how to configure a new AKS cluster that ensures all
+SEP resources are co-located and follow best practices.</p>
 
-<p>Create a catalog with the <a href="../../../latest/connector/starburst-mysql.html">MySQL
-connector</a> with the following
-databases:</p>
+<div class="alert alert-danger" role="alert">
+  <i class="fa fa-radiation"></i> <b>Warning:</b>
 
-<ul>
-  <li><a href="https://azure.microsoft.com/en-us/services/mariadb/">Azure Database for MariaDB</a></li>
-  <li><a href="https://azure.microsoft.com/en-us/services/mysql/MySQL">Azure Database for MySQL</a></li>
-</ul>
+  SEP has specific requirements for sizing,
+placement, and sharing of resources. You must ensure that your AKS cluster meets
+all requirements described in our <a href="../../../latest/k8s/requirements.html#k8s-cluster-requirements">cluster requirements
+section</a>.
 
-<p>Create a catalog with the <a href="../../../latest/connector/starburst-postgresql.html">PostgreSQL
-connector</a> with the following
-databases:</p>
-
-<ul>
-  <li><a href="https://azure.microsoft.com/en-us/services/postgresql/">Azure Database for PostgreSQL</a></li>
-</ul>
-      <h2 id="starburst-galaxy">
+</div>
+      <h2 id="prerequisites">
         
         
-          Starburst Galaxy <a href="#starburst-galaxy" class="titleAnchor">#</a>
+          Prerequisites <a href="#prerequisites" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Use a <a href="../../../starburst-galaxy/catalogs/mysql.html">MySQL catalog</a> with the
-following databases:</p>
+<p>Ensure that you have the following tools, policies, and certificates before
+creating a Kubernetes cluster for SEP in AKS:</p>
 
 <ul>
-  <li><a href="https://azure.microsoft.com/en-us/services/mariadb/">Azure Database for MariaDB</a></li>
-  <li><a href="https://azure.microsoft.com/en-us/services/mysql/MySQL">Azure Database for MySQL</a></li>
+  <li><code class="language-plaintext highlighter-rouge">helm</code></li>
+  <li><code class="language-plaintext highlighter-rouge">kubectl</code></li>
+  <li><a href="https://docs.microsoft.com/cli/azure/">Azure CLI (<code class="language-plaintext highlighter-rouge">az</code>)</a></li>
+  <li>Azure resource group for the SEP nodes</li>
+  <li>Virtual network assigned for the resource group</li>
+  <li>IAM policies for ADLS, S3, as desired</li>
+  <li>CA-signed certificate for HTTPS/TLS (for a domain such as
+<code class="language-plaintext highlighter-rouge">starburst.example.com</code>) if using AD/LDAP authentication</li>
 </ul>
+      <h2 id="create-your-azure-cluster">
+        
+        
+          Create your Azure cluster <a href="#create-your-azure-cluster" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
 
-<p>Use a <a href="../../../starburst-galaxy/catalogs/postgresql.html">PostgreSQL catalog</a>
-with the following databases:</p>
+<p>It is strongly recommended to have your SEP coordinator and
+workers share the same resource group. The following example
+<a href="https://docs.microsoft.com/cli/azure/aks?view=azure-cli-latest#az_aks_create"><code class="language-plaintext highlighter-rouge">az aks create</code></a>
+command creates the “sep-example” cluster in the “example-rg” resource group:</p>
 
-<ul>
-  <li><a href="https://azure.microsoft.com/en-us/services/postgresql/">Azure Database for PostgreSQL</a></li>
-</ul>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>az aks create <span class="nt">--kubernetes-version</span> 1.20.7 <span class="nt">--name</span> sep-example <span class="nt">--resource-group</span> example-rg <span class="se">\</span>
+  <span class="nt">--vnet-subnet-id</span> /subscriptions/1234abcd-a1b2-c3d4-e5f6-example/resourceGroups/example-rg/providers/Microsoft.Network/virtualNetworks/example-network/subnets/default <span class="se">\</span>
+  <span class="nt">--service-cidr</span> 10.10.0.0/16 <span class="se">\</span>
+  <span class="nt">--dns-service-ip</span> 10.10.0.10 <span class="se">\</span>
+  <span class="nt">--docker-bridge-address</span> 172.16.0.1/16 <span class="se">\</span>
+  <span class="nt">--location</span> eastus <span class="se">\</span>
+  <span class="nt">--zones</span> 1 <span class="se">\</span>
+  <span class="nt">--network-plugin</span> azure <span class="se">\</span>
+  <span class="nt">--node-vm-size</span> standard_ds2_v2 <span class="se">\</span>
+  <span class="nt">--enable-aad</span> <span class="se">\</span>
+  <span class="nt">--aad-admin-group-object-ids</span> aabbccdd-1a2b-3c4d-5d6f-example <span class="se">\</span>
+  <span class="nt">--assign-identity</span> /subscriptions/1234abcd-a1b2-c3d4-e5f6-example/resourcegroups/example-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/example-identity-policy <span class="se">\</span>
+  <span class="nt">--enable-cluster-autoscaler</span> <span class="se">\</span>
+  <span class="nt">--node-count</span> 1 <span class="se">\</span>
+  <span class="nt">--min-count</span> 1 <span class="se">\</span>
+  <span class="nt">--max-count</span> 3 <span class="se">\</span>
+  <span class="nt">--nodepool-name</span> systempool <span class="se">\</span>
+  <span class="nt">--node-osdisk-size</span> 64
+</code></pre></div></div>
+      <h2 id="establish-nodepools">
+        
+        
+          Establish nodepools <a href="#establish-nodepools" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>The best practice is to create one nodepool for your SEP
+coordinator and another for worker nodes. The following
+<a href="https://docs.microsoft.com/cli/azure/aks/nodepool?view=azure-cli-latest#az_aks_nodepool_add"><code class="language-plaintext highlighter-rouge">az aks nodepool add</code></a>
+command creates a
+nodepool for a coordinator:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>az aks nodepool add <span class="nt">--cluster-name</span> sep-example <span class="nt">--resource-group</span> example-rg <span class="se">\</span>
+  <span class="nt">--name</span> sep-coordinator <span class="se">\</span>
+  <span class="nt">--labels</span> <span class="nv">apps</span><span class="o">=</span>sep-coordinator <span class="se">\</span>
+  <span class="nt">--priority</span> Spot <span class="se">\</span>
+  <span class="nt">--node-vm-size</span> standard_d8s_v3 <span class="se">\</span>
+  <span class="nt">--eviction-policy</span> Delete <span class="se">\</span>
+  <span class="nt">--spot-max-price</span> <span class="nt">-1</span> <span class="se">\</span>
+  <span class="nt">--enable-cluster-autoscaler</span> <span class="se">\</span>
+  <span class="nt">--node-count</span> 1 <span class="se">\</span>
+  <span class="nt">--min-count</span> 1 <span class="se">\</span>
+  <span class="nt">--max-count</span> 2 <span class="se">\</span>
+  <span class="nt">--node-osdisk-size</span> 64 <span class="se">\</span>
+  <span class="nt">--node-osdisk-type</span> Ephemeral <span class="se">\</span>
+  <span class="nt">--no-wait</span>
+</code></pre></div></div>
+
+<p>The following command creates a scaling nodepool for a minimum of two workers:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>az aks nodepool add <span class="nt">--cluster-name</span> sep-example <span class="nt">--resource-group</span> example-rg <span class="se">\</span>
+  <span class="nt">--name</span> sep-workers <span class="se">\</span>
+  <span class="nt">--labels</span> <span class="nv">apps</span><span class="o">=</span>sep-workers <span class="se">\</span>
+  <span class="nt">--priority</span> Spot <span class="se">\</span>
+  <span class="nt">--node-vm-size</span> standard_d8s_v3 <span class="se">\</span>
+  <span class="nt">--eviction-policy</span> Delete <span class="se">\</span>
+  <span class="nt">--spot-max-price</span> <span class="nt">-1</span> <span class="se">\</span>
+  <span class="nt">--enable-cluster-autoscaler</span> <span class="se">\</span>
+  <span class="nt">--node-count</span> 2 <span class="se">\</span>
+  <span class="nt">--min-count</span> 2 <span class="se">\</span>
+  <span class="nt">--max-count</span> 4 <span class="se">\</span>
+  <span class="nt">--node-osdisk-size</span> 64 <span class="se">\</span>
+  <span class="nt">--node-osdisk-type</span> Ephemeral <span class="se">\</span>
+  <span class="nt">--no-wait</span>
+</code></pre></div></div>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -490,7 +555,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#azure-database">Azure Database</a><ul><li><a href="#starburst-enterprise">Starburst Enterprise</a></li><li><a href="#starburst-galaxy">Starburst Galaxy</a></li></ul></li></ul>
+          <ul><li><a href="#create-an-aks-cluster">Create an AKS cluster</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#create-your-azure-cluster">Create your Azure cluster</a></li><li><a href="#establish-nodepools">Establish nodepools</a></li></ul></li></ul>
 
         </div>
       </div>
