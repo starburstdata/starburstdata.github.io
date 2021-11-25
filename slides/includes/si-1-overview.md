@@ -2,11 +2,16 @@
 
 > Analytics anywhere
 
+-notes
+
+* 15 minutes
+* this is another speaker note item
 
 -vertical
 # Trino
 
 * Leading SQL query engine
+* Fast and scalable
 * Open source
 * Founders and many contributors at Starburst
 
