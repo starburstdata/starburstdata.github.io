@@ -8,7 +8,7 @@ The name is displayed in Worksheets, and when running a [SHOW
 CATALOGS](../../latest/sql/show-catalogs.html). It is used to fully qualify the
 name of any table in SQL queries following the
 ``catalogname.schemaname.tablename`` syntax. For example, you can run the
-following query in the demo warehouse without setting any context of catalog or
+following query in the demo cluster without setting any context of catalog or
 schema.
 
 ```sql
