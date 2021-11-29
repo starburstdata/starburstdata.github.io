@@ -748,11 +748,14 @@ client, see the following resources:</p>
 <a href="../../latest/installation/cli.html">reference documentation</a>.</li>
 </ul>
 
-        <div class="feedback-container">
+        <div class="d-lg-none">
+          <div class="feedback-container">
   <div class="feedback-thumbs">
     <p>Is the information on this page helpful?</p>
-    <p class="feedback-option" title="yes"><i class="fa fa-thumbs-up"></i>Yes</p>
-    <p class="feedback-option" title="no"><i class="fa fa-thumbs-down"></i>No</p>
+    <div class="thumb-wrapper">
+      <p class="feedback-option" title="yes"><i class="fa fa-thumbs-up"></i>Yes</p>
+      <p class="feedback-option" title="no"><i class="fa fa-thumbs-down"></i>No</p>
+    </div>
   </div>
   <div class="feedback-message">
     <textarea class="feedback-body" placeholder="Additional feedback"></textarea>
@@ -844,10 +847,109 @@ function feedback() {
 feedback();
 </script>
 
+        </div>
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
           <ul><li><a href="#cli">CLI</a><ul><li><a href="#requirements">Requirements</a></li><li><a href="#download-and-install">Download and install</a></li><li><a href="#connection">Connection</a></li><li><a href="#querying">Querying</a><ul><li><a href="#querying-outside-of-the-cli-shell">Querying outside of the CLI shell</a></li></ul></li><li><a href="#next-steps">Next steps</a></li></ul></li></ul>
+
+          <div class="feedback-container">
+  <div class="feedback-thumbs">
+    <p>Is the information on this page helpful?</p>
+    <div class="thumb-wrapper">
+      <p class="feedback-option" title="yes"><i class="fa fa-thumbs-up"></i>Yes</p>
+      <p class="feedback-option" title="no"><i class="fa fa-thumbs-down"></i>No</p>
+    </div>
+  </div>
+  <div class="feedback-message">
+    <textarea class="feedback-body" placeholder="Additional feedback"></textarea>
+    <button type="button" onclick="sendMessage()" class="btn btn-sm btn-primary">Submit</button>
+    <a onclick="skip()" class="feedback-skip">Skip</a>
+  </div>
+</div>
+
+<script>
+function feedback() {
+  var feedbackValue = "";
+  var feedbackThumbs = document.querySelector(".feedback-thumbs");
+  var feedbackMessage = document.querySelector(".feedback-message");
+  var initialFeedbackMessageContents = feedbackMessage.innerHTML;
+  var feedbackAnswer = localStorage.getItem('feedback-answer-' + window.location.pathname);
+  var options = Array.from(document.querySelectorAll(".feedback-option"));
+
+  if (feedbackAnswer) {
+    Object.keys(options).map(i => options[i].getAttribute('title') == JSON.parse(feedbackAnswer)
+      ? options[i].classList.add('active')
+      : null
+    );
+  }
+
+  var clickFunction = function(event){
+    var page = window.location.pathname;
+    var value = event.currentTarget.getAttribute('title');
+    var eventValue = value == 'yes' ? 1 : 0;
+
+    if(!event.currentTarget.classList.contains('active')) {
+      localStorage.setItem('feedback-answer-' + page, JSON.stringify(value == 'yes' ? 'yes' : 'no'));
+      feedbackValue = value;
+
+      gtag('event', 'feedback', {
+        'event_category': 'Docs Feedback',
+        'event_label': page,
+        'event_value': eventValue,
+      });
+
+      Object.keys(options).map(i => options[i].classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      feedbackThumbs.style.display = "none";
+      feedbackMessage.style.display = "flex";
+    };
+  };
+
+  skip = function() {
+    feedbackMessage.style.display = "none";
+    feedbackThumbs.style.display = "flex";
+    feedbackMessage.innerHTML = initialFeedbackMessageContents;
+  }
+
+  sendMessage = function(){
+    var feedbackBody = document.querySelector(".feedback-body").value;
+
+    if (feedbackBody) {
+      var message = "Page url: " + window.location.pathname + "\n\n"
+        + "Feedback positive?: " + feedbackValue + "\n\n" +  "Feedback Message: " + feedbackBody;
+      var link = "mailto:docs-feedback@starburst.io?subject=" + encodeURIComponent("Feedback")+"&body="
+        + encodeURIComponent(message);
+
+      window.location.href = link;
+      feedbackMessage.innerHTML = "<p>Thank you!</p>";
+
+      setTimeout(function(){
+          skip();
+      }, 5000);
+    } else {
+      if(!document.querySelector("#feedback-skip")) {
+        var alertMessage = document.createElement("p");
+        alertMessage.id = "feedback-skip";
+        alertMessage.style.color = "red";
+        alertMessage.style.position = "absolute";
+        alertMessage.style.bottom = "-0.5rem";
+        alertMessage.innerHTML = "Please provide a message.";
+        feedbackMessage.appendChild(alertMessage);
+
+        setTimeout(function(){
+          alertMessage.remove();
+        }, 3000);
+      }
+    }
+  }
+
+  Object.keys(options).map(i => options[i].addEventListener('click', clickFunction , false));
+}
+
+feedback();
+</script>
 
         </div>
       </div>
