@@ -12,3 +12,14 @@
 Sure, but what does that even mean? <!-- .element: class="fragment" -->
 
 Let's decipher the jargon. <!-- .element: class="fragment" -->
+
+
+-vertical
+## MPP ?
+
+Massively parallel processing:
+
+*Instead of running on a single server, you use many at the same time.*
+
+-vertical
+## SQL
