@@ -508,8 +508,8 @@ collected even when Insights or the Web UI are disabled.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
 <p>Insights requires:</p>
 <ul class="simple">
-<li><p>A configured and operational <a class="reference internal" href="../security/event-logger.html"><span class="doc">event logger setup</span></a> for full functionality, because Insights uses the
-same database. Without the event logger database, only limited information is
+<li><p>A configured and operational <a class="reference internal" href="../admin/query-logger.html"><span class="doc">query logger setup</span></a> for full functionality, because Insights uses the
+same database. Without the query logger database, only limited information is
 available.</p></li>
 <li><p>Configuration properties on the coordinator, described next.</p></li>
 </ul>
@@ -519,11 +519,11 @@ available.</p></li>
 <p>Insights is configured in the <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">config.properties file</span></a> on the coordinator only. To avoid startup failures, do not
 add the properties to worker configuration files.</p>
 <p>You must explicitly enable Insights to use the persisted data in the
-<a class="reference internal" href="../security/event-logger.html"><span class="doc">event logger database</span></a> with the first property in
-the following table. This provides the information needed for the query and
-cluster history features of Insights.  Additionally, you can configure
-Insights to persist cluster metrics to the same database with the second
-property in the table.</p>
+<a class="reference internal" href="../admin/query-logger.html"><span class="doc">query logger database</span></a> with
+insights.``persistence-enabled=true``. This provides the information needed for
+the query and cluster history features of Insights.  Additionally, you can
+configure Insights to persist cluster metrics to the same database with the
+second property in the table.</p>
 <p>To use the usage metrics feature, and to grant unrestricted access to query
 history, you must assign those rights to authorized users and/or groups, or
 enable everyone with a wildcard. See examples in <a class="reference internal" href="#insights-auth-examples"><span class="std std-ref">Authorization examples</span></a>.</p>
@@ -546,13 +546,13 @@ enable everyone with a wildcard. See examples in <a class="reference internal" h
 <td><p>Enable the cluster history functionality. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.url</span></code></p></td>
-<td><p>JDBC connection string URL for the event logger database.</p></td>
+<td><p>JDBC connection string URL for the query logger database.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.user</span></code></p></td>
-<td><p>Username of the user with read/write access to the event logger database.</p></td>
+<td><p>Username of the user with read/write access to the query logger database.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.password</span></code></p></td>
-<td><p>Password of the user for event logger database access.</p></td>
+<td><p>Password of the user for database access.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.authorized-users</span></code></p></td>
 <td><p>Regular expression to match user names granted unrestricted access to
@@ -579,11 +579,11 @@ and behavior of Insights.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.connection-pool.max-size</span></code></p></td>
-<td><p>Maximum number of connections to the event logger database in the
+<td><p>Maximum number of connections to the query logger database in the
 connection pool in SEP. Default is <code class="docutils literal notranslate"><span class="pre">10</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.connection-pool.min-size</span></code></p></td>
-<td><p>Minimum number of connections to the event logger database in the
+<td><p>Minimum number of connections to the query logger database in the
 connection pool in SEP. Default is <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.metrics-collection-interval</span></code></p></td>
@@ -611,6 +611,36 @@ as discussed in <a class="reference internal" href="#insights-customize-auth-app
 </table>
 <p>Instructions for configuring Insights for Kubernetes deployments are
 available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-insights"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
+<p><strong>Example configuration with a PostgreSQL query logger database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.metrics-persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:postgresql://postgresql.example.com:5432/sepquerylogger</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">test_psql</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p>It is not good practice to use the <code class="docutils literal notranslate"><span class="pre">public</span></code> schema. Configure the user to use
+a different schema by default. See the <a class="reference external" href="https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATTERNS">PostgreSQL documentation</a>
+for details.</p>
+<p><strong>Example configuration with a Oracle query logger database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.metrics-persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:oracle:thin:@oracle.example.com:1521/sepquerylogger</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">test_ora</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p><strong>Example configuration with a MySQL query logger database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.metrics-persistence-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:mysql://mysql.example.com:3306/sepquerylogger?sessionVariables=sql_mode=ANSI</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">test_mysql</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p>You must specify <code class="docutils literal notranslate"><span class="pre">sql_mode=ANSI</span></code> in the <code class="docutils literal notranslate"><span class="pre">insights.jdbc.url</span></code> configuration.
+The configured user must have sufficient rights to create tables and insert data
+in the configured schema.</p>
 
 <span id="insights-auth-examples"></span><h3 id="authorization-examples">Authorization examples<a class="headerlink" href="#authorization-examples" title="Permalink to this headline">#</a></h3>
 <p>Grant unrestricted access to users <code class="docutils literal notranslate"><span class="pre">alice</span></code>, <code class="docutils literal notranslate"><span class="pre">bob</span></code>, and <code class="docutils literal notranslate"><span class="pre">charlie</span></code>:</p>
