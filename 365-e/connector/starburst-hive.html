@@ -1204,14 +1204,18 @@ set to <code class="docutils literal notranslate"><span class="pre">true</span><
 </tbody>
 </table>
 <p>The storage schema must be defined in the catalog properties file.</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">materialized-views.storage-schema</span><span class="o">=</span><span class="s">mymvstorage</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">materialized-views.storage-schema</span><span class="o">=</span><span class="s">views_cache_storage</span>
 </pre></div>
 </div>
 <p>If it does not exist yet, you must create it with a defined location:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">myhive</span><span class="p">.</span><span class="n">mymvstorage</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3a://mymvstorage/'</span><span class="p">);</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">myhive</span><span class="p">.</span><span class="n">views_cache_storage</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3a://&lt;s3-bucket-name&gt;/hivepostgres_views/views_cache_storage/'</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>In addition the schema for the materialized view itself must exist.</p>
+<p>In addition, the schema for the materialized view itself must exist. If it does
+not exist, you must create it:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">myhive</span><span class="p">.</span><span class="n">views_schema</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3a://&lt;s3-bucket-name&gt;/hivepostgres_views/views_schemas'</span><span class="p">);</span>
+</pre></div>
+</div>
 <p>With the cache service running, the catalog configured and the schemas defined,
 you can proceed to create a materialized view. In this example, a materialized
 view named <code class="docutils literal notranslate"><span class="pre">myhive.myschema.my_materialized_view</span></code> is created:</p>
@@ -1230,8 +1234,14 @@ view named <code class="docutils literal notranslate"><span class="pre">myhive.m
 accessing one or multiple other catalogs.</p>
 <p>The properties for the view are stored in the cache service database, and the
 data in the storage schema, <code class="docutils literal notranslate"><span class="pre">myhive.mymvstorage</span></code>.</p>
-<p>To query data in the materialized view, use a <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> statement as you would
-for any other table:</p>
+<p>Once the materialized view has been created, you can query the data. If the data
+is not yet cached, the query runs against the source data instead. You can force
+the materialized view to cache at any time by running a <code class="docutils literal notranslate"><span class="pre">REFRESH</span></code> statement:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">REFRESH</span> <span class="n">MATERIALIZED</span> <span class="k">VIEW</span> <span class="n">myhive</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">my_materialized_view</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To query data in the materialized view, use a <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> statement
+as you would for any other table:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">myhive</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">my_materialized_view</span><span class="p">;</span>
 </pre></div>
 </div>
@@ -1554,15 +1564,14 @@ following:</p>
 <ul class="simple">
 <li><p>OAuth2 passthrough with Azure AD and Hive is supported for read operations and
 <code class="docutils literal notranslate"><span class="pre">INSERT</span> <span class="pre">INTO</span></code> statements via the Trino CLI and the JDBC driver. It does not
-work with the Web UI or Insights-based features. If passthrough support is
-enabled and a user tries to access a table in the hive catalog configured for
-passthrough via the Web UI or Insights, they will get an “Unable to find
-Azure AD authentication token” error.</p></li>
-<li><p>Passthrough support is read-only at the object storage level. You cannot
-create a schema using passthrough with the Trino CLI or JDBC driver. This
-limitation has the effect of requiring you to create the SEP metastore
-with a non-passthrough authentication mode, then configuring SEP with
-passthrough credentials.</p></li>
+work with the Web UI or <a class="reference internal" href="../insights/worksheet.html"><span class="doc">Insights Worksheets query editor</span></a>. If passthrough support is
+enabled and you try to access a table in the catalog configured for
+passthrough via the Web UI or Insights, you get an <code class="docutils literal notranslate"><span class="pre">Unable</span> <span class="pre">to</span> <span class="pre">find</span>
+<span class="pre">Azure</span> <span class="pre">AD</span> <span class="pre">authentication</span> <span class="pre">token</span></code> error.</p></li>
+<li><p>Passthrough support is read-only at the object storage level. For example,
+you cannot create a schema or table using passthrough. As a result you have to
+create objects with a non-passthrough authentication mode in a separate
+catalog or outside of SEP.</p></li>
 </ul>
 
 
