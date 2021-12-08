@@ -6,6 +6,7 @@ const searchClient = algoliasearch(
 const hitsContainer = document.querySelector('#hits');
 const statsContainer = document.querySelector('#stats');
 const refinementContainer = document.querySelector('#refinement-list');
+const noResultsContainer = document.querySelector('#noResults');
 
 const search = instantsearch({
   indexName: 'AllDocs',
@@ -30,9 +31,10 @@ const search = instantsearch({
 });
 
 const renderHits = (renderOptions) => {
-  const { hits, widgetParams } = renderOptions;
+  const { hits, results, widgetParams } = renderOptions;
 
-  widgetParams.container.innerHTML = `
+  if (hits.length > 0) {
+    widgetParams.container.innerHTML = `
     <ul class="search-hits">
       ${hits
         .map(
@@ -69,17 +71,26 @@ const renderHits = (renderOptions) => {
         .join('')}
     </ul>
   `;
+  } else {
+    refinementContainer.style.display = 'none';
+    widgetParams.container.innerHTML = `<div id="noResults">
+    <h2>We're sorry!</h2>
+    <p>We couldn't find any results for: "${results && results.query}"</p>
+  </div>
+  `;
+  }
 };
 
 const renderStats = (renderOptions) => {
   const { nbHits, query } = renderOptions;
-
   if (nbHits > 5) {
-    document.querySelector('#stats').innerHTML = `
+    statsContainer.innerHTML = `
       <a href='/searchresults?q=${query}'>View more results</a>
     `;
-  } else {
-    document.querySelector('#stats').innerHTML = ``;
+  } else if (nbHits <= 5) {
+    statsContainer.innerHTML = `<a href='/searchresults?q=${query}'>Advanced search</a>`;
+  } else if (nbHits == 0) {
+    statsContainer.innerHTML = ``;
   }
 };
 
