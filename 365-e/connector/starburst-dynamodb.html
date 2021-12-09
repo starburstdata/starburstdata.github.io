@@ -336,6 +336,16 @@
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#authenticating-with-aws-user-credentials" class="md-nav__link">Authenticating with AWS user credentials</a>
+        </li>
+        <li class="md-nav__item"><a href="#authenticating-from-an-ec2-instance" class="md-nav__link">Authenticating from an EC2 instance</a>
+        </li>
+        <li class="md-nav__item"><a href="#authenticating-using-a-role" class="md-nav__link">Authenticating using a role</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -860,6 +870,16 @@
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#authenticating-with-aws-user-credentials" class="md-nav__link">Authenticating with AWS user credentials</a>
+        </li>
+        <li class="md-nav__item"><a href="#authenticating-from-an-ec2-instance" class="md-nav__link">Authenticating from an EC2 instance</a>
+        </li>
+        <li class="md-nav__item"><a href="#authenticating-using-a-role" class="md-nav__link">Authenticating using a role</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -899,8 +919,9 @@ dynamodb.generate-schema-files=NEVER
 dynamodb.schema-directory=/path/to/schema/directory
 </pre></div>
 </div>
-<p>Specify the <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> property as <code class="docutils literal notranslate"><span class="pre">dynamodb</span></code>. Configure the
-catalog using your AWS access key, secret key, and region for your account.</p>
+<p>Specify the <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> property as <code class="docutils literal notranslate"><span class="pre">dynamodb</span></code>. Configure the catalog
+using your AWS access key, secret key, and region for your account. Additional
+authentication methods are documented in the <a class="reference internal" href="#dynamodb-security"><span class="std std-ref">Security</span></a> section.</p>
 <p>The connector can only access DynamoDB with the configured access credentials in
 the catalog. If you need to access DynamoDB with different credentials or a
 different region, configure a separate catalog. See more information about
@@ -1222,6 +1243,55 @@ query.</p>
 <p>The connector supports <a class="reference internal" href="../admin/table-scan-redirection.html"><span class="doc">table scan
 redirection</span></a> to improve performance and reduce
 load on the data source.</p>
+
+
+
+<span id="dynamodb-security"></span><h2 id="security">Security<a class="headerlink" href="#security" title="Permalink to this headline">#</a></h2>
+<p>The connector includes a number of security-related features, detailed in the
+following sections.</p>
+
+<h3 id="authenticating-with-aws-user-credentials">Authenticating with AWS user credentials<a class="headerlink" href="#authenticating-with-aws-user-credentials" title="Permalink to this headline">#</a></h3>
+<p>To authenticate using root or user credentials, set the following in your
+catalog properties, substituting the access key and secret key associated
+with the AWS user in your account. If you are not using root credentials, the
+user must have the correct policy for accessing DynamoDB.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>dynamodb.aws-access-key=AKIAIOSFSJKFDFODNN7EXAMPLE
+dynamodb.aws-secret-key=wJalrXUtnFEMI/Kadadf7MDENG/bPxRfiCYEXAMPLEKEY
+</pre></div>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Production use of root credentials is strongly discouraged as the root
+credentials have full access to your AWS account.</p>
+</div>
+
+
+<h3 id="authenticating-from-an-ec2-instance">Authenticating from an EC2 instance<a class="headerlink" href="#authenticating-from-an-ec2-instance" title="Permalink to this headline">#</a></h3>
+<p>To authenticate using the EC2 instance role, do not set access key or secret key
+properties. The connector automatically uses the IAM role credentials attached
+to the running EC2 instance and authenticate with them. Note that the EC2
+instance role must have a correct policy attached for accessing DynamoDB.</p>
+
+
+<h3 id="authenticating-using-a-role">Authenticating using a role<a class="headerlink" href="#authenticating-using-a-role" title="Permalink to this headline">#</a></h3>
+<p>To authenticate assuming a role, specify the role ARN in the catalog properties
+file. Note that an access key and secret key must be specified to authenticate
+the account unless running on an EC2 instance. In this case, the IAM role
+credentials attached to the EC2 instance is used to authenticate prior to
+assuming the role. If an external ID is required, specify this as well. Note the
+correct trust relationship for the role and the policy to access DynamoDB must
+be configured. Roles cannot be used when specifying the access key and secret
+key of the root user.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>dynamodb.aws-role-arn=arn:aws:iam::account:role/role-name
+
+# Optionally specify access key and secret key if not on EC2
+dynamodb.aws-access-key=AKIAIOSFODNN7EXAMPLE
+dynamodb.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Optionally specify the external ID to assume the role
+dynamodb.aws-external-id=my-external-id
+</pre></div>
+</div>
 
 
 
