@@ -305,7 +305,9 @@
         </li>
         <li class="md-nav__item"><a href="#stages" class="md-nav__link">Stages</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#tasks" class="md-nav__link">Tasks</a>
+        <li class="md-nav__item"><a href="#list-view" class="md-nav__link">List view</a>
+        </li>
+        <li class="md-nav__item"><a href="#graph-view" class="md-nav__link">Graph view</a>
         </li></ul>
             </nav>
         </li>
@@ -461,7 +463,9 @@
         </li>
         <li class="md-nav__item"><a href="#stages" class="md-nav__link">Stages</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#tasks" class="md-nav__link">Tasks</a>
+        <li class="md-nav__item"><a href="#list-view" class="md-nav__link">List view</a>
+        </li>
+        <li class="md-nav__item"><a href="#graph-view" class="md-nav__link">Graph view</a>
         </li></ul>
             </nav>
         </li>
@@ -541,12 +545,10 @@ range when the query ran as a highlighted area on the timeline.</p>
 
 
 <span id="insights-query-detail-stages"></span><h2 id="stages">Stages<a class="headerlink" href="#stages" title="Permalink to this headline">#</a></h2>
-<p>The stages view shows a table of expandable information panels with details
-about query processing stages. A stage is the runtime incarnation of a plan
-fragment in a distributed query plan, and is identified by a stage number. The
-maximum number of stages in a query plan is defined by the
-<code class="docutils literal notranslate"><span class="pre">query.max-stage-count</span></code> <a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">configuration property</span></a>.</p>
-<img alt="Query details Stages pane" src="../_images/insights-query-detail-stages.png"/>
+<p>The stages view shows details about query processing stages. A stage is the
+runtime incarnation of a plan fragment in a distributed query plan, and is
+identified by a stage number. The maximum number of stages in a query plan is
+defined by the <code class="docutils literal notranslate"><span class="pre">query.max-stage-count</span></code> <a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">configuration property</span></a>.</p>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
 <p>This view is for advanced users with a very good understanding of query
@@ -559,8 +561,16 @@ to learn how SEP executes queries</p></li>
 <li><p><a class="reference external" href="https://trino.io/trino-the-definitive-guide.html">Trino: The Definitive Guide</a></p></li>
 </ul>
 </div>
-<p>Information is included in the view that applies to the query and its processing
-as a whole:</p>
+<p>Stage information is rendered using two different paradigms. Use the toggle in
+the upper right corner to switch between the two visualizations.</p>
+<p><strong>List view</strong> shows a list of stages and includes information about the
+associated tasks:</p>
+<img alt="Query details Stages list pane" src="../_images/insights-query-detail-stages-list.png"/>
+<p><strong>Graph (tree) view</strong> depicts stages and the way data flows between them in
+parent-child relationships:</p>
+<img alt="Query details Stages graph pane" src="../_images/insights-query-detail-stages-tree.png"/>
+<p>The following information is included on this pane that applies to the query and
+its processing as a whole:</p>
 <ul class="simple">
 <li><p><strong>User:</strong> The user that is running the query.</p></li>
 <li><p><strong>Query state:</strong> Queued, planning, starting, running, blocked, finishing,
@@ -606,7 +616,12 @@ consumed.</p></li>
 <li><p><strong>Aborted:</strong> Stage was aborted by the coordinator.</p></li>
 <li><p><strong>Failed:</strong> Query execution failed.</p></li>
 </ul>
-<p>Several similar statistics are shown for each stage as a whole:</p>
+
+<h3 id="list-view">List view<a class="headerlink" href="#list-view" title="Permalink to this headline">#</a></h3>
+<p>This view focuses on statistics about stages and their tasks. It is useful for
+examining stage performance, and understanding if all nodes in the cluster
+perform well.</p>
+<p>Several stage level statistics are shown:</p>
 <ul class="simple">
 <li><p>State</p></li>
 <li><p>CPU time</p></li>
@@ -615,12 +630,12 @@ consumed.</p></li>
 <li><p>Number of tasks</p></li>
 </ul>
 <p>Each stage can be expanded or collapsed with the chevron in its upper right
-corner.</p>
-
-<h3 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permalink to this headline">#</a></h3>
-<p>Stages can have multiple tasks, which have their own row with separate
-statistics and statuses in the stage panel. Tasks are assigned to workers
-to be executed in parallel. Tasks can be in one of the following states:</p>
+corner. Expanding a stage reveals task level details. Stages can have multiple
+tasks, which have their own row with separate statistics and statuses in the
+stage panel. Tasks are assigned to workers to be executed in parallel. Comparing
+task statistics within the same stage can identify bottlenecks caused by slower
+nodes.</p>
+<p>Tasks can be in one of the following states:</p>
 <ul class="simple">
 <li><p><strong>Planned:</strong> The plan has been created by the coordinator.</p></li>
 <li><p><strong>Running:</strong> The task is running.</p></li>
@@ -652,6 +667,21 @@ as the task runs.</p></li>
 <li><p><strong>Buffered:</strong> Amount of data waiting to be sent to the next processing stage
 (high values may indicate that the upstream stage is slow)</p></li>
 </ul>
+
+
+<h3 id="graph-view">Graph view<a class="headerlink" href="#graph-view" title="Permalink to this headline">#</a></h3>
+<p>This view is available only for queries for which the coordinator still has
+information in memory. How long query information is retained in memory depends
+on the query volume, as well as the <code class="docutils literal notranslate"><span class="pre">query.max-history</span></code> and
+<code class="docutils literal notranslate"><span class="pre">query.min-expire-age</span></code> configuration properties. The view provides a
+visualization of the distributed query plan and shows how plan fragments are
+mapped to stages. The visual representation is a tree, in which nodes represent
+stages and edges indicate how data is transferred between stages. A stage
+processes data produced by its children.</p>
+<p>Each of the nodes shows stage level statistics, as well as a graphical
+representation of the corresponding plan fragment. A plan fragment is rendered
+as a tree of operators. Finally, statistics about the number of rows and total
+size of the data read from each child stage are also shown.</p>
 
 
 
