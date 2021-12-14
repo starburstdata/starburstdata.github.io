@@ -1865,20 +1865,114 @@ independent sampling probabilities.</p>
 
 <span id="id5"></span><h2 id="unnest">UNNEST<a class="headerlink" href="#unnest" title="Permalink to this headline">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can be used to expand an <a class="reference internal" href="../language/types.html#array-type"><span class="std std-ref">ARRAY</span></a> or <a class="reference internal" href="../language/types.html#map-type"><span class="std std-ref">MAP</span></a> into a relation.
-Arrays are expanded into a single column, and maps are expanded into two columns (key, value).
-<code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can also be used with multiple arguments, in which case they are expanded into multiple columns,
-with as many rows as the highest cardinality argument (the other columns are padded with nulls).
-<code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can optionally have a <code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">ORDINALITY</span></code> clause, in which case an additional ordinality column
-is added to the end.
-<code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> is normally used with a <code class="docutils literal notranslate"><span class="pre">JOIN</span></code> and can reference columns
-from relations on the left side of the join.</p>
-<p>Using a single column:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">student</span><span class="p">,</span> <span class="n">score</span>
-<span class="k">FROM</span> <span class="n">tests</span>
-<span class="k">CROSS</span> <span class="k">JOIN</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span> <span class="p">(</span><span class="n">score</span><span class="p">);</span>
+Arrays are expanded into a single column:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">UNNEST</span><span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="nb">number</span><span class="p">);</span>
 </pre></div>
 </div>
-<p>Using multiple columns:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> number
+--------
+      1
+      2
+(2 rows)
+</pre></div>
+</div>
+<p>Maps are expanded into two columns (key, value):</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">UNNEST</span><span class="p">(</span>
+        <span class="n">map_from_entries</span><span class="p">(</span>
+            <span class="nb">ARRAY</span><span class="p">[</span>
+                <span class="p">(</span><span class="s1">'SQL'</span><span class="p">,</span><span class="mi">1974</span><span class="p">),</span>
+                <span class="p">(</span><span class="s1">'Java'</span><span class="p">,</span> <span class="mi">1995</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+<span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="k">language</span><span class="p">,</span> <span class="n">first_appeared_year</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> language | first_appeared_year
+----------+---------------------
+ SQL      |                1974
+ Java     |                1995
+(2 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can be used in combination with an <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code> of <a class="reference internal" href="../language/types.html#row-type"><span class="std std-ref">ROW</span></a> structures for expanding each
+field of the <code class="docutils literal notranslate"><span class="pre">ROW</span></code> into a corresponding column:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">UNNEST</span><span class="p">(</span>
+        <span class="nb">ARRAY</span><span class="p">[</span>
+            <span class="k">ROW</span><span class="p">(</span><span class="s1">'Java'</span><span class="p">,</span>  <span class="mi">1995</span><span class="p">),</span>
+            <span class="k">ROW</span><span class="p">(</span><span class="s1">'SQL'</span> <span class="p">,</span> <span class="mi">1974</span><span class="p">)],</span>
+        <span class="nb">ARRAY</span><span class="p">[</span>
+            <span class="k">ROW</span><span class="p">(</span><span class="k">false</span><span class="p">),</span>
+            <span class="k">ROW</span><span class="p">(</span><span class="k">true</span><span class="p">)]</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">t</span><span class="p">(</span><span class="k">language</span><span class="p">,</span><span class="n">first_appeared_year</span><span class="p">,</span><span class="n">declarative</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> language | first_appeared_year | declarative
+----------+---------------------+-------------
+ Java     |                1995 | false
+ SQL      |                1974 | true
+(2 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can optionally have a <code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">ORDINALITY</span></code> clause, in which case an additional ordinality column
+is added to the end:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rownumber</span>
+<span class="k">FROM</span> <span class="k">UNNEST</span> <span class="p">(</span>
+    <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+    <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span>
+     <span class="p">)</span> <span class="k">WITH</span> <span class="k">ORDINALITY</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rownumber</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>  a   | b | rownumber
+------+---+-----------
+    2 | 7 |         1
+    5 | 8 |         2
+ NULL | 9 |         3
+(3 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> returns zero entries when the array/map is empty:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">UNNEST</span> <span class="p">(</span><span class="nb">ARRAY</span><span class="p">[])</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> value
+-------
+(0 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> returns zero entries when the array/map is null:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">UNNEST</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="k">null</span> <span class="k">AS</span> <span class="nb">ARRAY</span><span class="p">(</span><span class="nb">integer</span><span class="p">)))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="nb">number</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> number
+--------
+(0 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> is normally used with a <code class="docutils literal notranslate"><span class="pre">JOIN</span></code>, and can reference columns
+from relations on the left side of the join:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">student</span><span class="p">,</span> <span class="n">score</span>
+<span class="k">FROM</span> <span class="p">(</span>
+   <span class="k">VALUES</span>
+      <span class="p">(</span><span class="s1">'John'</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">9</span><span class="p">]),</span>
+      <span class="p">(</span><span class="s1">'Mary'</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
+<span class="p">)</span> <span class="k">AS</span> <span class="n">tests</span> <span class="p">(</span><span class="n">student</span><span class="p">,</span> <span class="n">scores</span><span class="p">)</span>
+<span class="k">CROSS</span> <span class="k">JOIN</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">score</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> student | score
+---------+-------
+ John    |     7
+ John    |    10
+ John    |     9
+ Mary    |     4
+ Mary    |     8
+ Mary    |     9
+(6 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can also be used with multiple arguments, in which case they are expanded into multiple columns,
+with as many rows as the highest cardinality argument (the other columns are padded with nulls):</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">numbers</span><span class="p">,</span> <span class="n">animals</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">a</span>
 <span class="k">FROM</span> <span class="p">(</span>
   <span class="k">VALUES</span>
@@ -1899,26 +1993,32 @@ from relations on the left side of the join.</p>
 (6 rows)
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">ORDINALITY</span></code> clause:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">numbers</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">a</span>
+<p><code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span></code> is preferable in order to avoid losing the the row containing the array/map field in question
+when referenced columns from relations on the left side of the join can be empty or have <code class="docutils literal notranslate"><span class="pre">NULL</span></code> values:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">runner</span><span class="p">,</span> <span class="k">checkpoint</span>
 <span class="k">FROM</span> <span class="p">(</span>
-  <span class="k">VALUES</span>
-    <span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">]),</span>
-    <span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">])</span>
-<span class="p">)</span> <span class="k">AS</span> <span class="n">x</span> <span class="p">(</span><span class="n">numbers</span><span class="p">)</span>
-<span class="k">CROSS</span> <span class="k">JOIN</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">numbers</span><span class="p">)</span> <span class="k">WITH</span> <span class="k">ORDINALITY</span> <span class="k">AS</span> <span class="n">t</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">a</span><span class="p">);</span>
+   <span class="k">VALUES</span>
+      <span class="p">(</span><span class="s1">'Joe'</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">42</span><span class="p">]),</span>
+      <span class="p">(</span><span class="s1">'Roger'</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="mi">10</span><span class="p">]),</span>
+      <span class="p">(</span><span class="s1">'Dave'</span><span class="p">,</span> <span class="nb">ARRAY</span><span class="p">[]),</span>
+      <span class="p">(</span><span class="s1">'Levi'</span><span class="p">,</span> <span class="k">NULL</span><span class="p">)</span>
+<span class="p">)</span> <span class="k">AS</span> <span class="n">marathon</span> <span class="p">(</span><span class="n">runner</span><span class="p">,</span> <span class="n">checkpoints</span><span class="p">)</span>
+<span class="k">LEFT</span> <span class="k">JOIN</span> <span class="k">UNNEST</span><span class="p">(</span><span class="n">checkpoints</span><span class="p">)</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="k">checkpoint</span><span class="p">)</span> <span class="k">ON</span> <span class="k">TRUE</span><span class="p">;</span>
 </pre></div>
 </div>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>  numbers  | n | a
------------+---+---
- [2, 5]    | 2 | 1
- [2, 5]    | 5 | 2
- [7, 8, 9] | 7 | 1
- [7, 8, 9] | 8 | 2
- [7, 8, 9] | 9 | 3
-(5 rows)
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> runner | checkpoint
+--------+------------
+ Joe    |         10
+ Joe    |         20
+ Joe    |         30
+ Joe    |         42
+ Roger  |         10
+ Dave   |       NULL
+ Levi   |       NULL
+(7 rows)
 </pre></div>
 </div>
+<p>Note that in case of using <code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span></code> the only condition supported by the current implementation is <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">TRUE</span></code>.</p>
 
 
 <h2 id="joins">Joins<a class="headerlink" href="#joins" title="Permalink to this headline">#</a></h2>
