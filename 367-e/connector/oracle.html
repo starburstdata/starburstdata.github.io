@@ -682,7 +682,9 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
         </li>
-        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#case-insensitive-matching" class="md-nav__link">Case insensitive matching</a>
         </li></ul>
@@ -718,7 +720,11 @@
         </li>
         <li class="md-nav__item"><a href="#synonyms" class="md-nav__link">Synonyms</a>
         </li>
-        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -855,7 +861,9 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#multiple-oracle-servers" class="md-nav__link">Multiple Oracle servers</a>
         </li>
-        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#case-insensitive-matching" class="md-nav__link">Case insensitive matching</a>
         </li></ul>
@@ -891,7 +899,11 @@
         </li>
         <li class="md-nav__item"><a href="#synonyms" class="md-nav__link">Synonyms</a>
         </li>
-        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1039,6 +1051,19 @@ this may negatively impact performance for some queries.</p></td>
 </tr>
 </tbody>
 </table>
+
+
+<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Permalink to this headline">#</a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></p>
+<p>Flush JDBC metadata caches. For example, the following system call
+flushes the metadata caches for all schemas in the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">myschema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">flush_metadata_cache</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+</ul>
 
 <h4 id="case-insensitive-matching">Case insensitive matching<a class="headerlink" href="#case-insensitive-matching" title="Permalink to this headline">#</a></h4>
 <p>When <code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Trino
@@ -1477,6 +1502,44 @@ include <code class="docutils literal notranslate"><span class="pre">SYNONYM</sp
 <li><p><a class="reference internal" href="../optimizer/pushdown.html#limit-pushdown"><span class="std std-ref">Limit pushdown</span></a></p></li>
 <li><p><a class="reference internal" href="../optimizer/pushdown.html#topn-pushdown"><span class="std std-ref">Top-N pushdown</span></a></p></li>
 </ul>
+
+<span id="oracle-predicate-pushdown"></span><h3 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Permalink to this headline">#</a></h3>
+<p>The connector does not support pushdown of any predicates on columns that use
+the <code class="docutils literal notranslate"><span class="pre">CLOB</span></code>, <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code>, <code class="docutils literal notranslate"><span class="pre">BLOB</span></code>, or <code class="docutils literal notranslate"><span class="pre">RAW(n)</span></code> Oracle database types, or Trino
+data types that <a class="reference internal" href="#oracle-type-mapping"><span class="std std-ref">map to these Oracle database types</span></a>.</p>
+<p>In the following example, the predicate is not pushed down for either query
+since <code class="docutils literal notranslate"><span class="pre">name</span></code> is a column of type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, which maps to <code class="docutils literal notranslate"><span class="pre">NCLOB</span></code> in
+Oracle:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">nation</span><span class="p">;</span>
+
+<span class="c1">--             Create Table</span>
+<span class="c1">----------------------------------------</span>
+<span class="c1">-- CREATE TABLE oracle.trino_test.nation (</span>
+<span class="c1">--    name varchar</span>
+<span class="c1">-- )</span>
+<span class="c1">-- (1 row)</span>
+
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">&gt;</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>In the following example, the predicate is pushed down for both queries
+since <code class="docutils literal notranslate"><span class="pre">name</span></code> is a column of type <code class="docutils literal notranslate"><span class="pre">VARCHAR(25)</span></code>, which maps to
+<code class="docutils literal notranslate"><span class="pre">VARCHAR2(25)</span></code> in Oracle:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">nation</span><span class="p">;</span>
+
+<span class="c1">--             Create Table</span>
+<span class="c1">----------------------------------------</span>
+<span class="c1">-- CREATE TABLE oracle.trino_test.nation (</span>
+<span class="c1">--    name varchar(25)</span>
+<span class="c1">-- )</span>
+<span class="c1">-- (1 row)</span>
+
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">&gt;</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+</pre></div>
+</div>
+
 
 
 <span id="oracle-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this headline">#</a></h2>
