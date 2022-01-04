@@ -481,7 +481,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
         </li>
-        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#cost-based-join-pushdown" class="md-nav__link">Cost-based join pushdown</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
         </li></ul>
@@ -859,7 +863,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
         </li>
-        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#cost-based-join-pushdown" class="md-nav__link">Cost-based join pushdown</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
         </li></ul>
@@ -1033,12 +1041,6 @@ not available</p></td>
 Do not change this setting from the default. Non-default values may
 negatively impact performance.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">join-pushdown.enabled</span></code></p></td>
-<td><p>Enable <a class="reference internal" href="../optimizer/pushdown.html#join-pushdown"><span class="std std-ref">join pushdown</span></a>. Equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc">catalog
-session property</span></a> is <code class="docutils literal notranslate"><span class="pre">join_pushdown_enabled</span></code>.  Enabling
-this may negatively impact performance for some queries.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1232,6 +1234,50 @@ functions:</p>
 <li><p><a class="reference internal" href="../functions/aggregate.html#var_pop" title="var_pop"><code class="xref py py-func docutils literal notranslate"><span class="pre">var_pop()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../functions/aggregate.html#variance" title="variance"><code class="xref py py-func docutils literal notranslate"><span class="pre">variance()</span></code></a> and <a class="reference internal" href="../functions/aggregate.html#var_samp" title="var_samp"><code class="xref py py-func docutils literal notranslate"><span class="pre">var_samp()</span></code></a></p></li>
 </ul>
+
+<h4 id="cost-based-join-pushdown">Cost-based join pushdown<a class="headerlink" href="#cost-based-join-pushdown" title="Permalink to this headline">#</a></h4>
+<p>The connector supports cost-based <a class="reference internal" href="../optimizer/pushdown.html#join-pushdown"><span class="std std-ref">Join pushdown</span></a> to make intelligent
+decisions about whether to push down a join operation to the data source.</p>
+<p>When cost-based join pushdown is enabled, the connector only pushes down join
+operations if the available <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">Table statistics</span></a> suggest that doing so
+improves performance. Note that if no table statistics are available, join
+operation pushdown does not occur to avoid a potential decrease in query
+performance.</p>
+<p>The following table describes catalog configuration properties for
+join pushdown:</p>
+<table>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">join-pushdown.enabled</span></code></p></td>
+<td><p>Enable <a class="reference internal" href="../optimizer/pushdown.html#join-pushdown"><span class="std std-ref">join pushdown</span></a>. Equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc">catalog
+session property</span></a> is <code class="docutils literal notranslate"><span class="pre">join_pushdown_enabled</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">join-pushdown.strategy</span></code></p></td>
+<td><p>Strategy used to evaluate whether join operations are pushed down. Set to
+<code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> to enable cost-based join pushdown, or <code class="docutils literal notranslate"><span class="pre">EAGER</span></code> to
+push down joins whenever possible. Note that <code class="docutils literal notranslate"><span class="pre">EAGER</span></code> can degrade
+query performance and is only recommended for testing and troubleshooting.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the remote system does not expose table statistics, then join pushdown does
+not occur regardless of how <code class="docutils literal notranslate"><span class="pre">join-pushdown.strategy</span></code> is configured.</p>
+</div>
+
 
 
 <h3 id="dynamic-filtering">Dynamic filtering<a class="headerlink" href="#dynamic-filtering" title="Permalink to this headline">#</a></h3>
