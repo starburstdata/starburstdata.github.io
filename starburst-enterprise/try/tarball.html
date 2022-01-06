@@ -441,22 +441,30 @@
       </h1>
     
 
-<p>You can install Starburst Enterprise platform (SEP) on any 64-bit Linux
-distribution with the tarball.</p>
+<p>You can install Starburst Enterprise platform (SEP) on any 64-bit Linux distribution with
+the <code class="language-plaintext highlighter-rouge">tar.gz</code> archive (tarball).</p>
 
-<p>Perform the following steps:</p>
+<p>Consider installing SEP with
+<a href="../starburst-admin/index.html">Starburst Admin</a> if you are managing
+clusters on a <a href="../../glossary.html#bare-metal-server">bare-metal</a> server or
+<a href="../../glossary.html#virtual-machine-vm">virtual machine</a>. Only use the tarball
+to deploy on a single node or a few nodes manually, or if you use an alternative
+provisioning system.</p>
+
+<p>Find more information in our <a href="./index.html#deployment-options">deployment options
+guide</a>.</p>
+
+<p>You can install the SEP archive with the following steps:</p>
 
 <ol>
-  <li>Obtain the most recent SEP <code class="language-plaintext highlighter-rouge">tar.gz</code> archive</li>
-  <li>Unpack the archive as root</li>
-  <li>Add configuration files</li>
-  <li>Start the SEP server</li>
-  <li>Obtain the Trino CLI client and run tests</li>
+  <li>Download the most recent SEP tarball.</li>
+  <li><a href="#unpack-the-archive">Unpack the archive</a> as root.</li>
+  <li><a href="#use-doc-config">Add configuration files</a>.</li>
+  <li>Start the SEP server with the <a href="#start-the-server">launcher
+script</a>.</li>
+  <li>Download any supported <a href="../../data-consumer/clients/index.html">client
+tool</a>.</li>
 </ol>
-
-<p>If you are managing clusters on a <a href="../../glossary.html">bare-metal</a> server or
-<a href="../../glossary.html">virtual machine</a>, consider installing SEP
-with <a href="../starburst-admin/index.html">Starburst Admin</a>.</p>
       <h2 id="prerequisites">
         
         
@@ -479,6 +487,38 @@ or supported.</li>
 
 <p>SEP also installs <em>for evaluation purposes only</em> on a macOS
 release with the same prerequisites.</p>
+      <h2 id="install-java">
+        
+        
+          Install Java <a href="#install-java" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Installation of Java varies for each Linux distribution. You can verify the
+currently installed version available on the path with the following command:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>java <span class="nt">-version</span>
+</code></pre></div></div>
+
+<p>Check out the instruction on our <a href="./rpm.html">RPM guide for an example</a>.</p>
+      <h2 id="install-python">
+        
+        
+          Install Python <a href="#install-python" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Installation of Python varies for each Linux distribution. You can verify the
+currently installed version available on the path with the following command:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python <span class="nt">--version</span>
+</code></pre></div></div>
+
+<p>Check out the instruction on our <a href="./rpm.html">RPM guide for an example</a>.</p>
 
 <p><a id="downloadsep"></a></p>
       <h2 id="download-an-sep-archive">
@@ -503,10 +543,8 @@ Fill out the form <em>using a valid email address</em>, then click <strong>Free 
 <div class="alert alert-info" role="alert">
   <i class="fa fa-info-circle"></i>
   <b>Note: </b>
-  You can optionally reply to the email from
-Starburst to request a trial license that unlocks the performance and security
-enhancements of Starburst Enterprise. However, to get a server up and running
-quickly, you can postpone using a license for now.</div>
+  To unlock the performance and security
+enhancements of Starburst Enterprise, you must request a license.</div>
 
 <p>The Downloads page is organized into a Long-Term Support section at the top with
 Steps 1 and 2, and a Short-Term Support section at the bottom. Use the LTS
@@ -529,33 +567,40 @@ save it to your <code class="language-plaintext highlighter-rouge">/home/&lt;use
       </h2>
     
 
-<p>The contents of the <code class="language-plaintext highlighter-rouge">tar.gz</code> archive are by default owned by root and include a
-top-level container directory. The <code class="language-plaintext highlighter-rouge">--strip 1</code> option in the <code class="language-plaintext highlighter-rouge">tar</code> command shown
-here strips that container directory off.</p>
-
-<p>First create an empty target directory, then extract the contents of the
-<code class="language-plaintext highlighter-rouge">tar.gz</code> file without its container directory into the target directory. For
-example:</p>
+<p>First, while in your <code class="language-plaintext highlighter-rouge">downloads</code> directory, create an empty target directory.
+This new directory will be known as the <em>installation directory</em>. If you choose
+to make your installation directory in an operating system protected directory
+such as <code class="language-plaintext highlighter-rouge">/opt</code>, you must use <code class="language-plaintext highlighter-rouge">sudo</code> to run commands. For example:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /home/&lt;username&gt;/Downloads
-<span class="nb">sudo mkdir</span> <span class="nt">-p</span> /opt/starburst
-<span class="nb">sudo tar </span>xvzf ./starburst-enterprise-<span class="k">*</span>.tar.gz <span class="nt">--strip</span> 1 <span class="nt">-C</span> /opt/starburst
+<span class="nb">sudo mkdir</span> /opt/starburst
 </code></pre></div></div>
 
-<p>You can replace the asterisk (*) in the file name with the version of
-SEP that you downloaded, such as <code class="language-plaintext highlighter-rouge">356-e.1</code>. The command
-works as shown, without the version string.</p>
+<p>Move the tarball to the target directory:</p>
 
-<p>The directory <code class="language-plaintext highlighter-rouge">/opt/starburst</code> is called the <em>installation directory</em>. Inspect
-the new directory to find that it contains two top-level files and four
-directories:</p>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo mv </span>starburst-enterprise-<span class="k">*</span>.tar.gz /opt/starburst
+</code></pre></div></div>
+
+<p>Extract the contents of the tarball without its container directory into the new
+target directory. You can replace the asterisk (*) in the file name with the
+version of SEP that you downloaded, such as <code class="language-plaintext highlighter-rouge">356-e.1</code>. The
+command works as shown, without the version string. The contents of the tarball
+include a top-level container directory. The <code class="language-plaintext highlighter-rouge">--strip 1</code> option in the <code class="language-plaintext highlighter-rouge">tar</code>
+command shown here strips that container directory off.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /opt/starburst
+<span class="nb">sudo tar </span>xvzf ./starburst-enterprise-<span class="k">*</span>.tar.gz <span class="nt">--strip</span> 1
+</code></pre></div></div>
+
+<p>Inspect the new <code class="language-plaintext highlighter-rouge">/opt/starburst</code> directory. It contains two top-level files and
+four directories:</p>
 
 <div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>NOTICE
 README.txt
 bin
 lib
 plugin
-starburst-insights
+third-party
 </code></pre></div></div>
 
 <p><a id="use-doc-config"></a></p>
@@ -568,10 +613,10 @@ starburst-insights
       </h2>
     
 
-<p>Even small a SEP server must have a minimum set of
-configuration files before it can start. To add those files, create a directory
-in <code class="language-plaintext highlighter-rouge">/opt/starburst</code> named <code class="language-plaintext highlighter-rouge">etc</code>, parallel to <code class="language-plaintext highlighter-rouge">bin</code> and <code class="language-plaintext highlighter-rouge">lib</code>. Populate <code class="language-plaintext highlighter-rouge">etc</code>
-with the following configuration files, using contents suggested in <a href="../../latest/installation/deployment.html#configuring-trino">Configuring
+<p>Even small a SEP server must have a minimum set of configuration
+files before it can start. To add those files, create a directory in
+<code class="language-plaintext highlighter-rouge">/opt/starburst</code> named <code class="language-plaintext highlighter-rouge">etc</code>, parallel to <code class="language-plaintext highlighter-rouge">bin</code> and <code class="language-plaintext highlighter-rouge">lib</code>. Populate <code class="language-plaintext highlighter-rouge">etc</code> with
+the following configuration files, using contents suggested in <a href="../../latest/installation/deployment.html#configuring-trino">Configuring
 Trino</a>.</p>
 
 <dl>
@@ -655,7 +700,7 @@ directory in <code class="language-plaintext highlighter-rouge">/home/&lt;userna
 sample folder to your <code class="language-plaintext highlighter-rouge">installation</code> directory. For example:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">cd</span> /home/&lt;username&gt;/bookfiles/single-installation
-<span class="nb">sudo </span>rsync <span class="nt">-av</span> etc /opt/starburst/
+<span class="nb">sudo </span>rsync <span class="nt">-av</span> etc /opt/starburst
 </code></pre></div></div>
       <h2 id="start-the-server">
         
@@ -666,21 +711,20 @@ sample folder to your <code class="language-plaintext highlighter-rouge">install
       </h2>
     
 
-<p>Once configuration files are in place, start the server. From the <code class="language-plaintext highlighter-rouge">installation</code>
-directory, run the following command:</p>
+<p>Once configuration files are in place, start the server. From the <em>installation
+directory</em>, for example <code class="language-plaintext highlighter-rouge">/opt/starburst</code>, run the following command:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>bin/launcher start
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo</span> ./bin/launcher start
 </code></pre></div></div>
 
 <p>For a successful server start, the launcher script returns a process ID. Check
 the server’s status to make sure the server finished its startup process:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>bin/launcher status
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo</span> ./bin/launcher status
 </code></pre></div></div>
 
-<p>As an alternative, look for the exact phrase “SERVER STARTED” in the
-<code class="language-plaintext highlighter-rouge">server.log</code> file, which by default is in the <code class="language-plaintext highlighter-rouge">var/log</code> subdirectory of the
-installation directory:</p>
+<p>As an alternative, look for the exact phrase <code class="language-plaintext highlighter-rouge">SERVER STARTED</code> in the
+<code class="language-plaintext highlighter-rouge">var/log/server.log</code> file:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">grep</span> <span class="s2">"SERVER STARTED"</span> &lt;installation&gt;/var/log/server.log
 </code></pre></div></div>
@@ -811,7 +855,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#try-starburst-enterprise-with-tarball">Try Starburst Enterprise with Tarball</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#download-an-sep-archive">Download an SEP archive</a></li><li><a href="#unpack-the-archive">Unpack the archive</a></li><li><a href="#add-configuration-files">Add configuration files</a></li><li><a href="#alternate-configuration-files">Alternate configuration files</a></li><li><a href="#start-the-server">Start the server</a></li><li><a href="#verify-the-server">Verify the server</a></li><li><a href="#run-queries">Run queries</a></li></ul></li></ul>
+          <ul><li><a href="#try-starburst-enterprise-with-tarball">Try Starburst Enterprise with Tarball</a><ul><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#install-java">Install Java</a></li><li><a href="#install-python">Install Python</a></li><li><a href="#download-an-sep-archive">Download an SEP archive</a></li><li><a href="#unpack-the-archive">Unpack the archive</a></li><li><a href="#add-configuration-files">Add configuration files</a></li><li><a href="#alternate-configuration-files">Alternate configuration files</a></li><li><a href="#start-the-server">Start the server</a></li><li><a href="#verify-the-server">Verify the server</a></li><li><a href="#run-queries">Run queries</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
