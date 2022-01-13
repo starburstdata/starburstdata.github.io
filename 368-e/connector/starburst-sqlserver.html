@@ -508,6 +508,14 @@
         <li class="md-nav__item"><a href="#kerberos-credential-pass-through" class="md-nav__link">Kerberos credential pass-through</a>
         </li>
         <li class="md-nav__item"><a href="#password-credential-pass-through" class="md-nav__link">Password credential pass-through</a>
+        </li>
+        <li class="md-nav__item"><a href="#ntlm-authentication" class="md-nav__link">NTLM authentication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tls-https-settings" class="md-nav__link">TLS/HTTPS settings</a>
+        </li>
+        <li class="md-nav__item"><a href="#ntlm-credential-pass-through" class="md-nav__link">NTLM credential pass-through</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -905,6 +913,14 @@
         <li class="md-nav__item"><a href="#kerberos-credential-pass-through" class="md-nav__link">Kerberos credential pass-through</a>
         </li>
         <li class="md-nav__item"><a href="#password-credential-pass-through" class="md-nav__link">Password credential pass-through</a>
+        </li>
+        <li class="md-nav__item"><a href="#ntlm-authentication" class="md-nav__link">NTLM authentication</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#tls-https-settings" class="md-nav__link">TLS/HTTPS settings</a>
+        </li>
+        <li class="md-nav__item"><a href="#ntlm-credential-pass-through" class="md-nav__link">NTLM credential pass-through</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -1361,8 +1377,74 @@ file to include the authentication type:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">sqlserver.authentication.type</span><span class="o">=</span><span class="s">PASSWORD_PASS_THROUGH</span>
 </pre></div>
 </div>
-<p>For more information about configurations and limitations, see
-<a class="reference internal" href="../security/password-passthrough.html"><span class="doc">Password credential pass-through</span></a>.</p>
+
+
+<h3 id="ntlm-authentication">NTLM authentication<a class="headerlink" href="#ntlm-authentication" title="Permalink to this headline">#</a></h3>
+<p>The connector supports NTLM authentication as an alternative to Kerberos
+authentication for environments where Kerberos auth is not feasible.</p>
+<p>To enable NTLM authentication, configure the following properties in the catalog
+properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-user</span><span class="o">=</span><span class="s">ad_username</span>
+<span class="na">connection-password</span><span class="o">=</span><span class="s">ad_password</span>
+<span class="na">sqlserver.authentication.type</span><span class="o">=</span><span class="s">NTLM_PASSWORD</span>
+</pre></div>
+</div>
+<p>In this example, the user <code class="docutils literal notranslate"><span class="pre">ad_username</span></code> and password <code class="docutils literal notranslate"><span class="pre">ad_password</span></code> are
+Active Directory credentials for a single user who has underlying access to the
+data source.</p>
+
+<h4 id="tls-https-settings">TLS/HTTPS settings<a class="headerlink" href="#tls-https-settings" title="Permalink to this headline">#</a></h4>
+<p>Microsoft strongly suggests <a class="reference external" href="https://docs.microsoft.com/sql/connect/jdbc/using-ntlm-authentication-to-connect-to-sql-server?view=sql-server-ver15#security-risks">encrypting traffic using TLS</a>
+when using NTLM authentication.</p>
+<p>If you have globally-trusted certificates installed on both SEP and the data
+source, enable TLS by appending the <code class="docutils literal notranslate"><span class="pre">encrypt=true</span></code> parameter to the
+<code class="docutils literal notranslate"><span class="pre">connection-url</span></code> catalog configuration property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:sqlserver://&lt;host&gt;:&lt;port&gt;;database=&lt;database&gt;;encrypt=true</span>
+</pre></div>
+</div>
+<p>If you do not have globally-trusted certificates installed, you can instead
+use certificates trusted by a custom truststore. The following catalog
+configuration properties manage custom truststore configuration for the SQL
+Server connector:</p>
+<table id="id4">
+<caption><span class="caption-text">TLS truststore configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 33%"/>
+<col style="width: 67%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sqlserver.tls.truststore-path</span></code></p></td>
+<td><p>Path to the truststore file in SEP.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sqlserver.tls.truststore-password</span></code></p></td>
+<td><p>Password used to generate the truststore file</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sqlserver.tls.truststore-type</span></code></p></td>
+<td><p>The type of truststore. Supports either <code class="docutils literal notranslate"><span class="pre">JKS</span></code> or <code class="docutils literal notranslate"><span class="pre">PKCS12</span></code> as values.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following catalog properties configuration specifies a custom JKS truststore
+to enable TLS for NTLM authentication:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">sqlserver.tls.truststore-path</span><span class="o">=</span><span class="s">path/to/truststore.jks</span>
+<span class="na">sqlserver.tls.truststore-password</span><span class="o">=</span><span class="s">insecurepassword</span>
+<span class="na">sqlserver.tls.truststore-type</span><span class="o">=</span><span class="s">JKS</span>
+</pre></div>
+</div>
+
+
+<h4 id="ntlm-credential-pass-through">NTLM credential pass-through<a class="headerlink" href="#ntlm-credential-pass-through" title="Permalink to this headline">#</a></h4>
+<p>THe connector supports NTLM credential pass-through. To enable this, edit the
+catalog properties file to include the authentication type:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">sqlserver.authentication.type</span><span class="o">=</span><span class="s">NTLM_PASSWORD_PASS_THROUGH</span>
+</pre></div>
+</div>
+
 
 
 
