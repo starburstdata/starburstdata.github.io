@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Configure a catalog</title>
+    <title>Starburst | Operating SEP in a Kubernetes cluster</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Configure a catalog">
+    <meta property="og:title" content="Starburst - Operating SEP in a Kubernetes cluster">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -167,7 +167,7 @@
 
 
 
-<li  class="active" 
+<li 
     onclick="toggle_navigation_visibility('try');">
   <a>
     Try Starburst Enterprise
@@ -175,7 +175,7 @@
   </a>
 </li>
 
-<ul id="try" class="doc-subnav ">
+<ul id="try" class="doc-subnav hidden">
   
   
     
@@ -247,7 +247,7 @@
     
     
     
-  <li class="active"
+  <li 
       
     >
     <a href="/starburst-enterprise/try/catalog.html" >Create a catalog</a>
@@ -273,7 +273,7 @@
   
     
     
-<li >
+<li class="active">
   <a href="/starburst-enterprise/k8s-operation.html" >Kubernetes cluster operation</a>
 </li>
   
@@ -445,120 +445,137 @@
     
   
     
-      <a href="/starburst-enterprise/try/"
-        style="text-transform: uppercase"
-      > try</a> >
-    
-  
-    
-      Configure a catalog
+      Operating SEP in a Kubernetes cluster
     
   </p>
 </div>
 
-        <h1 id="configure-a-catalog">
+        <h1 id="operating-sep-in-a-kubernetes-cluster">
         
         
-          Configure a catalog <a href="#configure-a-catalog" class="titleAnchor">#</a>
+          Operating SEP in a Kubernetes cluster <a href="#operating-sep-in-a-kubernetes-cluster" class="titleAnchor">#</a>
         
         
       </h1>
     
 
-<p>Before you can connect to your data sources with Starburst Enterprise platform (SEP) you
-must define them in a catalog. Each catalog connects to a single data source,
-such as a specific instance of a PostgreSQL or Oracle database. Catalogs are
-defined in your Helm chart under the <code class="language-plaintext highlighter-rouge">catalogs:</code> node, or if you are not using
-our K8s deployment, in its own properties file the <code class="language-plaintext highlighter-rouge">etc/catalog</code> directory of
-SEP.</p>
+<p>Congratulations! Your cluster is up and running. Now it is time to test it out
+by connecting your clients like the CLI or a BI application using the JDBC
+driver.</p>
 
-<p>The name of the catalog YAML entry or catalog file becomes the name used to
-access the data in a query. There is a small set of required properties for
-every catalog. While properties can vary, they minimally define the connection
-to the data source. Depending on your data source type, there are a
-number of different configuration properties available.</p>
+<p>With that usage you gain insights on the correct configuration, data sources and
+sizing of the cluster for the desired usage and performance. This in turn leads
+you to further work such as updating configuration, scaling your cluster, or
+even upgrading to a newer release.</p>
 
-<p>This document teaches you how to create a minimum catalog configuration.</p>
-      <h2 id="gather-your-connection-information">
+<p>This document covers these and other aspects associated to running your
+SEP cluster, or even clusters.</p>
+      <h2 id="running-sep">
         
         
-          Gather your connection information <a href="#gather-your-connection-information" class="titleAnchor">#</a>
+          Running SEP <a href="#running-sep" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>You will need the following minimum information to connect to a data source:</p>
+<p>Once you have <a href="../../latest/k8s/installation.html">successfully installed</a>
+SEP, you can confirm that the coordinator pod is running with
+tools such as <code class="language-plaintext highlighter-rouge">kubectl</code> or Octant.</p>
 
-<ul>
-  <li>Connection URL</li>
-  <li>Username</li>
-  <li>Password</li>
-</ul>
-      <h2 id="create-your-catalog-properties">
-        
-        
-          Create your catalog properties <a href="#create-your-catalog-properties" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+<p>You can also check the log in the server pod. A successful start of the
+coordinator, and also each worker, shows with a log entry similar to the
+following snippet:</p>
 
-<p>The catalog properties file content consists of <code class="language-plaintext highlighter-rouge">key=value</code> pairs. Every catalog
-must include the <code class="language-plaintext highlighter-rouge">connector.name</code> property, and the
-<a href="../../../latest/connector/starburst-connectors.html">connector</a> name must match
-the data source.</p>
-
-<p>In the <code class="language-plaintext highlighter-rouge">values.yaml</code> file in your K8s deployment, you must create a catalog
-entry under the <code class="language-plaintext highlighter-rouge">catalogs:</code> top-level node. The following example assumes that
-the <code class="language-plaintext highlighter-rouge">salesdata</code> catalog resides in a PostgreSQL database:</p>
-
-<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">catalogs</span><span class="pi">:</span>
-  <span class="na">salesdata</span><span class="pi">:</span> <span class="pi">|-</span>
-    <span class="s">connector.name=postgresql</span>
-    <span class="s">connection-url=jdbc:postgresql://example.net:5432/database</span>
-    <span class="s">connection-user=root</span>
-    <span class="s">connection-password=secret</span>
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  INFO	main	io.trino.server.Server	<span class="o">========</span> SERVER STARTED <span class="o">========</span>
 </code></pre></div></div>
 
-<p>If you are not using K8s, you must create the minimum content
-for a PostgreSQL catalog file. In the following example, the contents are
-stored as <code class="language-plaintext highlighter-rouge">etc/catalog/salesdata.properties</code>:</p>
+<p>With these checks performed, you can access the Starburst Enterprise <a href="../../latest/overview/sep-ui.html">web
+UI</a> on the coordinator. Determine the FQDN
+and port of the coordinator as configured in the <a href="../../latest/k8s/sep-configuration.html#exposing-the-cluster">expose section of the Helm
+chart</a>.</p>
 
-<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">connector.name</span><span class="p">=</span><span class="s">postgresql</span>
-<span class="py">connection-url</span><span class="p">=</span><span class="s">jdbc:postgresql://example.net:5432/database</span>
-<span class="py">connection-user</span><span class="p">=</span><span class="s">root</span>
-<span class="py">connection-password</span><span class="p">=</span><span class="s">secret</span>
+<p>A default deployment exposes the UI via HTTP and does not require a password.
+Production deployments should use HTTPS and have authentication configured.</p>
+
+<p>The main page of the web UI displays the number of connected workers. Confirm
+that the number is identical to the number specified by the <code class="language-plaintext highlighter-rouge">worker.replicas</code>
+value of the <a href="../../latest/k8s/sep-config-examples.html#k8s-defaults-worker">worker section of the Helm
+chart</a>. The
+default number of workers is two.</p>
+      <h2 id="connecting-tools">
+        
+        
+          Connecting tools <a href="#connecting-tools" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>With the knowledge that you can access the Starburst Enterprise web UI and
+therefore the coordinator, and that some workers are running, you are ready to
+connect client tools for running queries.</p>
+
+<p>Use the protocol, FQDN, and port with the <code class="language-plaintext highlighter-rouge">--server</code> option for starting the
+<a href="../data-consumer/clients/cli.html">CLI</a> to access SEP:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>trino <span class="nt">--server</span> https://trino.example.com:9999
 </code></pre></div></div>
-      <h2 id="apply-changes">
+
+<p>The same URL can be used to configure the JDBC driver or ODBC driver connection
+and connection from any other client.</p>
+      <h2 id="updates">
         
         
-          Apply changes <a href="#apply-changes" class="titleAnchor">#</a>
+          Updates <a href="#updates" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>To use the a newly-defined catalog, you must restart SEP for the
-changes to take effect. Refer to the documentation for your deployment type for
-restart instructions.</p>
-      <h2 id="next-steps">
-        
-        
-          Next steps <a href="#next-steps" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>To learn more about catalogs and connectors in SEP:</p>
+<p>From time to time you need to make incremental changes to your configuration or
+move to a new release. To do so:</p>
 
 <ul>
-  <li>Read our data engineering <a href="../../data-engineer/catalogs.html">guide to creating
-catalogs</a>.</li>
-  <li>Familiarize yourself with the available SEP
-<a href="../../../latest/connector/starburst-connectors.html">connectors</a></li>
+  <li>Create or update the correct YAML files with the new or changed
+configuration properties.</li>
+  <li>Run the <a href="../../latest/k8s/installation.html#updating-to-a-new-release">helm
+upgrade</a> command
+with the updated version of the chart.</li>
+  <li>Verify that the desired changes are applied successfully. We suggest making
+changes to one area of the application at a time.</li>
+  <li>Repeat the process with the next desired change.</li>
 </ul>
+
+<p>Typically Helm applies the relevant changes in a granular fashion. For example,
+if you change the worker configuration, no coordinator changes are performed and
+the coordinator continues to run while workers are updated.</p>
+
+<p>If you need to ensure that pods are recreated completely, you can use the
+<code class="language-plaintext highlighter-rouge">--recreate-pods</code> option for your <code class="language-plaintext highlighter-rouge">helm</code> command. This essentially restarts
+all workers as well as the coordinator and therefore restarts the cluster. This
+includes a downtime for users.</p>
+      <h2 id="scaling">
+        
+        
+          Scaling <a href="#scaling" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>You can scale your SEP cluster manually by adding more workers.
+This is done by updating (the worker
+replicas)[../../latest/k8s/sep-configuration.html#workers]_ and updating your
+deployment. Sufficient resources available in the cluster is a requirement.</p>
+
+<p>Alternatively, you can enable autoscaling in your worker configuration and
+updating the deployment. Sufficient resources available in the cluster is a
+requirement.</p>
+
+<p>You can also increase the memory resources allocated to the workers and updating
+your deployment, if sufficiently sized pods are available and you recreate pods
+as part of the update.</p>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -663,7 +680,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#configure-a-catalog">Configure a catalog</a><ul><li><a href="#gather-your-connection-information">Gather your connection information</a></li><li><a href="#create-your-catalog-properties">Create your catalog properties</a></li><li><a href="#apply-changes">Apply changes</a></li><li><a href="#next-steps">Next steps</a></li></ul></li></ul>
+          <ul><li><a href="#operating-sep-in-a-kubernetes-cluster">Operating SEP in a Kubernetes cluster</a><ul><li><a href="#running-sep">Running SEP</a></li><li><a href="#connecting-tools">Connecting tools</a></li><li><a href="#updates">Updates</a></li><li><a href="#scaling">Scaling</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
