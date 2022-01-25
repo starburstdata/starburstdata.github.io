@@ -526,6 +526,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#connection-security" class="md-nav__link">Connection security</a>
+        </li>
         <li class="md-nav__item"><a href="#multiple-clickhouse-servers" class="md-nav__link">Multiple ClickHouse servers</a>
         </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
@@ -556,7 +558,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#alter-schema" class="md-nav__link">ALTER SCHEMA</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -844,6 +850,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#connection-security" class="md-nav__link">Connection security</a>
+        </li>
         <li class="md-nav__item"><a href="#multiple-clickhouse-servers" class="md-nav__link">Multiple ClickHouse servers</a>
         </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
@@ -874,7 +882,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#alter-schema" class="md-nav__link">ALTER SCHEMA</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -897,7 +909,7 @@ from different catalogs accessing ClickHouse or any other supported data source.
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
 <p>To connect to a ClickHouse server, you need:</p>
 <ul class="simple">
-<li><p>ClickHouse version 20.8 or higher.</p></li>
+<li><p>ClickHouse (version 21.3 or higher) or Altinity (version 20.3 or higher).</p></li>
 <li><p>Network access from the Trino coordinator and workers to the ClickHouse
 server. Port 8123 is the default port.</p></li>
 </ul>
@@ -916,6 +928,21 @@ connection-user=exampleuser
 connection-password=examplepassword
 </pre></div>
 </div>
+
+<span id="clickhouse-tls"></span><h3 id="connection-security">Connection security<a class="headerlink" href="#connection-security" title="Permalink to this headline">#</a></h3>
+<p>If you have TLS configured with a globally-trusted certificate installed on your
+data source, you can enable TLS between your cluster and the data
+source by appending a parameter to the JDBC connection string set in the
+<code class="docutils literal notranslate"><span class="pre">connection-url</span></code> catalog configuration property.</p>
+<p>For example, with version 2.6.4 of the ClickHouse JDBC driver, enable TLS by
+appending the <code class="docutils literal notranslate"><span class="pre">ssl=true</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> configuration
+property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:clickhouse://host1:8123/?ssl=true</span>
+</pre></div>
+</div>
+<p>For more information on TLS configuration options, see the <a class="reference external" href="https://clickhouse.com/docs/en/interfaces/jdbc/">Clickhouse JDBC
+driver documentation</a></p>
+
 
 <h3 id="multiple-clickhouse-servers">Multiple ClickHouse servers<a class="headerlink" href="#multiple-clickhouse-servers" title="Permalink to this headline">#</a></h3>
 <p>If you have multiple ClickHouse servers you need to configure one
@@ -1151,6 +1178,86 @@ in create table statement. <code class="docutils literal notranslate"><span clas
 
 
 <span id="clickhouse-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
+<p>The data type mappings are as follows:</p>
+<table>
+<colgroup>
+<col style="width: 13%"/>
+<col style="width: 11%"/>
+<col style="width: 76%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>ClickHouse</p></th>
+<th class="head"><p>Trino</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOL</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code> and <code class="docutils literal notranslate"><span class="pre">INT1</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code> and <code class="docutils literal notranslate"><span class="pre">INT2</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT4</span></code> and <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Int64</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Int64</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Float32</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Float32</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Float64</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Float64</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Decimal</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FixedString</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">String</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Date</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DateTime</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">IPv4</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IPADDRESS</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IPv6</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">IPADDRESS</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Enum8</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Enum16</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 
 <h3 id="id1">General configuration properties<a class="headerlink" href="#id1" title="Permalink to this headline">#</a></h3>
 <p>The following properties can be used to configure how data types from the
@@ -1224,12 +1331,13 @@ statements, the connector supports the following features:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a></p></li>
 <li><p><a class="reference internal" href="../sql/truncate.html"><span class="doc">TRUNCATE</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/drop-table.html"><span class="doc">DROP TABLE</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/create-schema.html"><span class="doc">CREATE SCHEMA</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/drop-schema.html"><span class="doc">DROP SCHEMA</span></a></p></li>
+<li><p><a class="reference internal" href="../language/sql-support.html#sql-schema-table-management"><span class="std std-ref">Schema and table management</span></a></p></li>
 </ul>
+
+<h3 id="alter-schema">ALTER SCHEMA<a class="headerlink" href="#alter-schema" title="Permalink to this headline">#</a></h3>
+<p>The connector supports renaming a schema with the <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">RENAME</span></code>
+statement. <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">SET</span> <span class="pre">AUTHORIZATION</span></code> is not supported.</p>
+
 
 
 
