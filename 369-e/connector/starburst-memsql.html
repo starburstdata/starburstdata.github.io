@@ -457,6 +457,12 @@
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#kerberos-authentication" class="md-nav__link">Kerberos authentication</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -843,6 +849,12 @@
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#kerberos-authentication" class="md-nav__link">Kerberos authentication</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -1003,6 +1015,47 @@ JDBC query.</p>
 <h3 id="sb-cached-views">Starburst Cached Views<a class="headerlink" href="#sb-cached-views" title="Permalink to this headline">#</a></h3>
 <p>The connectors supports <a class="reference internal" href="../admin/table-scan-redirection.html"><span class="doc">table scan redirection</span></a> to improve performance and reduce load on the
 data source.</p>
+
+
+
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permalink to this headline">#</a></h2>
+<p>The SingleStore connector includes a number of security-related features,
+detailed in the following sections.</p>
+
+<h3 id="kerberos-authentication">Kerberos authentication<a class="headerlink" href="#kerberos-authentication" title="Permalink to this headline">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../security/kerberos.html"><span class="doc">Kerberos authentication</span></a>. Use the following properties
+in the catalog properties file to configure it.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">memsql.authentication.type</span><span class="o">=</span><span class="s">KERBEROS</span>
+<span class="na">kerberos.client.principal</span><span class="o">=</span><span class="s">example@example.com</span>
+<span class="na">kerberos.client.keytab</span><span class="o">=</span><span class="s">etc/kerberos/example.keytab</span>
+<span class="na">kerberos.config</span><span class="o">=</span><span class="s">etc/kerberos/krb5.conf</span>
+</pre></div>
+</div>
+<p>With this configuration the user <code class="docutils literal notranslate"><span class="pre">example@example.com</span></code>, defined in the
+principal property, is used to connect to the database, and the related Kerberos
+service ticket is located in the <code class="docutils literal notranslate"><span class="pre">example.keytab</span></code> file.</p>
+<p>The SingleStore connector authenticates to Kerberos using the Java
+Authentication and Authorization Service (JAAS). The file is set via the
+<code class="docutils literal notranslate"><span class="pre">java.security.auth.login.config</span></code> JVM system property. If this system property
+is not set, the connector automatically generates a file with the following
+contents using values from the catalog configuration, and sets the system
+property to the path of the generated file.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Krb5ConnectorContext {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  storeKey=true
+  doNotPrompt=true
+  isInitiator=true
+  principal="${kerberos.client.principal}"
+  keyTab="${kerberos.client.keytab}";
+ };
+</pre></div>
+</div>
+<p>A single JAAS configuration file is shared for the entire JVM. This means
+multiple SingleStore catalogs must use the same principal and keytab.
+Users can create their own JAAS configuration and set the system property in
+the <code class="docutils literal notranslate"><span class="pre">jvm.config</span></code> configuration, however there must be a
+<code class="docutils literal notranslate"><span class="pre">Krb5ConnectorContext</span></code> for the connector to work correctly.</p>
 
 
 
