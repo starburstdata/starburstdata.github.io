@@ -565,7 +565,8 @@ into a database. Once the query logger is running, use the user interface to
 <span id="query-logger-requirements"></span><h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
 <p>To use the query logger, you need:</p>
 <ul class="simple">
-<li><p>Externally managed database. The following RDBMS are supported:</p>
+<li><p>An externally-managed database for use by the query logger. The Following
+RDBMS are supported:</p>
 <ul>
 <li><p>MySQL 8.0.12+</p></li>
 <li><p>PostgreSQL 9.6+</p></li>
@@ -591,12 +592,63 @@ performance based on your actual load, and adjust accordingly.</p>
 terms latency and throughput to support your specific usage load.</p>
 
 
-<h2 id="installation-and-configuration">Installation and configuration<a class="headerlink" href="#installation-and-configuration" title="Permalink to this headline">#</a></h2>
-<p>You can enable query logger by <a class="reference internal" href="../insights/configuration.html#id1"><span class="std std-ref">configuring Starburst Insights and enabling
-persistence</span></a>.</p>
-<p>The legacy configuration method with an <code class="docutils literal notranslate"><span class="pre">etc/event-logger.properties</span></code> file on
-the coordinator that configures the event listener with
-<code class="docutils literal notranslate"><span class="pre">event-listener.name=event-logger</span></code> is deprecated with SEP 365-e and higher.</p>
+<span id="query-logger-configuration"></span><h2 id="installation-and-configuration">Installation and configuration<a class="headerlink" href="#installation-and-configuration" title="Permalink to this headline">#</a></h2>
+<p>To enable the query logger, configure query logger on the SEP coordinator to
+use an existing database.</p>
+<p>Add the query logger configuration in the <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">config.properties file</span></a> on the coordinator only:</p>
+<table id="id1">
+<caption><span class="caption-text">Query logger configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 32%"/>
+<col style="width: 68%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.url</span></code></p></td>
+<td><p>JDBC connection string for the query logger database.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.user</span></code></p></td>
+<td><p>Username of a user with full read and write access to the query logger
+database.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.jdbc.password</span></code></p></td>
+<td><p>Password for the database user.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Instructions for configuring the query logger for Kubernetes deployments are
+available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-insights"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
+<p>The following examples show the query logger configuration in the coordinator’s
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code> for the <code class="docutils literal notranslate"><span class="pre">starburstenterprise</span></code> database in PostgreSQL,
+Oracle, and MySQL:</p>
+<p><strong>Example query logger configuration with a PostgreSQL database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:postgresql://postgresql.example.com:5432/starburstenterprise</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">sepuser</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p>It is not good practice to use the PostgreSQL <code class="docutils literal notranslate"><span class="pre">public</span></code> schema. Configure the
+user to use a different schema by default. See the <a class="reference external" href="https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATTERNS">PostgreSQL documentation</a>
+for details.</p>
+<p><strong>Example query logger configuration with an Oracle database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:oracle:thin:@oracle.example.com:1521/starburstenterprise</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">sepuser</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p><strong>Example query configuration with a MySQL database</strong></p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.jdbc.url</span><span class="o">=</span><span class="s">jdbc:mysql://mysql.example.com:3306/starburstenterprise</span>
+<span class="na">insights.jdbc.user</span><span class="o">=</span><span class="s">sepuser</span>
+<span class="na">insights.jdbc.password</span><span class="o">=</span><span class="s">test12</span>
+</pre></div>
+</div>
+<p>You must specify <code class="docutils literal notranslate"><span class="pre">sql_mode=ANSI</span></code> in the <code class="docutils literal notranslate"><span class="pre">insights.jdbc.url</span></code> configuration
+for a MySQL database. The configured user must have sufficient rights to create
+tables and insert data in the configured schema.</p>
 
 
 <h2 id="logged-information">Logged information<a class="headerlink" href="#logged-information" title="Permalink to this headline">#</a></h2>
@@ -607,8 +659,8 @@ contained fields. Details are documented in the following sections.</p>
 <p>A row is created in the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table for each submitted query. It
 captures everything that SEP emits – query, user, metadata, stats, performance
 related attributes, resource consumption, start time, end time, and much more:</p>
-<table id="id1">
-<caption><span class="caption-text">Columns of the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Columns of the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code> table</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -797,8 +849,8 @@ column is <code class="docutils literal notranslate"><span class="pre">null</spa
 about the accessed table is created in the <code class="docutils literal notranslate"><span class="pre">query_tables</span></code> table. The
 <code class="docutils literal notranslate"><span class="pre">query_id</span></code> defines the relationship to the query in the <code class="docutils literal notranslate"><span class="pre">completed_queries</span></code>
 table.</p>
-<table id="id2">
-<caption><span class="caption-text">Columns of the <code class="docutils literal notranslate"><span class="pre">query_tables</span></code> table</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Columns of the <code class="docutils literal notranslate"><span class="pre">query_tables</span></code> table</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
