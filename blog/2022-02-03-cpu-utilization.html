@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Starburst | Archive</title>
+    <title>Starburst | Increased CPU utilization in Trino</title>
     <meta name="viewport" content="width=device-width">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Starburst - Archive">
+    <meta property="og:title" content="Starburst - Increased CPU utilization in Trino">
     <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
     <meta property="og:image" content="/assets/img/logo/starburst-reverse.png">
 
@@ -150,22 +150,17 @@
   </div>
 </div>
 
-  <div class="content container clearfix spacer-30">
+  <div class="content container post-container clearfix spacer-30">
 
-<div class="row blog-page">
-  <div class="col-12 text-surface-medium">
-    <h1>Archive</h1>
-    <p class="subtitle-1">The complete list of posts from the Starburst team</p>
-  </div>
-</div>
+<article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
 
-<div class="row blog-page">
-  <div class="col-12">
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2022-02-03-cpu-utilization.html">Increased CPU utilization in Trino</a></h2>
-          <p class="caption">03 Feb 2022 |
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">
+      Increased CPU utilization in Trino</h1>
+    <p class="post-meta">
+      <time class="dt-published" abbrtime="2022-02-03T00:00:00-06:00" itemprop="datePublished">
+        Feb 3, 2022
+      </time> |
 
      Josh Howard
      
@@ -176,207 +171,78 @@
      
      
 </p>
-        </div>
-        <!--  -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2022-02-01-sep-369-e.html">Starburst Enterprise 369-e STS</a></h2>
-          <p class="caption">01 Feb 2022 |
+  </header>
+  <div class="content width clearfix" itemprop="articleBody">
+    <img src="" style="float: right;">
+    <p>While working on performance enhancements at Starburst, engineering focuses on
+reducing the amount of time that a CPU has to work on a given query. This is
+referred to as <em>CPU time</em>. CPU time is a stable metric that reflects real
+performance in the case of concurrent queries.</p>
 
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p>As the CPU time for an individual query drops so can Trino’s ability to utilize
+the CPUs fully; this can be due to scheduling as an example. The result is that
+a reduction in CPU time does not always translate to a reduction in latency or
+wall time. After a year of major performance enhancements we decided to focus
+our efforts on increasing CPU utilization and reducing query wall time.</p>
 
+<!--more-->
 
-     Matt Fuller
-     
-     
-     <a href="https://github.com/mattsfuller" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!--  -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2022-01-18-sep-368-e.html">Starburst Enterprise 368-e STS</a></h2>
-          <p class="caption">18 Jan 2022 |
+<h2 id="cpu-utilization-enhancements">CPU utilization enhancements</h2>
 
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p>The most significant change is that Trino’s
+<a href="../latest/admin/properties-query-management.html">query.execution-policy</a> now
+defaults to <code class="language-plaintext highlighter-rouge">phased</code> rather than <code class="language-plaintext highlighter-rouge">all-at-once</code>. The all-at-once approach
+scheduled all query stages in a single shot with the goal of simplicity and
+reduced latency. The phased execution policy was later added as a configuration
+option which would schedule only the stages of a query which can can make
+progress.</p>
 
+<p>Recently, Karol Sobczak made the observation that the phased execution policy
+can schedule stages that can create subsequent stages which can’t make progress.
+That issue defeats the purpose of the phased execution policy. Fixing this logic
+resulted in reduced latency, and the ability to set the phased execution policy
+as default.</p>
 
-     Matt Fuller
-     
-     
-     <a href="https://github.com/mattsfuller" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!--  -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2022-01-03-dbt-trino.html">A Trino and dbt community success story</a></h2>
-          <p class="caption">03 Jan 2022 |
+<h2 id="other-improvements">Other improvements</h2>
 
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p>Other significant changes include adaptively setting <code class="language-plaintext highlighter-rouge">task.concurrency</code> to the
+number of physical cores on a node and increasing the default value of 
+<code class="language-plaintext highlighter-rouge">hive.split-loader-concurrency</code>. We have observed that hyper-threaded cores do
+not translate to improved query performance. Increasing the split loader
+concurrency helps the engine process partitions and small files more quickly.</p>
 
+<h2 id="benchmark-results">Benchmark results</h2>
 
-     Brian Olsen
-     
-     <a href="https://twitter.com/bitsondatadev" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/bitsondatadev" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p>We were impressed with a 20% reduction in wall time for TPC-H partitioned data,
+and customers should be able to expect an average reduction of 13% in wall time
+based on our internal benchmarking. We have seen improvements as high as 50%
+for TPC-H query 12 on partitioned data.</p>
 
+<p>The benchmark results were obtained by running the TPC-H and TPC-DS benchmarks
+with one coordinator and six worker nodes. The data was queried by the Hive
+connector with partitioned and unpartitioned data at 1TB scale.</p>
 
-     Marius Grama
-     
-     <a href="https://twitter.com/findinpath" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/findinpath" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p><img src="../assets/img/general/cpu-utilization-tpc-h-benchmark-results.png" alt="TPC-H benchmark results for CPU utilization enhancements" class="img-fluid " description="" width="px" style="" /></p>
 
+<p>While TPC-H and TPC-DS are both decision support benchmarks TPC-H is said to be
+more representative of ad hoc queries which tend to be simpler.</p>
 
-     Przemek Denkiewicz
-     
-     <a href="https://twitter.com/hovaesco" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/hovaesco" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!-- 
-          <div class="archive-post-img">
-            <img src="../assets/img/logo/dbt.svg">
-          </div>
-         -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2021-12-31-security.html">When it comes to security...</a></h2>
-          <p class="caption">31 Dec 2021 |
+<p><img src="../assets/img/general/cpu-utilization-tpc-ds-benchmark-results.png" alt="TPC-DS benchmark results for CPU utilization enhancements" class="img-fluid " description="" width="px" style="" /></p>
 
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<h2 id="ready-for-you">Ready for you</h2>
 
+<p>The best part about these changes mentioned above is that they do not require
+any changes. They will be available out of the box in the upcoming LTS release.
+Just remember that the software makes use of existing configurations so you
+might need to unset <code class="language-plaintext highlighter-rouge">query.execution-policy</code> and <code class="language-plaintext highlighter-rouge">task.concurrency</code>.</p>
 
-     Keavy Murphy
-     
-     
-     <a href="https://github.com/starburstkmurphy" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!--  -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2021-12-29-sep-367-e.html">Starburst Enterprise 367-e STS</a></h2>
-          <p class="caption">29 Dec 2021 |
+<p>Enjoy the even faster query processing.</p>
 
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
+<p><em>Starburst Performance Team</em></p>
 
-
-     Matt Fuller
-     
-     
-     <a href="https://github.com/mattsfuller" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!--  -->
-      </div>
-    
-      <div class="archive-row">
-        <div>
-          <h2 class="archives-title-link"><a href="/blog/2021-12-17-lts-backports.html">December 2021 LTS backport releases</a></h2>
-          <p class="caption">17 Dec 2021 |
-
-     Manfred Moser
-     
-     <a href="https://twitter.com/simpligility" target="_blank"><i class="fab fa-twitter"></i></a>
-     
-     
-     <a href="https://github.com/mosabua" target="_blank"><i class="fab fa-github"></i></a>
-     
-     ,
-     
-
-
-     Matt Fuller
-     
-     
-     <a href="https://github.com/mattsfuller" target="_blank"><i class="fab fa-github"></i></a>
-     
-     
-</p>
-        </div>
-        <!--  -->
-      </div>
-    
-    <!--<hr />
-    <p class="overline">Want to stay up to date with the latest news from Strati? <a
-      href="#">Subscribe</a> to the blog!
-    </p>-->
   </div>
-</div>
-<div class="spacer-60"></div>
+  <a class="u-url" href="/blog/2022-02-03-cpu-utilization.html" hidden></a>
+</article>
 
 </div>
 

@@ -3,13 +3,91 @@
   <generator uri="https://jekyllrb.com/" version="4.2.0">Jekyll</generator>
   <link href="https://docs.starburst.io/blog/feed.xml" rel="self" type="application/atom+xml" />
   <link href="https://docs.starburst.io/blog/" rel="alternate" type="text/html" />
-  <updated>2022-02-01T17:43:44-06:00</updated>
+  <updated>2022-02-03T13:53:09-06:00</updated>
   <id>https://docs.starburst.io/blog/feed.xml</id>
 
   <title>Starburst developer blog</title>
 
   <subtitle>Your hub to all knowledge about Starburst products.</subtitle>
 
+  
+    <entry>
+      <title>Increased CPU utilization in Trino</title>
+      <link href="https://docs.starburst.io/blog/2022-02-03-cpu-utilization.html" rel="alternate" type="text/html" title="Increased CPU utilization in Trino" />
+      <published>2022-02-03T00:00:00-06:00</published>
+      <updated>2022-02-03T00:00:00-06:00</updated>
+      <id>https://docs.starburst.io/blog/cpu-utilization</id>
+      <content type="html" xml:base="https://docs.starburst.io/blog/2022-02-03-cpu-utilization.html">&lt;p&gt;While working on performance enhancements at Starburst, engineering focuses on
+reducing the amount of time that a CPU has to work on a given query. This is
+referred to as &lt;em&gt;CPU time&lt;/em&gt;. CPU time is a stable metric that reflects real
+performance in the case of concurrent queries.&lt;/p&gt;
+
+&lt;p&gt;As the CPU time for an individual query drops so can Trino’s ability to utilize
+the CPUs fully; this can be due to scheduling as an example. The result is that
+a reduction in CPU time does not always translate to a reduction in latency or
+wall time. After a year of major performance enhancements we decided to focus
+our efforts on increasing CPU utilization and reducing query wall time.&lt;/p&gt;
+
+&lt;!--more--&gt;
+
+&lt;h2 id=&quot;cpu-utilization-enhancements&quot;&gt;CPU utilization enhancements&lt;/h2&gt;
+
+&lt;p&gt;The most significant change is that Trino’s
+&lt;a href=&quot;../latest/admin/properties-query-management.html&quot;&gt;query.execution-policy&lt;/a&gt; now
+defaults to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;phased&lt;/code&gt; rather than &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;all-at-once&lt;/code&gt;. The all-at-once approach
+scheduled all query stages in a single shot with the goal of simplicity and
+reduced latency. The phased execution policy was later added as a configuration
+option which would schedule only the stages of a query which can can make
+progress.&lt;/p&gt;
+
+&lt;p&gt;Recently, Karol Sobczak made the observation that the phased execution policy
+can schedule stages that can create subsequent stages which can’t make progress.
+That issue defeats the purpose of the phased execution policy. Fixing this logic
+resulted in reduced latency, and the ability to set the phased execution policy
+as default.&lt;/p&gt;
+
+&lt;h2 id=&quot;other-improvements&quot;&gt;Other improvements&lt;/h2&gt;
+
+&lt;p&gt;Other significant changes include adaptively setting &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task.concurrency&lt;/code&gt; to the
+number of physical cores on a node and increasing the default value of 
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hive.split-loader-concurrency&lt;/code&gt;. We have observed that hyper-threaded cores do
+not translate to improved query performance. Increasing the split loader
+concurrency helps the engine process partitions and small files more quickly.&lt;/p&gt;
+
+&lt;h2 id=&quot;benchmark-results&quot;&gt;Benchmark results&lt;/h2&gt;
+
+&lt;p&gt;We were impressed with a 20% reduction in wall time for TPC-H partitioned data,
+and customers should be able to expect an average reduction of 13% in wall time
+based on our internal benchmarking. We have seen improvements as high as 50%
+for TPC-H query 12 on partitioned data.&lt;/p&gt;
+
+&lt;p&gt;The benchmark results were obtained by running the TPC-H and TPC-DS benchmarks
+with one coordinator and six worker nodes. The data was queried by the Hive
+connector with partitioned and unpartitioned data at 1TB scale.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/general/cpu-utilization-tpc-h-benchmark-results.png&quot; alt=&quot;TPC-H benchmark results for CPU utilization enhancements&quot; class=&quot;img-fluid &quot; description=&quot;&quot; width=&quot;px&quot; style=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;While TPC-H and TPC-DS are both decision support benchmarks TPC-H is said to be
+more representative of ad hoc queries which tend to be simpler.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../assets/img/general/cpu-utilization-tpc-ds-benchmark-results.png&quot; alt=&quot;TPC-DS benchmark results for CPU utilization enhancements&quot; class=&quot;img-fluid &quot; description=&quot;&quot; width=&quot;px&quot; style=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;ready-for-you&quot;&gt;Ready for you&lt;/h2&gt;
+
+&lt;p&gt;The best part about these changes mentioned above is that they do not require
+any changes. They will be available out of the box in the upcoming LTS release.
+Just remember that the software makes use of existing configurations so you
+might need to unset &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;query.execution-policy&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task.concurrency&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Enjoy the even faster query processing.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Starburst Performance Team&lt;/em&gt;&lt;/p&gt;</content>
+
+      <summary>While working on performance enhancements at Starburst, engineering focuses on reducing the amount of time that a CPU has to work on a given query. This is referred to as CPU time. CPU time is a stable metric that reflects real performance in the case of concurrent queries. As the CPU time for an individual query drops so can Trino’s ability to utilize the CPUs fully; this can be due to scheduling as an example. The result is that a reduction in CPU time does not always translate to a reduction in latency or wall time. After a year of major performance enhancements we decided to focus our efforts on increasing CPU utilization and reducing query wall time.</summary>
+
+      
+      
+    </entry>
   
     <entry>
       <title>Starburst Enterprise 369-e STS</title>
