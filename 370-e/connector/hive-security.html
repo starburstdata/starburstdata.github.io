@@ -726,22 +726,6 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#additional-information-about-keytab-files" class="md-nav__link">Additional information about Keytab files</a>
-        </li>
-        <li class="md-nav__item"><a href="#file-based-authorization" class="md-nav__link">File based authorization</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema rules</a>
-        </li>
-        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table rules</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column constraint</a>
-        </li>
-        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and mask environment</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#session-property-rules" class="md-nav__link">Session property rules</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -994,22 +978,6 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#additional-information-about-keytab-files" class="md-nav__link">Additional information about Keytab files</a>
-        </li>
-        <li class="md-nav__item"><a href="#file-based-authorization" class="md-nav__link">File based authorization</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#schema-rules" class="md-nav__link">Schema rules</a>
-        </li>
-        <li class="md-nav__item"><a href="#table-rules" class="md-nav__link">Table rules</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column constraint</a>
-        </li>
-        <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and mask environment</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#session-property-rules" class="md-nav__link">Session property rules</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -1054,9 +1022,10 @@ metadata, such as <code class="docutils literal notranslate"><span class="pre">C
 allowed.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">file</span></code></p></td>
-<td><p>Authorization checks are enforced using a config file specified
-by the Hive configuration property <code class="docutils literal notranslate"><span class="pre">security.config-file</span></code>.
-See <a class="reference internal" href="#hive-file-based-authorization"><span class="std std-ref">File based authorization</span></a> for details.</p></td>
+<td><p>Authorization checks are enforced using a catalog-level access
+control configuration file whose path is specified
+in the <code class="docutils literal notranslate"><span class="pre">security.config-file</span></code> catalog configuration property.
+See <a class="reference internal" href="../security/file-system-access-control.html#catalog-file-based-access-control"><span class="std std-ref">Catalog-level access control files</span></a> for details.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sql-standard</span></code></p></td>
 <td><p>Users are permitted to perform the operations as long as
@@ -1442,138 +1411,6 @@ nodes. This means that the keytab needs to be in the same location on every
 node.</p>
 <p>You should ensure that the keytab files have the correct permissions on every
 node after distributing them.</p>
-
-
-<span id="hive-file-based-authorization"></span><h2 id="file-based-authorization">File based authorization<a class="headerlink" href="#file-based-authorization" title="Permalink to this headline">#</a></h2>
-<p>The config file is specified using JSON and is composed of three sections,
-each of which is a list of rules that are matched in the order specified
-in the config file. The user is granted the privileges from the first
-matching rule. All regexes default to <code class="docutils literal notranslate"><span class="pre">.*</span></code> if not specified.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>These rules do not apply to system defined table in the <code class="docutils literal notranslate"><span class="pre">information_schema</span></code> schema.</p>
-</div>
-
-<h3 id="schema-rules">Schema rules<a class="headerlink" href="#schema-rules" title="Permalink to this headline">#</a></h3>
-<p>These rules govern who is considered an owner of a schema.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against every user group the user belongs to.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regex to match against schema name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">owner</span></code> (required): boolean indicating ownership.</p></li>
-</ul>
-
-
-<h3 id="table-rules">Table rules<a class="headerlink" href="#table-rules" title="Permalink to this headline">#</a></h3>
-<p>These rules govern the privileges granted on specific tables.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against every user group the user belongs to.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regex to match against schema name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> (optional): regex to match against table name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>, <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>,
-<code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">OWNERSHIP</span></code>, <code class="docutils literal notranslate"><span class="pre">GRANT_SELECT</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code> (optional): list of column constraints.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">filter</span></code> (optional): boolean filter expression for the table.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">filter_environment</span></code> (optional): environment use during filter evaluation.</p></li>
-</ul>
-
-<h4 id="column-constraint">Column constraint<a class="headerlink" href="#column-constraint" title="Permalink to this headline">#</a></h4>
-<p>These constraints can be used to restrict access to column data.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: name of the column.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (optional): if false, column can not be accessed.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mask</span></code> (optional): mask expression applied to column.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">mask_environment</span></code> (optional): environment use during mask evaluation.</p></li>
-</ul>
-
-
-<h4 id="filter-and-mask-environment">Filter and mask environment<a class="headerlink" href="#filter-and-mask-environment" title="Permalink to this headline">#</a></h4>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): username for checking permission of subqueries in mask.</p></li>
-</ul>
-
-
-
-<h3 id="session-property-rules">Session property rules<a class="headerlink" href="#session-property-rules" title="Permalink to this headline">#</a></h3>
-<p>These rules govern who may set session properties.</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regex to match against every user group the user belongs to.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">property</span></code> (optional): regex to match against session property name.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">allow</span></code> (required): boolean indicating whether this session property may be set.</p></li>
-</ul>
-<p>See below for an example.</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="nt">"schemas"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
-      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">".*"</span><span class="p">,</span>
-      <span class="nt">"owner"</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"group"</span><span class="p">:</span> <span class="s2">"finance|human_resources"</span><span class="p">,</span>
-      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"employees"</span><span class="p">,</span>
-      <span class="nt">"owner"</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"guest"</span><span class="p">,</span>
-      <span class="nt">"owner"</span><span class="p">:</span> <span class="kc">false</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
-      <span class="nt">"owner"</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">"tables"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">,</span> <span class="s2">"INSERT"</span><span class="p">,</span> <span class="s2">"DELETE"</span><span class="p">,</span> <span class="s2">"OWNERSHIP"</span><span class="p">]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"banned_user"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[]</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"hr"</span><span class="p">,</span>
-      <span class="nt">"table"</span><span class="p">:</span> <span class="s2">"employee"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
-      <span class="nt">"filter"</span><span class="p">:</span> <span class="s2">"user = current_user"</span>
-    <span class="p">}</span>
-    <span class="p">{</span>
-      <span class="nt">"schema"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">,</span>
-      <span class="nt">"table"</span><span class="p">:</span> <span class="s2">".*"</span><span class="p">,</span>
-      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SELECT"</span><span class="p">],</span>
-      <span class="nt">"columns"</span> <span class="p">:</span> <span class="p">[</span>
-         <span class="p">{</span>
-            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"address"</span><span class="p">,</span>
-            <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">false</span>
-         <span class="p">},</span>
-         <span class="p">{</span>
-            <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"ssn"</span><span class="p">,</span>
-            <span class="nt">"mask"</span><span class="p">:</span> <span class="s2">"'XXX-XX-' + substring(credit_card, -4)"</span><span class="p">,</span>
-            <span class="nt">"mask_environment"</span><span class="p">:</span> <span class="p">{</span>
-              <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span>
-            <span class="p">}</span>
-         <span class="p">}</span>
-      <span class="p">]</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">"session_properties"</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">"property"</span><span class="p">:</span> <span class="s2">"force_local_scheduling"</span><span class="p">,</span>
-      <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
-      <span class="nt">"property"</span><span class="p">:</span> <span class="s2">"max_split_size"</span><span class="p">,</span>
-      <span class="nt">"allow"</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-
 
 
 
