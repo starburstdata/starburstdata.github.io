@@ -485,30 +485,19 @@ available, taking autoscaling needs into account.</p></li>
 environment, and create and verify catalogs.</p>
 
 <h2 id="aws-eks-setup">AWS EKS setup<a class="headerlink" href="#aws-eks-setup" title="Permalink to this headline">#</a></h2>
-<p>1. Install the this interface <a class="reference external" href="https://github.com/aws/amazon-vpc-cni-k8s">required CNI plugin</a>.
-2. Configure the CNI plugin and restart or recreate the node group to apply changes:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ kubectl <span class="nb">set</span> env ds aws-node -n kube-system <span class="nv">AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG</span><span class="o">=</span><span class="nb">true</span>
-$ kubectl <span class="nb">set</span> env daemonset -n kube-system aws-node <span class="nv">AWS_VPC_K8S_CNI_EXTERNALSNAT</span><span class="o">=</span><span class="nb">true</span>
-$ kubectl <span class="nb">set</span> env daemonset aws-node -n kube-system <span class="nv">ENABLE_POD_ENI</span><span class="o">=</span><span class="nb">true</span>
-$ kubectl patch daemonset aws-node <span class="se">\</span>
-  -n kube-system <span class="se">\</span>
-  -p <span class="s1">'{"spec": {"template": {"spec": {"initContainers": [{"env":[{"name":"DISABLE_TCP_EARLY_DEMUX","value":"true"}],"name":"aws-vpc-cni-init"}]}}}}'</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>ENIConfig custom networking resources, as well as the following <code class="docutils literal notranslate"><span class="pre">kubectl</span></code>
-command, may be deployed in order to have more pods on each node:</p>
-<p><code class="docutils literal notranslate"><span class="pre">kubectl</span> <span class="pre">set</span> <span class="pre">env</span> <span class="pre">daemonset</span> <span class="pre">aws-node</span> <span class="pre">-n</span> <span class="pre">kube-system</span> <span class="pre">ENI_CONFIG_LABEL_DEF=failure-domain.beta.kubernetes.io/zone</span></code></p>
-<p>Details are found in the CNI plugin instructions and the <a class="reference external" href="https://docs.aws.amazon.com/eks/latest/userguide/pod-networking.html">official EKS
-documentation</a>.</p>
-</div>
+<p>AWS provides the <code class="docutils literal notranslate"><span class="pre">vpc-cni</span></code> addon to automate configuraiton of your EKS
+cluster. Follow the <a class="reference external" href="https://eksctl.io/usage/addons/">EKS Addons instructions</a>
+for guidance.</p>
+<p>After the EKS cluster is deployed, you must update its default security group
+with an inbound rule allowing the Teradata host to get back into the EKS
+cluster.</p>
 
 
 <h2 id="azure-aks-setup">Azure AKS setup<a class="headerlink" href="#azure-aks-setup" title="Permalink to this headline">#</a></h2>
 <p>Ensure that <a class="reference external" href="https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni">Azure VNet CNI</a> is applied to
-the cluster, from your preferred management interface, such as Azure Portal or
-Terraform. Following is an example section from a Terraform resource:</p>
+the cluster from your preferred management interface, such as Azure Portal or
+Terraform.</p>
+<p>Only if you are using Terraform, the following is an example section:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>resource "azurerm_kubernetes_cluster" "main" {
   network_profile {
     network_plugin    = "azure"
@@ -538,42 +527,38 @@ example:</p></li>
     <span class="no">teradata-direct.table-operator.logging-level=DEBUG</span>
 </pre></div>
 </div>
-<ol class="arabic simple" start="3">
+<ol class="arabic" start="3">
 <li><p>Verify all pods have IP assigned addresses in a shared network, and the
 following command does not return an error indicating that no IP addresses
-are available:</p></li>
-</ol>
-<blockquote>
-<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ kubectl describe pod &lt;my-deployment-xxxxxxxxxx-xxxxx&gt; -n &lt;my-namespace&gt;
+are available:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ kubectl describe pod &lt;my-deployment-xxxxxxxxxx-xxxxx&gt; -n &lt;my-namespace&gt;
 
-Failed to create pod sandbox: rpc error: <span class="nv">code</span> <span class="o">=</span> Unknown <span class="nv">desc</span> <span class="o">=</span> failed to <span class="nb">set</span> up sandbox container <span class="s2">"&lt;LongHash&gt;"</span> network <span class="k">for</span> pod <span class="s2">"&lt;my-deployment-59f5f68b58-c89wx&gt;"</span>: networkPlugin
-cni failed to <span class="nb">set</span> up pod <span class="s2">"&lt;my-deployment-59f5f68b58-c89wx_my-namespace&gt;"</span> network: add cmd: failed to assign an IP address to container
+Failed to create pod sandbox: rpc error: <span class="nv">code</span> <span class="o">=</span> Unknown <span class="nv">desc</span> <span class="o">=</span> failed to
+<span class="nb">set</span> up sandbox container <span class="s2">"&lt;LongHash&gt; network for pod</span>
+<span class="s2">"</span>&lt;my-deployment-59f5f68b58-c89wx&gt;<span class="s2">": networkPlugin cni failed to set up</span>
+<span class="s2">pod "</span>&lt;my-deployment-59f5f68b58-c89wx_my-namespace&gt;<span class="s2">" network: add cmd:</span>
+<span class="s2">failed to assign an IP address to container</span>
 </pre></div>
 </div>
-</div></blockquote>
-<ol class="arabic simple" start="4">
+</li>
 <li><p>Run the following Teradata Direct connector query through your preferred
-client:</p></li>
-</ol>
-<blockquote>
-<div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">select</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">from</span> <span class="n">myteradatadirect</span><span class="p">.</span><span class="n">sys_calendar</span><span class="p">.</span><span class="n">calendar</span><span class="p">;</span>
+client:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">select</span> <span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">from</span> <span class="n">myteradatadirect</span><span class="p">.</span><span class="n">sys_calendar</span><span class="p">.</span><span class="n">calendar</span><span class="p">;</span>
 </pre></div>
 </div>
-</div></blockquote>
-<ol class="arabic simple" start="5">
+</li>
 <li><p>Verify that the receivers are responding. The connector should return the
 result of the above query immediately. A brief check of the
 <code class="docutils literal notranslate"><span class="pre">/tmp/starburstdata_table_operator*.log</span></code> file should not display any
 <code class="docutils literal notranslate"><span class="pre">sleep:</span></code> entries, indicating that receivers could not respond or were not
-found:</p></li>
-</ol>
-<blockquote>
-<div><div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2021-04-15T11:18:32 DEBUG src/main/cpp/util.cpp:211 sleep: 244
+found:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>2021-04-15T11:18:32 DEBUG src/main/cpp/util.cpp:211 sleep: 244
 2021-04-15T11:18:32 DEBUG src/main/cpp/util.cpp:211 sleep: 500
 2021-04-15T11:18:32 DEBUG src/main/cpp/util.cpp:211 sleep: 1000
 </pre></div>
 </div>
-</div></blockquote>
+</li>
+</ol>
 
 
 
