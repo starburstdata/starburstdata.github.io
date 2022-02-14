@@ -384,6 +384,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#built-in-access-control-configuration" class="md-nav__link">Built-in access control configuration</a>
         </li>
+        <li class="md-nav__item"><a href="#jdbc-access-control" class="md-nav__link">JDBC access control</a>
+        </li>
         <li class="md-nav__item"><a href="#access-control-framework" class="md-nav__link">Access control framework</a>
         </li></ul>
             </nav>
@@ -642,6 +644,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#built-in-access-control-configuration" class="md-nav__link">Built-in access control configuration</a>
         </li>
+        <li class="md-nav__item"><a href="#jdbc-access-control" class="md-nav__link">JDBC access control</a>
+        </li>
         <li class="md-nav__item"><a href="#access-control-framework" class="md-nav__link">Access control framework</a>
         </li></ul>
             </nav>
@@ -686,13 +690,32 @@ control on worker nodes.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.access-control.enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
-<p>In the same file, you must also designate one or more Starburst Enterprise web UI login names to
-serve as the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role. You can optionally designate a user group name
-whose group members can change to the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role while logged in. Notice
-that these are the same properties used by Starburst Enterprise web UI to designate admin roles, so
-you might already have these set:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.authorized-users</span><span class="o">=</span><span class="s">merlin,gwydion</span>
-<span class="na">insights.authorized-groups</span><span class="o">=</span><span class="s">wizards</span>
+<p>Enabling this property enables the <strong>Roles and privileges</strong> pane in the
+Starburst Enterprise web UI.</p>
+<p>Setting this property as shown makes the built-in access control the default
+access control system in SEP. However, this can be overriden as described in
+<a class="reference internal" href="built-in-system-access-control.html"><span class="doc">System access control</span></a>. For example, to use Apache
+Ranger together with the built-in access control, specify the configuration
+files for both systems as follows:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">access-control.config-files</span><span class="o">=</span><span class="s">ranger.properties,biac.properties</span>
+</pre></div>
+</div>
+<p>In a separate file arbitrarily named <code class="docutils literal notranslate"><span class="pre">biac.properties</span></code>, add:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">access-control.name</span><span class="o">=</span><span class="s">starburst</span>
+</pre></div>
+</div>
+<p>If your cluster includes the <a class="reference internal" href="../connector/hive.html"><span class="doc">Hive connector</span></a>, its
+catalog configuration file must include:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hive.security</span><span class="o">=</span><span class="s">starburst</span>
+</pre></div>
+</div>
+<p>In the coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file, you must also designate one or
+more Starburst Enterprise web UI login names to serve as the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role. You can optionally
+designate a user group name whose group members can change to the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code>
+role while logged in. Notice that these are the same properties used by Starburst Enterprise web UI
+to designate admin roles, so you might already have these set:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.authorized-users</span><span class="o">=</span><span class="s">merlin|gwydion</span>
+<span class="na">insights.authorized-groups</span><span class="o">=</span><span class="s">wizards|knights</span>
 </pre></div>
 </div>
 <p>The built-in access control system uses the same query logger storage as
@@ -701,6 +724,18 @@ to run the built-in access control system.</p>
 <p>If you need to configure a query logger, the storage database requirements are
 described on <a class="reference internal" href="../insights/configuration.html#id1"><span class="std std-ref">Insights configuration</span></a> and
 <a class="reference internal" href="../admin/query-logger.html#query-logger-requirements"><span class="std std-ref">Query logger setup</span></a>.</p>
+
+
+<h2 id="jdbc-access-control">JDBC access control<a class="headerlink" href="#jdbc-access-control" title="Permalink to this headline">#</a></h2>
+<p>If built-in access control is enabled on a cluster, clients connecting over JDBC
+are assigned the <code class="docutils literal notranslate"><span class="pre">public</span></code> role by default. If that role has limited
+privileges, this can limit access over JDBC to the <a class="reference internal" href="../admin/cache-service.html"><span class="doc">cache service</span></a>, <a class="reference internal" href="../data-products.html"><span class="doc">data products</span></a>, and other
+features.</p>
+<p>To specify the role with which JDBC connections are made, append
+<code class="docutils literal notranslate"><span class="pre">roles=system:rolename</span></code> to the JDBC connection string. For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>jdbc:trino://sep.example.com:8443?ssl=true&amp;roles=system:DataEngineer
+</pre></div>
+</div>
 
 
 <h2 id="access-control-framework">Access control framework<a class="headerlink" href="#access-control-framework" title="Permalink to this headline">#</a></h2>
