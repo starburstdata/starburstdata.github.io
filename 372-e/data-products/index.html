@@ -274,7 +274,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#data-governance-for-data-products" class="md-nav__link">Data governance for data products</a>
+        <li class="md-nav__item"><a href="#access-control-for-data-products" class="md-nav__link">Access control for data products</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#access-control-for-data-products-underlying-data" class="md-nav__link">Access control for data products underlying data</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -413,7 +417,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#data-governance-for-data-products" class="md-nav__link">Data governance for data products</a>
+        <li class="md-nav__item"><a href="#access-control-for-data-products" class="md-nav__link">Access control for data products</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#access-control-for-data-products-underlying-data" class="md-nav__link">Access control for data products underlying data</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -430,7 +438,7 @@
 <h1 id="data-products-index--page-root">Data products overview<a class="headerlink" href="#data-products-index--page-root" title="Permalink to this headline">#</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The data products feature status is <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">production availability</span></a>. Contact <a class="reference external" href="../../support.html">Starburst support</a>
+<p>The data products feature status is in <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">production availability</span></a>. Contact <a class="reference external" href="../../support.html">Starburst support</a>
 with questions or feedback.</p>
 </div>
 <p>Data products are available in the <a class="reference internal" href="../overview/sep-ui.html"><span class="doc">Starburst Enterprise web UI</span></a>. The <strong>Data
@@ -447,9 +455,9 @@ with a brief description and their status:</p>
 has changes in its datasets definitions that were not yet published</p></li>
 <li><p>[No status] - this data product is published to SEP and ready for use</p></li>
 </ul>
-<p>You can use the <a class="reference internal" href="../client/query-editor.html"><span class="doc">query editor</span></a> to  develop, test and
-vet your data product. Be sure to mark your data product before publishing it
-into production as a data product.</p>
+<p>You can use the <a class="reference internal" href="../client/query-editor.html"><span class="doc">query editor</span></a> to develop, test,
+and vet your data product. Be sure to mark your data product before publishing
+it into production as a data product.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You cannot directly register pre-existing data as data products. Instead,
@@ -463,8 +471,7 @@ create a view for that data using a simple <code class="docutils literal notrans
 Hive metastore to manage views. You can optionally <a class="reference internal" href="../connector/starburst-hive.html#sb-hive-materialized-views"><span class="std std-ref">enable materialized
 views support</span></a> for the catalog to provide
 performance benefits for data product consumers.</p></li>
-<li><p>A user with appropriate access privileges to create schemas and datasets if
-your organization uses data governance.</p></li>
+<li><p>A SEP user with appropriate access privileges to impersonate other users</p></li>
 <li><p>A configured <a class="reference internal" href="../admin/query-logger.html"><span class="doc">query logger database</span></a> with
 <code class="docutils literal notranslate"><span class="pre">insights.persistence-enabled=true</span></code> in your <a class="reference internal" href="../insights/configuration.html#id1"><span class="std std-ref">Insights
 configuration</span></a>.</p></li>
@@ -473,30 +480,35 @@ configuration</span></a>.</p></li>
 engineer.</p>
 
 
-<h2 id="data-governance-for-data-products">Data governance for data products<a class="headerlink" href="#data-governance-for-data-products" title="Permalink to this headline">#</a></h2>
-<p>As with any view creation, a new object is created. You must create grants
-and restrictions for it as necessary.</p>
-<p>The view is created and stored in the Hive metastore with the permissions and
-ownership of the <code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code>. It is important to review all
-grants and restrictions for this user, particularly for any PII (Personally
-Identifying Information), as views do not inherit grants and restrictions on the
-source data.</p>
-<p>The user creating a dataset in the UI may have a different set of roles and
-grants than <code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code>. A user querying a data set in a
-data product may have still another different set of roles and grants.</p>
-<p>If the set of roles and grants on source data is more restrictive for data
-product owners and data product users, they are still able to view all data
-that they would have been restricted from in the source data until data
-governance is applied to the view. You must apply roles and grants for the new
-view as with any other view.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Data product owners creating datasets always have access to a preview of
-data with the restrictions and grants applicable to the specified
-<code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code>, which may be less restrictive than their own.
-You must create data governance policies for the views that represent the
-dataset.</p>
+<h2 id="access-control-for-data-products">Access control for data products<a class="headerlink" href="#access-control-for-data-products" title="Permalink to this headline">#</a></h2>
+<p>If SEP <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a> is enabled
+you must set roles and <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">privileges for data products</span></a>. You can control which users are able to see,
+edit, create, delete, and publish data products. You can set privileges that
+apply globally (across all domains), privileges that apply to a specific
+domain, and privileges that apply to a specific data product.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>With access control enabled, only users that you explicitly allow are able
+to see existing data products.</p>
 </div>
+
+<h3 id="access-control-for-data-products-underlying-data">Access control for data products underlying data<a class="headerlink" href="#access-control-for-data-products-underlying-data" title="Permalink to this headline">#</a></h3>
+<p>Data product privileges do not imply any <a class="reference internal" href="../security/biac-privileges.html#biac-entity-tables"><span class="std std-ref">table privileges</span></a> for the underlying data objects defined by its datasets.
+This means a user can be allowed to see a data product in the <a class="reference internal" href="dashboard.html"><span class="doc">data
+products dashboard</span></a> while not being allowed to query
+its datasets and vice-versa.</p>
+<p>Make sure you define appropriate access control privileges for the data objects
+defined by your data products. While data product privileges can be only
+managed by <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a>, the
+privileges for the data objects it creates in SEP (schemas, views, and
+materialized views) can be managed by other supported <a class="reference internal" href="../security/access-control.html"><span class="doc">access control
+systems</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Data product views are created and stored in the Hive metastore with the
+permissions and ownership of the user who published the data product.</p>
+</div>
+
 
 
 
