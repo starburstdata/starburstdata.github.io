@@ -340,7 +340,15 @@
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#wait-timeout" class="md-nav__link">Wait timeout</a>
+        </li>
+        <li class="md-nav__item"><a href="#compaction" class="md-nav__link">Compaction</a>
+        </li>
+        <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
@@ -535,13 +543,6 @@
     
     
       <a href="starburst-vertica.html" class="md-nav__link">Starburst Vertica connector</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
-      <a href="starburst-shared-features.html" class="md-nav__link">Starburst shared connector features</a>
       
     
     </li>
@@ -874,7 +875,15 @@
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#wait-timeout" class="md-nav__link">Wait timeout</a>
+        </li>
+        <li class="md-nav__item"><a href="#compaction" class="md-nav__link">Compaction</a>
+        </li>
+        <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sb-cached-views" class="md-nav__link">Starburst Cached Views</a>
         </li></ul>
@@ -1235,11 +1244,60 @@ metadata in DynamoDB.</p>
 following sections.</p>
 
 <h3 id="dynamic-filtering">Dynamic filtering<a class="headerlink" href="#dynamic-filtering" title="Permalink to this headline">#</a></h3>
-<p><a class="reference internal" href="starburst-shared-features.html#shared-dynamic-filtering"><span class="std std-ref">Dynamic filtering</span></a> is enabled by default. It
+<p><a class="reference internal" href="../admin/dynamic-filtering.html"><span class="doc">Dynamic filtering</span></a> is enabled by default. It
 causes the connector to wait for dynamic filtering to complete before starting a
-query.</p>
-<p>You can disable dynamic filtering by setting the property
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code> in your catalog properties file to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+JDBC query.</p>
+<p>You can disable dynamic filtering by setting the  <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code>
+property in your catalog configuration file to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+
+<h4 id="wait-timeout">Wait timeout<a class="headerlink" href="#wait-timeout" title="Permalink to this headline">#</a></h4>
+<p>By default, table scans on the connector are delayed up to 20 seconds until
+dynamic filters are collected from the build side of joins. Using a large
+timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p>
+<p>You can configure the <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code> property in your
+catalog properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">dynamic-filtering.wait-timeout</span><span class="o">=</span><span class="s">1m</span>
+</pre></div>
+</div>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">dynamic_filtering_wait_timeout</span></code> <a class="reference internal" href="../sql/set-session.html"><span class="doc">catalog session
+property</span></a> in a specific session:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION catalogname.dynamic_filtering_wait_timeout = 1s;
+</pre></div>
+</div>
+
+
+<h4 id="compaction">Compaction<a class="headerlink" href="#compaction" title="Permalink to this headline">#</a></h4>
+<p>The maximum size of dynamic filter predicate, that is pushed down to the
+connector during table scan for a column, is configured using the
+<code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> property in the catalog
+properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">domain-compaction-threshold</span><span class="o">=</span><span class="s">100</span>
+</pre></div>
+</div>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">domain_compaction_threshold</span></code> catalog
+session property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION domain_compaction_threshold = 10;
+</pre></div>
+</div>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> is set to <code class="docutils literal notranslate"><span class="pre">32</span></code>.
+When the dynamic predicate for a column exceeds this threshold, it is compacted
+into a single range predicate.</p>
+<p>For example, if the dynamic filter collected for a date column <code class="docutils literal notranslate"><span class="pre">dt</span></code> on the
+fact table selects more than 32 days, the filtering condition is simplified from
+<code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">IN</span> <span class="pre">('2020-01-10',</span> <span class="pre">'2020-01-12',...,</span> <span class="pre">'2020-05-30')</span></code> to <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">BETWEEN</span>
+<span class="pre">'2020-01-10'</span> <span class="pre">AND</span> <span class="pre">'2020-05-30'</span></code>. Using a large threshold can result in increased
+table scan overhead due to a large <code class="docutils literal notranslate"><span class="pre">IN</span></code> list getting pushed down to the data
+source.</p>
+
+
+<h4 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">#</a></h4>
+<p>Metrics about dynamic filtering are reported in a JMX table for each catalog:</p>
+<p><code class="docutils literal notranslate"><span class="pre">jmx.current."com.starburstdata.presto.plugin.jdbc.dynamicfiltering:name=catalogname,type=dynamicfilteringstats"</span></code></p>
+<p>Metrics include information about the total number of dynamic filters, the
+number of completed dynamic filters, the number of available dynamic filters and
+the time spent waiting for dynamic filters.</p>
+
 
 
 <h3 id="sb-cached-views">Starburst Cached Views<a class="headerlink" href="#sb-cached-views" title="Permalink to this headline">#</a></h3>

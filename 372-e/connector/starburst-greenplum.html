@@ -379,7 +379,15 @@
         </li>
         <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
         </li>
-        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#wait-timeout" class="md-nav__link">Wait timeout</a>
+        </li>
+        <li class="md-nav__item"><a href="#compaction" class="md-nav__link">Compaction</a>
+        </li>
+        <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#jdbc-connection-pooling" class="md-nav__link">JDBC connection pooling</a>
         </li></ul>
@@ -555,13 +563,6 @@
     
     
       <a href="starburst-vertica.html" class="md-nav__link">Starburst Vertica connector</a>
-      
-    
-    </li>
-    <li class="md-nav__item">
-    
-    
-      <a href="starburst-shared-features.html" class="md-nav__link">Starburst shared connector features</a>
       
     
     </li>
@@ -912,7 +913,15 @@
         </li>
         <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
         </li>
-        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a>
+        <li class="md-nav__item"><a href="#dynamic-filtering" class="md-nav__link">Dynamic filtering</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#wait-timeout" class="md-nav__link">Wait timeout</a>
+        </li>
+        <li class="md-nav__item"><a href="#compaction" class="md-nav__link">Compaction</a>
+        </li>
+        <li class="md-nav__item"><a href="#metrics" class="md-nav__link">Metrics</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#jdbc-connection-pooling" class="md-nav__link">JDBC connection pooling</a>
         </li></ul>
@@ -1361,8 +1370,8 @@ servers in Greenplum or larger.</p>
 
 
 <h3 id="table-statistics">Table statistics<a class="headerlink" href="#table-statistics" title="Permalink to this headline">#</a></h3>
-<p>The Greenplum connector supports <a class="reference internal" href="starburst-shared-features.html#shared-table-statistics"><span class="std std-ref">table and column statistics</span></a> to improve query processing performance based on
-the actual data in the data source.</p>
+<p>The Greenplum connector can use <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">table and column statistics</span></a> for <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">cost based optimizations</span></a>, to improve query processing performance
+based on the actual data in the data source.</p>
 <p>The statistics are collected by Greenplum and retrieved by the connector.</p>
 <p>To collect statistics for a table, execute the following statement in Greenplum.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ANALYZE table_schema.table_name;
@@ -1458,15 +1467,119 @@ down.</p>
 
 
 <h3 id="dynamic-filtering">Dynamic filtering<a class="headerlink" href="#dynamic-filtering" title="Permalink to this headline">#</a></h3>
-<p><a class="reference internal" href="starburst-shared-features.html#shared-dynamic-filtering"><span class="std std-ref">Dynamic filtering</span></a> is enabled by default. It
+<p><a class="reference internal" href="../admin/dynamic-filtering.html"><span class="doc">Dynamic filtering</span></a> is enabled by default. It
 causes the connector to wait for dynamic filtering to complete before starting a
 JDBC query.</p>
-<p>You can disable dynamic filtering by setting the property
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code> in your catalog properties file to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<p>You can disable dynamic filtering by setting the  <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code>
+property in your catalog configuration file to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+
+<h4 id="wait-timeout">Wait timeout<a class="headerlink" href="#wait-timeout" title="Permalink to this headline">#</a></h4>
+<p>By default, table scans on the connector are delayed up to 20 seconds until
+dynamic filters are collected from the build side of joins. Using a large
+timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p>
+<p>You can configure the <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code> property in your
+catalog properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">dynamic-filtering.wait-timeout</span><span class="o">=</span><span class="s">1m</span>
+</pre></div>
+</div>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">dynamic_filtering_wait_timeout</span></code> <a class="reference internal" href="../sql/set-session.html"><span class="doc">catalog session
+property</span></a> in a specific session:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION catalogname.dynamic_filtering_wait_timeout = 1s;
+</pre></div>
+</div>
+
+
+<h4 id="compaction">Compaction<a class="headerlink" href="#compaction" title="Permalink to this headline">#</a></h4>
+<p>The maximum size of dynamic filter predicate, that is pushed down to the
+connector during table scan for a column, is configured using the
+<code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> property in the catalog
+properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">domain-compaction-threshold</span><span class="o">=</span><span class="s">100</span>
+</pre></div>
+</div>
+<p>You can use the <code class="docutils literal notranslate"><span class="pre">domain_compaction_threshold</span></code> catalog
+session property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION domain_compaction_threshold = 10;
+</pre></div>
+</div>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> is set to <code class="docutils literal notranslate"><span class="pre">32</span></code>.
+When the dynamic predicate for a column exceeds this threshold, it is compacted
+into a single range predicate.</p>
+<p>For example, if the dynamic filter collected for a date column <code class="docutils literal notranslate"><span class="pre">dt</span></code> on the
+fact table selects more than 32 days, the filtering condition is simplified from
+<code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">IN</span> <span class="pre">('2020-01-10',</span> <span class="pre">'2020-01-12',...,</span> <span class="pre">'2020-05-30')</span></code> to <code class="docutils literal notranslate"><span class="pre">dt</span> <span class="pre">BETWEEN</span>
+<span class="pre">'2020-01-10'</span> <span class="pre">AND</span> <span class="pre">'2020-05-30'</span></code>. Using a large threshold can result in increased
+table scan overhead due to a large <code class="docutils literal notranslate"><span class="pre">IN</span></code> list getting pushed down to the data
+source.</p>
+
+
+<h4 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">#</a></h4>
+<p>Metrics about dynamic filtering are reported in a JMX table for each catalog:</p>
+<p><code class="docutils literal notranslate"><span class="pre">jmx.current."com.starburstdata.presto.plugin.jdbc.dynamicfiltering:name=catalogname,type=dynamicfilteringstats"</span></code></p>
+<p>Metrics include information about the total number of dynamic filters, the
+number of completed dynamic filters, the number of available dynamic filters and
+the time spent waiting for dynamic filters.</p>
+
 
 
 <h3 id="jdbc-connection-pooling">JDBC connection pooling<a class="headerlink" href="#jdbc-connection-pooling" title="Permalink to this headline">#</a></h3>
-<p>You can improve performance by enabling <a class="reference internal" href="starburst-shared-features.html#shared-jdbc-connection-pooling"><span class="std std-ref">JDBC connection pooling</span></a>, which is disabled by default.</p>
+<p>When JDBC connection pooling is enabled, each worker creates and maintains a
+connection pool instead of opening and closing separate connections to the data
+source sequentially. Each connection is available to connect to the data source
+and retrieve data. After completion of an operation, the connection is returned
+to the pool and can be reused. This improves performance by a small amount, and
+reduces the load on any required authentication system used for establishing the
+connection.</p>
+<p>JDBC connection pooling is disabled by default. You can enable JDBC connection
+pooling by setting the <code class="docutils literal notranslate"><span class="pre">connection-pool.enabled</span></code> property to <code class="docutils literal notranslate"><span class="pre">true</span></code> in your
+catalog configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-pool.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">connection-pool.max-size</span><span class="o">=</span><span class="s">10</span>
+<span class="na">connection-pool.max-connection-lifetime</span><span class="o">=</span><span class="s">30m</span>
+<span class="na">connection-pool.pool-cache-max-size</span><span class="o">=</span><span class="s">1000</span>
+<span class="na">connection-pool.pool-cache-ttl</span><span class="o">=</span><span class="s">30m</span>
+</pre></div>
+</div>
+<p>The following catalog configuration properties can be used to tune
+connection pooling:</p>
+<table id="id5">
+<caption><span class="caption-text">JDBC connection pooling catalog configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connection-pool.enabled</span></code></p></td>
+<td><p>Enable connection pooling for the catalog.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connection-pool.max-size</span></code></p></td>
+<td><p>The maximum number of idle and active connections in the pool.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connection-pool.max-connection-lifetime</span></code></p></td>
+<td><p>The maximum lifetime of a connection. When a connection reaches this
+lifetime it is removed, regardless of how recently it has been active.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30m</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connection-pool.pool-cache-max-size</span></code></p></td>
+<td><p>The maximum size of the JDBC data source cache.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connection-pool.pool-cache-ttl</span></code></p></td>
+<td><p>The expiration time of a cached data source when it is no longer accessed.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30m</span></code></p></td>
+</tr>
+</tbody>
+</table>
 
 
 
