@@ -26,3 +26,30 @@ function copyToClipboard() {
 }
 
 copyToClipboard();
+
+function copyCode() {
+  var codeblocks = document.querySelectorAll('pre.highlight');
+
+  codeblocks.forEach(function (codeblock) {
+    var cpBtn = document.createElement('button');
+    cpBtn.className = 'copy';
+    cpBtn.type = 'button';
+    cpBtn.ariaLabel = 'Copy code to clipboard';
+    cpBtn.innerText = 'Copy';
+    cpBtn.style.position = 'relative';
+    cpBtn.style.float = 'right';
+
+    codeblock.prepend(cpBtn);
+
+    cpBtn.addEventListener('click',
+      function () {
+        var code = codeblock.querySelector('code').innerText.trim();
+        window.navigator.clipboard.writeText(code);
+        cpBtn.innerText = 'Copied';
+        setTimeout(function () { cpBtn.innerText = 'Copy';}, 2000);
+      });
+  });
+}
+
+copyCode();
+
