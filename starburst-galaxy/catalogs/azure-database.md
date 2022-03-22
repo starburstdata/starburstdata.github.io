@@ -5,8 +5,8 @@ The database on Azure Database needs to fulfill the following requirements:
 * **DB server host**, use the fully qualified domain name for the server
   available as **Server name** in **Essentials**, as well as the **Connections
   strings** in the Azure Database console.
-* **DB server port**, port of the server available with endpoint. Typically 5432
-  for PostgreSQL and 3306 for MySQL.
+* **DB server port**, port of the server available with endpoint. Typically
+  {{page.dbport}} for {{page.dbname}}.
 * **Database name**, used only for PostgreSQL databases to identify the specific
   database to connect to.
 * **DB server admin login name**, use the **Admin username** of the

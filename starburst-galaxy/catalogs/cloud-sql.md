@@ -5,8 +5,8 @@ The database on Cloud SQL needs to fulfill the following requirements:
 * **Database IP address**, use the IP address for the server available as
   **Public IP address** in the Cloud SQL console under **Connect to this
   instance**.
-* **Database port**, port of the server available with endpoint. Typically 5432
-  for PostgreSQL and 3306 for MySQL.
+* **Database port**, port of the server available with endpoint.  Typically
+  {{page.dbport}} for {{page.dbname}}.
 * **Database name**, used only for PostgreSQL databases to identify the specific
   database to connect to.
 * **Username**, use a configured user with sufficient access.

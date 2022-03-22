@@ -8,8 +8,8 @@ the following details:
   security**. Typically
   `dbidentifier.random.regionname.rds.amazonaws.com`.
 * **RDS database port**, port of the server available with endpoint. Typically
-  5432 for PostgreSQL and 3306 for MySQL, but configurable for your database in
-  the Amazon RDS console under **Connectivity** - **Databse port**.
+  {{page.dbport}} for {{page.dbname}}. The port is configurable for your
+  database in the Amazon RDS console under **Connectivity** - **Database port**.
 * **Database name**, used only for PostgreSQL databases to identify the specific
   database to connect to.
 * **RDS master database username**, use the **Master username**.
