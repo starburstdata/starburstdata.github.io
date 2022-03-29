@@ -288,11 +288,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
-              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#data-retention" class="md-nav__link">Data retention</a>
+        </li>
+        <li class="md-nav__item"><a href="#miscellaneous-configuration-properties" class="md-nav__link">Miscellaneous configuration properties</a>
+        </li>
         <li class="md-nav__item"><a href="#authorization-examples" class="md-nav__link">Authorization examples</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -424,11 +426,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
-              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#data-retention" class="md-nav__link">Data retention</a>
+        </li>
+        <li class="md-nav__item"><a href="#miscellaneous-configuration-properties" class="md-nav__link">Miscellaneous configuration properties</a>
+        </li>
         <li class="md-nav__item"><a href="#authorization-examples" class="md-nav__link">Authorization examples</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -459,11 +463,11 @@ features in the <a class="reference internal" href="../overview/sep-ui.html"><sp
 documented in Insights. However, usage metrics continue to be collected even
 when Insights is disabled.</p>
 </div>
-
-
-<span id="id1"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
 <p>Insights is configured in the <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">config.properties file</span></a> on the coordinator only. To avoid startup failures, do not
 add Insights properties to worker configuration files.</p>
+
+
+<span id="id1"></span><h2 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Permalink to this headline">#</a></h2>
 <p>You must explicitly enable Insights to use the persisted data in the
 <a class="reference internal" href="../admin/query-logger.html"><span class="doc">query logger database</span></a> with
 <code class="docutils literal notranslate"><span class="pre">insights.persistence-enabled=true</span></code>. Persisted data provides the information
@@ -512,10 +516,71 @@ enables Insights on a coordinator that already has a
 <span class="na">insights.metrics-persistence-enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
+
+
+<h2 id="data-retention">Data retention<a class="headerlink" href="#data-retention" title="Permalink to this headline">#</a></h2>
+<p>Insights’s data retention configuration properties allow you to define
+intervals at which SEP performs a sweep to purge history, as well as the
+range of data purged, from the following tables:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">completed_queries</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_user_group</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_tables</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_views</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">query_plan</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Usage metrics, cluster metrics, query editor tab information, node anomalies,
+and recommendations are not purged.</p>
+</div>
+<p>Data retention policies are disabled by default, ensuring that no data is purged
+automatically. If data retention policies are enabled, SEP logs all deletions.</p>
+<table id="id3">
+<caption><span class="caption-text">Insights data retention configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.max-age</span></code></p></td>
+<td><p>Data older than this threshold is purged. Can be any SEP <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> value, but is always rounded up to an integer number
+of days. If omitted, no data is deleted.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.max-age=180d</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-schedule</span></code></p></td>
+<td><p>Schedule to start sweep in unix <code class="docutils literal notranslate"><span class="pre">cron</span></code> format. If omitted, <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">0</span> <span class="pre">*</span> <span class="pre">*</span> <span class="pre">*</span></code>
+is used (each day at midnight).</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-schedule=0</span> <span class="pre">3</span> <span class="pre">*</span> <span class="pre">*</span> <span class="pre">*</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-schedule-timezone</span></code></p></td>
+<td><p>Specifies the timezone in TZDB format to be used by sweep schedule. If
+omitted, the system timezone is used.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-schedule-timezone=America/New_York</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-max-duration</span></code></p></td>
+<td><p>Maximum sweep duration. Can be used along with sweep schedule to limit the
+time interval when data deletion occurs. Can be any SEP <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> value. If omitted, or if the configured value
+exceeds time until the next schedule, the sweep runs until the next
+scheduled sweep.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">insights.data-retention.sweep-max-duration=3h</span></code></p></td>
+</tr>
+</tbody>
+</table>
+
+
+<h2 id="miscellaneous-configuration-properties">Miscellaneous configuration properties<a class="headerlink" href="#miscellaneous-configuration-properties" title="Permalink to this headline">#</a></h2>
 <p>The following optional properties allow you to fine-tune the functionality
 and behavior of Insights.</p>
-<table id="id3">
-<caption><span class="caption-text">Optional Insights configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">Miscellaneous Insights configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -551,7 +616,8 @@ the overview page. Default is <code class="docutils literal notranslate"><span c
 <p>Instructions for configuring Insights for Kubernetes deployments are
 available in the <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-insights"><span class="std std-ref">Kubernetes documentation</span></a>.</p>
 
-<span id="insights-auth-examples"></span><h3 id="authorization-examples">Authorization examples<a class="headerlink" href="#authorization-examples" title="Permalink to this headline">#</a></h3>
+
+<span id="insights-auth-examples"></span><h2 id="authorization-examples">Authorization examples<a class="headerlink" href="#authorization-examples" title="Permalink to this headline">#</a></h2>
 <p>You can grant unrestricted access to the Insights query overview and query
 history features, using regular expressions for authorized users and groups.</p>
 <div class="admonition note">
@@ -597,7 +663,6 @@ the admin group:</p>
 <p>If both <code class="docutils literal notranslate"><span class="pre">insights.authorized-users</span></code> and <code class="docutils literal notranslate"><span class="pre">insights.authorized-groups</span></code> are
 empty, no user has access to the Insights usage metrics and query history
 features.</p>
-
 
 
 
