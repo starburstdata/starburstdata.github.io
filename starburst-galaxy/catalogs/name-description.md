@@ -18,3 +18,12 @@ SELECT * FROM tpch.sf1.nation;
 The **Description** is a short, optional paragraph that provides more details
 about the catalog than the name alone. It appears in the user interface and can
 help other users to determine what data can be accessed with the catalog.
+
+{% include image.html
+  url='../../assets/img/galaxy/catlg-name-desc.png'
+  img-id='catlgnamedesc'
+  alt-text='Enter catalog name and description'
+  descr-text='Image depicting catalog name and description fields'
+  pxwidth='501'
+  screenshot='true'
+%}
