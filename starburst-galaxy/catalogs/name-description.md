@@ -24,6 +24,6 @@ help other users to determine what data can be accessed with the catalog.
   img-id='catlgnamedesc'
   alt-text='Enter catalog name and description'
   descr-text='Image depicting catalog name and description fields'
-  pxwidth='501'
+  pxwidth='498'
   screenshot='true'
 %}
