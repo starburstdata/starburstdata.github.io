@@ -690,6 +690,11 @@
 <h1 id="security-oauth2-providers--page-root">OAuth 2.0 identity providers<a class="headerlink" href="#security-oauth2-providers--page-root" title="Permalink to this headline">#</a></h1>
 <p>Starburst Enterprise platform (SEP) includes support for <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a>. The following sections provide
 information about configuring and using the supported identity providers.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All configuration properties in this page are set in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code>
+file.</p>
+</div>
 
 <span id="oauth2-providers-openid"></span><h2 id="openid-connect-metadata">OpenID Connect metadata<a class="headerlink" href="#openid-connect-metadata" title="Permalink to this headline">#</a></h2>
 <p>OpenID Connect servers publish their metadata at a well-known URL, typically
@@ -746,52 +751,203 @@ Servers</strong>. Choose the authorization server for your application, open up
 
 
 <span id="id1"></span><h3 id="azure-active-directory">Azure Active Directory<a class="headerlink" href="#azure-active-directory" title="Permalink to this headline">#</a></h3>
+<p>Configuring Azure AD for OAuth2 is a several-step process. You must complete
+the steps in each of the following sections in order, unless otherwise noted.</p>
+<table id="id3">
+<caption><span class="caption-text">Azure configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Value examples</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/oauth2/v2.0/authorize</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code></p></td>
+<td><p>As copied from <strong>Overview &gt; Application (client) ID</strong> in the Azure Portal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code></p></td>
+<td><p>As copied from <strong>Certificates &amp; secrets</strong> in the Azure Portal</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/v2.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/discovery/v2.0/keys</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d999d-71d5-4e96-8da9-5ea4c999a8e1/&lt;scopename&gt;,openid</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/oauth2/v2.0/token</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.additional-audiences</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://storage.azure.com,https://sep-app-01.example.com</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.access-token-issuer</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://sts.windows.net/9ac99957-7c90-4d4f-9993-d8a199928c05/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.principal-field</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">upn</span></code></p></td>
+</tr>
+</tbody>
+</table>
 <p><strong>Create an Azure AD app integration</strong></p>
-<p>You can skip this step if you use an existing app registration.</p>
-<ul class="simple">
+<p>Skip this step if you use an existing app registration.</p>
+<ol class="arabic simple">
 <li><p>Go to <strong>Microsoft Azure Portal &gt; Azure Active Directory &gt; App registrations &gt;
 New registration</strong>.</p></li>
-<li><p>Enter a name and choose <strong>Accounts in this organizational directory only
-(Starburst Data only - Single tenant)</strong> from <strong>Supported account types</strong>.</p></li>
-<li><p>For <strong>Redirect URI</strong> use <strong>Web</strong> and the the <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a> callback URL
-<code class="docutils literal notranslate"><span class="pre">https://&lt;trino-coordinator-domain-name&gt;/oauth2/callback</span></code>.</p></li>
+<li><p>Enter a name, for example <code class="docutils literal notranslate"><span class="pre">sep-app-01</span></code>, and choose <strong>Accounts in this
+organizational directory only (Starburst Data only - Single tenant)</strong> from
+<strong>Supported account types</strong>. This is needed in a later step.</p></li>
+<li><p>For <strong>Redirect URI</strong> use <strong>Web</strong> and the <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a> callback URL
+<code class="docutils literal notranslate"><span class="pre">https://&lt;sep-coordinator-domain-name&gt;/oauth2/callback</span></code>.</p></li>
 <li><p>Click <strong>Register</strong>.</p></li>
-</ul>
+</ol>
+<p><strong>Expose the API</strong></p>
+<p>By default Microsoft only adds the API for Microsoft Graph to an app
+registration. You must also expose an API for SEP:</p>
+<ol class="arabic simple">
+<li><p>Go to <strong>Expose an API</strong> and click <strong>Set</strong> next to <strong>Application ID URI</strong>. The
+Application ID URI must be unique within your organization and match the URL
+of your SEP cluster. For example:
+<a class="reference external" href="https://example.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1">https://example.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1</a>.</p></li>
+<li><p>Select <strong>Add a scope</strong> in the <strong>Scopes defined by this API</strong> section.</p></li>
+<li><p>Add a <strong>Name</strong> for the new scope such as <code class="docutils literal notranslate"><span class="pre">SEPUsers.Read.All</span></code>, as well as a
+<strong>Display name</strong> and <strong>Description</strong>. <strong>Name</strong> is used to configure the scope
+on the coordinator.</p></li>
+<li><p>Choose <strong>Admins and users</strong> from the <strong>Who can consent?</strong> selector.</p></li>
+<li><p>Click <strong>Add a client application</strong> in the <strong>Authorized client applications</strong>.
+Use the client ID and select the new scope.</p></li>
+<li><p>Configure <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code> on the coordinator as
+a comma-separated list including the scope URL and openid:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.scopes</span><span class="o">=</span><span class="s">https://example.com/d858d999d-71d5-4e96-8da9-5ea4c999a8e1/SEPUsers.Read.All,openid</span>
+</pre></div>
+</div>
 <p><strong>Configure the client</strong></p>
-<ul class="simple">
+<p>Once the app integration is added and the API is exposed, the client is
+configured in the Azure Portal:</p>
+<ol class="arabic simple">
 <li><p>Go to <strong>Certificates &amp; secrets</strong> and select <strong>New client secret</strong>.</p></li>
 <li><p>Enter description and set an expiration period.</p></li>
-<li><p>Copy the value of the secret to
-<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code>.</p></li>
-<li><p>By default Microsoft only adds the API for Microsoft Graph to the app
-registration. Consider adding other services, for example Azure Data Lake
-Storage with the <code class="docutils literal notranslate"><span class="pre">user_impersonation</span></code> permission. Additionally, you must expose an API for SEP:</p>
-<ul>
-<li><p>Go to <strong>Expose an API</strong> and click <strong>Set</strong> next to <strong>Application ID URI</strong>.</p></li>
-<li><p>The <strong>Application ID URI</strong> must be unique within your organization.
-For example:
-<code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1</span></code>.
-Set it to match the URL of your SEP cluster</p></li>
-<li><p>Select <strong>Add a scope</strong> in the <strong>Scopes defined by this API</strong> section.</p></li>
-<li><p>Fill in a name, display name, and description. Choose <strong>Admins and users</strong> in
-from <strong>Who can consent?</strong> .</p></li>
-<li><p>Click <strong>Add a client application</strong> in <strong>Authorized client applications</strong>.</p></li>
-<li><p>Use the client ID and select the scope created in the previous step.</p></li>
-<li><p>In <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code> include <code class="docutils literal notranslate"><span class="pre">openid</span></code>,
-but also remember about your scope, e.g.
-<code class="docutils literal notranslate"><span class="pre">https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1/scopename</span></code>.
-it should look like
-<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes=https://organization.com/d858d980d-71d5-4e86-8da8-5ea4cab5a8e1/scopename,openid</span></code>.</p></li>
-<li><p>You can further read about it in <a class="reference external" href="https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis">Configure an application to expose a web
-API</a></p></li>
+<li><p>Copy the value of the secret to and set
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-secret</span></code> on the coordinator to
+that value.</p></li>
+<li><p>Go to <strong>API permissions &gt; Add a permission</strong>. Do the following, in the order
+shown:</p>
+<ul class="simple">
+<li><p>Select <strong>My APIs</strong> at the top.</p></li>
+<li><p>In the list of app registrations, click on the name you entered for your
+app registration, <code class="docutils literal notranslate"><span class="pre">sep-app-01</span></code> in this example.</p></li>
+<li><p>Check the box for <strong>Delegated permissions</strong>.</p></li>
+<li><p>Check the box for the scope you created earlier (for example,
+<code class="docutils literal notranslate"><span class="pre">SEPUsers.Read.All</span></code>)</p></li>
+<li><p>Click the <strong>Add permission</strong> button.</p></li>
 </ul>
 </li>
-<li><p>Copy the value from <strong>Application (client) ID</strong> to
-<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code>.</p></li>
-<li><p>Go to <strong>Overview &gt; Endpoints</strong>, visit the URL under
-<code class="docutils literal notranslate"><span class="pre">OpenID</span> <span class="pre">Connect</span> <span class="pre">metadata</span> <span class="pre">document</span></code>, and use the content to configure the
-<a class="reference internal" href="#oauth2-providers-openid"><span class="std std-ref">OpenID Connect metadata</span></a>.</p></li>
+<li><p>Go to <strong>Overview &gt; Application (client) ID</strong>, and use the content to
+configure <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code> on the coordinator.</p></li>
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.access-token-issuer</span></code> property on
+the coordinator to <code class="docutils literal notranslate"><span class="pre">https://sts.windows.net/&lt;your-tenant-id&gt;/</span></code>. The
+trailing forward slash is a required part of the URL.</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.access-token-issuer</span><span class="o">=</span><span class="s">https://sts.windows.net/9ac99957-7c90-4d4f-9993-d8a199928c05/</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="7">
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.principal-field</span></code> property on
+the coordinator to <code class="docutils literal notranslate"><span class="pre">upn</span></code>.</p></li>
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=oauth2</span></code> property on
+the coordinator to <code class="docutils literal notranslate"><span class="pre">oauth2</span></code>.</p></li>
+</ol>
+<p><strong>Passthrough authentication settings</strong></p>
+<p>Skip this step unless you are implementing passthrough authentication.</p>
+<ol class="arabic simple">
+<li><p>To configure Azure AD OAuth2 passthrough authentication, click <strong>API
+permissions &gt; Add a permission</strong> again, and do the following, in the order
+shown:</p>
+<ul class="simple">
+<li><p>Ensure that <strong>Microsoft APIs</strong> is selected at the top.</p></li>
+<li><p>Select <strong>Azure Storage</strong> from the list of applications.</p></li>
+<li><p>Check the box for <strong>Delegated permissions</strong>.</p></li>
+<li><p>Check the box for <strong>user_impersonation</strong>.</p></li>
+<li><p>Click the <strong>Add permission</strong> button.</p></li>
 </ul>
+</li>
+<li><p>In the <strong>Authentication</strong> section, the following options must be checked as
+appropriate for your environment:</p>
+<ul class="simple">
+<li><p><strong>Access tokens</strong> - Used for implicit flows</p></li>
+<li><p><strong>ID tokens</strong> - Used for implicit and hybrid flows</p></li>
+</ul>
+</li>
+<li><p>If you are using passthrough authentication, you must set the
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.additional-audiences</span></code> property on the
+coordinator as a comma separated list with <code class="docutils literal notranslate"><span class="pre">https://storage.azure.com</span></code> and
+the URL of your SEP coordinator:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.additional-audiences</span><span class="o">=</span><span class="s">https://storage.azure.com,https://sep-app-01.example.com</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> on the coordinator as follows:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">delegated-oauth2.</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="5">
+<li><p>Once the authentication type is set to <code class="docutils literal notranslate"><span class="pre">delegated-oauth2</span></code>, you must change
+the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.scopes</span></code> configuration property as
+follows:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.scopes</span><span class="o">=</span><span class="s">https://storage.azure.com/user_impersonation,openid.</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">delegated-oauth2</span></code> you do not set your own scope.</p>
+</div>
+<p><strong>Configure endpoint properties</strong></p>
+<ol class="arabic simple">
+<li><p>Go to <strong>Overview &gt; Endpoints</strong>.</p></li>
+<li><p>Navigate to the <strong>OpenID Connect metadata document</strong>.</p></li>
+<li><p>Find the <code class="docutils literal notranslate"><span class="pre">token_endpoint</span></code> field and use its value to set the
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code> configuration property. For
+example:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.token-url</span><span class="o">=</span><span class="s">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/oauth2/v2.0/token</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Find the <code class="docutils literal notranslate"><span class="pre">jwks_uri</span></code> field and use its value to set the
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code> configuration property. For
+example:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.jwks-url</span><span class="o">=</span><span class="s">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/discovery/v2.0/keys</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="5">
+<li><p>Find the <code class="docutils literal notranslate"><span class="pre">authorization_endpoint</span></code> field and use its value to set the
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code> configuration property. For
+example:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.auth-url</span><span class="o">=</span><span class="s">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/oauth2/v2.0/authorize</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="6">
+<li><p>Find the <code class="docutils literal notranslate"><span class="pre">issuer</span></code> field and use its value to set the
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code> configuration property. For
+example:</p></li>
+</ol>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.issuer</span><span class="o">=</span><span class="s">https://login.microsoftonline.com/9ac99957-7c90-4d4f-9993-d8a199928c05/v2.0</span>
+</pre></div>
+</div>
 
 
 <h3 id="active-directory-federation-services">Active Directory Federation Services<a class="headerlink" href="#active-directory-federation-services" title="Permalink to this headline">#</a></h3>
@@ -829,8 +985,8 @@ the URL under <strong>OpenID Connect Discovery</strong>  to configure the
 your client with a dedicated ID and secret. Assuming your realm is named
 <code class="docutils literal notranslate"><span class="pre">kingdom</span></code> and Keycloak runs on <code class="docutils literal notranslate"><span class="pre">https://example.com</span></code>, your <code class="docutils literal notranslate"><span class="pre">{base}</span></code> below
 should be <code class="docutils literal notranslate"><span class="pre">https://example.com/auth/realms/kingdom</span></code></p>
-<table id="id3">
-<caption><span class="caption-text">Keycloak configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">Keycloak configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 50%"/>
 <col style="width: 50%"/>
@@ -880,8 +1036,8 @@ open <code class="docutils literal notranslate"><span class="pre">APIs</span> <s
 </ul>
 <p><strong>Further configuration</strong></p>
 <p>You can base on <a class="reference external" href="https://accounts.google.com/.well-known/openid-configuration">https://accounts.google.com/.well-known/openid-configuration</a>:</p>
-<table id="id4">
-<caption><span class="caption-text">Google configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Google configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 50%"/>
 <col style="width: 50%"/>
