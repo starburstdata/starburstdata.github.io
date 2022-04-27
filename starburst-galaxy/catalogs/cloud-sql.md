@@ -1,6 +1,7 @@
 ### Cloud SQL configuration
 
-The database on Cloud SQL needs to fulfill the following requirements:
+Configure the database on Google Cloud SQL by filling in the following required
+fields:
 
 * **Database IP address**, use the IP address for the server available as
   **Public IP address** in the Cloud SQL console under **Connect to this

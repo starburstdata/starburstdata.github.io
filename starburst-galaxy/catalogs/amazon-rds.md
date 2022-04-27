@@ -10,8 +10,8 @@ the following details:
 * **RDS database port**, port of the server available with endpoint. Typically
   {{page.dbport}} for {{page.dbname}}. The port is configurable for your
   database in the Amazon RDS console under **Connectivity** - **Database port**.
-* **Database name**, used only for PostgreSQL databases to identify the specific
-  database to connect to.
+* **Database name**, used for PostgreSQL and SQL Server databases to identify
+  the specific database to connect to.
 * **RDS master database username**, use the **Master username**.
 * **RDS master database password**, use the password for the master user.
 
@@ -24,4 +24,3 @@ The database on Amazon RDS needs to fulfill the following requirements:
   after a **Test connection** execution. Add it as an inbound rule to allow the
   range.
 * **Database authentication** set to **Password authentication**.
-
