@@ -200,13 +200,6 @@
 
  
   
-<li class="subheader">Query data</li>
-  
-
-
-
- 
-  
     
     
 <li >
@@ -223,13 +216,6 @@
 <li >
   <a href="/starburst-galaxy/clients.html" >Other clients</a>
 </li>
-  
-
-
-
- 
-  
-<li class="subheader">Configure data access</li>
   
 
 
@@ -376,13 +362,6 @@
 
 
  
-  
-<li class="subheader">Operate</li>
-  
-
-
-
- 
 
 
 
@@ -447,7 +426,7 @@
   <li 
       
     >
-    <a href="/starburst-galaxy/account/users.html" >Users</a>
+    <a href="/starburst-galaxy/account/users.html" >Access control - Users</a>
   </li>
   
   
@@ -458,7 +437,7 @@
   <li 
       
     >
-    <a href="/starburst-galaxy/account/roles-privileges.html" >Roles and privileges</a>
+    <a href="/starburst-galaxy/account/roles-privileges.html" >Access control - Roles and privileges</a>
   </li>
   
   
@@ -530,6 +509,17 @@
     
     
     
+  <li 
+      
+    >
+    <a href="/starburst-galaxy/security/access-control.html" >Access control</a>
+  </li>
+  
+  
+  
+    
+    
+    
   <li class="active"
       
     >
@@ -544,7 +534,7 @@
   <li 
       
     >
-    <a href="/starburst-galaxy/security/privileges.html" >Privileges</a>
+    <a href="/starburst-galaxy/security/entities.html" >Entities</a>
   </li>
   
   
@@ -555,7 +545,7 @@
   <li 
       
     >
-    <a href="/starburst-galaxy/security/entities.html" >Entities</a>
+    <a href="/starburst-galaxy/security/privileges.html" >Privileges</a>
   </li>
   
   
@@ -647,59 +637,85 @@
       </h1>
     
 
-<p>The <a href="./index.html">security system of Starburst Galaxy</a> uses roles to bundle
-together one or more privileges to allow or deny a specific actions on entities.
-A role has a name and an optional description. <a href="./privileges.html">Privileges</a>
-can be granted to roles to configure actions and access to
-<a href="./entities.html">entities</a> like catalogs and clusters.</p>
-
-<p>Users are assigned one or more roles, and by selecting a role gain the
-privileges on the entities defined all the role’s privileges. You can see the
-role you are currently using, and change to another role, in the top right
-corner of the user interface.</p>
-
-<p>As administrator or with the relevant access, you can manage <a href="../account/roles-privileges.html">roles and
-privileges in the Account section</a> of the user
-interface.</p>
-      <h2 id="role-grants">
+<p>The Starburst Galaxy <a href="./access-control.html">access control system</a> uses roles
+to provide users with <a href="./privileges.html">privileges</a> for <a href="./entities.html">clusters, catalogs,
+schemas, tables and other kinds of entities</a>.</p>
+      <h2 id="assign-a-role">
         
         
-          Role grants <a href="#role-grants" class="titleAnchor">#</a>
+          Assign a role <a href="#assign-a-role" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>If a role is <em>granted</em> to another role, all the privileges on entities of the
-first role are also conveyed to the second role. The relationship between a role
-receiving a grant and the role granted is a sort of parent/child relationship,
-and the only restriction on role grants is that they are not allowed to create
-grant loops. A role can have zero or more child roles, and always has one or
-more parent roles. As a result roles form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic
-graph</a>. The collection of
-all descendant roles is called the <em>active role set</em> of the starting role.</p>
+<p>You are assigned one or more roles and, by selecting a role, you get the
+privileges and ownership rights of that role. At any point in time you are
+assigned <a href="./access-control.html#session-current-role">one current role</a>, and
+therefore have access to all roles in the <a href="#active-role-set">active role set</a>.</p>
 
-<p>A role has all the privileges on entities of all roles in its active role set.
-That means all the privileges of those child roles, plus the privileges of their
-children, and so on.</p>
+<p>In the top right corner of the user interface you can see the role currently
+selected, and change the current role to another role:</p>
 
-<p>You can grant one or more roles to a role <a href="../account/roles-privileges.html">in the user
-interface</a>.</p>
-      <h2 id="roles-and-entity-ownership">
+<p><img src="../../assets/img/galaxy/role-selector.png" alt="Role selector" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+
+<p>Use the following command to list all current roles of the user with SQL:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SHOW</span> <span class="k">CURRENT</span> <span class="n">ROLES</span>
+</code></pre></div></div>
+
+<p>You can also change the user’s current role to different role in SQL. This SQL
+statement changes the user’s current role to <code class="language-plaintext highlighter-rouge">prod_read_only</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">ROLE</span> <span class="n">prod_read_only</span>
+</code></pre></div></div>
+
+<p>As administrator with the privilege <code class="language-plaintext highlighter-rouge">MANAGE_SECURITY</code>, you can manage all roles
+and privileges <a href="../account/roles-privileges.html">in the Roles page</a> of the user
+interface. You can also use <a href="./access-control.html#sql">CREATE ROLE and other SQL
+statements</a>.</p>
+
+<p>The roles system provides great flexibility and control for organizations that
+need that fine-grained access control. It’s important to choose roles that are
+<a href="#fit">fit your organization</a>, and include necessary <a href="#administrative">administrative
+roles</a>.</p>
+      <h2 id="grant-a-role">
         
         
-          Roles and entity ownership <a href="#roles-and-entity-ownership" class="titleAnchor">#</a>
+          Grant a role <a href="#grant-a-role" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>All entities are <em>owned</em> by exactly one role. When a new entity is created, the
-owner is set to the active role, and is granted all privileges on the entity.</p>
+<p>If a role is <em>granted</em> to another role, all the privileges and ownership rights
+of the first role are conveyed to the second role.</p>
 
-<p>If a role or any role in the role’s active role set owns an entity, that role
-has the rights to delete or update the entity, and the right to grant privileges
-on the owned entity to another role.</p>
+<p>One role can be used to grant another role to a user or role under the following
+circumstances:</p>
+
+<ul>
+  <li>Role includes the grant WITH ADMIN OPTION</li>
+  <li>Role is the owner of the other role.</li>
+  <li>Role has the MANAGE_SECURITY role.</li>
+</ul>
+
+<p>By default, every role is implicitly granted the PUBLIC role, and therefore all
+its privileges.</p>
+
+<p>The relationship between a role receiving a role grant and the role granted is a
+sort of parent/child relationship. A role can have zero or more child roles, and
+always has one or more parent roles. The only restriction on role grants is that
+they are not allowed to create grant loops. Consequently, roles form a <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed
+acyclic graph</a>.</p>
+
+<p>You can grant one or more roles to a role
+<a href="../account/roles-privileges.html">in the user interface</a>. You can also
+create role grants using SQL. This statement grants the role <code class="language-plaintext highlighter-rouge">support_admin</code>
+to role <code class="language-plaintext highlighter-rouge">sales_admin</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="n">support_admin</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">sales_admin</span>
+</code></pre></div></div>
       <h2 id="user-roles">
         
         
@@ -710,45 +726,78 @@ on the owned entity to another role.</p>
     
 
 <p>Users may be granted roles, and all users are implicitly granted the pre-defined
-role <code class="language-plaintext highlighter-rouge">public</code>. At any moment a user assumes a single role, chosen using the role
-selection dropdown always shown in the upper right corner of the screen. By
-assuming a role, the user has all the privileges on entities of that role, plus
-all the privileges of all roles that are descendants of that role, and so on.</p>
+role <code class="language-plaintext highlighter-rouge">public</code>. At any moment a user assumes a single role. That role can be
+chosen in the UI using the role selection dropdown always shown in the upper
+right corner of the screen. Alternatively, the role can be chosen with SQL:</p>
 
-<p>The set of all roles transitively granted to the currently set role is called
-the <em>active role set</em>. The user session has the privileges of all roles in the
-active role set, and has ownership on any entity owned by a role in the active
-role set.</p>
-      <h2 id="predefined-roles">
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">ROLE</span> <span class="n">rolename</span>
+</code></pre></div></div>
+      <h2 id="active-role-set-">
         
         
-          Predefined roles <a href="#predefined-roles" class="titleAnchor">#</a>
+          Active role set <a name="active-role-set"></a> <a href="#active-role-set-" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Several roles are predefined and may not be deleted, nor may their predefined
-privileges be revoked:</p>
+<p>A role’s <em>active role set</em> contains the role itself, plus all roles that are
+descendants of the role.</p>
 
-<ul>
-  <li><code class="language-plaintext highlighter-rouge">accountadmin</code> is granted the MANAGE_SECURITY privileges and it can therefore
-assign any access to itself. It can literally do anything. Only a limited list
-of users should be granted the <code class="language-plaintext highlighter-rouge">accountadmin</code> role. Best practice is to create
-new roles appropriate to the needs of your organization, and grant these new
-roles only the necessary privileges on relevant entities needed to perform
-their tasks.</li>
-  <li><code class="language-plaintext highlighter-rouge">public</code> is the name of the predefined default role that is implicitly
-granted to every user and cannot be revoked. Administrators can assign
-additional privileges to the public role.</li>
-  <li><code class="language-plaintext highlighter-rouge">_system</code> is defined by the SQL specification to be grantor of privileges to
-all newly-created entities. It has no other function in the RBAC system, and
-it cannot be granted to other roles.</li>
-</ul>
-      <h2 id="roles-should-fit-user-communities">
+<p>A role has all the privileges and ownership rights of all roles in its active
+role set. That means all the privileges of those child roles, plus the
+privileges of their children, and so on.</p>
+
+<p>By assuming a role, the user has all the privileges of that role, plus all the
+privileges of all roles that are descendants of that role, and so on. The user
+session has the privileges of all roles in the active role set, and has
+ownership privileges on any entity owned by a role in the active role set.</p>
+      <h2 id="accountadmin-role">
         
         
-          Roles should fit user communities <a href="#roles-should-fit-user-communities" class="titleAnchor">#</a>
+          accountadmin role <a href="#accountadmin-role" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">accountadmin</code> role is only built-in role, and can not be modified or
+deleted. It is granted the <a href="./privileges.html#account-privileges">MANAGE_SECURITY
+privilege</a>, and it can therefore assign
+any privilege on any other entity to itself. It can literally do anything.</p>
+
+<p>Only a limited list of users should be granted the <code class="language-plaintext highlighter-rouge">accountadmin</code> role. Best
+practice is to create new roles appropriate to the needs of your organization,
+and grant these new roles only the necessary privileges needed to perform their
+tasks.</p>
+      <h2 id="public-role">
+        
+        
+          public role <a href="#public-role" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">public</code> role is a predefined default role that is implicitly granted to
+every user and cannot be revoked. It can also not be deleted. Administrators can
+assign additional privileges to the public role.</p>
+      <h2 id="_system-role">
+        
+        
+          _system role <a href="#_system-role" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">_system</code> is defined by the SQL specification to be grantor of privileges to
+all newly-created entities. It has no other function in the roles system, and it
+cannot be granted to other roles. It can also not be deleted.</p>
+      <h2 id="roles-should-fit-user-communities-">
+        
+        
+          Roles should fit user communities <a name="fit"></a> <a href="#roles-should-fit-user-communities-" class="titleAnchor">#</a>
         
         
       </h2>
@@ -767,10 +816,10 @@ to any Starburst Galaxy setup.</p>
 <p>If users need only one specific cluster at a time, it can make sense to create
 a role for each cluster with USE_CLUSTER on that cluster, and perhaps
 additional roles that group these roles.</p>
-      <h2 id="administrative-roles">
+      <h2 id="administrative-roles-">
         
         
-          Administrative roles <a href="#administrative-roles" class="titleAnchor">#</a>
+          Administrative roles <a name="administrative"></a> <a href="#administrative-roles-" class="titleAnchor">#</a>
         
         
       </h2>
@@ -897,7 +946,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#roles">Roles</a><ul><li><a href="#role-grants">Role grants</a></li><li><a href="#roles-and-entity-ownership">Roles and entity ownership</a></li><li><a href="#user-roles">User roles</a></li><li><a href="#predefined-roles">Predefined roles</a></li><li><a href="#roles-should-fit-user-communities">Roles should fit user communities</a></li><li><a href="#administrative-roles">Administrative roles</a></li></ul></li></ul>
+          <ul><li><a href="#roles">Roles</a><ul><li><a href="#assign-a-role">Assign a role</a></li><li><a href="#grant-a-role">Grant a role</a></li><li><a href="#user-roles">User roles</a></li><li><a href="#active-role-set-">Active role set <a name="active-role-set"></a></a></li><li><a href="#accountadmin-role">accountadmin role</a></li><li><a href="#public-role">public role</a></li><li><a href="#_system-role">_system role</a></li><li><a href="#roles-should-fit-user-communities-">Roles should fit user communities <a name="fit"></a></a></li><li><a href="#administrative-roles-">Administrative roles <a name="administrative"></a></a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
