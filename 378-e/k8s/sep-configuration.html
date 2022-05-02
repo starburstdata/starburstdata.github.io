@@ -312,6 +312,16 @@
         <li class="md-nav__item"><a href="#sep-built-in-directories" class="md-nav__link">SEP built-in directories</a>
         </li>
         <li class="md-nav__item"><a href="#sidecar-and-init-containers" class="md-nav__link">Sidecar and init containers</a>
+        </li>
+        <li class="md-nav__item"><a href="#keda-scaler" class="md-nav__link">KEDA scaler</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#prerequisites" class="md-nav__link">Prerequisites</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#troubleshooting" class="md-nav__link">Troubleshooting</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -560,6 +570,16 @@
         <li class="md-nav__item"><a href="#sep-built-in-directories" class="md-nav__link">SEP built-in directories</a>
         </li>
         <li class="md-nav__item"><a href="#sidecar-and-init-containers" class="md-nav__link">Sidecar and init containers</a>
+        </li>
+        <li class="md-nav__item"><a href="#keda-scaler" class="md-nav__link">KEDA scaler</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#prerequisites" class="md-nav__link">Prerequisites</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#troubleshooting" class="md-nav__link">Troubleshooting</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -1201,12 +1221,18 @@ with pods having init containers in OpenShift.</p>
 section</a>.</p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">worker.deploymentTerminationGracePeriodSeconds</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">worker.kedaScaler</span></code></p></td>
+<td><p>An alternative method of scaling the number of workers is implemented
+using the <a class="reference external" href="https://keda.sh/docs/2.6/scalers/kubernetes-workload/">KEDA scaler for Kubernetes workloads</a>
+in the SEP Helm chart. Scaler configuration is described in a
+<a class="reference internal" href="#keda-sep-scaler"><span class="std std-ref">dedicated section</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">worker.deploymentTerminationGracePeriodSeconds</span></code></p></td>
 <td><p>Specifies the termination grace period for workers. Workers are not
 terminated until queries running on the pod are finished and the grace
 period passes.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">worker.starburstWorkerShutdownGracePeriodSeconds</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">worker.starburstWorkerShutdownGracePeriodSeconds</span></code></p></td>
 <td><p>Sets <code class="docutils literal notranslate"><span class="pre">shutdown.grace-period</span></code> to configure the grace period for worker
 process shutdown.</p></td>
 </tr>
@@ -1560,6 +1586,84 @@ directory available in all containers, define an <code class="docutils literal n
       <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
 </pre></div>
 </div>
+
+
+<span id="keda-sep-scaler"></span><h2 id="keda-scaler">KEDA scaler<a class="headerlink" href="#keda-scaler" title="Permalink to this headline">#</a></h2>
+<p><a class="reference external" href="https://keda.sh/">KEDA</a> is a Kubernetes-based Event Driven Autoscaler. SEP
+can be configured with an <a class="reference external" href="https://keda.sh/docs/2.6/concepts/external-scalers/">external KEDA scaler</a> to adjust the number of
+workers automatically based on JVM performance metrics available via JMX. Once
+it is enabled with the <code class="docutils literal notranslate"><span class="pre">.Values.worker.kedaScaler.enabled</span></code> property, the
+coordinator pod runs an additional container called <code class="docutils literal notranslate"><span class="pre">keda-trino-scaler</span></code>. This
+container works as a GRPC service, and communicates with KEDA to scale workers.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">.Values.worker.autoscaling</span></code> and <code class="docutils literal notranslate"><span class="pre">.Values.worker.kedaScaler.enabled</span></code>
+properties enable mutually-exclusive features that cannot be enabled together
+as <a class="reference external" href="https://keda.sh/docs/2.6/concepts/scaling-deployments/#scaling-of-deployments-and-statefulsets">KEDA also uses HPA</a>
+to scale Kubernetes Deployments.</p>
+</div>
+
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">#</a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://keda.sh/docs/2.6/deploy/#helm">KEDA with Helm</a> - versions 2.6.x and
+higher are required.</p></li>
+<li><p>Prometheus JMX Exporter - The SEP Helm chart ensures that the exporter
+is enabled, and configured with all necessary rules.</p></li>
+</ul>
+
+
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h3>
+<p>The following nodes and node sections configure the KEDA scaler:</p>
+<table id="id16">
+<caption><span class="caption-text">KEDA configuration nodes and sections for SEP</span><a class="headerlink" href="#id16" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 70%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Node or section name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">.Values.worker.kedaScaler</span></code></p></td>
+<td><p>Set this node to <code class="docutils literal notranslate"><span class="pre">true</span></code> to enable the KEDA scaler.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scaledObjectSpec</span></code> node structure</p></td>
+<td><p>Corresponds to the
+<a class="reference external" href="https://keda.sh/docs/2.6/concepts/scaling-deployments/#scaledobject-spec">ScaledObject spec</a>,
+and to parameters such as <code class="docutils literal notranslate"><span class="pre">pollingInterval</span></code>, <code class="docutils literal notranslate"><span class="pre">minReplicaCount</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">minReplicaCount</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scaledObjectSpec.triggers[0].metadata</span></code> section</p></td>
+<td><p>Defines the scaling method implemented by this scaler. Only the
+<code class="docutils literal notranslate"><span class="pre">query_queue</span></code> scaling method is available for SEP. It is enabled
+by default. The value for <code class="docutils literal notranslate"><span class="pre">query_queue</span></code> is computed as
+<code class="docutils literal notranslate"><span class="pre">SubmittedQueries</span> <span class="pre">-</span> <span class="pre">CompletedQueries</span></code> for all queries present on the
+cluster regardless of processing status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">numberOfQueriesPerWorker</span></code></p></td>
+<td><p>Defines the maximum number of concurrent queries handled by a single
+worker. For example, if set to <code class="docutils literal notranslate"><span class="pre">10</span></code>, and there are currently <code class="docutils literal notranslate"><span class="pre">34</span></code>
+queries submitted but not completed, KEDA scales out the workers to
+<code class="docutils literal notranslate"><span class="pre">4</span></code> replicas if <code class="docutils literal notranslate"><span class="pre">maxReplicaCount</span> <span class="pre">&gt;=</span> <span class="pre">4</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scaleInToIdleReplicaCountIfNoQueuedQueriesLeft</span></code></p></td>
+<td><p>Reduces the number of workers to <code class="docutils literal notranslate"><span class="pre">idleReplicaCount</span></code> when the query queue
+is empty. KEDA requires the value for <code class="docutils literal notranslate"><span class="pre">idleReplicaCount</span></code> to be less than
+the value of <code class="docutils literal notranslate"><span class="pre">minReplicaCount</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+
+
+<h3 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permalink to this headline">#</a></h3>
+<p>When the KEDA scaler does not behave as expected, review the following logs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">keda-trino-scaler</span></code> container logs in the coordinator pod</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">keda-operator</span></code> logs in the <code class="docutils literal notranslate"><span class="pre">keda</span></code> namespace</p></li>
+</ul>
+
 
 
 
