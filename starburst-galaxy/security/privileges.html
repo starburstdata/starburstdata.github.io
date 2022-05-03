@@ -920,26 +920,22 @@ to role <code class="language-plaintext highlighter-rouge">sysadmin</code> this 
     </tr>
   </tbody>
 </table>
-      <h2 id="table-and-view-privileges">
-        
-        
-          Table and view privileges <a href="#table-and-view-privileges" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
 
-<p>Tables and views have names, and are contained in a schema, which in turn is
+<!--
+## Table and view privileges
+
+Tables and views have names, and are contained in a schema, which in turn is
 contained in a catalog. By default, the role that owns the schema containing the
 table owns the table. If there is no explicitly specified role owning the
-schema, then the role owning the table is the one that owns the catalog.</p>
+schema, then the role owning the table is the one that owns the catalog.
 
-<p>In SQL, you can set the owner of a table <code class="language-plaintext highlighter-rouge">june_sales</code> in schema <code class="language-plaintext highlighter-rouge">monthly_sales</code>
-in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to role <code class="language-plaintext highlighter-rouge">sysadmin</code> this way:</p>
+In SQL, you can set the owner of a table `june_sales` in schema `monthly_sales`
+in catalog `prod_data` to role `sysadmin` this way:
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">prod_data</span><span class="p">.</span><span class="n">monthly_sales</span><span class="p">.</span><span class="n">june_sales</span>
-<span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="k">ROLE</span> <span class="n">sysadmin</span>
-</code></pre></div></div>
+```sql
+ALTER TABLE prod_data.monthly_sales.june_sales
+SET AUTHORIZATION ROLE sysadmin
+```
 
 <table>
   <thead>
@@ -972,157 +968,134 @@ in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> t
   </tbody>
 </table>
 
-<p>The following details apply for views.</p>
+The following details apply for views.
 
-<ul>
-  <li>Views are stored in the metastore.</li>
-  <li>Views without explicit owners are disabled.</li>
-  <li>Views configured with SECURITY DEFINER are disabled. The run-as identity for
-views with SECURITY DEFINER is the explicitly defined owner of the view.</li>
-  <li>The catalog owner is not set as the run-as identity for views, and can
-therefore not execute them.</li>
-  <li>The catalog owner can drop and alter views.</li>
-</ul>
+* Views are stored in the metastore.
+* Views without explicit owners are disabled.
+* Views configured with SECURITY DEFINER are disabled. The run-as identity for
+  views with SECURITY DEFINER is the explicitly defined owner of the view.
+* The catalog owner is not set as the run-as identity for views, and can
+  therefore not execute them.
+* The catalog owner can drop and alter views.
 
-<p>This behavior prevents a privilege escalation. You can not declare a view in an
+This behavior prevents a privilege escalation. You can not declare a view in an
 external system with limited privileges, and then execution the view in
-Starburst Galaxy with the catalog owner’s privileges.</p>
-      <h2 id="wildcard-privileges-">
-        
-        
-          Wildcard privileges <a name="wildcard"></a> <a href="#wildcard-privileges-" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+Starburst Galaxy with the catalog owner's privileges.
 
-<p>Wildcard permissions are useful for catalogs managed outside of
+## Wildcard privileges <a name="wildcard">
+
+Wildcard permissions are useful for catalogs managed outside of
 Starburst Galaxy, as they define privileges on tables and schemas that do not
-exist yet.</p>
+exist yet.
 
-<p>Many catalogs have large numbers of schemas and tables, and it is not practical
-to grant privileges on each one individually. Instead, <em>wildcard privilege
-grants</em> can be used to grant privileges on every table in a specific schema or
-catalog. Wildcard privileges are supported only for schema and table entities.</p>
-      <h3 id="table-wildcard-privilege-grants">
-        
-        
-          Table wildcard privilege grants <a href="#table-wildcard-privilege-grants" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+Many catalogs have large numbers of schemas and tables, and it is not practical
+to grant privileges on each one individually. Instead, *wildcard privilege
+grants* can be used to grant privileges on every table in a specific schema or
+catalog. Wildcard privileges are supported only for schema and table entities.
 
-<p>Tables are identified by the name a catalog, the name of a schema contained in
-the catalog, and the name of a table within the schema. Table <code class="language-plaintext highlighter-rouge">june_sales</code> in
-schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> is represented as
-<code class="language-plaintext highlighter-rouge">prod_sales.monthly_sales.june_sales</code>.</p>
+### Table wildcard privilege grants
 
-<p>Tables support privileges to SELECT, INSERT, DELETE and UPDATE the table. A
-<em>table wildcard</em> represents either all tables in a catalog regardless of the
+Tables are identified by the name a catalog, the name of a schema contained in
+the catalog, and the name of a table within the schema. Table `june_sales` in
+schema `monthly_sales` in catalog `prod_data` is represented as
+`prod_sales.monthly_sales.june_sales`.
+
+Tables support privileges to SELECT, INSERT, DELETE and UPDATE the table. A
+*table wildcard* represents either all tables in a catalog regardless of the
 schema name, or all tables in a specific schema inside a catalog. A grant of
-SELECT on any table contained in any schema in the catalog <code class="language-plaintext highlighter-rouge">prod_data</code> is
-denoted as <code class="language-plaintext highlighter-rouge">prod_data.*.*</code>. Similarly, a grant of SELECT on any table in schema
-<code class="language-plaintext highlighter-rouge">monthly_sales</code> in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> is denoted by
-<code class="language-plaintext highlighter-rouge">prod_data.monthly_sales.*</code>.</p>
+SELECT on any table contained in any schema in the catalog `prod_data` is
+denoted as `prod_data.*.*`. Similarly, a grant of SELECT on any table in schema
+`monthly_sales` in catalog `prod_data` is denoted by
+`prod_data.monthly_sales.*`.
 
-<p>You can grant wildcard table privileges using the UI <strong>Add privileges</strong> dialog.
+You can grant wildcard table privileges using the UI **Add privileges** dialog.
 Alternatively, you can grant wildcard table privileges using SQL. A grant of
-SELECT on all tables in all schemas in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to role
-<code class="language-plaintext highlighter-rouge">read_only_users</code> looks like:</p>
+SELECT on all tables in all schemas in catalog `prod_data` to role
+`read_only_users` looks like:
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="nv">"prod_data"</span><span class="p">.</span><span class="nv">"*"</span><span class="p">.</span><span class="nv">"*"</span> <span class="k">TO</span> <span class="n">read_only_users</span>
-</code></pre></div></div>
+```sql
+GRANT SELECT ON "prod_data"."*"."*" TO read_only_users
+```
 
-<p>The schema and table wildcards must be in double quotes because <code class="language-plaintext highlighter-rouge">*</code> has special
-meaning in SQL.</p>
+The schema and table wildcards must be in double quotes because `*` has special
+meaning in SQL.
 
-<p>Similarly, a grant of SELECT on all tables in schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> in
-catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to role <code class="language-plaintext highlighter-rouge">read_only_users</code> looks like:</p>
+Similarly, a grant of SELECT on all tables in schema `monthly_sales` in
+catalog `prod_data` to role `read_only_users` looks like:
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="nv">"prod_data.monthly_sales"</span><span class="p">.</span><span class="nv">"*"</span> <span class="k">to</span> <span class="n">read_only_users</span>
-</code></pre></div></div>
+```sql
+GRANT SELECT ON "prod_data.monthly_sales"."*" to read_only_users
+```
 
-<p>You can create exceptions to wildcard table grants using deny table grants.
-Suppose a role has received a wildcard grant of SELECT on <code class="language-plaintext highlighter-rouge">prod_data.*.*</code>,
-allowing SELECT on any table in any schema in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>. If the role
-is denied the SELECT for wildcard <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales.*</code>, all tables in
-schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> will be inaccessible to that role no matter what other
-grants the role has received.</p>
-      <h3 id="schema-wildcard-privilege-grants">
-        
-        
-          Schema wildcard privilege grants <a href="#schema-wildcard-privilege-grants" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+You can create exceptions to wildcard table grants using deny table grants.
+Suppose a role has received a wildcard grant of SELECT on `prod_data.*.*`,
+allowing SELECT on any table in any schema in catalog `prod_data`. If the role
+is denied the SELECT for wildcard `prod_data.monthly_sales.*`, all tables in
+schema `monthly_sales` will be inaccessible to that role no matter what other
+grants the role has received.
 
-<p>Schemas support just one privilege - - CREATE_TABLE. A <em>schema wildcard</em>
-consists of a catalog name and a schema name of <code class="language-plaintext highlighter-rouge">*</code>. If the name of the catalog
-is <code class="language-plaintext highlighter-rouge">prod_data</code>, a grant of CREATE_TABLE to schema <code class="language-plaintext highlighter-rouge">prod_data.*</code> grants the
-privilege CREATE_TABLE on all schemas in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to a role. This is
-done in the UI in the <strong>Add privileges</strong> dialog.</p>
+### Schema wildcard privilege grants
 
-<p>You can grant CREATE_TABLE to a role in Trino:</p>
+Schemas support just one privilege - - CREATE_TABLE. A *schema wildcard*
+consists of a catalog name and a schema name of `*`. If the name of the catalog
+is `prod_data`, a grant of CREATE_TABLE to schema `prod_data.*` grants the
+privilege CREATE_TABLE on all schemas in catalog `prod_data` to a role. This is
+done in the UI in the **Add privileges** dialog.
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">CREATE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="nv">"prod_data.monthly_sales"</span> <span class="k">TO</span> <span class="n">prod_maintainer_role</span>
-</code></pre></div></div>
+You can grant CREATE_TABLE to a role in Trino:
 
-<p>You can create exceptions to a wildcard schema privilege grant by creating <em>deny
-privilege grants</em> in both the UI and in SQL. Given a grant of CREATE_TABLE to
-all schemas in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>, denoted by <code class="language-plaintext highlighter-rouge">prod_data.*</code>, granting a deny
-privilege for schema <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales</code> to the role creates an exception
-that denies the schema privilege CREATE_TABLE on schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> to the
-role.</p>
-      <h2 id="deny-a-privilege-">
-        
-        
-          Deny a privilege <a name="deny"></a> <a href="#deny-a-privilege-" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
+```sql
+GRANT CREATE ON SCHEMA "prod_data.monthly_sales" TO prod_maintainer_role
+```
 
-<p>The effect of a privilege grant on an entity to a role can be reversed by
-granting a <em>deny privilege</em> to that role. This is most useful for table
+You can create exceptions to a wildcard schema privilege grant by creating *deny
+privilege grants* in both the UI and in SQL. Given a grant of CREATE_TABLE to
+all schemas in catalog `prod_data`, denoted by `prod_data.*`, granting a deny
+privilege for schema `prod_data.monthly_sales` to the role creates an exception
+that denies the schema privilege CREATE_TABLE on schema `monthly_sales` to the
+role.
+
+## Deny a privilege <a name="deny">
+
+The effect of a privilege grant on an entity to a role can be reversed by
+granting a *deny privilege* to that role. This is most useful for table
 privileges, but any inherited privilege on any entity can be denied. Learn more
-details in <a href="#wildcard">wildcard privileges</a>.</p>
+details in [wildcard privileges](#wildcard).
 
-<p>A deny privilege grant can create an exception to a wildcard privilege grant,
-preventing the access that the privilege grant previously allowed.</p>
+A deny privilege grant can create an exception to a wildcard privilege grant,
+preventing the access that the privilege grant previously allowed.
 
-<blockquote>
-  <p>Deny privilege grants <strong>always override grants that allow access</strong>, including
-any inherited from roles and wildcard. Deny privilege grants should therefore
-be rarely used, and are typically used only to override a wildcard grant.</p>
-</blockquote>
+> Deny privilege grants **always override grants that allow access**, including
+> any inherited from roles and wildcard. Deny privilege grants should therefore
+> be rarely used, and are typically used only to override a wildcard grant.
 
-<p>Deny privileges are most useful for schemas and tables, to create exceptions to
+Deny privileges are most useful for schemas and tables, to create exceptions to
 wildcard privilege grants. However, any privilege grant to a role or inherited
 from a child role on any entity can be reversed by with a deny privilege grant
-to the role. For example, “parent_role” might inherit privilege CREATE_USER from
-“child_role”. That privilege can be reversed by granting a deny privilege for
-CREATE_USER to “parent_role”.</p>
+to the role. For example, "parent_role" might inherit privilege CREATE_USER from
+"child_role". That privilege can be reversed by granting a deny privilege for
+CREATE_USER to "parent_role".
 
-<p>You can create deny privileges in the UI using the privileges dialog. Examples
-for using the SQL statement <code class="language-plaintext highlighter-rouge">DENY</code> related to the examples form the <a href="#wildcard">wildcard
-privileges</a> section are the following:</p>
+You can create deny privileges in the UI using the privileges dialog. Examples
+for using the SQL statement `DENY` related to the examples form the [wildcard
+privileges](#wildcard) section are the following:
 
-<p>You can deny table privileges to a role with SQL:</p>
+You can deny table privileges to a role with SQL:
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">DENY</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="nv">"prod_data.monthly_sales"</span><span class="p">.</span><span class="nv">"*"</span> <span class="k">TO</span> <span class="n">read_only_users</span>
-</code></pre></div></div>
+```sql
+DENY SELECT ON "prod_data.monthly_sales"."*" TO read_only_users
+```
 
-<p>You can deny a CREATE_TABLE privilege on the schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> this way:</p>
+You can deny a CREATE_TABLE privilege on the schema `monthly_sales` this way:
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">DENY</span> <span class="k">CREATE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="n">prod_data</span><span class="p">.</span><span class="n">monthly_sales</span>
-</code></pre></div></div>
+```sql
+DENY CREATE ON SCHEMA prod_data.monthly_sales
+```
 
-<blockquote>
-  <p>SQL does not provide a mechanism to grant or deny privileges on clusters,
-users, or catalogs.</p>
-</blockquote>
+> SQL does not provide a mechanism to grant or deny privileges on clusters,
+> users, or catalogs.
+
+-->
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -1227,7 +1200,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#privileges">Privileges</a><ul><li><a href="#grant-a-privilege">Grant a privilege</a></li><li><a href="#account-privileges">Account privileges</a></li><li><a href="#cluster-privileges">Cluster privileges</a></li><li><a href="#catalog-privileges">Catalog privileges</a></li><li><a href="#schema-privileges">Schema privileges</a></li><li><a href="#table-and-view-privileges">Table and view privileges</a></li><li><a href="#wildcard-privileges-">Wildcard privileges <a name="wildcard"></a></a><ul><li><a href="#table-wildcard-privilege-grants">Table wildcard privilege grants</a></li><li><a href="#schema-wildcard-privilege-grants">Schema wildcard privilege grants</a></li></ul></li><li><a href="#deny-a-privilege-">Deny a privilege <a name="deny"></a></a></li></ul></li></ul>
+          <ul><li><a href="#privileges">Privileges</a><ul><li><a href="#grant-a-privilege">Grant a privilege</a></li><li><a href="#account-privileges">Account privileges</a></li><li><a href="#cluster-privileges">Cluster privileges</a></li><li><a href="#catalog-privileges">Catalog privileges</a></li><li><a href="#schema-privileges">Schema privileges</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
