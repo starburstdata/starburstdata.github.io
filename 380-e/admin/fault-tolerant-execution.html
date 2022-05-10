@@ -592,12 +592,11 @@ mitigate query failures by retrying queries or their component tasks in
 the event of failure. With fault-tolerant execution enabled, intermediate
 exchange data is spooled and can be re-used by another worker in the event of a
 worker outage or other fault during query execution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Fault tolerance does not apply to broken queries or other user error. For
 example, Trino does not spend resources retrying a query that fails because
 its SQL cannot be parsed.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Fault-tolerant execution is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">limited preview</span></a> in Starburst Enterprise. Contact <a class="reference external" href="../../support.html">Starburst Support</a> with questions or feedback.</p>
 </div>
 
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
@@ -715,21 +714,27 @@ before declaring the query as failed.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">task-retry-attempts-per-task</span></code></p></td>
 <td><p>Maximum number of times Trino may attempt to retry a single task before
 declaring the query as failed.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
 <td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">retry-initial-delay</span></code></p></td>
-<td><p>Minimum time that a failed query must wait before it is retried. May be
+<td><p>Minimum time that a failed query or task must wait before it is retried. May be
 overridden with the <code class="docutils literal notranslate"><span class="pre">retry_initial_delay</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10s</span></code></p></td>
-<td><p>Only <code class="docutils literal notranslate"><span class="pre">QUERY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">retry-max-delay</span></code></p></td>
-<td><p>Maximum time that a failed query must wait before it is retried.
-Wait time is increased on each subsequent query failure. May be
-overridden with the <code class="docutils literal notranslate"><span class="pre">retry_initial_delay</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
+<td><p>Maximum time that a failed query or task must wait before it is retried.
+Wait time is increased on each subsequent  failure. May be
+overridden with the <code class="docutils literal notranslate"><span class="pre">retry_max_delay</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
-<td><p>Only <code class="docutils literal notranslate"><span class="pre">QUERY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">retry-delay-scale-factor</span></code></p></td>
+<td><p>Factor by which retry delay is increased on each query or task failure. May be
+overridden with the <code class="docutils literal notranslate"><span class="pre">retry_delay_scale_factor</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2.0</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -868,6 +873,12 @@ reschedule tasks in case of a failure.</p></td>
 <td><p>(JVM heap size * 0.15)</p></td>
 <td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max-tasks-waiting-for-node-per-stage</span></code></p></td>
+<td><p>Allow for up to configured number of tasks to wait for node allocation
+per stage, before pausing scheduling for other tasks from this stage.</p></td>
+<td><p>5</p></td>
+<td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -897,7 +908,7 @@ for your storage solution.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.base-directory</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.base-directories</span></code></p></td>
 <td><p>The base directory URI location that the exchange manager uses to store
 spooling data. Only supports S3 and local filesystems.</p></td>
 <td></td>
@@ -910,6 +921,15 @@ spooling data. Only supports S3 and local filesystems.</p></td>
 <td><p>The minimum buffer pool size for an exchange sink. The larger the buffer
 pool size, the larger the write parallelism and memory usage.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.sink-buffers-per-partition</span></code></p></td>
+<td><p>The number of buffers per partition in the buffer pool. The larger the
+buffer pool size, the larger the write parallelism and memory usage.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.sink-max-file-size</span></code></p></td>
+<td><p>Max size of files written by exchange sinks.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1GB</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.source-concurrent-reader</span></code></p></td>
 <td><p>The number of concurrent readers to read from spooling storage. The
@@ -951,7 +971,7 @@ a request.</p></td>
 AWS S3 bucket as the spooling storage destination. Note that the destination
 does not have to be in AWS, but can be any S3-compatible storage system.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
-<span class="na">exchange.base-directory</span><span class="o">=</span><span class="s">s3n://trino-exchange-manager</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://trino-exchange-manager</span>
 <span class="na">exchange.encryption-enabled</span><span class="o">=</span><span class="s">true</span>
 <span class="na">exchange.s3.region</span><span class="o">=</span><span class="s">us-west-1</span>
 <span class="na">exchange.s3.aws-access-key</span><span class="o">=</span><span class="s">example-access-key</span>
@@ -969,7 +989,7 @@ a distributed cluster if the exchange directory is shared and accessible
 from all worker nodes.</p>
 </div>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
-<span class="na">exchange.base-directory</span><span class="o">=</span><span class="s">/tmp/trino-exchange-manager</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">/tmp/trino-exchange-manager</span>
 </pre></div>
 </div>
 
