@@ -353,7 +353,17 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#exchange-manager" class="md-nav__link">Exchange manager</a>
+        <li class="md-nav__item"><a href="#exchange-manager" class="md-nav__link">Exchange manager</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#s3-bucket-storage" class="md-nav__link">S3 bucket storage</a>
+        </li>
+        <li class="md-nav__item"><a href="#local-filesystem-storage" class="md-nav__link">Local filesystem storage</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -568,7 +578,17 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#exchange-manager" class="md-nav__link">Exchange manager</a>
+        <li class="md-nav__item"><a href="#exchange-manager" class="md-nav__link">Exchange manager</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#s3-bucket-storage" class="md-nav__link">S3 bucket storage</a>
+        </li>
+        <li class="md-nav__item"><a href="#local-filesystem-storage" class="md-nav__link">Local filesystem storage</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -609,8 +629,8 @@ depending on the desired <a class="reference internal" href="#fte-retry-policy">
 </div>
 <p>The following configuration properties control the behavior of fault-tolerant
 execution on a Trino cluster:</p>
-<table id="id1">
-<caption><span class="caption-text">Fault-tolerant execution configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Fault-tolerant execution configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -633,9 +653,15 @@ more information.</p></td>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.deduplication-buffer-size</span></code></p></td>
 <td><p>Size of the coordinator’s in-memory buffer used by fault-tolerant
 execution to store output of query <a class="reference internal" href="../overview/concepts.html#trino-concept-stage"><span class="std std-ref">stages</span></a>.
-If this buffer is filled during query execution, the query fails unless
+If this buffer is filled during query execution, the query fails with a
+“Task descriptor storage capacity has been exceeded” error message unless
 an <a class="reference internal" href="#fte-exchange-manager"><span class="std std-ref">exchange manager</span></a> is configured.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">32MB</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.compression-enabled</span></code></p></td>
+<td><p>Enable compression of spooling data. Setting to <code class="docutils literal notranslate"><span class="pre">true</span></code> is recommended
+when using an <a class="reference internal" href="#fte-exchange-manager"><span class="std std-ref">exchange manager</span></a>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -668,10 +694,29 @@ therefore allows for storage of spilled data beyond the in-memory buffer size.</
 recommended when executing large batch queries, as the cluster can more
 efficiently retry smaller tasks within the query rather than retry the whole
 query.</p>
-<p><code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy requires a configured <a class="reference internal" href="#fte-exchange-manager"><span class="std std-ref">exchange manager</span></a> to store spooled exchange data used for each task. It is
-also strongly recommended to set the <code class="docutils literal notranslate"><span class="pre">query.low-memory-killer.policy</span></code>
-configuration property to <code class="docutils literal notranslate"><span class="pre">total-reservation-on-blocked-nodes</span></code>, or queries may
-need to be manually killed if the cluster runs out of memory.</p>
+<p>The following cluster configuration changes are recommended to improve
+fault-tolerant execution with a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy:</p>
+<ul class="simple">
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">task.low-memory-killer.policy</span></code>
+<a class="reference internal" href="properties-query-management.html"><span class="doc">query management property</span></a> to
+<code class="docutils literal notranslate"><span class="pre">total-reservation-on-blocked-nodes</span></code>, or queries may
+need to be manually killed if the cluster runs out of memory.</p></li>
+<li><p>Set the <code class="docutils literal notranslate"><span class="pre">query.low-memory-killer.delay</span></code>
+<a class="reference internal" href="properties-query-management.html"><span class="doc">query management property</span></a> to
+<code class="docutils literal notranslate"><span class="pre">0s</span></code> so the cluster immediately unblocks nodes that run out of memory.</p></li>
+<li><p>Modify the <code class="docutils literal notranslate"><span class="pre">query.remote-task.max-error-duration</span></code>
+<a class="reference internal" href="properties-query-management.html"><span class="doc">query management property</span></a>
+to adjust how long Trino allows a remote task to try reconnecting before
+considering it lost and rescheduling.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy is best suited for large batch queries, but this
+policy can result in higher latency for short-running queries executed in high
+volume. As a best practice, it is recommended to run a dedicated cluster
+with a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy for large batch queries, separate from another
+cluster that handles short queries.</p>
+</div>
 
 
 
@@ -684,8 +729,8 @@ troubleshooting purposes.</p>
 <h3 id="retry-limits">Retry limits<a class="headerlink" href="#retry-limits" title="Permalink to this headline">#</a></h3>
 <p>The following configuration properties control the thresholds at which
 queries/tasks are no longer retried in the event of repeated failures:</p>
-<table id="id2">
-<caption><span class="caption-text">Fault tolerance retry limit configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Fault tolerance retry limit configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
 <col style="width: 31%"/>
@@ -752,8 +797,8 @@ completing.</p>
 during fault-tolerant task execution, you can configure the following
 configuration properties to manually control task sizing. These configuration
 properties only apply to a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy.</p>
-<table id="id3">
-<caption><span class="caption-text">Task sizing configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">Task sizing configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -823,8 +868,8 @@ full node for its execution.</p>
 <p>The initial task memory-requirements estimation is static and configured with
 the <code class="docutils literal notranslate"><span class="pre">fault-tolerant-task-memory</span></code> configuration property. This property only
 applies to a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy.</p>
-<table id="id4">
-<caption><span class="caption-text">Node allocation configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Node allocation configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -851,8 +896,8 @@ for tasks. May be overridden for the current session with the
 <h3 id="other-tuning">Other tuning<a class="headerlink" href="#other-tuning" title="Permalink to this headline">#</a></h3>
 <p>The following additional configuration property can be used to manage
 fault-tolerant execution:</p>
-<table id="id5">
-<caption><span class="caption-text">Other fault-tolerant execution configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Other fault-tolerant execution configuration properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
 <col style="width: 31%"/>
@@ -874,7 +919,18 @@ reschedule tasks in case of a failure.</p></td>
 <td><p>(JVM heap size * 0.15)</p></td>
 <td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max-tasks-waiting-for-node-per-stage</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fault-tolerant-execution-partition-count</span></code></p></td>
+<td><p>Number of partitions to use for distributed joins and aggregations,
+similar in function to the <code class="docutils literal notranslate"><span class="pre">query.hash-partition-count</span></code> <a class="reference internal" href="properties-query-management.html"><span class="doc">query
+management property</span></a>. It is not
+recommended to increase this property value above the default of <code class="docutils literal notranslate"><span class="pre">50</span></code>,
+which may result in instability and poor performance. May be overridden
+for the current session with the
+<code class="docutils literal notranslate"><span class="pre">fault_tolerant_execution_partition_count</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">50</span></code></p></td>
+<td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max-tasks-waiting-for-node-per-stage</span></code></p></td>
 <td><p>Allow for up to configured number of tasks to wait for node allocation
 per stage, before pausing scheduling for other tasks from this stage.</p></td>
 <td><p>5</p></td>
@@ -890,13 +946,15 @@ per stage, before pausing scheduling for other tasks from this stage.</p></td>
 fault-tolerant execution. You can configure a filesystem-based exchange manager
 that stores spooled data in a specified location, either an S3-compatible
 storage system or a local filesystem.</p>
+
+<h3 id="id1">Configuration<a class="headerlink" href="#id1" title="Permalink to this headline">#</a></h3>
 <p>To configure an exchange manager, create a new
 <code class="docutils literal notranslate"><span class="pre">etc/exchange-manager.properties</span></code> configuration file on the coordinator and
 all worker nodes. In this file, set the <code class="docutils literal notranslate"><span class="pre">exchange-manager.name</span></code> configuration
 propertry to <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, and additional configuration properties as needed
 for your storage solution.</p>
-<table id="id6">
-<caption><span class="caption-text">Exchange manager configuration properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
+<table id="id7">
+<caption><span class="caption-text">Exchange manager configuration properties</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -910,8 +968,8 @@ for your storage solution.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.base-directories</span></code></p></td>
-<td><p>The base directory URI location that the exchange manager uses to store
-spooling data. Only supports S3 and local filesystems.</p></td>
+<td><p>Comma-separated list of URI locations that the exchange manager uses to
+store spooling data. Only supports S3 and local filesystems.</p></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.encryption-enabled</span></code></p></td>
@@ -968,17 +1026,38 @@ a request.</p></td>
 </tr>
 </tbody>
 </table>
+<p>It is also recommended to set the <code class="docutils literal notranslate"><span class="pre">exchange.compression-enabled</span></code> property to
+<code class="docutils literal notranslate"><span class="pre">true</span></code> in the cluster’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file, to reduce the exchange
+manager’s overall I/O load.</p>
+
+<h4 id="s3-bucket-storage">S3 bucket storage<a class="headerlink" href="#s3-bucket-storage" title="Permalink to this headline">#</a></h4>
+<p>If using an AWS S3 bucket, it is recommended to configure a bucket lifecycle
+rule in AWS to automatically expire abandoned objects in the event of a node
+crash.</p>
 <p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies an
 AWS S3 bucket as the spooling storage destination. Note that the destination
 does not have to be in AWS, but can be any S3-compatible storage system.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
-<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://trino-exchange-manager</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://exchange-spooling-bucket</span>
 <span class="na">exchange.encryption-enabled</span><span class="o">=</span><span class="s">true</span>
 <span class="na">exchange.s3.region</span><span class="o">=</span><span class="s">us-west-1</span>
 <span class="na">exchange.s3.aws-access-key</span><span class="o">=</span><span class="s">example-access-key</span>
 <span class="na">exchange.s3.aws-secret-key</span><span class="o">=</span><span class="s">example-secret-key</span>
 </pre></div>
 </div>
+<p>You can configure multiple S3 buckets for the exchange manager to distribute
+spooled data across buckets, reducing the I/O load on any one bucket. If a query
+fails with the error message
+“software.amazon.awssdk.services.s3.model.S3Exception: Please reduce your
+request rate”, this indicates that the workload is I/O intensive, and you should
+specify multiple S3 buckets in <code class="docutils literal notranslate"><span class="pre">exchange.base-directories</span></code> to balance the
+load:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://exchange-spooling-bucket-1,s3n://exchange-spooling-bucket-2</span>
+</pre></div>
+</div>
+
+
+<h4 id="local-filesystem-storage">Local filesystem storage<a class="headerlink" href="#local-filesystem-storage" title="Permalink to this headline">#</a></h4>
 <p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies a
 local directory, <code class="docutils literal notranslate"><span class="pre">/tmp/trino-exchange-manager</span></code>, as the spooling storage
 destination.</p>
@@ -993,6 +1072,8 @@ from all worker nodes.</p>
 <span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">/tmp/trino-exchange-manager</span>
 </pre></div>
 </div>
+
+
 
 
 
