@@ -698,7 +698,7 @@
         </li>
         <li class="md-nav__item"><a href="#expire-snapshots" class="md-nav__link">expire_snapshots</a>
         </li>
-        <li class="md-nav__item"><a href="#delete-orphan-files" class="md-nav__link">delete_orphan_files</a>
+        <li class="md-nav__item"><a href="#remove-orphan-files" class="md-nav__link">remove_orphan_files</a>
         </li></ul>
             </nav>
         </li>
@@ -916,7 +916,7 @@
         </li>
         <li class="md-nav__item"><a href="#expire-snapshots" class="md-nav__link">expire_snapshots</a>
         </li>
-        <li class="md-nav__item"><a href="#delete-orphan-files" class="md-nav__link">delete_orphan_files</a>
+        <li class="md-nav__item"><a href="#remove-orphan-files" class="md-nav__link">remove_orphan_files</a>
         </li></ul>
             </nav>
         </li>
@@ -987,7 +987,7 @@
 The Iceberg connector allows querying data stored in
 files written in Iceberg format, as defined in the
 <a class="reference external" href="https://iceberg.apache.org/spec/">Iceberg Table Spec</a>. It supports Apache
-Iceberg table spec version 1.</p>
+Iceberg table spec version 1 and 2.</p>
 <p>The Iceberg table state is maintained in metadata files. All changes to table state
 create a new metadata file and replace the old metadata with an atomic swap.
 The table metadata file tracks the table schema, partitioning config,
@@ -1086,6 +1086,10 @@ Possible values are</p>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.max-partitions-per-writer</span></code></p></td>
 <td><p>Maximum number of partitions handled per writer.</p></td>
 <td><p>100</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.orc.bloom-filters.enabled</span></code></p></td>
+<td><p>Enable bloom filters for predicate pushdown.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1186,21 +1190,21 @@ The procedure affects all snapshots that are older than the time period configur
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="k">EXECUTE</span> <span class="n">expire_snapshots</span><span class="p">(</span><span class="n">retention_threshold</span> <span class="o">=&gt;</span> <span class="s1">'7d'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The value for <code class="docutils literal notranslate"><span class="pre">retention_threshold</span></code> must be higher than <code class="docutils literal notranslate"><span class="pre">iceberg.expire_snapshots.min-retention</span></code> in the catalog
+<p>The value for <code class="docutils literal notranslate"><span class="pre">retention_threshold</span></code> must be higher than or equal to <code class="docutils literal notranslate"><span class="pre">iceberg.expire_snapshots.min-retention</span></code> in the catalog
 otherwise the procedure will fail with similar message:
 <code class="docutils literal notranslate"><span class="pre">Retention</span> <span class="pre">specified</span> <span class="pre">(1.00d)</span> <span class="pre">is</span> <span class="pre">shorter</span> <span class="pre">than</span> <span class="pre">the</span> <span class="pre">minimum</span> <span class="pre">retention</span> <span class="pre">configured</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">system</span> <span class="pre">(7.00d)</span></code>.
 The default value for this property is <code class="docutils literal notranslate"><span class="pre">7d</span></code>.</p>
 
 
-<h4 id="delete-orphan-files">delete_orphan_files<a class="headerlink" href="#delete-orphan-files" title="Permalink to this headline">#</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">delete_orphan_files</span></code> command removes all files from table’s data directory which are
+<h4 id="remove-orphan-files">remove_orphan_files<a class="headerlink" href="#remove-orphan-files" title="Permalink to this headline">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">remove_orphan_files</span></code> command removes all files from table’s data directory which are
 not linked from metadata files and that are older than the value of <code class="docutils literal notranslate"><span class="pre">retention_threshold</span></code> parameter.
 Deleting orphan files from time to time is recommended to keep size of table’s data directory under control.</p>
-<p><code class="docutils literal notranslate"><span class="pre">delete_orphan_files</span></code> can be run as follows:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="k">EXECUTE</span> <span class="n">delete_orphan_files</span><span class="p">(</span><span class="n">retention_threshold</span> <span class="o">=&gt;</span> <span class="s1">'7d'</span><span class="p">)</span>
+<p><code class="docutils literal notranslate"><span class="pre">remove_orphan_files</span></code> can be run as follows:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="k">EXECUTE</span> <span class="n">remove_orphan_files</span><span class="p">(</span><span class="n">retention_threshold</span> <span class="o">=&gt;</span> <span class="s1">'7d'</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>The value for <code class="docutils literal notranslate"><span class="pre">retention_threshold</span></code> must be higher than <code class="docutils literal notranslate"><span class="pre">iceberg.delete_orphan_files.min-retention</span></code> in the catalog
+<p>The value for <code class="docutils literal notranslate"><span class="pre">retention_threshold</span></code> must be higher than or equal to <code class="docutils literal notranslate"><span class="pre">iceberg.remove_orphan_files.min-retention</span></code> in the catalog
 otherwise the procedure will fail with similar message:
 <code class="docutils literal notranslate"><span class="pre">Retention</span> <span class="pre">specified</span> <span class="pre">(1.00d)</span> <span class="pre">is</span> <span class="pre">shorter</span> <span class="pre">than</span> <span class="pre">the</span> <span class="pre">minimum</span> <span class="pre">retention</span> <span class="pre">configured</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">system</span> <span class="pre">(7.00d)</span></code>.
 The default value for this property is <code class="docutils literal notranslate"><span class="pre">7d</span></code>.</p>
@@ -1214,11 +1218,17 @@ The default value for this property is <code class="docutils literal notranslate
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">format_version</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">partitioning</span></code></p></li>
 </ul>
 <p>For example, to update a table from v1 of the Iceberg specification to v2:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">table_name</span> <span class="k">SET</span> <span class="n">PROPERTIES</span> <span class="n">format_version</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
 </pre></div>
 </div>
+<p>Or to set the column <code class="docutils literal notranslate"><span class="pre">my_new_partition_column</span></code> as a partition column on a table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">table_name</span> <span class="k">SET</span> <span class="n">PROPERTIES</span> <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="o">&lt;</span><span class="k">existing</span> <span class="n">partition</span> <span class="n">columns</span><span class="o">&gt;</span><span class="p">,</span> <span class="s1">'my_new_partition_column'</span><span class="p">];</span>
+</pre></div>
+</div>
+<p>The current values of a table’s properties can be shown using <a class="reference internal" href="../sql/show-create-table.html"><span class="doc">SHOW CREATE TABLE</span></a>.</p>
 
 
 
@@ -1485,8 +1495,8 @@ the Iceberg API or Apache Spark.</p>
 <span id="id1"></span><h2 id="iceberg-table-properties">Iceberg table properties<a class="headerlink" href="#iceberg-table-properties" title="Permalink to this headline">#</a></h2>
 <table>
 <colgroup>
-<col style="width: 43%"/>
-<col style="width: 57%"/>
+<col style="width: 41%"/>
+<col style="width: 59%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property Name</p></th>
@@ -1513,6 +1523,18 @@ the table.</p></td>
 specification to use for new tables; either <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">2</span></code>.
 Defaults to <code class="docutils literal notranslate"><span class="pre">2</span></code>. Version <code class="docutils literal notranslate"><span class="pre">2</span></code> is required for row level deletes.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_columns</span></code></p></td>
+<td><p>Comma separated list of columns to use for ORC bloom filter.
+It improves the performance of queries using Equality and IN predicates
+when reading ORC file.
+Requires ORC format.
+Defaults to <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_fpp</span></code></p></td>
+<td><p>The ORC bloom filters false positive probability.
+Requires ORC format.
+Defaults to <code class="docutils literal notranslate"><span class="pre">0.05</span></code>.</p></td>
+</tr>
 </tbody>
 </table>
 <p>The table definition below specifies format Parquet, partitioning by columns <code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>,
@@ -1525,6 +1547,19 @@ and a file system location of <code class="docutils literal notranslate"><span c
     <span class="n">format</span> <span class="o">=</span> <span class="s1">'PARQUET'</span><span class="p">,</span>
     <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
     <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/my_tables/test_table'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The table definition below specifies format ORC, bloom filter index by columns <code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>,
+fpp is 0.05, and a file system location of <code class="docutils literal notranslate"><span class="pre">/var/my_tables/test_table</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="p">(</span>
+    <span class="n">c1</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">c2</span> <span class="nb">date</span><span class="p">,</span>
+    <span class="n">c3</span> <span class="n">double</span><span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="s1">'ORC'</span><span class="p">,</span>
+    <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/my_tables/test_table'</span><span class="p">,</span>
+    <span class="n">orc_bloom_filter_columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
+    <span class="n">orc_bloom_filter_fpp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">05</span><span class="p">)</span>
 </pre></div>
 </div>
 

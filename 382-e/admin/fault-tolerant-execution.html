@@ -359,7 +359,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#s3-bucket-storage" class="md-nav__link">S3 bucket storage</a>
+        <li class="md-nav__item"><a href="#aws-s3" class="md-nav__link">AWS S3</a>
+        </li>
+        <li class="md-nav__item"><a href="#azure-blob-storage" class="md-nav__link">Azure Blob Storage</a>
+        </li>
+        <li class="md-nav__item"><a href="#google-cloud-storage" class="md-nav__link">Google Cloud Storage</a>
         </li>
         <li class="md-nav__item"><a href="#local-filesystem-storage" class="md-nav__link">Local filesystem storage</a>
         </li></ul>
@@ -584,7 +588,11 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#s3-bucket-storage" class="md-nav__link">S3 bucket storage</a>
+        <li class="md-nav__item"><a href="#aws-s3" class="md-nav__link">AWS S3</a>
+        </li>
+        <li class="md-nav__item"><a href="#azure-blob-storage" class="md-nav__link">Azure Blob Storage</a>
+        </li>
+        <li class="md-nav__item"><a href="#google-cloud-storage" class="md-nav__link">Google Cloud Storage</a>
         </li>
         <li class="md-nav__item"><a href="#local-filesystem-storage" class="md-nav__link">Local filesystem storage</a>
         </li></ul>
@@ -614,9 +622,12 @@ mitigate query failures by retrying queries or their component tasks in
 the event of failure. With fault-tolerant execution enabled, intermediate
 exchange data is spooled and can be re-used by another worker in the event of a
 worker outage or other fault during query execution.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
 <p>Fault tolerance does not apply to broken queries or other user error. For
 example, Trino does not spend resources retrying a query that fails because
 its SQL cannot be parsed.</p>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Fault-tolerant execution is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">limited preview</span></a> in Starburst Enterprise. Contact <a class="reference external" href="../../support.html">Starburst Support</a> with questions or feedback.</p>
@@ -635,8 +646,8 @@ execution on a Trino cluster:</p>
 <caption><span class="caption-text">Fault-tolerant execution configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
-<col style="width: 40%"/>
-<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property name</p></th>
@@ -735,8 +746,8 @@ queries/tasks are no longer retried in the event of repeated failures:</p>
 <caption><span class="caption-text">Fault tolerance retry limit configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
-<col style="width: 31%"/>
-<col style="width: 23%"/>
+<col style="width: 38%"/>
+<col style="width: 15%"/>
 <col style="width: 23%"/>
 </colgroup>
 <thead>
@@ -803,8 +814,8 @@ properties only apply to a <code class="docutils literal notranslate"><span clas
 <caption><span class="caption-text">Task sizing configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
-<col style="width: 40%"/>
-<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property name</p></th>
@@ -874,8 +885,8 @@ applies to a <code class="docutils literal notranslate"><span class="pre">TASK</
 <caption><span class="caption-text">Node allocation configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
-<col style="width: 40%"/>
-<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property name</p></th>
@@ -902,8 +913,8 @@ fault-tolerant execution:</p>
 <caption><span class="caption-text">Other fault-tolerant execution configuration properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
-<col style="width: 31%"/>
-<col style="width: 23%"/>
+<col style="width: 38%"/>
+<col style="width: 15%"/>
 <col style="width: 23%"/>
 </colgroup>
 <thead>
@@ -946,8 +957,8 @@ per stage, before pausing scheduling for other tasks from this stage.</p></td>
 <span id="fte-exchange-manager"></span><h2 id="exchange-manager">Exchange manager<a class="headerlink" href="#exchange-manager" title="Permalink to this headline">#</a></h2>
 <p>Exchange spooling is responsible for storing and managing spooled data for
 fault-tolerant execution. You can configure a filesystem-based exchange manager
-that stores spooled data in a specified location, either an S3-compatible
-storage system or a local filesystem.</p>
+that stores spooled data in a specified location, such as an S3-compatible
+storage system, Google Cloud Storage (GCS), or a local filesystem.</p>
 
 <h3 id="id1">Configuration<a class="headerlink" href="#id1" title="Permalink to this headline">#</a></h3>
 <p>To configure an exchange manager, create a new
@@ -955,17 +966,22 @@ storage system or a local filesystem.</p>
 all worker nodes. In this file, set the <code class="docutils literal notranslate"><span class="pre">exchange-manager.name</span></code> configuration
 propertry to <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, and additional configuration properties as needed
 for your storage solution.</p>
+<p>The following table lists the available configuration properties for
+<code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code>, their default values, and which filesystem(s)
+the property may be configured for:</p>
 <table id="id7">
 <caption><span class="caption-text">Exchange manager configuration properties</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
 <colgroup>
-<col style="width: 30%"/>
-<col style="width: 40%"/>
-<col style="width: 30%"/>
+<col style="width: 23%"/>
+<col style="width: 38%"/>
+<col style="width: 15%"/>
+<col style="width: 23%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property name</p></th>
 <th class="head"><p>Description</p></th>
 <th class="head"><p>Default value</p></th>
+<th class="head"><p>Supported filesystem</p></th>
 </tr>
 </thead>
 <tbody>
@@ -973,75 +989,102 @@ for your storage solution.</p>
 <td><p>Comma-separated list of URI locations that the exchange manager uses to
 store spooling data. Only supports S3 and local filesystems.</p></td>
 <td></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.encryption-enabled</span></code></p></td>
 <td><p>Enable encrypting of spooling data.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.sink-buffer-pool-min-size</span></code></p></td>
 <td><p>The minimum buffer pool size for an exchange sink. The larger the buffer
 pool size, the larger the write parallelism and memory usage.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.sink-buffers-per-partition</span></code></p></td>
 <td><p>The number of buffers per partition in the buffer pool. The larger the
 buffer pool size, the larger the write parallelism and memory usage.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.sink-max-file-size</span></code></p></td>
 <td><p>Max size of files written by exchange sinks.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1GB</span></code></p></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.source-concurrent-reader</span></code></p></td>
-<td><p>The number of concurrent readers to read from spooling storage. The
+<td><p>Number of concurrent readers to read from spooling storage. The
 larger the number of concurrent readers, the larger the read parallelism
 and memory usage.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
+<td><p>Any</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.aws-access-key</span></code></p></td>
-<td><p>AWS access key to use. Required for a connection to AWS S3, can be
-ignored for other S3 storage systems.</p></td>
+<td><p>AWS access key to use. Required for a connection to AWS S3 and GCS, can
+be ignored for other S3 storage systems.</p></td>
 <td></td>
+<td><p>AWS S3, GCS</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.aws-secret-key</span></code></p></td>
-<td><p>AWS secret key to use. Required for a connection to AWS S3, can be
-ignored for other S3 storage systems.</p></td>
+<td><p>AWS secret key to use. Required for a connection to AWS S3 and GCS, can
+be ignored for other S3 storage systems.</p></td>
 <td></td>
+<td><p>AWS S3, GCS</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.region</span></code></p></td>
 <td><p>Region of the S3 bucket.</p></td>
 <td></td>
+<td><p>AWS S3, GCS</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.endpoint</span></code></p></td>
 <td><p>S3 storage endpoint server if using an S3-compatible storage system that
-is not AWS. If using AWS S3, can be ignored.</p></td>
+is not AWS. If using AWS S3, this can be ignored. If using GCS, set it
+to <code class="docutils literal notranslate"><span class="pre">https://storage.googleapis.com</span></code>.</p></td>
 <td></td>
+<td><p>Any S3-compatible storage</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.max-error-retries</span></code></p></td>
 <td><p>Maximum number of times the exchange manager’s S3 client should retry
 a request.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">3</span></code></p></td>
+<td><p>Any S3-compatible storage</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.s3.upload.part-size</span></code></p></td>
 <td><p>Part size for S3 multi-part upload.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">5MB</span></code></p></td>
+<td><p>Any S3-compatible storage</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.gcs.json-key-file-path</span></code></p></td>
+<td><p>Path to the JSON file that contains your Google Cloud Platform
+service account key.</p></td>
+<td></td>
+<td><p>GCS</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.azure.connection-string</span></code></p></td>
+<td><p>Connection string used to access the spooling container.</p></td>
+<td></td>
+<td><p>Azure Blob Storage</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.azure.block-size</span></code></p></td>
+<td><p>Block size for Azure block blob parallel upload.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4MB</span></code></p></td>
+<td><p>Azure Blob Storage</p></td>
 </tr>
 </tbody>
 </table>
-<p>It is also recommended to set the <code class="docutils literal notranslate"><span class="pre">exchange.compression-enabled</span></code> property to
+<p>It is recommended to set the <code class="docutils literal notranslate"><span class="pre">exchange.compression-enabled</span></code> property to
 <code class="docutils literal notranslate"><span class="pre">true</span></code> in the cluster’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file, to reduce the exchange
-manager’s overall I/O load.</p>
-
-<h4 id="s3-bucket-storage">S3 bucket storage<a class="headerlink" href="#s3-bucket-storage" title="Permalink to this headline">#</a></h4>
-<p>If using an AWS S3 bucket, it is recommended to configure a bucket lifecycle
-rule in AWS to automatically expire abandoned objects in the event of a node
+manager’s overall I/O load. It is also recommended to configure a bucket
+lifecycle rule to automatically expire abandoned objects in the event of a node
 crash.</p>
+
+<span id="fte-exchange-aws-s3"></span><h4 id="aws-s3">AWS S3<a class="headerlink" href="#aws-s3" title="Permalink to this headline">#</a></h4>
 <p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies an
 AWS S3 bucket as the spooling storage destination. Note that the destination
 does not have to be in AWS, but can be any S3-compatible storage system.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
-<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://exchange-spooling-bucket</span>
-<span class="na">exchange.encryption-enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3://exchange-spooling-bucket</span>
 <span class="na">exchange.s3.region</span><span class="o">=</span><span class="s">us-west-1</span>
 <span class="na">exchange.s3.aws-access-key</span><span class="o">=</span><span class="s">example-access-key</span>
 <span class="na">exchange.s3.aws-secret-key</span><span class="o">=</span><span class="s">example-secret-key</span>
@@ -1054,12 +1097,43 @@ fails with the error message
 request rate”, this indicates that the workload is I/O intensive, and you should
 specify multiple S3 buckets in <code class="docutils literal notranslate"><span class="pre">exchange.base-directories</span></code> to balance the
 load:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3n://exchange-spooling-bucket-1,s3n://exchange-spooling-bucket-2</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">s3://exchange-spooling-bucket-1,s3://exchange-spooling-bucket-2</span>
 </pre></div>
 </div>
 
 
-<h4 id="local-filesystem-storage">Local filesystem storage<a class="headerlink" href="#local-filesystem-storage" title="Permalink to this headline">#</a></h4>
+<span id="fte-exchange-azure-blob"></span><h4 id="azure-blob-storage">Azure Blob Storage<a class="headerlink" href="#azure-blob-storage" title="Permalink to this headline">#</a></h4>
+<p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies an
+Azure Blob Storage container as the spooling storage destination.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">abfs://container_name@account_name.dfs.core.windows.net</span>
+<span class="na">exchange.azure.connection-string</span><span class="o">=</span><span class="s">connection-string</span>
+</pre></div>
+</div>
+
+
+<span id="fte-exchange-gcs"></span><h4 id="google-cloud-storage">Google Cloud Storage<a class="headerlink" href="#google-cloud-storage" title="Permalink to this headline">#</a></h4>
+<p>To enable exchange spooling on GCS in Trino, change the request endpoint to the
+<code class="docutils literal notranslate"><span class="pre">https://storage.googleapis.com</span></code> Google storage URI, and configure your AWS
+access/secret keys to use the GCS HMAC keys. If you deploy Trino on GCP, you
+must either create a service account with access to your spooling bucket or
+configure the key path to your GCS credential file.</p>
+<p>For more information on GCS’s S3 compatibility, refer to the <a class="reference external" href="https://cloud.google.com/storage/docs/aws-simple-migration">Google Cloud
+documentation on S3 migration</a>.</p>
+<p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies a
+GCS bucket as the spooling storage destination.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">filesystem</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">gs://exchange-spooling-bucket</span>
+<span class="na">exchange.s3.region</span><span class="o">=</span><span class="s">us-west-1</span>
+<span class="na">exchange.s3.aws-access-key</span><span class="o">=</span><span class="s">example-access-key</span>
+<span class="na">exchange.s3.aws-secret-key</span><span class="o">=</span><span class="s">example-secret-key</span>
+<span class="na">exchange.s3.endpoint</span><span class="o">=</span><span class="s">https://storage.googleapis.com</span>
+<span class="na">exchange.gcs.json-key-file-path</span><span class="o">=</span><span class="s">/path/to/gcs_keyfile.json</span>
+</pre></div>
+</div>
+
+
+<span id="fte-exchange-local-filesystem"></span><h4 id="local-filesystem-storage">Local filesystem storage<a class="headerlink" href="#local-filesystem-storage" title="Permalink to this headline">#</a></h4>
 <p>The following example <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration specifies a
 local directory, <code class="docutils literal notranslate"><span class="pre">/tmp/trino-exchange-manager</span></code>, as the spooling storage
 destination.</p>
