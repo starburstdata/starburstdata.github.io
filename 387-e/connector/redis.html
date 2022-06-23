@@ -680,6 +680,16 @@
         <li class="md-nav__item"><a href="#table-definition-files" class="md-nav__link">Table definition files</a>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        </li>
+        <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -915,6 +925,16 @@
         <li class="md-nav__item"><a href="#table-definition-files" class="md-nav__link">Table definition files</a>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        </li>
+        <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -933,8 +953,8 @@
 used to join data between different systems like Redis and Hive.</p>
 <p>Each Redis key/value pair is presented as a single row in Trino. Rows can be
 broken down into cells by using table definition files.</p>
-<p>Only Redis string and hash value types are supported; sets and zsets cannot be
-queried from Trino.</p>
+<p>Currently, only Redis key of string and zset types are supported, only Redis value of
+string and hash types are supported.</p>
 
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
 <p>Requirements for using the connector in a catalog to connect to a Redis data
@@ -1235,6 +1255,32 @@ name of the file can be arbitrary, but must end in <code class="docutils literal
 <p>The connector provides <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and
 <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a> statements to access data and
 metadata in Redis.</p>
+
+
+<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this headline">#</a></h2>
+<p>The connector includes a number of performance improvements, detailed in the
+following sections.</p>
+
+<span id="redis-pushdown"></span><h3 id="pushdown">Pushdown<a class="headerlink" href="#pushdown" title="Permalink to this headline">#</a></h3>
+
+<span id="redis-predicate-pushdown"></span><h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Permalink to this headline">#</a></h4>
+<p>The connector supports pushdown of keys, only Redis key of string type supports
+pushdown, the zset type does not support. Currently, key pushdown is not supported
+when multiple key fields are defined in the table definition file.</p>
+<p>The connector supports pushdown of equality predicates, such as <code class="docutils literal notranslate"><span class="pre">IN</span></code> or <code class="docutils literal notranslate"><span class="pre">=</span></code>.
+Range predicates, such as <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, or <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>, and inequality predicates,
+such as <code class="docutils literal notranslate"><span class="pre">!=</span></code> are not pushed down.</p>
+<p>In the following example, the predicate of the first query is not pushed down
+since <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> is a range predicate. The other queries are pushed down.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Not pushed down</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">redis_key</span> <span class="o">&gt;</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="c1">-- Pushed down</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">redis_key</span> <span class="o">=</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">redis_key</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'CANADA'</span><span class="p">,</span> <span class="s1">'POLAND'</span><span class="p">);</span>
+</pre></div>
+</div>
+
+
 
 
 
