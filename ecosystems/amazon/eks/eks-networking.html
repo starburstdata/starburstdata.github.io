@@ -568,6 +568,17 @@
 
 <p>This document helps you to understand networking requirements and configuration
 for Starburst Enterprise platform (SEP) on AWS EKS.</p>
+
+<div class="alert alert-danger" role="alert">
+  <i class="fa fa-radiation"></i> <b>Warning:</b>
+
+<br />
+We <strong>very strongly suggest</strong> using Amazon’s Classic Load Balancer with SEP. The
+configuration of Application Load Balancers (ALB) is a very complex, advanced
+configuration and is highly dependent upon the particulars of your environment.
+
+
+</div>
       <h2 id="best-practice-use-a-single-availability-zone-inside-your-existing-vpc">
         
         
@@ -695,14 +706,14 @@ and comes with potential downsides:</p>
 SEP VPC does not match or overlap with your existing VPC’s CIDR.
 VPCs with overlapping CIDRs cannot create peering connections.</p>
 
-<p>The following are required when using internet-facing ALBs:</p>
+<p>The following are required when using internet-facing load balancers:</p>
 
 <ul>
   <li>Subnets tagged with kubernetes.io/cluster/cluster-name → shared</li>
   <li>Subnets tagged with kubernetes.io/role/elb → 1</li>
 </ul>
 
-<p>The following is required when using ALBs that are not internet-facing:</p>
+<p>The following is required when using load balancers that are not internet-facing:</p>
 
 <ul>
   <li>kubernetes.io/role/internal-elb → 1</li>
@@ -745,10 +756,10 @@ specify its version in the command:</p>
 <span class="nv">$ </span>helm upgrade external-dns bitnami/external-dns <span class="nt">--namespace</span> kube-system <span class="nt">--install</span> <span class="nt">--version</span> &lt;X.Y.Z&gt; <span class="se">\</span>
   <span class="nt">--values</span> external-dns.yaml
 </code></pre></div></div>
-      <h2 id="best-practice-configure-ingress-access-for-sep-and-ranger-through-a-controller">
+      <h2 id="best-practice-configure-ingress-access-for-sep-and-services-through-a-controller">
         
         
-          Best practice: Configure ingress access for SEP and Ranger through a controller <a href="#best-practice-configure-ingress-access-for-sep-and-ranger-through-a-controller" class="titleAnchor">#</a>
+          Best practice: Configure ingress access for SEP and services through a controller <a href="#best-practice-configure-ingress-access-for-sep-and-services-through-a-controller" class="titleAnchor">#</a>
         
         
       </h2>
@@ -756,19 +767,16 @@ specify its version in the command:</p>
 
 <p>Accessing your SEP cluster from external clients requires access
 to the coordinator and Ranger pods within the K8s cluster. This can be handled
-either through an AWS layer 7 <a href="https://docs.aws.amazon.com/eks/latest/userguide/alb-ingress.html">load balancer (ALB) ingress
-controller</a>,
+either through an <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/classic/elb-security-groups.html">AWS classic load balancer</a>,
 or by deploying an Nginx ingress controller behind a classic layer 4 load
 balancer.</p>
 
 <p>There are technical considerations for either approach:</p>
 
 <ul>
-  <li>Using an ALB ingress controller
+  <li>Using an AWS classic load balancer
     <ul>
-      <li>TLS termination is taken care of in the load balancer.</li>
-      <li>Easy to integrate AWS Certificate Manager for publicly-signed
-certificates.</li>
+      <li>TLS termination is taken care of externally from the load balancer.</li>
       <li>A separate load balancer resource is be created for each service
 (Starburst, Ranger, etc.)</li>
     </ul>
@@ -814,9 +822,9 @@ Ranger configuration if your organization does not use it:</p>
 <span class="na">metadata</span><span class="pi">:</span>
   <span class="na">name</span><span class="pi">:</span> <span class="s">starburst</span>
   <span class="na">annotations</span><span class="pi">:</span>
-    <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">alb</span>
+    <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">elb   &lt;----   FIX</span><span class="pi">:</span> <span class="s">What is the proper value here for classic load balancers? :FIX</span>
     <span class="s">alb.ingress.kubernetes.io/group.name</span><span class="pi">:</span> <span class="s">sep</span>
-    <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">internet-facing</span>
+    <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">internet-facing     &lt;----   FIX</span><span class="pi">:</span> <span class="s">What is the proper value here for non-internet-facing? :FIX</span>
     <span class="s">alb.ingress.kubernetes.io/listen-ports</span><span class="pi">:</span> <span class="s1">'</span><span class="s">[{"HTTP":</span><span class="nv"> </span><span class="s">80},{"HTTPS":</span><span class="nv"> </span><span class="s">443}]'</span>
     <span class="s">alb.ingress.kubernetes.io/ssl-redirect</span><span class="pi">:</span> <span class="s1">'</span><span class="s">443'</span>
     <span class="s">alb.ingress.kubernetes.io/success-codes</span><span class="pi">:</span> <span class="s">200,303</span>
@@ -844,9 +852,9 @@ Ranger configuration if your organization does not use it:</p>
 <span class="na">metadata</span><span class="pi">:</span>
   <span class="na">name</span><span class="pi">:</span> <span class="s">ranger</span>
   <span class="na">annotations</span><span class="pi">:</span>
-    <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">alb</span>
+    <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">elb   &lt;----   FIX</span><span class="pi">:</span> <span class="s">What is the proper value here for classic load balancers? :FIX</span>
     <span class="s">alb.ingress.kubernetes.io/group.name</span><span class="pi">:</span> <span class="s">sep</span>
-    <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">internet-facing</span>
+    <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">internet-facing     &lt;----   FIX</span><span class="pi">:</span> <span class="s">What is the proper value here for non-internet-facing? :FIX</span>
     <span class="s">alb.ingress.kubernetes.io/listen-ports</span><span class="pi">:</span> <span class="s1">'</span><span class="s">[{"HTTP":</span><span class="nv"> </span><span class="s">80},{"HTTPS":</span><span class="nv"> </span><span class="s">443}]'</span>
     <span class="s">alb.ingress.kubernetes.io/ssl-redirect</span><span class="pi">:</span> <span class="s1">'</span><span class="s">443'</span>
     <span class="s">alb.ingress.kubernetes.io/success-codes</span><span class="pi">:</span> <span class="s">200,302</span>
@@ -870,102 +878,41 @@ Ranger configuration if your organization does not use it:</p>
 
 </code></pre></div></div>
 
-<p>The following are important to remember as you modify the preceding example
-with the particulars of your organization:</p>
-
-<ul>
-  <li><strong>alb.ingress.kubernetes.io/certificate-arn</strong> - If AWS ACM contains multiple
-certificates matching the hostname, specify certificate ARN explicitly,
-otherwise you can remove this annotation.</li>
-  <li><strong>alb.ingress.kubernetes.io/group.name</strong> - SEP forces the ALB
-controller to combine multiple Kubernetes ingress resources into a single ALB
-on AWS, reducing costs.</li>
-  <li><strong>alb.ingress.kubernetes.io/success-code</strong> - Contains HTTP response codes of
-the root (/) resource that are used by target group health checks. By default
-they accept only 200, but SEP responds with 303, and Ranger with 302.</li>
-  <li><strong>alb.ingress.kubernetes.io/listen-ports</strong> - Ensures that ALB listens on both
-HTTP and HTTPS ports</li>
-  <li><strong>alb.ingress.kubernetes.io/ssl-redirect</strong> - Redirects from HTTP to HTTPS</li>
-</ul>
-
 <p>Once all changes to <code class="language-plaintext highlighter-rouge">ingress.yaml</code> are made, apply the customizations using the
 following command in the namespace that contains SEP:</p>
 
 <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> ingress.yaml
 </code></pre></div></div>
-
-<p>You must wait until the ALB status changes from <code class="language-plaintext highlighter-rouge">Provisioning</code> to <code class="language-plaintext highlighter-rouge">Ready</code> before
-the networking behaves as expected with the configuration changes.</p>
-      <h3 id="using-an-aws-load-balancer-controller">
+      <h3 id="using-an-aws-classic-load-balancer">
         
         
-          Using an AWS load balancer controller <a href="#using-an-aws-load-balancer-controller" class="titleAnchor">#</a>
+          Using an AWS classic load balancer <a href="#using-an-aws-classic-load-balancer" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>The <a href="https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html">AWS
+<p>The <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/create-standard-load-balancer.html">AWS
 documentation</a>
-provides complete instructions for installing the ALB ingress controller on your
-EKS cluster. The following example commands provide an overview of the process
-to install ALB controller that automatically discovers ingress resources and
-propagates them to AWS ALB and target groups.</p>
+provides complete instructions for creating a classic load balancer on your EKS
+cluster’s VPC.</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm repo add eks https://aws.github.io/eks-charts
-<span class="nv">$ </span>helm repo update
-<span class="nv">$helm</span> upgrade <span class="nt">-i</span> aws-load-balancer-controller eks/aws-load-balancer-controller <span class="nt">-n</span> kube-system <span class="se">\</span>
-  <span class="nt">--set</span> <span class="nv">clusterName</span><span class="o">=</span>&lt;cluster-name&gt;
-</code></pre></div></div>
-
-<p>Once the ALB controller is installed, you must define ingress in your
-SEP chart:</p>
+<p>Once your load balancer is created, you must define it in your
+SEP chart as shown below, with TLS enabled:</p>
 
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">expose</span><span class="pi">:</span>
-  <span class="na">type</span><span class="pi">:</span> <span class="s2">"</span><span class="s">ingress"</span>
-  <span class="na">ingress</span><span class="pi">:</span>
-    <span class="na">ingressName</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst-ingress"</span>
-    <span class="na">serviceName</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst"</span>
-    <span class="na">servicePort</span><span class="pi">:</span> <span class="m">8080</span>
-    <span class="na">tls</span><span class="pi">:</span>
-      <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
-    <span class="na">host</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst.example.com"</span>
-    <span class="na">path</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/*"</span>
+  <span class="na">type</span><span class="pi">:</span> <span class="s2">"</span><span class="s">loadBalancer"</span>
+  <span class="na">loadBalancer</span><span class="pi">:</span>
+    <span class="na">name</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst"</span>
+    <span class="na">IP</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="na">https</span><span class="pi">:</span>
+        <span class="na">port</span><span class="pi">:</span> <span class="m">8443</span>
+      <span class="na">http</span><span class="pi">:</span> <span class="no">null</span>
     <span class="na">annotations</span><span class="pi">:</span>
-      <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">alb</span>
-      <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">interal</span>
-      <span class="s">alb.ingress.kubernetes.io/target-type</span><span class="pi">:</span> <span class="s">ip</span>
+      <span class="s">service.beta.kubernetes.io/aws-load-balancer-internal</span><span class="pi">:</span> <span class="s2">"</span><span class="s">true"</span>
+    <span class="na">sourceRanges</span><span class="pi">:</span> <span class="pi">[]</span>
 </code></pre></div></div>
-
-<p>With the defined host, the ingress controller automatically associates
-certificates in ACM with a matching Subject Alternative Name or with a wildcard
-such as “*.example.com” with this load balancer.</p>
-
-<p>By default, the controller creates an ALB, configures it with TLS certificate
-stored in the AWS Certificate Manager (private key is not exposed to
-Kubernetes), and terminate TLS at ALB.</p>
-
-<p>Target groups are configured to send traffic to ports on Kubernetes worker
-nodes. A NodePort service type must be configured in Kubernetes to expose
-specific ports across all nodes.</p>
-
-<p>The following traffic flows apply when using “ingress” as the <code class="language-plaintext highlighter-rouge">expose:</code> type:</p>
-
-<ul>
-  <li>Kubernetes pod: Runs the workload and listens on a port</li>
-  <li>kube-proxy: Listens on NodePort, proxies traffic to the pods in cluster</li>
-  <li>Target Groups: Discover EKS worker nodes, run health checks</li>
-  <li>ALB: Terminates TLS, performs HTTP routing</li>
-  <li>Route 53 A record: Points to ALB endpoints in public subnets</li>
-</ul>
-
-<div class="alert alert-warning" role="alert">
-  <i class="fa fa-exclamation-triangle"></i> <b>Caution:</b>
-
-  When using ingress, you must specify the TLS
-certificate as a Kubernetes secret if TLS is enabled.
-
-</div>
       <h3 id="using-nginx">
         
         
@@ -1050,6 +997,117 @@ following YAML block:</p>
 <p>All inbound HTTPS traffic to <code class="language-plaintext highlighter-rouge">starburst.example.com</code> is now directed to
 the SEP coordinator. A similar configuration is applied in the
 Starburst Ranger Helm with <code class="language-plaintext highlighter-rouge">ranger.example.com</code> as the host.</p>
+      <h2 id="advanced-networking-using-albs-with-sep">
+        
+        
+          Advanced networking: Using ALBs with SEP <a href="#advanced-networking-using-albs-with-sep" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>After you have your cluster up and running, you may wish to switch to using an
+AWS Application Load Balancer (ALB). ALBs are inherently complicated and
+configuration is very dependent upon the particulars of your environment. When
+using an ALB ingress controller:</p>
+
+<ul>
+  <li>TLS termination is taken care of in the load balancer.</li>
+  <li>Easy to integrate AWS Certificate Manager for publicly-signed
+certificates.</li>
+  <li>A separate load balancer resource must be created for each service
+(Starburst, Ranger, etc.)</li>
+</ul>
+
+<p>In addition to setting <code class="language-plaintext highlighter-rouge">kubernetes.io/ingress.class: alb</code>, the following are
+important considerations to remember as you modify cluster’s <code class="language-plaintext highlighter-rouge">ingress.yaml</code>
+file:</p>
+
+<ul>
+  <li><strong>alb.ingress.kubernetes.io/certificate-arn</strong> - If AWS ACM contains multiple
+certificates matching the hostname, specify certificate ARN explicitly,
+otherwise you can remove this annotation.</li>
+  <li><strong>alb.ingress.kubernetes.io/group.name</strong> - SEP forces the ALB
+controller to combine multiple Kubernetes ingress resources into a single ALB
+on AWS, reducing costs.</li>
+  <li><strong>alb.ingress.kubernetes.io/success-code</strong> - Contains HTTP response codes of
+the root (/) resource that are used by target group health checks. By default
+they accept only 200, but SEP responds with 303, and Ranger with 302.</li>
+  <li><strong>alb.ingress.kubernetes.io/listen-ports</strong> - Ensures that ALB listens on both
+HTTP and HTTPS ports</li>
+  <li><strong>alb.ingress.kubernetes.io/ssl-redirect</strong> - Redirects from HTTP to HTTPS</li>
+</ul>
+
+<p>Once all changes to <code class="language-plaintext highlighter-rouge">ingress.yaml</code> are made, apply the customizations using the
+following command in the namespace that contains SEP:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl apply <span class="nt">-f</span> ingress.yaml
+</code></pre></div></div>
+
+<p>You must wait until the ALB status changes from <code class="language-plaintext highlighter-rouge">Provisioning</code> to <code class="language-plaintext highlighter-rouge">Ready</code> before
+the networking behaves as expected with the configuration changes.</p>
+
+<p>The <a href="https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html">AWS
+documentation</a>
+provides complete instructions for installing the ALB ingress controller on your
+EKS cluster. The following example commands provide an overview of the process
+to install ALB controller that automatically discovers ingress resources and
+propagates them to AWS ALB and target groups.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm repo add eks https://aws.github.io/eks-charts
+<span class="nv">$ </span>helm repo update
+<span class="nv">$helm</span> upgrade <span class="nt">-i</span> aws-load-balancer-controller eks/aws-load-balancer-controller <span class="nt">-n</span> kube-system <span class="se">\</span>
+  <span class="nt">--set</span> <span class="nv">clusterName</span><span class="o">=</span>&lt;cluster-name&gt;
+</code></pre></div></div>
+
+<p>Once the ALB controller is installed, you must define ingress in your
+SEP chart:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">expose</span><span class="pi">:</span>
+  <span class="na">type</span><span class="pi">:</span> <span class="s2">"</span><span class="s">ingress"</span>
+  <span class="na">ingress</span><span class="pi">:</span>
+    <span class="na">ingressName</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst-ingress"</span>
+    <span class="na">serviceName</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst"</span>
+    <span class="na">servicePort</span><span class="pi">:</span> <span class="m">8080</span>
+    <span class="na">tls</span><span class="pi">:</span>
+      <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="na">host</span><span class="pi">:</span> <span class="s2">"</span><span class="s">starburst.example.com"</span>
+    <span class="na">path</span><span class="pi">:</span> <span class="s2">"</span><span class="s">/*"</span>
+    <span class="na">annotations</span><span class="pi">:</span>
+      <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">alb</span>
+      <span class="s">alb.ingress.kubernetes.io/scheme</span><span class="pi">:</span> <span class="s">interal</span>
+      <span class="s">alb.ingress.kubernetes.io/target-type</span><span class="pi">:</span> <span class="s">ip</span>
+</code></pre></div></div>
+
+<p>With the defined host, the ingress controller automatically associates
+certificates in ACM with a matching Subject Alternative Name or with a wildcard
+such as “*.example.com” with this load balancer.</p>
+
+<p>By default, the controller creates an ALB, configures it with TLS certificate
+stored in the AWS Certificate Manager (private key is not exposed to
+Kubernetes), and terminate TLS at ALB.</p>
+
+<p>Target groups are configured to send traffic to ports on Kubernetes worker
+nodes. A NodePort service type must be configured in Kubernetes to expose
+specific ports across all nodes.</p>
+
+<p>The following traffic flows apply when using “ingress” as the <code class="language-plaintext highlighter-rouge">expose:</code> type:</p>
+
+<ul>
+  <li>Kubernetes pod: Runs the workload and listens on a port</li>
+  <li>kube-proxy: Listens on NodePort, proxies traffic to the pods in cluster</li>
+  <li>Target Groups: Discover EKS worker nodes, run health checks</li>
+  <li>ALB: Terminates TLS, performs HTTP routing</li>
+  <li>Route 53 A record: Points to ALB endpoints in public subnets</li>
+</ul>
+
+<div class="alert alert-warning" role="alert">
+  <i class="fa fa-exclamation-triangle"></i> <b>Caution:</b>
+
+  When using ingress, you must specify the TLS
+certificate as a Kubernetes secret if TLS is enabled.
+
+</div>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -1154,7 +1212,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#aws-eks-networking">AWS EKS networking</a><ul><li><a href="#best-practice-use-a-single-availability-zone-inside-your-existing-vpc">Best practice: Use a single availability zone inside your existing VPC</a><ul><li><a href="#ip-address-requirements">IP address requirements</a></li><li><a href="#using-subnets">Using subnets</a></li><li><a href="#considerations-if-you-must-use-vpc-peering">Considerations if you must use VPC peering</a></li></ul></li><li><a href="#configure-dns">Configure DNS</a></li><li><a href="#best-practice-configure-ingress-access-for-sep-and-ranger-through-a-controller">Best practice: Configure ingress access for SEP and Ranger through a controller</a><ul><li><a href="#configure-ingressyaml">Configure <code class="language-plaintext highlighter-rouge">ingress.yaml</code></a></li><li><a href="#using-an-aws-load-balancer-controller">Using an AWS load balancer controller</a></li><li><a href="#using-nginx">Using Nginx</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#aws-eks-networking">AWS EKS networking</a><ul><li><a href="#best-practice-use-a-single-availability-zone-inside-your-existing-vpc">Best practice: Use a single availability zone inside your existing VPC</a><ul><li><a href="#ip-address-requirements">IP address requirements</a></li><li><a href="#using-subnets">Using subnets</a></li><li><a href="#considerations-if-you-must-use-vpc-peering">Considerations if you must use VPC peering</a></li></ul></li><li><a href="#configure-dns">Configure DNS</a></li><li><a href="#best-practice-configure-ingress-access-for-sep-and-services-through-a-controller">Best practice: Configure ingress access for SEP and services through a controller</a><ul><li><a href="#configure-ingressyaml">Configure <code class="language-plaintext highlighter-rouge">ingress.yaml</code></a></li><li><a href="#using-an-aws-classic-load-balancer">Using an AWS classic load balancer</a></li><li><a href="#using-nginx">Using Nginx</a></li></ul></li><li><a href="#advanced-networking-using-albs-with-sep">Advanced networking: Using ALBs with SEP</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
