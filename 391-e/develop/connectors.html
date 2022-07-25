@@ -344,6 +344,10 @@
         <li class="md-nav__item"><a href="#connectorsplitmanager" class="md-nav__link">ConnectorSplitManager</a>
         </li>
         <li class="md-nav__item"><a href="#connectorrecordsetprovider" class="md-nav__link">ConnectorRecordSetProvider</a>
+        </li>
+        <li class="md-nav__item"><a href="#connectorpagesourceprovider" class="md-nav__link">ConnectorPageSourceProvider</a>
+        </li>
+        <li class="md-nav__item"><a href="#connectorpagesinkprovider" class="md-nav__link">ConnectorPageSinkProvider</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -496,6 +500,10 @@
         <li class="md-nav__item"><a href="#connectorsplitmanager" class="md-nav__link">ConnectorSplitManager</a>
         </li>
         <li class="md-nav__item"><a href="#connectorrecordsetprovider" class="md-nav__link">ConnectorRecordSetProvider</a>
+        </li>
+        <li class="md-nav__item"><a href="#connectorpagesourceprovider" class="md-nav__link">ConnectorPageSourceProvider</a>
+        </li>
+        <li class="md-nav__item"><a href="#connectorpagesinkprovider" class="md-nav__link">ConnectorPageSinkProvider</a>
         </li></ul>
             </nav>
         </li></ul>
@@ -520,31 +528,73 @@ queries against this data.</p>
 <h2 id="connectorfactory">ConnectorFactory<a class="headerlink" href="#connectorfactory" title="Permalink to this headline">#</a></h2>
 <p>Instances of your connector are created by a <code class="docutils literal notranslate"><span class="pre">ConnectorFactory</span></code>
 instance which is created when Trino calls <code class="docutils literal notranslate"><span class="pre">getConnectorFactory()</span></code> on the
-plugin. The connector factory is a simple interface responsible for creating an
-instance of a <code class="docutils literal notranslate"><span class="pre">Connector</span></code> object that returns instances of the
-following services:</p>
+plugin. The connector factory is a simple interface responsible for providing
+the connector name and creating an instance of a <code class="docutils literal notranslate"><span class="pre">Connector</span></code> object.
+A basic connector implementation that only supports reading, but
+not writing data, should return instances of the following services:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ConnectorSplitManager</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ConnectorRecordSetProvider</span></code></p></li>
+<li><p><a class="reference internal" href="#connector-metadata"><span class="std std-ref">ConnectorMetadata</span></a></p></li>
+<li><p><a class="reference internal" href="#connector-split-manager"><span class="std std-ref">ConnectorSplitManager</span></a></p></li>
+<li><p><a class="reference internal" href="#connector-record-set-provider"><span class="std std-ref">ConnectorRecordSetProvider</span></a> or <a class="reference internal" href="#connector-page-source-provider"><span class="std std-ref">ConnectorPageSourceProvider</span></a></p></li>
 </ul>
 
-<h3 id="connectormetadata">ConnectorMetadata<a class="headerlink" href="#connectormetadata" title="Permalink to this headline">#</a></h3>
-<p>The connector metadata interface has a large number of important
-methods that are responsible for allowing Trino to look at lists of
-schemas, lists of tables, lists of columns, and other metadata about a
-particular data source.</p>
-<p>This interface is too big to list in this documentation, but if you
-are interested in seeing strategies for implementing these methods,
-look at the <a class="reference internal" href="example-http.html"><span class="doc">Example HTTP connector</span></a> and the Cassandra connector. If
-your underlying data source supports schemas, tables and columns, this
-interface should be straightforward to implement. If you are attempting
-to adapt something that is not a relational database (as the Example HTTP
-connector does), you may need to get creative about how you map your
-data source to Trino’s schema, table, and column concepts.</p>
+<span id="connector-metadata"></span><h3 id="connectormetadata">ConnectorMetadata<a class="headerlink" href="#connectormetadata" title="Permalink to this headline">#</a></h3>
+<p>The connector metadata interface allows Trino to get a lists of schemas,
+tables, columns, and other metadata about a particular data source.</p>
+<p>A basic read-only connector should implement the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">listSchemaNames</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">listTables</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">streamTableColumns</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getTableHandle</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getTableMetadata</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getColumnHandles</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">getColumnMetadata</span></code></p></li>
+</ul>
+<p>If you are interested in seeing strategies for implementing more methods,
+look at the <a class="reference internal" href="example-http.html"><span class="doc">Example HTTP connector</span></a> and the Cassandra connector. If your underlying
+data source supports schemas, tables and columns, this interface should be
+straightforward to implement. If you are attempting to adapt something that
+is not a relational database (as the Example HTTP connector does), you may
+need to get creative about how you map your data source to Trino’s schema,
+table, and column concepts.</p>
+<p>The connector metadata interface allows to also implement other connector
+features, like:</p>
+<ul class="simple">
+<li><p>Schema management, that is creating, altering and dropping schemas, tables,
+table columns, views, and materialized views.</p></li>
+<li><p>Support for table and column comments, and properties.</p></li>
+<li><p>Schema, table and view authorization.</p></li>
+<li><p>Executing <a class="reference internal" href="table-functions.html"><span class="doc">Table functions</span></a>.</p></li>
+<li><p>Providing table statistics used by the CBO and collecting statistics
+during writes and when analyzing selected tables.</p></li>
+<li><p>Data modification, that is:</p>
+<ul>
+<li><p>inserting, updating, and deleting rows in tables,</p></li>
+<li><p>refreshing materialized views,</p></li>
+<li><p>truncating whole tables,</p></li>
+<li><p>and creating tables from query results.</p></li>
+</ul>
+</li>
+<li><p>Role and grant management.</p></li>
+<li><p>Pushing down:</p>
+<ul>
+<li><p>Limit</p></li>
+<li><p>Predicates</p></li>
+<li><p>Projections</p></li>
+<li><p>Sampling</p></li>
+<li><p>Aggregations</p></li>
+<li><p>Joins</p></li>
+<li><p>Top N - limit with sort items</p></li>
+<li><p>Table function invocation</p></li>
+</ul>
+</li>
+</ul>
+<p>Note that data modification also requires implementing
+a <a class="reference internal" href="#connector-page-sink-provider"><span class="std std-ref">ConnectorPageSinkProvider</span></a>.</p>
 
 
-<h3 id="connectorsplitmanager">ConnectorSplitManager<a class="headerlink" href="#connectorsplitmanager" title="Permalink to this headline">#</a></h3>
+<span id="connector-split-manager"></span><h3 id="connectorsplitmanager">ConnectorSplitManager<a class="headerlink" href="#connectorsplitmanager" title="Permalink to this headline">#</a></h3>
 <p>The split manager partitions the data for a table into the individual
 chunks that Trino will distribute to workers for processing.
 For example, the Hive connector lists the files for each Hive
@@ -554,11 +604,56 @@ here is to simply return a single split for the entire table. This
 is the strategy employed by the Example HTTP connector.</p>
 
 
-<h3 id="connectorrecordsetprovider">ConnectorRecordSetProvider<a class="headerlink" href="#connectorrecordsetprovider" title="Permalink to this headline">#</a></h3>
+<span id="connector-record-set-provider"></span><h3 id="connectorrecordsetprovider">ConnectorRecordSetProvider<a class="headerlink" href="#connectorrecordsetprovider" title="Permalink to this headline">#</a></h3>
 <p>Given a split and a list of columns, the record set provider is
 responsible for delivering data to the Trino execution engine.
 It creates a <code class="docutils literal notranslate"><span class="pre">RecordSet</span></code>, which in turn creates a <code class="docutils literal notranslate"><span class="pre">RecordCursor</span></code>
 that is used by Trino to read the column values for each row.</p>
+
+
+<span id="connector-page-source-provider"></span><h3 id="connectorpagesourceprovider">ConnectorPageSourceProvider<a class="headerlink" href="#connectorpagesourceprovider" title="Permalink to this headline">#</a></h3>
+<p>Given a split and a list of columns, the page source provider is
+responsible for delivering data to the Trino execution engine.
+It creates a <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, which in turn creates <code class="docutils literal notranslate"><span class="pre">Page</span></code> objects
+that are used by Trino to read the column values.</p>
+<p>If not implemented, a default <code class="docutils literal notranslate"><span class="pre">RecordPageSourceProvider</span></code> will be used.
+Given a record set provider, it returns an instance of <code class="docutils literal notranslate"><span class="pre">RecordPageSource</span></code>
+that builds <code class="docutils literal notranslate"><span class="pre">Page</span></code> objects from records in a record set.</p>
+<p>A connector should implement a page source provider instead of a record set
+provider when it’s possible to create pages directly. The conversion of individual
+records from a record set provider into pages adds overheads during query execution.</p>
+<p>To add support for updating and/or deleting rows in a connector, it needs
+to implement a <code class="docutils literal notranslate"><span class="pre">ConnectorPageSourceProvider</span></code> that returns
+an <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>. See <a class="reference internal" href="delete-and-update.html"><span class="doc">Supporting DELETE and UPDATE</span></a> for more.</p>
+
+
+<span id="connector-page-sink-provider"></span><h3 id="connectorpagesinkprovider">ConnectorPageSinkProvider<a class="headerlink" href="#connectorpagesinkprovider" title="Permalink to this headline">#</a></h3>
+<p>Given an insert table handle, the page sink provider is responsible for
+consuming data from the Trino execution engine.
+It creates a <code class="docutils literal notranslate"><span class="pre">ConnectorPageSink</span></code>, which in turn accepts <code class="docutils literal notranslate"><span class="pre">Page</span></code> objects
+that contains the column values.</p>
+<p>Example that shows how to iterate over the page to access single values:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">CompletableFuture</span><span class="o">&lt;?&gt;</span> <span class="n">appendPage</span><span class="p">(</span><span class="n">Page</span> <span class="n">page</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">channel</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">channel</span> <span class="o">&lt;</span> <span class="n">page</span><span class="p">.</span><span class="na">getChannelCount</span><span class="p">();</span> <span class="n">channel</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">Block</span> <span class="n">block</span> <span class="o">=</span> <span class="n">page</span><span class="p">.</span><span class="na">getBlock</span><span class="p">(</span><span class="n">channel</span><span class="p">);</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">position</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">position</span> <span class="o">&lt;</span> <span class="n">page</span><span class="p">.</span><span class="na">getPositionCount</span><span class="p">();</span> <span class="n">position</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">block</span><span class="p">.</span><span class="na">isNull</span><span class="p">(</span><span class="n">position</span><span class="p">))</span> <span class="p">{</span>
+                <span class="c1">// or handle this differently</span>
+                <span class="k">continue</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="c1">// channel should match the column number in the table</span>
+            <span class="c1">// use it to determine the expected column type</span>
+            <span class="n">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">VARCHAR</span><span class="p">.</span><span class="na">getSlice</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">position</span><span class="p">).</span><span class="na">toStringUtf8</span><span class="p">();</span>
+            <span class="c1">// TODO do something with the value</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">NOT_BLOCKED</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 
 
 

@@ -344,6 +344,8 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#security-oauth2--page-root" class="md-nav__link">OAuth 2.0 authentication</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#openid-connect-discovery" class="md-nav__link">OpenID Connect Discovery</a>
+        </li>
         <li class="md-nav__item"><a href="#trino-server-configuration" class="md-nav__link">Trino server configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#refresh-tokens" class="md-nav__link">Refresh tokens</a>
@@ -669,6 +671,8 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#security-oauth2--page-root" class="md-nav__link">OAuth 2.0 authentication</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#openid-connect-discovery" class="md-nav__link">OpenID Connect Discovery</a>
+        </li>
         <li class="md-nav__item"><a href="#trino-server-configuration" class="md-nav__link">Trino server configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#refresh-tokens" class="md-nav__link">Refresh tokens</a>
@@ -704,9 +708,35 @@ steps:</p>
 the Trino coordinator. No changes are required to the worker configuration;
 only the communication from the clients to the coordinator is authenticated.</p>
 <p>Set the callback/redirect URL to <code class="docutils literal notranslate"><span class="pre">https://&lt;trino-coordinator-domain-name&gt;/oauth2/callback</span></code>,
-when configuring an OAuth 2.0 authorization server like an OpenID-connect
+when configuring an OAuth 2.0 authorization server like an OpenID Connect (OIDC)
 provider.</p>
 <p>Using <a class="reference internal" href="tls.html"><span class="doc">TLS</span></a> and <a class="reference internal" href="internal-communication.html"><span class="doc">a configured shared secret</span></a> is required for OAuth 2.0 authentication.</p>
+
+<h2 id="openid-connect-discovery">OpenID Connect Discovery<a class="headerlink" href="#openid-connect-discovery" title="Permalink to this headline">#</a></h2>
+<p>Trino supports reading Authorization Server configuration from <a class="reference external" href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata">OIDC provider
+configuration metadata document</a>.
+During startup of the coordinator Trino retrieves the document and uses provided
+values to set corresponding OAuth2 authentication configuration properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">authorization_endpoint</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">token_endpoint</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jwks_uri</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> -&gt;  <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.userinfo-url</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">access_token_issuer</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.access-token-issuer</span></code></p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In situation when Authorization Server is issuing JSON Web Tokens (JWTs) but the
+metadata document contains <code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> Trino will use this endpoint to
+check the validity of OAuth2 access tokens. This is unnecessary as JWTs can be
+inspected locally and using them against <code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> may even result
+in authentication failure. In this case set:
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.oidc.use-userinfo-endpoint=false</span></code> which
+instructs Trino to ignore <code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> and inspect tokens locally.</p>
+</div>
+<p>This functionality is enabled by default but can be turned off with:
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.oidc.discovery=false</span></code>.</p>
+
 
 <h2 id="trino-server-configuration">Trino server configuration<a class="headerlink" href="#trino-server-configuration" title="Permalink to this headline">#</a></h2>
 <p>Using the OAuth2 authentication requires the Trino coordinator to be secured
@@ -719,9 +749,6 @@ to the coordinator’s <code class="docutils literal notranslate"><span class="p
 <span class="na">http-server.https.enabled</span><span class="o">=</span><span class="s">true</span>
 
 <span class="na">http-server.authentication.oauth2.issuer</span><span class="o">=</span><span class="s">https://authorization-server.com</span>
-<span class="na">http-server.authentication.oauth2.auth-url</span><span class="o">=</span><span class="s">https://authorization-server.com/authorize</span>
-<span class="na">http-server.authentication.oauth2.token-url</span><span class="o">=</span><span class="s">https://authorization-server.com/token</span>
-<span class="na">http-server.authentication.oauth2.jwks-url</span><span class="o">=</span><span class="s">https://authorization-server.com/.well-known/jwks.json</span>
 <span class="na">http-server.authentication.oauth2.client-id</span><span class="o">=</span><span class="s">CLIENT_ID</span>
 <span class="na">http-server.authentication.oauth2.client-secret</span><span class="o">=</span><span class="s">CLIENT_SECRET</span>
 </pre></div>
@@ -752,26 +779,36 @@ OAuth2 authentication for the Trino coordinator.</p></td>
 <td><p>The issuer URL of the IdP. All issued tokens must have this in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> field.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.access-token-issuer</span></code></p></td>
-<td><p>The issuer URL of the IdP for access tokens, if different. All issued access tokens must
-have this in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> field. Defaults to <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code>.</p></td>
+<td><p>The issuer URL of the IdP for access tokens, if different.
+All issued access tokens must have this in the <code class="docutils literal notranslate"><span class="pre">iss</span></code> field.
+Providing this value while OIDC discovery is enabled overrides the value
+from the OpenID provider metadata document.
+Defaults to the value of <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.issuer</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.auth-url</span></code></p></td>
 <td><p>The authorization URL. The URL a user’s browser will be redirected to in
-order to begin the OAuth 2.0 authorization process.</p></td>
+order to begin the OAuth 2.0 authorization process. Providing this value
+while OIDC discovery is enabled overrides the value from the OpenID
+provider metadata document.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.token-url</span></code></p></td>
 <td><p>The URL of the endpoint on the authorization server which Trino uses to
-obtain an access token.</p></td>
+obtain an access token. Providing this value while OIDC discovery is
+enabled overrides the value from the OpenID provider metadata document.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.jwks-url</span></code></p></td>
 <td><p>The URL of the JSON Web Key Set (JWKS) endpoint on the authorization
 server. It provides Trino the set of keys containing the public key
-to verify any JSON Web Token (JWT) from the authorization server.</p></td>
+to verify any JSON Web Token (JWT) from the authorization server.
+Providing this value while OIDC discovery is enabled overrides the value
+from the OpenID provider metadata document.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.userinfo-url</span></code></p></td>
-<td><p>The URL of the IdPs <code class="docutils literal notranslate"><span class="pre">/userinfo</span></code> endpoint. If supplied then this URL is used
-to validate the OAuth access token and retrieve any associated claims. This
-is required if the IdP issues opaque tokens.</p></td>
+<td><p>The URL of the IdPs <code class="docutils literal notranslate"><span class="pre">/userinfo</span></code> endpoint. If supplied then this URL is
+used to validate the OAuth access token and retrieve any associated
+claims. This is required if the IdP issues opaque tokens. Providing this
+value while OIDC discovery is enabled overrides the value from the OpenID
+provider metadata document.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.client-id</span></code></p></td>
 <td><p>The public identifier of the Trino client.</p></td>
@@ -811,6 +848,21 @@ for more information.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.groups-field</span></code></p></td>
 <td><p>The field of the access token used for Trino groups. The corresponding claim value must be an array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.oidc.discovery</span></code></p></td>
+<td><p>Enable reading the <a class="reference external" href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata">OIDC provider metadata</a>.
+Default is <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.oidc.discovery.timeout</span></code></p></td>
+<td><p>The timeout when reading OpenID provider metadata. Default is <code class="docutils literal notranslate"><span class="pre">30s</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.oidc.use-userinfo-endpoint</span></code></p></td>
+<td><p>Use the value of <code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> <a class="reference external" href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata">in the provider metadata</a>.
+When a <code class="docutils literal notranslate"><span class="pre">userinfo_endpoint</span></code> value is supplied this URL is used to
+validate the OAuth 2.0 access token, and retrieve any associated claims.
+This flag allows ignoring the value provided in the metadata document.
+Required for JWT access tokens which support local validation. Default is
+<code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
