@@ -630,10 +630,11 @@ list of JVM options.</p>
 
 <span id="id4"></span><h3 id="config-properties">Config properties<a class="headerlink" href="#config-properties" title="Permalink to this headline">#</a></h3>
 <p>The config properties file, <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>, contains the
-configuration for the Trino server. Every Trino server can function
-as both a coordinator and a worker, but dedicating a single machine
-to only perform coordination work provides the best performance on
-larger clusters.</p>
+configuration for the Trino server. Every Trino server can function as both a
+coordinator and a worker. A cluster is required to include one coordinator, and
+dedicating a machine to only perform coordination work provides the best
+performance on larger clusters. Scaling and parallelization is achieved by using
+many workers.</p>
 <p>The following is a minimal configuration for the coordinator:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>coordinator=true
 node-scheduler.include-coordinator=false
@@ -688,9 +689,16 @@ uses the same port. Replace <code class="docutils literal notranslate"><span cla
 port of the Trino coordinator. If you have disabled HTTP on the coordinator,
 the URI scheme must be <code class="docutils literal notranslate"><span class="pre">https</span></code>, not <code class="docutils literal notranslate"><span class="pre">http</span></code>.</p></li>
 </ul>
-<p>The above configuration properties are a minimal set to help you get started.
-Please see <a class="reference internal" href="../admin.html"><span class="doc">Administration</span></a> and <a class="reference internal" href="../security.html"><span class="doc">Security</span></a> for a more comprehensive list.
-In particular, see <a class="reference internal" href="../admin/resource-groups.html"><span class="doc">Resource groups</span></a> for configuring queuing policies.</p>
+<p>The above configuration properties are a <em>minimal set</em> to help you get started.
+All additional configuration is optional and varies widely based on the specific
+cluster and supported use cases. The <a class="reference internal" href="../admin.html"><span class="doc">Administration</span></a> and <a class="reference internal" href="../security.html"><span class="doc">Security</span></a> sections
+contain documentation for many aspects, including <a class="reference internal" href="../admin/resource-groups.html"><span class="doc">Resource groups</span></a>
+for configuring queuing policies and <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a>.</p>
+<p>The <a class="reference internal" href="../admin/properties.html"><span class="doc">Properties reference</span></a> provides a comprehensive list of the supported
+properties for topics such as <a class="reference internal" href="../admin/properties-general.html"><span class="doc">General properties</span></a>,
+<a class="reference internal" href="../admin/properties-resource-management.html"><span class="doc">Resource management properties</span></a>,
+<a class="reference internal" href="../admin/properties-query-management.html"><span class="doc">Query management properties</span></a>,
+<a class="reference internal" href="../admin/properties-web-interface.html"><span class="doc">Web UI properties</span></a>, and others.</p>
 
 
 <span id="id5"></span><h3 id="log-levels">Log levels<a class="headerlink" href="#log-levels" title="Permalink to this headline">#</a></h3>
@@ -728,8 +736,90 @@ contents to mount the <code class="docutils literal notranslate"><span class="pr
 
 
 <span id="id7"></span><h2 id="running-trino">Running Trino<a class="headerlink" href="#running-trino" title="Permalink to this headline">#</a></h2>
-<p>The installation directory contains the launcher script in <code class="docutils literal notranslate"><span class="pre">bin/launcher</span></code>.
-Trino can be started as a daemon by running the following:</p>
+<p>The installation provides a <code class="docutils literal notranslate"><span class="pre">bin/launcher</span></code> script, which requires Python in
+the <code class="docutils literal notranslate"><span class="pre">PATH</span></code>. The script can be used manually or as a daemon startup script. It
+accepts the following commands:</p>
+<table id="id8">
+<caption><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">launcher</span></code> commands</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 15%"/>
+<col style="width: 85%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command</p></th>
+<th class="head"><p>Action</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run</span></code></p></td>
+<td><p>Starts the server in the foreground and leaves it running. To shut down
+the server, use Ctrl+C in this terminal or the <code class="docutils literal notranslate"><span class="pre">stop</span></code> command from
+another terminal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">start</span></code></p></td>
+<td><p>Starts the server as a daemon and returns its process ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stop</span></code></p></td>
+<td><p>Shuts down a server started with either <code class="docutils literal notranslate"><span class="pre">start</span></code> or <code class="docutils literal notranslate"><span class="pre">run</span></code>. Sends the
+SIGTERM signal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">restart</span></code></p></td>
+<td><p>Stops then restarts a running server, or starts a stopped server,
+assigning a new process ID.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kill</span></code></p></td>
+<td><p>Shuts down a possibly hung server by sending the SIGKILL signal.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p>Prints a status line, either <em>Stopped pid</em> or <em>Running as pid</em>.</p></td>
+</tr>
+</tbody>
+</table>
+<p>A number of additional options allow you to specify configuration file and
+directory locations, as well as Java options. Run the launcher with <code class="docutils literal notranslate"><span class="pre">--help</span></code>
+to see the supported commands and command line options.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>--etc-dir=DIR             Defaults to INSTALL_PATH/etc
+--launcher-config=FILE    Defaults to INSTALL_PATH/bin/launcher.properties
+--node-config=FILE        Defaults to ETC_DIR/node.properties
+--jvm-config=FILE         Defaults to ETC_DIR/jvm.config
+--config=FILE             Defaults to ETC_DIR/config.properties
+--log-levels-file=FILE    Defaults to ETC_DIR/log.properties
+--data-dir=DIR            Defaults to INSTALL_PATH
+--pid-file=FILE           Defaults to DATA_DIR/var/run/launcher.pid
+--launcher-log-file=FILE  Defaults to DATA_DIR/var/log/launcher.log (only in
+                          daemon mode)
+--server-log-file=FILE    Defaults to DATA_DIR/var/log/server.log (only in
+                          daemon mode)
+-J OPT                    Set a JVM option
+-D NAME=VALUE             Set a Java system property
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">-v</span></code> or <code class="docutils literal notranslate"><span class="pre">--verbose</span></code> option for each command prepends the server’s
+current settings before the command’s usual output. For example, you can check
+the status and launcher configuration of a Trino installation in <code class="docutils literal notranslate"><span class="pre">/opt/trino</span></code>
+and get output similar to the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ cd /opt/trino
+$ bin/launcher -v status
+config_path     = /opt/trino/etc/config.properties
+data_dir        = /opt/trino
+etc_dir         = /opt/trino/etc
+install_path    = /opt/trino
+jvm_config      = /opt/trino/etc/jvm.config
+jvm_options     = []
+launcher_config = /opt/trino/bin/launcher.properties
+launcher_log    = /opt/trino/var/log/launcher.log
+log_levels      = /opt/trino/etc/log.properties
+log_levels_set  = False
+node_config     = /opt/trino/etc/node.properties
+pid_file        = /opt/trino/var/run/launcher.pid
+properties      = {'node.environment': 'demo'}
+server_log      = /opt/trino/var/log/server.log
+verbose         = True
+
+Not running
+</pre></div>
+</div>
+<p>Trino can be started as a daemon by running the following:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>bin/launcher start
 </pre></div>
 </div>
