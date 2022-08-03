@@ -284,7 +284,14 @@
       
         
 <nav class="md-nav md-nav--secondary">
+    <label class="md-nav__title" for="__toc">Contents</label>
   <ul class="md-nav__list" data-md-scrollfix="">
+        <li class="md-nav__item"><a href="#data-products-configuration--page-root" class="md-nav__link">Data product feature configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#security-considerations" class="md-nav__link">Security considerations</a>
+        </li></ul>
+            </nav>
+        </li>
   </ul>
 </nav>
       
@@ -421,7 +428,14 @@
               <div class="md-sidebar__inner">
                 
 <nav class="md-nav md-nav--secondary">
+    <label class="md-nav__title" for="__toc">Contents</label>
   <ul class="md-nav__list" data-md-scrollfix="">
+        <li class="md-nav__item"><a href="#data-products-configuration--page-root" class="md-nav__link">Data product feature configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#security-considerations" class="md-nav__link">Security considerations</a>
+        </li></ul>
+            </nav>
+        </li>
   </ul>
 </nav>
               </div>
@@ -473,13 +487,16 @@ authentication, client identification, or client tags.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code></p></td>
 <td><p>SEP user configured as an application user to execute the data product’s
 interactions with SEP, such as the creation of schemas, views, and so
-on. The interactions with SEP impersonate the logged-in user, so make
-sure this user has the permission to impersonate other users.</p>
+on. This service account user does not support OAuth 2.0. Therefore, there
+are additional security considerations that must be accounted for if you
+are using OAuth 2.0 to authenticate users in the SEP web UI for data
+products; see <a class="reference internal" href="#dp-service-user-security"><span class="std std-ref">Security considerations</span></a>
+later in this topic.</p>
 <p>If data products is used in conjunction with <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a>, make sure the user or group membership for the
 username specified with this property is granted <a class="reference internal" href="../security/biac-privileges.html#biac-entity-users"><span class="std std-ref">impersonate
 privileges</span></a> over all SEP users of the data products
 tool.</p>
-<p>We recommend keeping this user’s credentials secured using <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a>, and rotate its password frequently.</p>
+<p>We recommend keeping this user’s credentials secured using <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a>.</p>
 </td>
 <td></td>
 </tr>
@@ -506,6 +523,26 @@ in this timezone. Example value: <code class="docutils literal notranslate"><spa
 </tr>
 </tbody>
 </table>
+
+<span id="dp-service-user-security"></span><h2 id="security-considerations">Security considerations<a class="headerlink" href="#security-considerations" title="Permalink to this headline">#</a></h2>
+<p>Regardless of who the logged-in user is, when interacting with a data product,
+the configured <code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code> service account impersonates the
+logged-in user in all interactions with the underlying data, and must have the
+permission to do so.</p>
+<p>If your organization uses OAuth 2.0 as the authentication provider for SEP,
+you must enable password file authentication as an authentication method for the
+service user, and provide the necessary access control grants:</p>
+<ol class="arabic simple">
+<li><p>Enable and configure <a class="reference internal" href="../security/password-file.html"><span class="doc">password file authentication</span></a>.</p></li>
+<li><p>Add the service account user to the file configured with
+<code class="docutils literal notranslate"><span class="pre">file.password-file</span></code>.</p></li>
+<li><p>Provide the privileges for <code class="docutils literal notranslate"><span class="pre">data-product.starburst-user</span></code> described in the
+configuration properties table in your configured access control system,
+such as SEP’s built-in access control or Ranger.</p></li>
+<li><p>Change the value of <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> to
+<code class="docutils literal notranslate"><span class="pre">PASSWORD,OAUTH2</span></code>.</p></li>
+</ol>
+
 
 
 
