@@ -730,6 +730,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#postgresql-type-to-trino-type-mapping" class="md-nav__link">PostgreSQL type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-postgresql-type-mapping" class="md-nav__link">Trino type to PostgreSQL type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#decimal-type-handling" class="md-nav__link">Decimal type handling</a>
         </li>
         <li class="md-nav__item"><a href="#array-type-handling" class="md-nav__link">Array type handling</a>
@@ -906,6 +910,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#postgresql-type-to-trino-type-mapping" class="md-nav__link">PostgreSQL type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-postgresql-type-mapping" class="md-nav__link">Trino type to PostgreSQL type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#decimal-type-handling" class="md-nav__link">Decimal type handling</a>
         </li>
         <li class="md-nav__item"><a href="#array-type-handling" class="md-nav__link">Array type handling</a>
@@ -1158,16 +1166,24 @@ rollback can be performed.</p>
 
 
 <span id="postgresql-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
-<p>The data type mappings are as follows:</p>
-<table>
+<p>Because Trino and PostgreSQL each support types that the other does not, this
+connector modifies some types when reading or writing data. Data types may not
+map the same way in both directions between Trino and the data source. Refer to
+the following sections for type mapping in each direction.</p>
+
+<h3 id="postgresql-type-to-trino-type-mapping">PostgreSQL type to Trino type mapping<a class="headerlink" href="#postgresql-type-to-trino-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps PostgreSQL types to the corresponding Trino types following
+this table:</p>
+<table id="id2">
+<caption><span class="caption-text">PostgreSQL type to Trino type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
-<col style="width: 16%"/>
-<col style="width: 26%"/>
-<col style="width: 58%"/>
+<col style="width: 30%"/>
+<col style="width: 20%"/>
+<col style="width: 50%"/>
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>PostgreSQL</p></th>
-<th class="head"><p>Trino</p></th>
+<tr class="row-odd"><th class="head"><p>PostgreSQL type</p></th>
+<th class="head"><p>Trino type</p></th>
 <th class="head"><p>Notes</p></th>
 </tr>
 </thead>
@@ -1193,7 +1209,7 @@ rollback can be performed.</p>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
@@ -1202,8 +1218,8 @@ rollback can be performed.</p>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NUMERIC(p,</span> <span class="pre">s)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code> is an alias of  <code class="docutils literal notranslate"><span class="pre">NUMERIC(p,</span> <span class="pre">s)</span></code>.
-See <a class="reference internal" href="#postgresql-decimal-type-handling"><span class="std std-ref">Decimal type handling</span></a> for more information.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code> is an alias of  <code class="docutils literal notranslate"><span class="pre">NUMERIC(p,</span> <span class="pre">s)</span></code>. See
+<a class="reference internal" href="#postgresql-decimal-type-handling"><span class="std std-ref">Decimal type handling</span></a> for more information.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
@@ -1217,7 +1233,7 @@ See <a class="reference internal" href="#postgresql-decimal-type-handling"><span
 <td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BINARY</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BYTEA</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
@@ -1258,11 +1274,104 @@ See <a class="reference internal" href="#postgresql-decimal-type-handling"><span
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
-<td><p>Disabled, <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code> or <code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
+<td><p>Disabled, <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code>, or <code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
 <td><p>See <a class="reference internal" href="#postgresql-array-type-handling"><span class="std std-ref">Array type handling</span></a> for more information.</p></td>
 </tr>
 </tbody>
 </table>
+<p>No other types are supported.</p>
+
+
+<h3 id="trino-type-to-postgresql-type-mapping">Trino type to PostgreSQL type mapping<a class="headerlink" href="#trino-type-to-postgresql-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps Trino types to the corresponding PostgreSQL types following
+this table:</p>
+<table id="id3">
+<caption><span class="caption-text">Trino type to PostgreSQL type mapping</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 20%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Trino type</p></th>
+<th class="head"><p>PostgreSQL type</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NUMERIC(p,</span> <span class="pre">s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code> is an alias of  <code class="docutils literal notranslate"><span class="pre">NUMERIC(p,</span> <span class="pre">s)</span></code>. See
+<a class="reference internal" href="#postgresql-decimal-type-handling"><span class="std std-ref">Decimal type handling</span></a> for more information.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BYTEA</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMPTZ(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">JSONB</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
+<td><p>See <a class="reference internal" href="#postgresql-array-type-handling"><span class="std std-ref">Array type handling</span></a> for more information.</p></td>
+</tr>
+</tbody>
+</table>
+<p>No other types are supported.</p>
+
 
 <span id="postgresql-decimal-type-handling"></span><h3 id="decimal-type-handling">Decimal type handling<a class="headerlink" href="#decimal-type-handling" title="Permalink to this headline">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> types with precision larger than 38 can be mapped to a Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>

@@ -1000,7 +1000,7 @@ Iceberg table spec version 1 and 2.</p>
 create a new metadata file and replace the old metadata with an atomic swap.
 The table metadata file tracks the table schema, partitioning config,
 custom properties, and snapshots of the table contents.</p>
-<p>Iceberg data files can be stored in either Parquet or ORC format, as
+<p>Iceberg data files can be stored in either Parquet, ORC or Avro format, as
 determined by the <code class="docutils literal notranslate"><span class="pre">format</span></code> property in the table definition.  The
 table <code class="docutils literal notranslate"><span class="pre">format</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.</p>
 <p>Iceberg is designed to improve on the known scalability limitations of Hive, which stores
@@ -1074,6 +1074,7 @@ Possible values are</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">PARQUET</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ORC</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AVRO</span></code></p></li>
 </ul>
 </td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ORC</span></code></p></td>
@@ -1108,7 +1109,7 @@ The problem was fixed in Iceberg version 0.11.0.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.unique-table-location</span></code></p></td>
 <td><p>Use randomized, unique table locations.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.dynamic-filtering.wait-timeout</span></code></p></td>
 <td><p>Maximum duration to wait for completion of dynamic filters during split generation.</p></td>
@@ -1587,7 +1588,7 @@ the Iceberg API or Apache Spark.</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></td>
 <td><p>Optionally specifies the format of table data files;
-either <code class="docutils literal notranslate"><span class="pre">PARQUET</span></code> or <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.</p></td>
+either <code class="docutils literal notranslate"><span class="pre">PARQUET</span></code>, <code class="docutils literal notranslate"><span class="pre">ORC</span></code> or <code class="docutils literal notranslate"><span class="pre">AVRO`</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">partitioning</span></code></p></td>
 <td><p>Optionally specifies table partitioning.
@@ -1650,11 +1651,12 @@ fpp is 0.05, and a file system location of <code class="docutils literal notrans
 path metadata as a hidden column in each table:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">$path</span></code>: Full file system path name of the file for this row</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$file_modified_time</span></code>: Timestamp of the last modification of the file for this row</p></li>
 </ul>
-<p>You can use this column in your SQL statements like any other column. This
+<p>You can use these columns in your SQL statements like any other column. This
 can be selected directly, or used in conditional statements. For example, you
 can inspect the file path for each record:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="ss">"$path"</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="ss">"$path"</span><span class="p">,</span> <span class="ss">"$file_modified_time"</span>
 <span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span><span class="p">;</span>
 </pre></div>
 </div>
@@ -1662,6 +1664,12 @@ can inspect the file path for each record:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
 <span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
 <span class="k">WHERE</span> <span class="ss">"$path"</span> <span class="o">=</span> <span class="s1">'/usr/iceberg/table/web.page_views/data/file_01.parquet'</span>
+</pre></div>
+</div>
+<p>Retrieve all records that belong to a specific file using <code class="docutils literal notranslate"><span class="pre">"$file_modified_time"</span></code> filter:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+<span class="k">WHERE</span> <span class="ss">"$file_modified_time"</span> <span class="o">=</span> <span class="k">CAST</span><span class="p">(</span><span class="s1">'2022-07-01 01:02:03.456 UTC'</span> <span class="k">AS</span> <span class="k">timestamp</span> <span class="k">with</span> <span class="n">time</span> <span class="k">zone</span><span class="p">)</span>
 </pre></div>
 </div>
 

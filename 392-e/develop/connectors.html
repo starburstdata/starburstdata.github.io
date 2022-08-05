@@ -339,6 +339,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#connectorfactory" class="md-nav__link">ConnectorFactory</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
         <li class="md-nav__item"><a href="#connectormetadata" class="md-nav__link">ConnectorMetadata</a>
         </li>
         <li class="md-nav__item"><a href="#connectorsplitmanager" class="md-nav__link">ConnectorSplitManager</a>
@@ -362,6 +364,13 @@
     
     
       <a href="example-http.html" class="md-nav__link">Example HTTP connector</a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
+      <a href="insert.html" class="md-nav__link">Supporting <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code></a>
       
     
     </li>
@@ -495,6 +504,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#connectorfactory" class="md-nav__link">ConnectorFactory</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        </li>
         <li class="md-nav__item"><a href="#connectormetadata" class="md-nav__link">ConnectorMetadata</a>
         </li>
         <li class="md-nav__item"><a href="#connectorsplitmanager" class="md-nav__link">ConnectorSplitManager</a>
@@ -520,25 +531,155 @@
             
   
 <h1 id="develop-connectors--page-root">Connectors<a class="headerlink" href="#develop-connectors--page-root" title="Permalink to this headline">#</a></h1>
-<p>Connectors are the source of all data for queries in Trino. Even if
-your data source doesn’t have underlying tables backing it, as long as
-you adapt your data source to the API expected by Trino, you can write
-queries against this data.</p>
+<p>Connectors are the source of all data for queries in Trino. Even if your data
+source doesn’t have underlying tables backing it, as long as you adapt your data
+source to the API expected by Trino, you can write queries against this data.</p>
 
 <h2 id="connectorfactory">ConnectorFactory<a class="headerlink" href="#connectorfactory" title="Permalink to this headline">#</a></h2>
-<p>Instances of your connector are created by a <code class="docutils literal notranslate"><span class="pre">ConnectorFactory</span></code>
-instance which is created when Trino calls <code class="docutils literal notranslate"><span class="pre">getConnectorFactory()</span></code> on the
-plugin. The connector factory is a simple interface responsible for providing
-the connector name and creating an instance of a <code class="docutils literal notranslate"><span class="pre">Connector</span></code> object.
-A basic connector implementation that only supports reading, but
-not writing data, should return instances of the following services:</p>
+<p>Instances of your connector are created by a <code class="docutils literal notranslate"><span class="pre">ConnectorFactory</span></code> instance which
+is created when Trino calls <code class="docutils literal notranslate"><span class="pre">getConnectorFactory()</span></code> on the plugin. The
+connector factory is a simple interface responsible for providing the connector
+name and creating an instance of a <code class="docutils literal notranslate"><span class="pre">Connector</span></code> object. A basic connector
+implementation that only supports reading, but not writing data, should return
+instances of the following services:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#connector-metadata"><span class="std std-ref">ConnectorMetadata</span></a></p></li>
+<li><p><a class="reference internal" href="#connector-metadata"><span class="std std-ref">Configuration</span></a></p></li>
 <li><p><a class="reference internal" href="#connector-split-manager"><span class="std std-ref">ConnectorSplitManager</span></a></p></li>
 <li><p><a class="reference internal" href="#connector-record-set-provider"><span class="std std-ref">ConnectorRecordSetProvider</span></a> or <a class="reference internal" href="#connector-page-source-provider"><span class="std std-ref">ConnectorPageSourceProvider</span></a></p></li>
 </ul>
 
-<span id="connector-metadata"></span><h3 id="connectormetadata">ConnectorMetadata<a class="headerlink" href="#connectormetadata" title="Permalink to this headline">#</a></h3>
+<span id="connector-metadata"></span><h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">create()</span></code> method of the connector factory receives a <code class="docutils literal notranslate"><span class="pre">config</span></code> map,
+containing all properties from the catalog properties file. It can be used
+to configure the connector, but because all the values are strings, they
+might require additional processing if they represent other data types.
+It also doesn’t validate if all the provided properties are known. This
+can lead to the connector behaving differently than expected when a
+connector ignores a property due to the user making a mistake in
+typing the name of the property.</p>
+<p>To make the configuration more robust, define a Configuration class. This
+class describes all the available properties, their types, and additional
+validation rules.</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">io.airlift.configuration.Config</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.airlift.configuration.ConfigDescription</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.airlift.configuration.ConfigSecuritySensitive</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.airlift.units.Duration</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.airlift.units.MaxDuration</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">io.airlift.units.MinDuration</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">javax.validation.constraints.NotNull</span><span class="p">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleConfig</span>
+<span class="p">{</span>
+    <span class="kd">private</span> <span class="n">String</span> <span class="n">secret</span><span class="p">;</span>
+    <span class="kd">private</span> <span class="n">Duration</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">Duration</span><span class="p">.</span><span class="na">succinctDuration</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">TimeUnit</span><span class="p">.</span><span class="na">SECONDS</span><span class="p">);</span>
+
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getSecret</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="n">secret</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Config</span><span class="p">(</span><span class="s">"secret"</span><span class="p">)</span>
+    <span class="nd">@ConfigDescription</span><span class="p">(</span><span class="s">"Secret required to access the data source"</span><span class="p">)</span>
+    <span class="nd">@ConfigSecuritySensitive</span>
+    <span class="kd">public</span> <span class="n">ExampleConfig</span> <span class="nf">setSecret</span><span class="p">(</span><span class="n">String</span> <span class="n">secret</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="na">secret</span> <span class="o">=</span> <span class="n">secret</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@NotNull</span>
+    <span class="nd">@MaxDuration</span><span class="p">(</span><span class="s">"10m"</span><span class="p">)</span>
+    <span class="nd">@MinDuration</span><span class="p">(</span><span class="s">"1ms"</span><span class="p">)</span>
+    <span class="kd">public</span> <span class="n">Duration</span> <span class="nf">getTimeout</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="k">return</span> <span class="n">timeout</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Config</span><span class="p">(</span><span class="s">"timeout"</span><span class="p">)</span>
+    <span class="kd">public</span> <span class="n">ExampleConfig</span> <span class="nf">setTimeout</span><span class="p">(</span><span class="n">Duration</span> <span class="n">timeout</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="na">timeout</span> <span class="o">=</span> <span class="n">timeout</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The preceding example defines two configuration properties and makes
+the connector more robust by:</p>
+<ul class="simple">
+<li><p>defining all supported properties, which allows detecting spelling mistakes
+in the configuration on server startup</p></li>
+<li><p>defining a default timeout value, to prevent connections getting stuck
+indefinitely</p></li>
+<li><p>preventing invalid timeout values, like 0 ms, that would make
+all requests fail</p></li>
+<li><p>parsing timeout values in different units, detecting invalid values</p></li>
+<li><p>preventing logging the secret value in plain text</p></li>
+</ul>
+<p>The configuration class needs to be bound in a Guice module:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">com.google.inject.Binder</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">com.google.inject.Module</span><span class="p">;</span>
+
+<span class="kn">import static</span> <span class="nn">io.airlift.configuration.ConfigBinder.configBinder</span><span class="p">;</span>
+
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">ExampleModule</span>
+        <span class="kd">implements</span> <span class="n">Module</span>
+<span class="p">{</span>
+    <span class="kd">public</span> <span class="nf">ExampleModule</span><span class="p">()</span>
+    <span class="p">{</span>
+    <span class="p">}</span>
+
+    <span class="nd">@Override</span>
+    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">configure</span><span class="p">(</span><span class="n">Binder</span> <span class="n">binder</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">configBinder</span><span class="p">(</span><span class="n">binder</span><span class="p">).</span><span class="na">bindConfig</span><span class="p">(</span><span class="n">ExampleConfig</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>And then the module needs to be initialized in the connector factory, when
+creating a new instance of the connector:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Connector</span> <span class="nf">create</span><span class="p">(</span><span class="n">String</span> <span class="n">connectorName</span><span class="p">,</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">config</span><span class="p">,</span> <span class="n">ConnectorContext</span> <span class="n">context</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">requireNonNull</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s">"config is null"</span><span class="p">);</span>
+    <span class="n">Bootstrap</span> <span class="n">app</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Bootstrap</span><span class="p">(</span><span class="k">new</span> <span class="n">ExampleModule</span><span class="p">());</span>
+    <span class="n">Injector</span> <span class="n">injector</span> <span class="o">=</span> <span class="n">app</span>
+            <span class="p">.</span><span class="na">doNotInitializeLogging</span><span class="p">()</span>
+            <span class="p">.</span><span class="na">setRequiredConfigurationProperties</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="p">.</span><span class="na">initialize</span><span class="p">();</span>
+
+    <span class="k">return</span> <span class="n">injector</span><span class="p">.</span><span class="na">getInstance</span><span class="p">(</span><span class="n">ExampleConnector</span><span class="p">.</span><span class="na">class</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Environment variables in the catalog properties file
+(ex. <code class="docutils literal notranslate"><span class="pre">secret=${ENV:SECRET}</span></code>) are resolved only when using
+the <code class="docutils literal notranslate"><span class="pre">io.airlift.bootstrap.Bootstrap</span></code> class to initialize the module.
+See <a class="reference internal" href="../security/secrets.html"><span class="doc">Secrets</span></a> for more information.</p>
+</div>
+<p>If you end up needing to define multiple catalogs using the same connector
+just to change one property, consider adding support for schema and/or
+table properties. That would allow a more fine-grained configuration.
+If a connector doesn’t support managing the schema, query predicates for
+selected columns could be used as a way of passing the required configuration
+at run time.</p>
+<p>For example, when building a connector to read commits from a Git repository,
+the repository URL could be a configuration property. But this would result
+in a catalog being able to return data only from a single repository.
+Alternatively, it can be a column, where every select query would require
+a predicate for it:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">git</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">commits</span>
+<span class="k">WHERE</span> <span class="n">url</span> <span class="o">=</span> <span class="s1">'https://github.com/trinodb/trino.git'</span>
+</pre></div>
+</div>
+
+
+<h3 id="connectormetadata">ConnectorMetadata<a class="headerlink" href="#connectormetadata" title="Permalink to this headline">#</a></h3>
 <p>The connector metadata interface allows Trino to get a lists of schemas,
 tables, columns, and other metadata about a particular data source.</p>
 <p>A basic read-only connector should implement the following methods:</p>
@@ -553,22 +694,22 @@ tables, columns, and other metadata about a particular data source.</p>
 </ul>
 <p>If you are interested in seeing strategies for implementing more methods,
 look at the <a class="reference internal" href="example-http.html"><span class="doc">Example HTTP connector</span></a> and the Cassandra connector. If your underlying
-data source supports schemas, tables and columns, this interface should be
+data source supports schemas, tables, and columns, this interface should be
 straightforward to implement. If you are attempting to adapt something that
-is not a relational database (as the Example HTTP connector does), you may
+isn’t a relational database, as the Example HTTP connector does, you may
 need to get creative about how you map your data source to Trino’s schema,
 table, and column concepts.</p>
 <p>The connector metadata interface allows to also implement other connector
 features, like:</p>
 <ul class="simple">
-<li><p>Schema management, that is creating, altering and dropping schemas, tables,
+<li><p>Schema management, which is creating, altering and dropping schemas, tables,
 table columns, views, and materialized views.</p></li>
 <li><p>Support for table and column comments, and properties.</p></li>
 <li><p>Schema, table and view authorization.</p></li>
 <li><p>Executing <a class="reference internal" href="table-functions.html"><span class="doc">Table functions</span></a>.</p></li>
-<li><p>Providing table statistics used by the CBO and collecting statistics
-during writes and when analyzing selected tables.</p></li>
-<li><p>Data modification, that is:</p>
+<li><p>Providing table statistics used by the Cost Based Optimizer (CBO)
+and collecting statistics during writes and when analyzing selected tables.</p></li>
+<li><p>Data modification, which is:</p>
 <ul>
 <li><p>inserting, updating, and deleting rows in tables,</p></li>
 <li><p>refreshing materialized views,</p></li>
@@ -595,20 +736,19 @@ a <a class="reference internal" href="#connector-page-sink-provider"><span class
 
 
 <span id="connector-split-manager"></span><h3 id="connectorsplitmanager">ConnectorSplitManager<a class="headerlink" href="#connectorsplitmanager" title="Permalink to this headline">#</a></h3>
-<p>The split manager partitions the data for a table into the individual
-chunks that Trino will distribute to workers for processing.
-For example, the Hive connector lists the files for each Hive
-partition and creates one or more split per file.
-For data sources that don’t have partitioned data, a good strategy
-here is to simply return a single split for the entire table. This
-is the strategy employed by the Example HTTP connector.</p>
+<p>The split manager partitions the data for a table into the individual chunks
+that Trino distributes to workers for processing. For example, the Hive
+connector lists the files for each Hive partition and creates one or more
+splits per file. For data sources that don’t have partitioned data, a good
+strategy here is to simply return a single split for the entire table. This is
+the strategy employed by the Example HTTP connector.</p>
 
 
 <span id="connector-record-set-provider"></span><h3 id="connectorrecordsetprovider">ConnectorRecordSetProvider<a class="headerlink" href="#connectorrecordsetprovider" title="Permalink to this headline">#</a></h3>
 <p>Given a split and a list of columns, the record set provider is
 responsible for delivering data to the Trino execution engine.
 It creates a <code class="docutils literal notranslate"><span class="pre">RecordSet</span></code>, which in turn creates a <code class="docutils literal notranslate"><span class="pre">RecordCursor</span></code>
-that is used by Trino to read the column values for each row.</p>
+that’s used by Trino to read the column values for each row.</p>
 
 
 <span id="connector-page-source-provider"></span><h3 id="connectorpagesourceprovider">ConnectorPageSourceProvider<a class="headerlink" href="#connectorpagesourceprovider" title="Permalink to this headline">#</a></h3>
@@ -616,7 +756,7 @@ that is used by Trino to read the column values for each row.</p>
 responsible for delivering data to the Trino execution engine.
 It creates a <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, which in turn creates <code class="docutils literal notranslate"><span class="pre">Page</span></code> objects
 that are used by Trino to read the column values.</p>
-<p>If not implemented, a default <code class="docutils literal notranslate"><span class="pre">RecordPageSourceProvider</span></code> will be used.
+<p>If not implemented, a default <code class="docutils literal notranslate"><span class="pre">RecordPageSourceProvider</span></code> is used.
 Given a record set provider, it returns an instance of <code class="docutils literal notranslate"><span class="pre">RecordPageSource</span></code>
 that builds <code class="docutils literal notranslate"><span class="pre">Page</span></code> objects from records in a record set.</p>
 <p>A connector should implement a page source provider instead of a record set

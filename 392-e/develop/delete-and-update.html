@@ -80,7 +80,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Types" href="types.html" />
-    <link rel="prev" title="Example HTTP connector" href="example-http.html" />
+    <link rel="prev" title="Supporting INSERT and CREATE TABLE AS" href="insert.html" />
 
   
    
@@ -340,6 +340,13 @@
     <li class="md-nav__item">
     
     
+      <a href="insert.html" class="md-nav__link">Supporting <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code></a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
     <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
     <label class="md-nav__link md-nav__link--active" for="__toc"> Supporting <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> </label>
     
@@ -536,28 +543,28 @@ methods to get a “rowId” column handle; to start the operation; and to finis
 connector’s <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, to read pages on behalf of the Trino engine, and to
 write deletions and/or updates to the underlying data store.</p></li>
 <li><p>The connector’s <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource.getNextPage()</span></code> implementation fetches the next page
-from the underlying <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, optionally reformats the page, and returns it
+from the underlying <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, optionally rebuild the page, and returns it
 to the Trino engine.</p></li>
 <li><p>The Trino engine performs filtering and projection on the page read, producing a page of filtered,
 projected results.</p></li>
 <li><p>The Trino engine passes that filtered, projected page of results to the connector’s
-<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> <code class="docutils literal notranslate"><span class="pre">deleteRows()</span></code> or <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code> method.  Those methods persist
+<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> <code class="docutils literal notranslate"><span class="pre">deleteRows()</span></code> or <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code> method. Those methods persist
 the deletions or updates in the underlying data store.</p></li>
 <li><p>When all the pages for a specific split have been processed, the Trino engine calls
-<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource.finish()</span></code>, which returns a <code class="docutils literal notranslate"><span class="pre">Collection&lt;Slice&gt;</span></code> of “fragments”
+<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource.finish()</span></code>, which returns a <code class="docutils literal notranslate"><span class="pre">Collection&lt;Slice&gt;</span></code> of fragments
 representing connector-specific information about the rows processed by the calls to
 <code class="docutils literal notranslate"><span class="pre">deleteRows</span></code> or <code class="docutils literal notranslate"><span class="pre">updateRows</span></code>.</p></li>
 <li><p>When all pages for all splits have been processed, the Trino engine calls <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata.finishDelete()</span></code> or
-<code class="docutils literal notranslate"><span class="pre">finishUpdate</span></code>, passing a collection containing all the “fragments” from all the splits.  The connector
+<code class="docutils literal notranslate"><span class="pre">finishUpdate</span></code>, passing a collection containing all the fragments from all the splits. The connector
 does what is required to finalize the operation, for example, committing the transaction.</p></li>
 </ul>
 
 
 <h2 id="the-rowid-column-abstraction">The rowId Column Abstraction<a class="headerlink" href="#the-rowid-column-abstraction" title="Permalink to this headline">#</a></h2>
 <p>The Trino engine and connectors use a “rowId” column handle abstraction to agree on the identities of rows
-to be updated or deleted.  The rowId column handle is opaque to the Trino engine.  Depending on the connector,
-the rowId column handle abstraction could represent several physical columns.  For the JDBC connector, the rowId
-column handle points might be the primary key for the table.  For deletion in Hive ACID tables, the rowId consists
+to be updated or deleted. The rowId column handle is opaque to the Trino engine. Depending on the connector,
+the rowId column handle abstraction could represent several physical columns. For the JDBC connector, the rowId
+column handle points might be the primary key for the table. For deletion in Hive ACID tables, the rowId consists
 of the three ACID columns that uniquely identify rows.</p>
 
 <h3 id="the-rowid-column-for-delete">The rowId Column for <code class="docutils literal notranslate"><span class="pre">DELETE</span></code><a class="headerlink" href="#the-rowid-column-for-delete" title="Permalink to this headline">#</a></h3>
@@ -574,8 +581,8 @@ method, whose full signature is:</p>
 <h3 id="the-rowid-column-for-update">The rowId Column for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code><a class="headerlink" href="#the-rowid-column-for-update" title="Permalink to this headline">#</a></h3>
 <p>The Trino engine identifies rows to be updated using a connector-specific rowId column handle,
 returned by the connector’s <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata.getUpdateRowIdColumnHandle()</span></code>
-method.  In addition to the columns that identify the row, for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> the rowId column will contain
-any columns that the connector requires in order to perform the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation.  In Hive ACID, for example,
+method. In addition to the columns that identify the row, for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> the rowId column will contain
+any columns that the connector requires in order to perform the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation. In Hive ACID, for example,
 the rowId column contains the values of all columns <em>not</em> updated by the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation, since Hive ACID
 implements <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> as a <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> paired with an INSERT.</p>
 
@@ -583,18 +590,18 @@ implements <code class="docutils literal notranslate"><span class="pre">UPDATE</
 
 <h2 id="updatablepagesource-api">UpdatablePageSource API<a class="headerlink" href="#updatablepagesource-api" title="Permalink to this headline">#</a></h2>
 <p>As mentioned above, to support <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> or <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, the connector must define a subclass of
-<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>, layered over the connector’s usual <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>.  The interesting methods are:</p>
+<code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>, layered over the connector’s usual <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>. The interesting methods are:</p>
 <ul>
-<li><p><code class="docutils literal notranslate"><span class="pre">Page</span> <span class="pre">getNextPage()</span></code>.  When the Trino engine calls <code class="docutils literal notranslate"><span class="pre">getNextPage()</span></code>, the <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> calls
-its underlying <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource.getNextPage()</span></code> method to get a page.  Some connectors will reformat
+<li><p><code class="docutils literal notranslate"><span class="pre">Page</span> <span class="pre">getNextPage()</span></code>. When the Trino engine calls <code class="docutils literal notranslate"><span class="pre">getNextPage()</span></code>, the <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> calls
+its underlying <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource.getNextPage()</span></code> method to get a page. Some connectors will rebuild
 the page before returning it to the Trino engine.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">deleteRows(Block</span> <span class="pre">rowIds)</span></code>.  The Trino engine calls the <code class="docutils literal notranslate"><span class="pre">deleteRows()</span></code> method of the same <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>
-instance that supplied the original page,  passing a block of “rowIds”, created by the Trino engine based on the column
+<li><p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">deleteRows(Block</span> <span class="pre">rowIds)</span></code>. The Trino engine calls the <code class="docutils literal notranslate"><span class="pre">deleteRows()</span></code> method of the same <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>
+instance that supplied the original page, passing a block of <code class="docutils literal notranslate"><span class="pre">rowIds</span></code>, created by the Trino engine based on the column
 handle returned by <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata.getDeleteRowIdColumnHandle()</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">updateRows(Page</span> <span class="pre">page,</span> <span class="pre">List&lt;Integer&gt;</span> <span class="pre">columnValueAndRowIdChannels)</span></code>.  The Trino engine calls the <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code>
+<li><p><code class="docutils literal notranslate"><span class="pre">void</span> <span class="pre">updateRows(Page</span> <span class="pre">page,</span> <span class="pre">List&lt;Integer&gt;</span> <span class="pre">columnValueAndRowIdChannels)</span></code>. The Trino engine calls the <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code>
 method of the same <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> instance that supplied the original page, passing a page of projected columns,
-one for each updated column and the last one for the rowId column.  The order of projected columns is defined by the Trino engine,
-and that order is reflected in the <code class="docutils literal notranslate"><span class="pre">columnValueAndRowIdChannels</span></code> argument.  The job of <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code> is to:</p>
+one for each updated column and the last one for the rowId column. The order of projected columns is defined by the Trino engine,
+and that order is reflected in the <code class="docutils literal notranslate"><span class="pre">columnValueAndRowIdChannels</span></code> argument. The job of <code class="docutils literal notranslate"><span class="pre">updateRows()</span></code> is to:</p>
 <ul class="simple">
 <li><p>Extract the updated column blocks and the rowId block from the projected page.</p></li>
 <li><p>Assemble them in whatever order is required by the connector for storage.</p></li>
@@ -604,9 +611,9 @@ and that order is reflected in the <code class="docutils literal notranslate"><s
 previous contents of the updated rows, and a separate file that inserts completely
 new rows containing the updated and non-updated column values.</p>
 </li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CompletableFuture&lt;Collection&lt;Slice&gt;&gt;</span> <span class="pre">finish()</span></code>.  The Trino engine calls <code class="docutils literal notranslate"><span class="pre">finish()</span></code> when all the pages
-of a split have been processed.  The connector returns a future containing a collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code>, representing
-connector-specific information about the rows processed.  Usually this will include the row count, and might
+<li><p><code class="docutils literal notranslate"><span class="pre">CompletableFuture&lt;Collection&lt;Slice&gt;&gt;</span> <span class="pre">finish()</span></code>. The Trino engine calls <code class="docutils literal notranslate"><span class="pre">finish()</span></code> when all the pages
+of a split have been processed. The connector returns a future containing a collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code>, representing
+connector-specific information about the rows processed. Usually this will include the row count, and might
 include information like the files or partitions created or changed.</p></li>
 </ul>
 
@@ -636,10 +643,10 @@ that identify the row.</p>
 <p>As the last step in creating the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> execution plan, the connector’s <code class="docutils literal notranslate"><span class="pre">beginDelete()</span></code> method is called,
 passing the <code class="docutils literal notranslate"><span class="pre">session</span></code> and <code class="docutils literal notranslate"><span class="pre">tableHandle</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">beginDelete()</span></code> performs any orchestration needed in the connector to start processing the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>.
-This orchestration varies from connector to connector.  In the Hive ACID connector, for example, <code class="docutils literal notranslate"><span class="pre">beginDelete()</span></code>
+This orchestration varies from connector to connector. In the Hive ACID connector, for example, <code class="docutils literal notranslate"><span class="pre">beginDelete()</span></code>
 checks that the table is transactional and starts a Hive Metastore transaction.</p>
 <p><code class="docutils literal notranslate"><span class="pre">beginDelete()</span></code> returns a <code class="docutils literal notranslate"><span class="pre">ConnectorTableHandle</span></code> with any added information the connector needs when the handle
-is passed back to <code class="docutils literal notranslate"><span class="pre">finishDelete()</span></code> and the split generation machinery.  For most connectors, the returned table
+is passed back to <code class="docutils literal notranslate"><span class="pre">finishDelete()</span></code> and the split generation machinery. For most connectors, the returned table
 handle contains a flag identifying the table handle as a table handle for a <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operation.</p>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">finishDelete()</span></code>:</p>
@@ -651,7 +658,7 @@ handle contains a flag identifying the table handle as a table handle for a <cod
 </div>
 <p>During <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> processing, the Trino engine accumulates the <code class="docutils literal notranslate"><span class="pre">Slice</span></code> collections returned by <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource.finish()</span></code>.
 After all splits have been processed, the engine calls <code class="docutils literal notranslate"><span class="pre">finishDelete()</span></code>, passing the table handle and that
-collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code> fragments.  In response, the connector takes appropriate actions to complete the <code class="docutils literal notranslate"><span class="pre">Delete</span></code> operation.
+collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code> fragments. In response, the connector takes appropriate actions to complete the <code class="docutils literal notranslate"><span class="pre">Delete</span></code> operation.
 Those actions might include committing the transaction, assuming the connector supports a transaction paradigm.</p>
 </li>
 </ul>
@@ -684,15 +691,15 @@ that identify the row, plus the values of all the data columns not updated.</p>
 </pre></div>
 </div>
 <p>As the last step in creating the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> execution plan, the connector’s <code class="docutils literal notranslate"><span class="pre">beginUpdate()</span></code> method is called,
-passing arguments that define the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> to the connector.  In addition to the <code class="docutils literal notranslate"><span class="pre">session</span></code>
+passing arguments that define the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> to the connector. In addition to the <code class="docutils literal notranslate"><span class="pre">session</span></code>
 and <code class="docutils literal notranslate"><span class="pre">tableHandle</span></code>, the arguments includes the list of the updated columns handles, in table column order.</p>
 <p><code class="docutils literal notranslate"><span class="pre">beginUpdate()</span></code> performs any orchestration needed in the connector to start processing the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>.
-This orchestration varies from connector to connector.  In the Hive ACID connector, for example, <code class="docutils literal notranslate"><span class="pre">beginUpdate()</span></code>
+This orchestration varies from connector to connector. In the Hive ACID connector, for example, <code class="docutils literal notranslate"><span class="pre">beginUpdate()</span></code>
 starts the Hive Metastore transaction; checks that the updated table is transactional and that neither
-parition columns nor bucket columns are updated.</p>
+partition columns nor bucket columns are updated.</p>
 <p><code class="docutils literal notranslate"><span class="pre">beginUpdate</span></code> returns a <code class="docutils literal notranslate"><span class="pre">ConnectorTableHandle</span></code> with any added information the connector needs when the handle
-is passed back to <code class="docutils literal notranslate"><span class="pre">finishUpdate()</span></code> and the split generation machinery.  For most connectors, the returned table
-handle contains a flag identifying the table handle as a table handle for a <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation.  For some connectors
+is passed back to <code class="docutils literal notranslate"><span class="pre">finishUpdate()</span></code> and the split generation machinery. For most connectors, the returned table
+handle contains a flag identifying the table handle as a table handle for a <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation. For some connectors
 that support partitioning, the table handle will reflect that partitioning.</p>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">finishUpdate</span></code>:</p>
@@ -704,7 +711,7 @@ that support partitioning, the table handle will reflect that partitioning.</p>
 </div>
 <p>During <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> processing, the Trino engine accumulates the <code class="docutils literal notranslate"><span class="pre">Slice</span></code> collections returned by <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource.finish()</span></code>.
 After all splits have been processed, the engine calls <code class="docutils literal notranslate"><span class="pre">finishUpdate()</span></code>, passing the table handle and that
-collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code> fragments.  In response, the connector takes appropriate actions to complete the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation.
+collection of <code class="docutils literal notranslate"><span class="pre">Slice</span></code> fragments. In response, the connector takes appropriate actions to complete the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation.
 Those actions might include committing the transaction, assuming the connector supports a transaction paradigm.</p>
 </li>
 </ul>
@@ -828,7 +835,7 @@ feedback();
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
           
-            <a href="example-http.html" title="Example HTTP connector"
+            <a href="insert.html" title="Supporting INSERT and CREATE TABLE AS"
                class="md-flex md-footer-nav__link md-footer-nav__link--prev"
                rel="prev">
               <div class="md-flex__cell md-flex__cell--shrink">
@@ -837,7 +844,7 @@ feedback();
               <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
                 <span class="md-flex__ellipsis">
                   <span
-                      class="md-footer-nav__direction"> Previous </span> Example HTTP connector </span>
+                      class="md-footer-nav__direction"> Previous </span> Supporting <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> </span>
               </div>
             </a>
           
