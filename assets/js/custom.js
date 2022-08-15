@@ -56,17 +56,22 @@ copyCode();
 function getVideoLength(time) {
   const videoLength = time;
   let [hours, minutes, seconds] = videoLength.split(':');
+  const videoElement = document.getElementsByClassName(time);
+  let newTime;
   hours = parseInt(hours);
   minutes = parseInt(minutes);
   seconds = parseInt(seconds);
 
   if (hours > 0){
-    document.getElementById("videoLength").innerHTML = `${hours}h ${minutes}m`;
+    newTime = `${hours}h ${minutes}m`;
   }
   else{
     if (seconds >= 30){
       minutes++;
     }
-    document.getElementById("videoLength").innerHTML = `${minutes}m`;
+    newTime = `${minutes}m`;
+  }
+  for (let i = 0; i < videoElement.length; i++) {
+    videoElement.item(i).innerHTML = newTime;
   }
 }
