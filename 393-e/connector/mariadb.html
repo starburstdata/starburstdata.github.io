@@ -607,6 +607,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#mariadb-type-to-trino-type-mapping" class="md-nav__link">MariaDB type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-mapping-to-mariadb-type-mapping" class="md-nav__link">Trino type mapping to MariaDB type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
         </li></ul>
             </nav>
@@ -884,6 +888,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#mariadb-type-to-trino-type-mapping" class="md-nav__link">MariaDB type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-mapping-to-mariadb-type-mapping" class="md-nav__link">Trino type mapping to MariaDB type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
         </li></ul>
             </nav>
@@ -1003,6 +1011,25 @@ Do not change this setting from the default. Non-default values may
 negatively impact performance.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<td><p>Push down dynamic filters into JDBC queries</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<td><p>Maximum duration for which Trino will wait for dynamic filters to be
+collected from the build side of joins before starting a JDBC query.
+Using a large timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code></p></td>
+<td><p>Minimum size of query predicates above which Trino compacts the predicates.
+Pushing down a large list of predicates to the data source can compromise
+performance. For optimization in that situation, Trino can compact the large
+predicates into a simpler range predicate. If necessary, adjust the threshold
+to ensure a balance between performance and predicate pushdown.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -1096,12 +1123,20 @@ that catalog name instead of <code class="docutils literal notranslate"><span cl
 
 
 <h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
-<p>Trino supports the following MariaDB data types:</p>
-<table>
+<p>Because Trino and MariaDB each support types that the other does not, this
+connector modifies some types when reading or writing data. Data types may not
+map the same way in both directions between Trino and the data source. Refer to
+the following sections for type mapping in each direction.</p>
+
+<h3 id="mariadb-type-to-trino-type-mapping">MariaDB type to Trino type mapping<a class="headerlink" href="#mariadb-type-to-trino-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps MariaDB types to the corresponding Trino types according
+to the following table:</p>
+<table id="id2">
+<caption><span class="caption-text">MariaDB type to Trino type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
-<col style="width: 17%"/>
-<col style="width: 15%"/>
-<col style="width: 68%"/>
+<col style="width: 27%"/>
+<col style="width: 27%"/>
+<col style="width: 45%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>MariaDB type</p></th>
@@ -1110,119 +1145,194 @@ that catalog name instead of <code class="docutils literal notranslate"><span cl
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">boolean</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tinyint</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOL</span></code> and <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">TINYINT(1)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tinyint</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">tinyint</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">smallint</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">smallint</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">int</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">integer</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tinyint</span> <span class="pre">unsigned</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">smallint</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">smallint</span> <span class="pre">unsigned</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">integer</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mediumint</span> <span class="pre">unsigned</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">integer</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">integer</span> <span class="pre">unsigned</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYTEXT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(255)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigint</span> <span class="pre">unsigned</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">decimal(20,0)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TEXT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(65535)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">float</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">real</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MEDIUMTEXT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(16777215)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">double</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LONGTEXT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">decimal(p,s)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">decimal(p,s)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">char(n)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">char(n)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TINYBLOB</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tinytext</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varchar(255)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BLOB</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">text</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varchar(65535)</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MEDIUMBLOB</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mediumtext</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varchar(16777215)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LONGBLOB</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">longtext</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varchar</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">varchar(n)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varchar(n)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tinyblob</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varbinary</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">blob</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varbinary</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mediumblob</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varbinary</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">longblob</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varbinary</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">varbinary(n)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">varbinary</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">date</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">date</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">time(n)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">time(n)</span></code></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">timestamp(n)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">timestamp(n)</span></code></p></td>
-<td><p>MariaDB stores the current timestamp by default.
-Please enable <a class="reference external" href="https://mariadb.com/docs/reference/mdb/system-variables/explicit_defaults_for_timestamp/">explicit_defaults_for_timestamp</a>
-to avoid implicit default values.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td><p>MariaDB stores the current timestamp by default. Enable
+<a class="reference external" href="https://mariadb.com/docs/reference/mdb/system-variables/explicit_defaults_for_timestamp/">explicit_defaults_for_timestamp</a>
+to avoid implicit default values and use <code class="docutils literal notranslate"><span class="pre">NULL</span></code> as the default value.</p></td>
 </tr>
 </tbody>
 </table>
+<p>No other types are supported.</p>
+
+
+<h3 id="trino-type-mapping-to-mariadb-type-mapping">Trino type mapping to MariaDB type mapping<a class="headerlink" href="#trino-type-mapping-to-mariadb-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps Trino types to the corresponding MariaDB types according
+to the following table:</p>
+<table id="id3">
+<caption><span class="caption-text">Trino type mapping to MariaDB type mapping</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 29%"/>
+<col style="width: 24%"/>
+<col style="width: 48%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Trino type</p></th>
+<th class="head"><p>MariaDB type</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(255)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYTEXT</span></code></p></td>
+<td><p>Maps on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> of length 255 or less.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(65535)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TEXT</span></code></p></td>
+<td><p>Maps on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> of length between 256 and 65535, inclusive.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(16777215)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MEDIUMTEXT</span></code></p></td>
+<td><p>Maps on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> of length between 65536 and 16777215, inclusive.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">LONGTEXT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> of length greater than 16777215 and unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> map
+to <code class="docutils literal notranslate"><span class="pre">LONGTEXT</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">MEDIUMBLOB</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIME(n)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
+<td><p>MariaDB stores the current timestamp by default. Enable
+<a class="reference external" href="https://mariadb.com/docs/reference/mdb/system-variables/explicit_defaults_for_timestamp/">explicit_defaults_for_timestamp</a>
+to avoid implicit default values and use <code class="docutils literal notranslate"><span class="pre">NULL</span></code> as the default value.</p></td>
+</tr>
+</tbody>
+</table>
+<p>No other types are supported.</p>
 <p>Complete list of <a class="reference external" href="https://mariadb.com/kb/en/data-types/">MariaDB data types</a>.</p>
+
 
 <h3 id="type-mapping-configuration-properties">Type mapping configuration properties<a class="headerlink" href="#type-mapping-configuration-properties" title="Permalink to this headline">#</a></h3>
 <p>The following properties can be used to configure how data types from the

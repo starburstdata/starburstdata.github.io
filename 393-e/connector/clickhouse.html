@@ -552,6 +552,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#clickhouse-type-to-trino-type-mapping" class="md-nav__link">ClickHouse type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-clickhouse-type-mapping" class="md-nav__link">Trino type to ClickHouse type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
         </li></ul>
             </nav>
@@ -894,6 +898,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#clickhouse-type-to-trino-type-mapping" class="md-nav__link">ClickHouse type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-clickhouse-type-mapping" class="md-nav__link">Trino type to ClickHouse type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
         </li></ul>
             </nav>
@@ -928,7 +936,7 @@
   
 <h1 id="connector-clickhouse--page-root">ClickHouse connector<a class="headerlink" href="#connector-clickhouse--page-root" title="Permalink to this headline">#</a></h1>
 <img class="connector-logo" src="../_static/img/clickhouse.png"/><p>The ClickHouse connector allows querying tables in an external
-<a class="reference external" href="https://clickhouse.tech/">Yandex ClickHouse</a> server. This can be used to
+<a class="reference external" href="https://clickhouse.com/">ClickHouse</a> server. This can be used to
 query data in the databases on that server, or combine it with other data
 from different catalogs accessing ClickHouse or any other supported data source.</p>
 
@@ -954,6 +962,13 @@ connection-user=exampleuser
 connection-password=examplepassword
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> defines the connection information and parameters to pass
+to the ClickHouse JDBC driver. The supported parameters for the URL are
+available in the <a class="reference external" href="https://github.com/ClickHouse/clickhouse-jdbc/tree/master/clickhouse-jdbc#Configuration">ClickHouse JDBC driver configuration</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-user</span></code> and <code class="docutils literal notranslate"><span class="pre">connection-password</span></code> are typically required and
+determine the user credentials for the connection, often a service user. You can
+use <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a> to avoid actual values in the catalog
+properties files.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Trino uses the new ClickHouse driver(<code class="docutils literal notranslate"><span class="pre">com.clickhouse.jdbc.ClickHouseDriver</span></code>)
@@ -971,7 +986,7 @@ source by appending a parameter to the JDBC connection string set in the
 <p>For example, with version 2.6.4 of the ClickHouse JDBC driver, enable TLS by
 appending the <code class="docutils literal notranslate"><span class="pre">ssl=true</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> configuration
 property:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:clickhouse://host1:8123/?ssl=true</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:clickhouse://host1:8443/?ssl=true</span>
 </pre></div>
 </div>
 <p>For more information on TLS configuration options, see the <a class="reference external" href="https://clickhouse.com/docs/en/interfaces/jdbc/">Clickhouse JDBC
@@ -1043,6 +1058,25 @@ not available</p></td>
 Do not change this setting from the default. Non-default values may
 negatively impact performance.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<td><p>Push down dynamic filters into JDBC queries</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<td><p>Maximum duration for which Trino will wait for dynamic filters to be
+collected from the build side of joins before starting a JDBC query.
+Using a large timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code></p></td>
+<td><p>Minimum size of query predicates above which Trino compacts the predicates.
+Pushing down a large list of predicates to the data source can compromise
+performance. For optimization in that situation, Trino can compact the large
+predicates into a simpler range predicate. If necessary, adjust the threshold
+to ensure a balance between performance and predicate pushdown.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1126,7 +1160,7 @@ rollback can be performed.</p>
 
 <h2 id="querying-clickhouse">Querying ClickHouse<a class="headerlink" href="#querying-clickhouse" title="Permalink to this headline">#</a></h2>
 <p>The ClickHouse connector provides a schema for every ClickHouse <em>database</em>.
-run <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">SCHEMAS</span></code> to see the available ClickHouse databases:</p>
+Run <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">SCHEMAS</span></code> to see the available ClickHouse databases:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span> <span class="n">SCHEMAS</span> <span class="k">FROM</span> <span class="n">myclickhouse</span><span class="p">;</span>
 </pre></div>
 </div>
@@ -1212,23 +1246,31 @@ in create table statement. <code class="docutils literal notranslate"><span clas
 
 
 <span id="clickhouse-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
-<p>The data type mappings are as follows:</p>
-<table>
+<p>Because Trino and ClickHouse each support types that the other does not, this
+connector modifies some types when reading or writing data. Data types may not
+map the same way in both directions between Trino and the data source. Refer to
+the following sections for type mapping in each direction.</p>
+
+<h3 id="clickhouse-type-to-trino-type-mapping">ClickHouse type to Trino type mapping<a class="headerlink" href="#clickhouse-type-to-trino-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps ClickHouse types to the corresponding Trino types according
+to the following table:</p>
+<table id="id1">
+<caption><span class="caption-text">ClickHouse type to Trino type mapping</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
 <colgroup>
-<col style="width: 13%"/>
-<col style="width: 13%"/>
-<col style="width: 74%"/>
+<col style="width: 29%"/>
+<col style="width: 24%"/>
+<col style="width: 48%"/>
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>ClickHouse</p></th>
-<th class="head"><p>Trino</p></th>
+<tr class="row-odd"><th class="head"><p>ClickHouse type</p></th>
+<th class="head"><p>Trino type</p></th>
 <th class="head"><p>Notes</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOL</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code> and <code class="docutils literal notranslate"><span class="pre">INT1</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOL</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code>, and <code class="docutils literal notranslate"><span class="pre">INT1</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
@@ -1236,7 +1278,7 @@ in create table statement. <code class="docutils literal notranslate"><span clas
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT4</span></code> and <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT4</span></code>, and <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Int64</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
@@ -1272,11 +1314,13 @@ in create table statement. <code class="docutils literal notranslate"><span clas
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FixedString</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
-<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the
+mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">String</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
-<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the
+mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Date</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
@@ -1308,6 +1352,87 @@ in create table statement. <code class="docutils literal notranslate"><span clas
 </tr>
 </tbody>
 </table>
+<p>No other types are supported.</p>
+
+
+<h3 id="trino-type-to-clickhouse-type-mapping">Trino type to ClickHouse type mapping<a class="headerlink" href="#trino-type-to-clickhouse-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps Trino types to the corresponding ClickHouse types according
+to the following table:</p>
+<table id="id2">
+<caption><span class="caption-text">Trino type to ClickHouse type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 29%"/>
+<col style="width: 24%"/>
+<col style="width: 48%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Trino type</p></th>
+<th class="head"><p>ClickHouse type</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UInt8</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOL</span></code>, <code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code>, and <code class="docutils literal notranslate"><span class="pre">INT1</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code> and <code class="docutils literal notranslate"><span class="pre">INT2</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int16</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INT</span></code>, <code class="docutils literal notranslate"><span class="pre">INT4</span></code>, and <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code> are aliases of <code class="docutils literal notranslate"><span class="pre">Int32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Int64</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Int64</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Float32</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Float32</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Float64</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> is an alias of <code class="docutils literal notranslate"><span class="pre">Float64</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Decimal(p,s)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">String</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">String</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">String</span></code></p></td>
+<td><p>Enabling <code class="docutils literal notranslate"><span class="pre">clickhouse.map-string-as-varchar</span></code> config property changes the
+mapping to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Date</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(0)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DateTime</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UUID</span></code></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>No other types are supported.</p>
+
 
 <h3 id="type-mapping-configuration-properties">Type mapping configuration properties<a class="headerlink" href="#type-mapping-configuration-properties" title="Permalink to this headline">#</a></h3>
 <p>The following properties can be used to configure how data types from the

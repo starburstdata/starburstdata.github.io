@@ -630,6 +630,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#phoenix-type-to-trino-type-mapping" class="md-nav__link">Phoenix type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-phoenix-type-mapping" class="md-nav__link">Trino type to Phoenix type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#decimal-type-handling" class="md-nav__link">Decimal type handling</a>
         </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
@@ -882,6 +886,10 @@
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#phoenix-type-to-trino-type-mapping" class="md-nav__link">Phoenix type to Trino type mapping</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-type-to-phoenix-type-mapping" class="md-nav__link">Trino type to Phoenix type mapping</a>
+        </li>
         <li class="md-nav__item"><a href="#decimal-type-handling" class="md-nav__link">Decimal type handling</a>
         </li>
         <li class="md-nav__item"><a href="#type-mapping-configuration-properties" class="md-nav__link">Type mapping configuration properties</a>
@@ -1033,6 +1041,25 @@ Do not change this setting from the default. Non-default values may
 negatively impact performance.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<td><p>Push down dynamic filters into JDBC queries</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<td><p>Maximum duration for which Trino will wait for dynamic filters to be
+collected from the build side of joins before starting a JDBC query.
+Using a large timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code></p></td>
+<td><p>Minimum size of query predicates above which Trino compacts the predicates.
+Pushing down a large list of predicates to the data source can compromise
+performance. For optimization in that situation, Trino can compact the large
+predicates into a simpler range predicate. If necessary, adjust the threshold
+to ensure a balance between performance and predicate pushdown.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -1139,41 +1166,49 @@ that catalog name instead of <code class="docutils literal notranslate"><span cl
 
 
 <span id="phoenix-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
-<p>The data type mappings are as follows:</p>
-<table>
+<p>Because Trino and Phoenix each support types that the other does not, this
+connector modifies some types when reading or writing data. Data types may not
+map the same way in both directions between Trino and the data source. Refer to
+the following sections for type mapping in each direction.</p>
+
+<h3 id="phoenix-type-to-trino-type-mapping">Phoenix type to Trino type mapping<a class="headerlink" href="#phoenix-type-to-trino-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The connector maps Phoenix types to the corresponding Trino types following this
+table:</p>
+<table id="id1">
+<caption><span class="caption-text">Phoenix type to Trino type mapping</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
 <colgroup>
-<col style="width: 67%"/>
-<col style="width: 33%"/>
+<col style="width: 60%"/>
+<col style="width: 40%"/>
 </colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>Phoenix</p></th>
-<th class="head"><p>Trino</p></th>
+<tr class="row-odd"><th class="head"><p>Phoenix database type</p></th>
+<th class="head"><p>Trino type</p></th>
 </tr>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_TINYINT</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_SMALLINT</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_INTEGER</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_INT</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_LONG</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
@@ -1182,50 +1217,108 @@ that catalog name instead of <code class="docutils literal notranslate"><span cl
 <td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_FLOAT</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_DOUBLE</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code></p></td>
-<td><p>(same)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BINARY</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
-<td><p>(same)</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p></td>
-<td><p>(same)</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_TIME</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UNSIGNED_DATE</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
-<td><p>(same)</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
-<td><p>(same)</p></td>
-</tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
-<td><p>(same)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
 </tr>
 </tbody>
 </table>
-<p>The Phoenix fixed length <code class="docutils literal notranslate"><span class="pre">BINARY</span></code> data type is mapped to the Trino
-variable length <code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code> data type. There is no way to create a
-Phoenix table in Trino that uses the <code class="docutils literal notranslate"><span class="pre">BINARY</span></code> data type, as Trino
-does not have an equivalent type.</p>
+<p>No other types are supported.</p>
+
+
+<h3 id="trino-type-to-phoenix-type-mapping">Trino type to Phoenix type mapping<a class="headerlink" href="#trino-type-to-phoenix-type-mapping" title="Permalink to this headline">#</a></h3>
+<p>The Phoenix fixed length <code class="docutils literal notranslate"><span class="pre">BINARY</span></code> data type is mapped to the Trino variable
+length <code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code> data type. There is no way to create a Phoenix table in
+Trino that uses the <code class="docutils literal notranslate"><span class="pre">BINARY</span></code> data type, as Trino does not have an equivalent
+type.</p>
+<p>The connector maps Trino types to the corresponding Phoenix types following this
+table:</p>
+<table id="id2">
+<caption><span class="caption-text">Trino type to Phoenix type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 60%"/>
+<col style="width: 40%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Trino database type</p></th>
+<th class="head"><p>Phoenix type</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">FLOAT</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,s)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CHAR(n)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR(n)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIME</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>No other types are supported.</p>
+
 
 <h3 id="decimal-type-handling">Decimal type handling<a class="headerlink" href="#decimal-type-handling" title="Permalink to this headline">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> types with unspecified precision or scale are mapped to a Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> with a default precision of 38 and default scale of 0. The scale can

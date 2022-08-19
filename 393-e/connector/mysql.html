@@ -1076,6 +1076,25 @@ Do not change this setting from the default. Non-default values may
 negatively impact performance.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<td><p>Push down dynamic filters into JDBC queries</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<td><p>Maximum duration for which Trino will wait for dynamic filters to be
+collected from the build side of joins before starting a JDBC query.
+Using a large timeout can potentially result in more detailed dynamic filters.
+However, it can also increase latency for some queries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code></p></td>
+<td><p>Minimum size of query predicates above which Trino compacts the predicates.
+Pushing down a large list of predicates to the data source can compromise
+performance. For optimization in that situation, Trino can compact the large
+predicates into a simpler range predicate. If necessary, adjust the threshold
+to ensure a balance between performance and predicate pushdown.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">32</span></code></p></td>
+</tr>
 </tbody>
 </table>
 
@@ -1158,12 +1177,13 @@ rollback can be performed.</p>
 
 <span id="mysql-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this headline">#</a></h2>
 <p>Because Trino and MySQL each support types that the other does not, this
-connector modifies some types when reading or writing data.</p>
+connector modifies some types when reading or writing data. Data types may not
+map the same way in both directions between Trino and the data source. Refer to
+the following sections for type mapping in each direction.</p>
 
 <h3 id="mysql-to-trino-read-type-mapping">MySQL to Trino read type mapping<a class="headerlink" href="#mysql-to-trino-read-type-mapping" title="Permalink to this headline">#</a></h3>
-<p>This connector supports reading the following MySQL types and performs
-conversion to Trino types with the detailed mappings as shown in the following
-table.</p>
+<p>The connector maps MySQL types to the corresponding Trino types following
+this table:</p>
 <table id="id1">
 <caption><span class="caption-text">MySQL to Trino type mapping</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
 <colgroup>
@@ -1272,9 +1292,8 @@ table.</p>
 
 
 <h3 id="trino-to-mysql-write-type-mapping">Trino to MySQL write type mapping<a class="headerlink" href="#trino-to-mysql-write-type-mapping" title="Permalink to this headline">#</a></h3>
-<p>This connector supports writing the following Trino types and performs
-conversion to MySQL types with the detailed mappings as shown in the
-following table.</p>
+<p>The connector maps Trino types to the corresponding MySQL types following
+this table:</p>
 <table id="id2">
 <caption><span class="caption-text">Trino to MySQL type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
