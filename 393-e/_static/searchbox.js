@@ -124,4 +124,14 @@ document.addEventListener('DOMContentLoaded', function () {
   ]);
 
   search.start();
+
+  document.addEventListener('keydown', event => {
+    const searchInput = document.querySelector('.ais-SearchBox-input').value;
+
+    if (searchInput && event.key == 'Enter'){
+      if (document.activeElement == document.querySelector('.ais-SearchBox-input')){
+        window.location.href =  "/" + pathSegment + "/search.html?q=" + searchInput;
+      }
+    }
+  })
 });
