@@ -16,9 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
     indexName: 'AllDocs',
     searchClient,
     searchFunction: function (helper) {
-      helper.state.facetFilters = [
-        [`version:${pathSegment}`, 'type: guides'],
-      ];
+      helper.state.facetFilters = [[`version:${pathSegment}`, 'type: guides']];
       // if less than 2 character, don't trigger search and hide inner content
       if (helper.state.query.length < 2) {
         hitsContainer.style.display = 'none';
@@ -32,52 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     },
     searchParameters: {
-      facetFilters: [
-        [`version:${pathSegment}`, 'type: guides'],
-      ],
+      facetFilters: [[`version:${pathSegment}`, 'type: guides']],
     },
   });
-
-  const renderHits = (renderOptions) => {
-    const { hits, widgetParams } = renderOptions;
-
-    widgetParams.container.innerHTML = `<ul class="search-hits">
-      ${hits
-        .map(
-          (item) =>
-            `<li class="hit-item">
-              <a href="${item.url}">
-                <h2>
-                  ${instantsearch.highlight({ attribute: 'title', hit: item })}
-                </h2>
-                ${
-                  item.content &&
-                  `<p>
-                  ${instantsearch.snippet({ attribute: 'content', hit: item })}
-                </p>`
-                }
-                ${
-                  item['categories.lvl2']
-                    ? `<p class="search-breadcrumb">
-                      ${item['categories.lvl2']}
-                    </p>`
-                    : item['categories.lvl1']
-                    ? `<p class="search-breadcrumb">
-                      ${item['categories.lvl1']}
-                    </p>`
-                    : item['categories.lvl0']
-                    ? `<p class="search-breadcrumb">
-                      ${item['categories.lvl0']}
-                    </p>`
-                    : null
-                }
-              </a>
-            </li>
-            `
-        )
-        .join('')}
-    </ul>`;
-  };
 
   const renderStats = (renderOptions) => {
     const { nbHits, query } = renderOptions;
@@ -91,12 +46,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   };
 
-  const customHits = instantsearch.connectors.connectHits(renderHits);
   const customStats = instantsearch.connectors.connectStats(renderStats);
 
   search.addWidgets([
     instantsearch.widgets.configure({
       attributesToSnippet: ['content'],
+      clickAnalytics: true,
       hitsPerPage: 5,
     }),
 
@@ -114,14 +69,63 @@ document.addEventListener('DOMContentLoaded', function () {
       sortBy: ['name:desc', 'count:desc'],
     }),
 
-    customHits({
-      container: document.querySelector('#hits'),
+    instantsearch.widgets.hits({
+      container: '#hits',
+      templates: {
+        item: (hit, bindEvent) => {
+          return (
+            `<li class="hit-item">
+          <a ${bindEvent('click', hit, 'hit clicked')} href="` +
+            hit.url +
+            `">
+            <h2>
+              ${instantsearch.highlight({ attribute: 'title', hit: hit })}
+            </h2>
+            <p>
+              ${instantsearch.snippet({ attribute: 'content', hit: hit })}
+            </p>
+            ${
+              hit['categories.lvl2']
+                ? `<p class="search-breadcrumb">
+                  ${hit['categories.lvl2']}
+                </p>`
+                : hit['categories.lvl1']
+                ? `<p class="search-breadcrumb">
+                  ${hit['categories.lvl1']}
+                </p>`
+                : hit['categories.lvl0']
+                ? `<p class="search-breadcrumb">
+                  ${hit['categories.lvl0']}
+                </p>`
+                : null
+            }
+          </a>
+          </li>
+          `
+          );
+        },
+        empty: (results) => {
+          refinementContainer.style.display = 'none';
+          return `<div id="noResults">
+                <h2>We're sorry!</h2>
+                <p>We couldn't find any results for: "${
+                  results && results.query
+                }"</p>
+              </div>`;
+        },
+      },
     }),
 
     customStats({
       container: document.querySelector('#stats'),
     }),
   ]);
+
+  search.use(
+    instantsearch.middlewares.createInsightsMiddleware({
+      insightsClient: window.aa,
+    })
+  );
 
   search.start();
 
