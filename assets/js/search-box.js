@@ -44,9 +44,7 @@ const renderStats = (renderOptions) => {
     statsContainer.innerHTML = `
       <a href='/searchresults?q=${query}'>View more results</a>
     `;
-  } else if (nbHits <= 5) {
-    statsContainer.innerHTML = `<a href='/searchresults?q=${query}'>Advanced search</a>`;
-  } else if (nbHits == 0) {
+  } else {
     statsContainer.innerHTML = ``;
   }
 };

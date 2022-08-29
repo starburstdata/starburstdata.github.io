@@ -18,7 +18,6 @@ function searchResults() {
     const refinementContainer = document.querySelector(
       '.filter-stats-container'
     );
-    const versionContainer = document.querySelector('#versionRefinementList');
 
     const queryParameter = new URLSearchParams(window.location.search).get('q');
 
@@ -26,19 +25,21 @@ function searchResults() {
       indexName: 'AllDocs',
       searchClient,
       searchFunction: function (helper) {
+        helper.state.facetFilters = [['version:latest', 'type: guides']];
         // if less than 2 character, don't trigger search and hide inner content
         if (helper.state.query.length < 2) {
           hitsContainer.style.display = 'none';
           statsContainer.style.display = 'none';
           refinementContainer.style.display = 'none';
-          versionContainer.style.display = 'none';
         } else {
           hitsContainer.style.display = 'block';
           statsContainer.style.display = 'flex';
           refinementContainer.style.display = 'flex';
-          versionContainer.style.display = 'flex';
           helper.search(); // trigger search
         }
+      },
+      searchParameters: {
+        facetFilters: [['version: latest', 'type: guides']],
       },
     });
 
@@ -62,21 +63,11 @@ function searchResults() {
         showLoadingIndicator: true,
         showReset: true,
         placeholder: 'Search documentation',
-        sortBy: ['version:desc'],
       }),
 
       instantsearch.widgets.refinementList({
         container: '#resultsRefinementList',
         attribute: 'type',
-        showMore: true,
-        searchableEscapeFacetValues: false,
-        sortBy: ['name:desc', 'count:desc'],
-      }),
-
-      instantsearch.widgets.menuSelect({
-        container: '#versionRefinementList',
-        attribute: 'version',
-        showMore: true,
         sortBy: ['name:desc', 'count:desc'],
       }),
 
