@@ -614,12 +614,14 @@ if using AD/LDAP authentication</li>
 <p>The following example IAM add-on policies must be present for each node group:</p>
 
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">managedNodeGroups</span><span class="pi">:</span>
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">&lt;node-group-name&gt;</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">NODE_GROUP_NAME</span>
     <span class="na">iam</span><span class="pi">:</span>
       <span class="na">withAddonPolicies</span><span class="pi">:</span>
         <span class="na">externalDNS</span><span class="pi">:</span> <span class="no">true</span>
         <span class="na">albIngress</span><span class="pi">:</span> <span class="no">true</span>
 </code></pre></div></div>
+
+<p>Replace <code class="language-plaintext highlighter-rouge">NODE_GROUP_NAME</code> with the name of your node group.</p>
 
 <div class="alert alert-danger" role="alert">
   <i class="fa fa-radiation"></i> <b>Warning:</b>
@@ -653,13 +655,20 @@ staging cluster running in <code class="language-plaintext highlighter-rouge">us
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">metadata</span><span class="pi">:</span>
   <span class="na">name</span><span class="pi">:</span> <span class="s">my-sep-cluster</span>
   <span class="na">region</span><span class="pi">:</span> <span class="s">us-east-2</span>
-  <span class="na">version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">1.20"</span>
+  <span class="na">version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">VERSION_NUMBER"</span>
   <span class="na">tags</span><span class="pi">:</span>
     <span class="na">cloud</span><span class="pi">:</span> <span class="s">aws</span>
     <span class="na">environment</span><span class="pi">:</span> <span class="s">staging</span>
     <span class="na">info</span><span class="pi">:</span> <span class="s2">"</span><span class="s">EKS</span><span class="nv"> </span><span class="s">cluster</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">Starburst</span><span class="nv"> </span><span class="s">Enterprise</span><span class="nv"> </span><span class="s">staging</span><span class="nv"> </span><span class="s">environment"</span>
-    <span class="na">user</span><span class="pi">:</span> <span class="s">your.username</span>
+    <span class="na">user</span><span class="pi">:</span> <span class="s">USER_NAME</span>
 </code></pre></div></div>
+
+<p>Replace the following:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">VERSION_NUMBER</code> with the correct <code class="language-plaintext highlighter-rouge">eksctl</code> version number.</li>
+  <li><code class="language-plaintext highlighter-rouge">USER_NAME</code> with the name of your <code class="language-plaintext highlighter-rouge">user</code> tag.</li>
+</ul>
       <h2 id="specify-your-networking">
         
         
@@ -766,53 +775,109 @@ the EKS cluster without supplying credentials. It is not required.</p>
 metadata tags in both entries in <code class="language-plaintext highlighter-rouge">managedNodeGroups:</code>.</div>
 
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">managedNodeGroups</span><span class="pi">:</span>
-
-  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">sep</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">coordinator</span>
     <span class="na">tags</span><span class="pi">:</span>
       <span class="na">cloud</span><span class="pi">:</span> <span class="s">aws</span>
       <span class="na">environment</span><span class="pi">:</span> <span class="s">staging</span>
       <span class="na">info</span><span class="pi">:</span> <span class="s2">"</span><span class="s">EKS</span><span class="nv"> </span><span class="s">cluster</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">Starburst</span><span class="nv"> </span><span class="s">Enterprise</span><span class="nv"> </span><span class="s">staging</span><span class="nv"> </span><span class="s">environment"</span>
-      <span class="na">user</span><span class="pi">:</span> <span class="s">your.username</span>
+      <span class="na">user</span><span class="pi">:</span> <span class="s">USER_NAME</span>
+    <span class="c1"># Ensure all mangedNode groups have the same availabiityZone set.</span>
     <span class="na">availabilityZones</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">us-east-2a</span><span class="pi">]</span>
     <span class="na">labels</span><span class="pi">:</span>
-      <span class="na">allow-workers</span><span class="pi">:</span> <span class="s">workers</span>
-    <span class="na">instanceTypes</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">m5.xlarge"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5a.xlarge"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5ad.xlarge"</span><span class="pi">]</span>
-    <span class="na">desiredCapacity</span><span class="pi">:</span> <span class="m">2</span>
-    <span class="na">minSize</span><span class="pi">:</span> <span class="m">2</span>
-    <span class="na">maxSize</span><span class="pi">:</span> <span class="m">4</span>
+      <span class="na">allow</span><span class="pi">:</span> <span class="s">coordinator</span>
+    <span class="c1"># It is recommended to not use spot instances for the coordinator.</span>
+    <span class="na">spot</span><span class="pi">:</span> <span class="no">false</span>
+    <span class="na">instanceType</span><span class="pi">:</span> <span class="s">m5.8xlarge</span>
+    <span class="na">desiredCapacity</span><span class="pi">:</span> <span class="m">1</span>
+    <span class="na">minSize</span><span class="pi">:</span> <span class="m">1</span>
+    <span class="na">maxSize</span><span class="pi">:</span> <span class="m">1</span>
     <span class="na">privateNetworking</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="c1"># The following ssh key section is optional and can be removed if not desired.</span>
+    <span class="c1"># It allows you to ssh directly to the EKS workers.</span>
     <span class="na">ssh</span><span class="pi">:</span>
       <span class="na">allow</span><span class="pi">:</span> <span class="no">true</span>
-      <span class="na">publicKeyName</span><span class="pi">:</span> <span class="s">en-field-key</span>
+      <span class="na">publicKeyName</span><span class="pi">:</span> <span class="s">PUBLIC_KEY_NAME</span>
     <span class="na">iam</span><span class="pi">:</span>
       <span class="na">attachPolicyARNs</span><span class="pi">:</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy</span>
-        <span class="pi">-</span> <span class="s">arn:aws:iam::47ID9String78:policy/EKS-S3-Glue</span>
-
+        <span class="c1"># The following policy is optional and can be removed if not desired.</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam:: POLICY_ID</span>
+  <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">workers</span>
+    <span class="na">tags</span><span class="pi">:</span>
+      <span class="na">cloud</span><span class="pi">:</span> <span class="s">aws</span>
+      <span class="na">environment</span><span class="pi">:</span> <span class="s">staging</span>
+      <span class="na">info</span><span class="pi">:</span> <span class="s2">"</span><span class="s">EKS</span><span class="nv"> </span><span class="s">cluster</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">Starburst</span><span class="nv"> </span><span class="s">Enterprise</span><span class="nv"> </span><span class="s">staging</span><span class="nv"> </span><span class="s">environment"</span>
+      <span class="na">user</span><span class="pi">:</span> <span class="s">USER_NAME</span>
+    <span class="c1"># Ensure all mangedNode groups have the same availabiityZone set.</span>
+    <span class="na">availabilityZones</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">us-east-2a</span><span class="pi">]</span>
+    <span class="na">labels</span><span class="pi">:</span>
+      <span class="na">allow</span><span class="pi">:</span> <span class="s">workers</span>
+    <span class="na">spot</span><span class="pi">:</span> <span class="no">false</span>
+    <span class="na">instanceType</span><span class="pi">:</span> <span class="s">m5.8xlarge</span>
+    <span class="c1"># If spot instances are desired then comment out or remove the two lines above.</span>
+    <span class="c1"># Then remove the comments from below.</span>
+    <span class="c1">#spot: true</span>
+    <span class="c1">#instanceTypes: ["m5.8xlarge", "m5a.8xlarge", "m5ad.8xlarge"]</span>
+    <span class="c1">#</span>
+    <span class="c1"># The following can be adjusted to the desired number of workers for your environment.</span>
+    <span class="na">desiredCapacity</span><span class="pi">:</span> <span class="m">2</span>
+    <span class="na">minSize</span><span class="pi">:</span> <span class="m">2</span>
+    <span class="na">maxSize</span><span class="pi">:</span> <span class="m">4</span>
+    <span class="na">privateNetworking</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="c1"># The following ssh key section is optional and can be removed if not desired.</span>
+    <span class="c1"># It allows you to ssh directly to the EKS workers.</span>
+    <span class="na">ssh</span><span class="pi">:</span>
+      <span class="na">allow</span><span class="pi">:</span> <span class="no">true</span>
+      <span class="na">publicKeyName</span><span class="pi">:</span> <span class="s">PUBLIC_KEY_NAME</span>
+    <span class="na">iam</span><span class="pi">:</span>
+      <span class="na">attachPolicyARNs</span><span class="pi">:</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy</span>
+        <span class="c1"># The following policy is optional and can be removed if not desired.</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam:: POLICY_ID</span>
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">sep_support_services</span>
     <span class="na">tags</span><span class="pi">:</span>
       <span class="na">cloud</span><span class="pi">:</span> <span class="s">aws</span>
       <span class="na">environment</span><span class="pi">:</span> <span class="s">staging</span>
       <span class="na">info</span><span class="pi">:</span> <span class="s2">"</span><span class="s">EKS</span><span class="nv"> </span><span class="s">cluster</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">Starburst</span><span class="nv"> </span><span class="s">Enterprise</span><span class="nv"> </span><span class="s">staging</span><span class="nv"> </span><span class="s">environment"</span>
-      <span class="na">user</span><span class="pi">:</span> <span class="s">your.username</span>
+      <span class="na">user</span><span class="pi">:</span> <span class="s">USER_NAME</span>
+    <span class="c1"># Ensure all mangedNode groups have the same availabiityZone set.</span>
     <span class="na">availabilityZones</span><span class="pi">:</span> <span class="pi">[</span><span class="nv">us-east-2a</span><span class="pi">]</span>
-    <span class="na">instanceTypes</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">m5.large"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5a.large"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5ad.large"</span><span class="pi">]</span>
+    <span class="na">labels</span><span class="pi">:</span>
+      <span class="na">allow</span><span class="pi">:</span> <span class="s">support</span>
+    <span class="na">spot</span><span class="pi">:</span> <span class="no">false</span>
+    <span class="na">instanceType</span><span class="pi">:</span> <span class="s">m5.xlarge</span>
+    <span class="c1"># If spot instances are desired then comment out or remove the two lines above.</span>
+    <span class="c1"># Then remove the comments from below.</span>
+    <span class="c1">#spot: true</span>
+    <span class="c1">#instanceTypes: ["m5.xlarge", "m5a.xlarge", "m5ad.xlarge"]</span>
     <span class="na">desiredCapacity</span><span class="pi">:</span> <span class="m">1</span>
     <span class="na">minSize</span><span class="pi">:</span> <span class="m">1</span>
     <span class="na">maxSize</span><span class="pi">:</span> <span class="m">1</span>
     <span class="na">privateNetworking</span><span class="pi">:</span> <span class="no">true</span>
+    <span class="c1"># The following ssh key section is optional and can be removed if not desired.</span>
+    <span class="c1"># It allows you to ssh directly to the EKS workers.</span>
     <span class="na">ssh</span><span class="pi">:</span>
       <span class="na">allow</span><span class="pi">:</span> <span class="no">true</span>
-      <span class="na">publicKeyName</span><span class="pi">:</span> <span class="s">en-field-key</span>
+      <span class="na">publicKeyName</span><span class="pi">:</span> <span class="s">PUBLIC_KEY_NAME</span>
     <span class="na">iam</span><span class="pi">:</span>
       <span class="na">attachPolicyARNs</span><span class="pi">:</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly</span>
         <span class="pi">-</span> <span class="s">arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy</span>
-        <span class="pi">-</span> <span class="s">arn:aws:iam::47ID9String78:policy/EKS-S3-Glue</span>
+        <span class="c1"># The following policy is optional and can be removed if not desired.</span>
+        <span class="pi">-</span> <span class="s">arn:aws:iam:: POLICY_ID</span>
 </code></pre></div></div>
+
+<p>Replace the following:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">USER_NAME</code> with the name of your <code class="language-plaintext highlighter-rouge">user</code> tag.</li>
+  <li><code class="language-plaintext highlighter-rouge">PUBLIC_KEY_NAME</code> with the name of your public <code class="language-plaintext highlighter-rouge">ssh</code> key.</li>
+  <li><code class="language-plaintext highlighter-rouge">POLICY_ID</code> with the IAM policy id.</li>
+</ul>
       <h3 id="spot-instances">
         
         
@@ -856,7 +921,7 @@ entry:</p>
 
   <span class="pi">-</span> <span class="na">name</span><span class="pi">:</span> <span class="s">sep_support_services</span>
     <span class="s">...</span>
-    <span class="na">instanceTypes</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">m5.xlarge"</span><span class="pi">]</span>
+    <span class="na">instanceTypes</span><span class="pi">:</span> <span class="pi">[</span><span class="s2">"</span><span class="s">m5.xlarge"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5a.xlarge"</span><span class="pi">,</span> <span class="s2">"</span><span class="s">m5ad.xlarge"</span><span class="pi">]</span>
     <span class="na">spot</span><span class="pi">:</span> <span class="no">true</span>
     <span class="s">...</span>
 </code></pre></div></div>
