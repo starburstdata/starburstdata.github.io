@@ -390,6 +390,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
+        <li class="md-nav__item"><a href="#cloudera-schema-registry" class="md-nav__link">Cloudera schema registry</a>
+        </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
         </li>
         <li class="md-nav__item"><a href="#security-for-schema-registry-access" class="md-nav__link">Security for schema registry access</a><nav class="md-nav">
@@ -882,6 +884,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
+        <li class="md-nav__item"><a href="#cloudera-schema-registry" class="md-nav__link">Cloudera schema registry</a>
+        </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
         </li>
         <li class="md-nav__item"><a href="#security-for-schema-registry-access" class="md-nav__link">Security for schema registry access</a><nav class="md-nav">
@@ -977,13 +981,83 @@ the following features:</p>
 
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h2>
 <p>The connector configuration is identical to the configuration for the base
-<a class="reference internal" href="kafka.html"><span class="doc">Kafka connector</span></a>.</p>
+<a class="reference internal" href="kafka.html"><span class="doc">Kafka connector</span></a> with the exception of the Cloudera
+schema registry properties discussed in this section.</p>
 <p>A minimal configuration uses the connector.name <code class="docutils literal notranslate"><span class="pre">kafka</span></code>, and adds
 configuration for nodes and table names as shown in the following snippet:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">kafka</span>
 <span class="na">kafka.table-names</span><span class="o">=</span><span class="s">table1,table2</span>
 <span class="na">kafka.nodes</span><span class="o">=</span><span class="s">host1:port,host2:port</span>
 </pre></div>
+</div>
+
+
+<h2 id="cloudera-schema-registry">Cloudera schema registry<a class="headerlink" href="#cloudera-schema-registry" title="Permalink to this headline">#</a></h2>
+<p>To use the Cloudera (CDP) schema registry, the following properties must be set:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">kafka.table-description-supplier</span><span class="o">=</span><span class="s">cloudera</span>
+<span class="na">kafka.cloudera-schema-registry-url</span><span class="o">=</span><span class="s">http://schema-registry.example.com:8081/api/v1</span>
+</pre></div>
+</div>
+<p>To configure Kerberos authentication with a CDP schema registry, you must
+include the following additional properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">kafka.cloudera-schema-registry.authentication.type</span><span class="o">=</span><span class="s">KERBEROS</span>
+<span class="na">kafka.cloudera-schema-registry.authentication.client.principal</span><span class="o">=</span><span class="s">kafka/broker1.example.com@EXAMPLE.COM</span>
+<span class="na">kafka.cloudera-schema-registry.authentication.client.keytab</span><span class="o">=</span><span class="s">/etc/kafka/kerberos/broker1.keytab</span>
+<span class="na">kafka.cloudera-schema-registry.authentication.config</span><span class="o">=</span><span class="s">/etc/krb5.conf</span>
+<span class="na">kafka.cloudera-schema-registry.authentication.service-name</span><span class="o">=</span><span class="s">kafka</span>
+</pre></div>
+</div>
+<p>The full list of configuration properties is as follows:</p>
+<table id="id3">
+<caption><span class="caption-text">CDP schema registry properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry-url</span></code></p></td>
+<td><p>URL for Cloudera Schema Registry, e.g. <a class="reference external" href="http://example.com:8080/api/v1">http://example.com:8080/api/v1</a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry.authentication.type</span></code></p></td>
+<td><p>Credential source for schema registry. Valid values are <code class="docutils literal notranslate"><span class="pre">KERBEROS</span></code> and
+<code class="docutils literal notranslate"><span class="pre">NONE</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-subjects-cache-refresh-interval</span></code></p></td>
+<td><p>The interval at which the topic to subjects cache will be refreshed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.empty-field-strategy</span></code></p></td>
+<td><p>How to handle struct types with no fields. Valid values are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">IGNORE</span></code> - ignore structs with no fields. This strategy propagates to parents.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FAIL</span></code> - fail the query if a struct with no fields is defined.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DUMMY</span></code> - add a boolean field named <code class="docutils literal notranslate"><span class="pre">dummy</span></code>, which is <code class="docutils literal notranslate"><span class="pre">null</span></code>. This may be desired if the struct represents a marker field.</p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry.authentication.client.principal</span></code></p></td>
+<td><p>Kerberos client principal name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry.authentication.client.keytab</span></code></p></td>
+<td><p>Kerberos client keytab location.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry.authentication.config</span></code></p></td>
+<td><p>Kerberos service file location, typically <code class="docutils literal notranslate"><span class="pre">/etc/krb5.conf</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka.cloudera-schema-registry.authentication.service-name</span></code></p></td>
+<td><p>Kerberos principal name of the Kafka service.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The connector only supports CDP Schema Registry Kafka messages serialized
+using protocol ID 3 (<code class="docutils literal notranslate"><span class="pre">VERSION_ID_AS_INT_PROTOCOL</span></code>). Attempting to use other
+protocols results in an error.</p>
 </div>
 
 
@@ -1011,8 +1085,8 @@ necessary.</p>
 keystore to use on SEP after adding the relevant certificates to these files.
 After creating these files, you have to place them on your cluster nodes and
 configure the relevant properties:</p>
-<table id="id3">
-<caption><span class="caption-text">Truststore and keystore properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">Truststore and keystore properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1104,8 +1178,8 @@ when using <a class="reference internal" href="#kafka-ssl-authentication"><span 
 <li><p><code class="docutils literal notranslate"><span class="pre">SASL_SSL</span></code> - when connecting to the server using <a class="reference internal" href="#kafka-sasl-authentication"><span class="std std-ref">SASL authentication</span></a>.</p></li>
 </ul>
 <p>In addition, you can set following optional configuration properties:</p>
-<table id="id4">
-<caption><span class="caption-text">Optional SSL encryption configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Optional SSL encryption configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1149,8 +1223,8 @@ configuration to your catalog file to use TLS/SSL:</p>
 </pre></div>
 </div>
 <p>You must set the following required configuration properties:</p>
-<table id="id5">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1187,8 +1261,8 @@ kafka.ssl.key.password=private_key_password
 <span id="kafka-sasl-authentication"></span><h3 id="sasl-authentication">SASL authentication<a class="headerlink" href="#sasl-authentication" title="Permalink to this headline">#</a></h3>
 <p>With SASL authentication, the connector authenticates with the Kafka server
 using one of the following supported authentication types:</p>
-<table id="id6">
-<caption><span class="caption-text">Authentication types</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
+<table id="id7">
+<caption><span class="caption-text">Authentication types</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -1254,8 +1328,8 @@ kafka.authentication.type=PASSWORD
 </pre></div>
 </div>
 <p>Set the following required configuration properties:</p>
-<table id="id7">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
+<table id="id8">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1285,8 +1359,8 @@ kafka.authentication.type=KERBEROS
 </pre></div>
 </div>
 <p>Set the following required configuration properties:</p>
-<table id="id8">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<table id="id9">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id9" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1336,8 +1410,8 @@ kafka.authentication.type=OAUTH2
 </pre></div>
 </div>
 <p>Set the following required configuration properties:</p>
-<table id="id9">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id9" title="Permalink to this table">#</a></caption>
+<table id="id10">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id10" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1362,8 +1436,8 @@ kafka.authentication.type=OAUTH2
 <p>If the authorization server is using SSL with a self-signed certificate, set the
 additional properties to use a custom truststore while validating the
 certificate:</p>
-<table id="id10">
-<caption><span class="caption-text">Additional settings</span><a class="headerlink" href="#id10" title="Permalink to this table">#</a></caption>
+<table id="id11">
+<caption><span class="caption-text">Additional settings</span><a class="headerlink" href="#id11" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1420,8 +1494,8 @@ kafka.authentication.type=SCRAM_SHA_256
 </pre></div>
 </div>
 <p>Set the following required configuration properties:</p>
-<table id="id11">
-<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id11" title="Permalink to this table">#</a></caption>
+<table id="id12">
+<caption><span class="caption-text">Required settings</span><a class="headerlink" href="#id12" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1470,8 +1544,8 @@ in the original Avro schema, then a write operation fails.</p></li>
 </ul>
 <p>The following table lists supported SEP types, which can be used in <code class="docutils literal notranslate"><span class="pre">type</span></code>
 for the equivalent Avro field type.</p>
-<table id="id12">
-<caption><span class="caption-text">SEP to Protobuf type mapping for encoding</span><a class="headerlink" href="#id12" title="Permalink to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">SEP to Protobuf type mapping for encoding</span><a class="headerlink" href="#id13" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
@@ -1586,8 +1660,8 @@ proto file then a read operation returns NULL.</p></li>
 </ul>
 <p>Table below lists supported SEP types which can be used in <code class="docutils literal notranslate"><span class="pre">type</span></code> for the
 equivalent Proto field type/s.</p>
-<table id="id13">
-<caption><span class="caption-text">SEP to Protobuf type mapping for decoding</span><a class="headerlink" href="#id13" title="Permalink to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">SEP to Protobuf type mapping for decoding</span><a class="headerlink" href="#id14" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
