@@ -1155,9 +1155,61 @@ role.</p>
 <p>For example, if a role assigned to an API token does not have the privileges to
 start or stop a cluster, any API calls with that token to perform these actions
 fail.</p>
+      <h3 id="access-the-api-">
+        
+        
+          Access the API <a name="access"></a> <a href="#access-the-api-" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
 
-<p>Any API authentication that is assigned the <code class="language-plaintext highlighter-rouge">accountadmin</code> role can use all
-API endpoints.</p>
+<p>To access the API, you must first <a href="./access-control/api-auth-token.html#">generate a new API
+token</a>.</p>
+
+<ol>
+  <li>
+    <p>Generate the base64 encoded string using the client ID and secret key
+values from the <a href="./access-control/api-auth-token.html#create-a-token-">token you created</a>:</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nb">echo</span> <span class="nt">-n</span> CLIENT_ID:SECRET_KEY | <span class="nb">base64</span>
+</code></pre></div>    </div>
+
+    <p>Replace <code class="language-plaintext highlighter-rouge">CLIENT_ID</code> and <code class="language-plaintext highlighter-rouge">SECRET_KEY</code> with the client ID and secret key:</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> <span class="nb">echo</span> <span class="nt">-n</span> uTwiAPLiCZnTjIid:2BCgfvDbJP6o61H5REt9P2FMkEw39chd | <span class="nb">base64</span>
+</code></pre></div>    </div>
+
+    <p>Running this command returns the <code class="language-plaintext highlighter-rouge">CLIENT_ID</code> and <code class="language-plaintext highlighter-rouge">SECRET_KEY</code> encoded in
+ base64.</p>
+  </li>
+  <li>
+    <p>The following <code class="language-plaintext highlighter-rouge">cURL</code> example shows an <code class="language-plaintext highlighter-rouge">-X POST</code> request:</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code> curl <span class="nt">-X</span> POST <span class="se">\</span>
+   <span class="nt">-H</span> <span class="s1">'Authorization: Basic PSAIWHLSKDO06Pj34ZEltUW23RFdDS3nKEPUozOX432Szc0NkI1VFlYNXAwDw=='</span> <span class="se">\</span>
+   <span class="nt">-H</span> <span class="s1">'Content-Type: application/x-www-form-urlencoded'</span> <span class="se">\</span>
+   <span class="nt">-d</span> <span class="s1">'grant_type=client_credentials'</span> <span class="se">\</span>
+   https://ACCOUNT_DOMAIN/oauth/v2/token
+</code></pre></div>    </div>
+
+    <p>a. Copy the generated base64 CLIENT_ID:SECRET_KEY string, e.g.
+ <code class="language-plaintext highlighter-rouge">PSAIWHLSKDO06Pj34ZEltUW23RFdDS3nKEPUozOX432Szc0NkI1VFlYNXAwDw==</code>, to the
+ Basic Authorization header.</p>
+
+    <p>b. Replace <code class="language-plaintext highlighter-rouge">ACCOUNT_DOMAIN </code> with your <code class="language-plaintext highlighter-rouge">youraccount.galaxy.starburst.io</code>
+   account domain, which can be found in the URL.</p>
+  </li>
+</ol>
+
+<p>The access token returned is a long string of characters similar to the
+following:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiItekE0bUFsU1N3M0RHRE1Ddmt...
+</code></pre></div></div>
+
+<p>You can use this access token with the <code class="language-plaintext highlighter-rouge">Authorization: Bearer ACCESS_TOKEN</code>
+header and endpoints to <a href="#example">make API calls</a>.</p>
       <h2 id="endpoints">
         
         
@@ -1167,10 +1219,13 @@ API endpoints.</p>
       </h2>
     
 
+<p>Any API authentication that is assigned the <code class="language-plaintext highlighter-rouge">accountadmin</code> role can use all
+API endpoints.</p>
+
 <p>The following endpoints for different entities are available:</p>
 
 <ul>
-  <li>Cluster management
+  <li>Cluster service
     <ul>
       <li><code class="language-plaintext highlighter-rouge">listClusters</code> - list all clusters</li>
       <li><code class="language-plaintext highlighter-rouge">startCluster</code>- start the specified cluster</li>
@@ -1184,6 +1239,56 @@ API endpoints.</p>
 Each endpoint’s documentation includes the exact URL of the endpoint, details
 about any parameters, JSON results, and HTTP result codes for success or
 failure.</p>
+      <h3 id="example-usage-">
+        
+        
+          Example usage <a name="example"></a> <a href="#example-usage-" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Set up to <a href="#access">access the API</a> and then use the access token with the
+<code class="language-plaintext highlighter-rouge">listClusters</code> endpoint and the <code class="language-plaintext highlighter-rouge">Authorization: Bearer ACCESS_TOKEN</code> header to
+view all clusters in your account:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  curl https://ACCOUNT_DOMAIN/public/api/v1/cluster
+    <span class="nt">-H</span> <span class="s1">'Authorization: BEARER eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiItekE0bUFsU1N3M0RHRE1DdmtOYVZEc1dXYms1djNaU2...
+</span></code></pre></div></div>
+
+<p>The following is the result of a successful request:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">{</span><span class="s2">"nextPageToken"</span>:<span class="s2">""</span>,<span class="s2">"result"</span>:[<span class="o">{</span><span class="s2">"syncToken"</span>:<span class="s2">"2"</span>,<span class="s2">"clusterId"</span>:<span class="s2">"w-3829737466"</span>,<span class="s2">"name"</span>:<span class="s2">"sample"</span><span class="o">}</span>,<span class="o">{</span><span class="s2">"syncToken"</span>:<span class="s2">"3"</span>,<span class="s2">"clusterId"</span>:<span class="s2">"w-9081218528"</span>,<span class="s2">"name"</span>:<span class="s2">"demodocs"</span><span class="o">}]}</span>
+</code></pre></div></div>
+
+<p>For easy viewing of the result, you can output into a file:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    curl https://<span class="o">{</span>account-domain<span class="o">}</span>/public/api/v1/cluster <span class="se">\</span>
+      <span class="nt">-H</span> <span class="s1">'Authorization: BEARER ACCESS_TOKEN'</span> <span class="se">\</span>
+      <span class="o">&gt;</span> result.json
+</code></pre></div></div>
+
+<p>Open the file in an editor or a web browser to improve formatting:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="o">{</span>
+      <span class="s2">"nextPageToken"</span>:<span class="s2">""</span>
+      <span class="s2">"result"</span>:[
+        <span class="o">{</span>
+          <span class="s2">"syncToken"</span>:<span class="s2">"2"</span>,
+          <span class="s2">"clusterId"</span>:<span class="s2">"w-3829737467"</span>,
+          <span class="s2">"name"</span>:<span class="s2">"sample"</span>
+        <span class="o">}</span>
+      <span class="o">]</span>
+    <span class="o">}</span>
+    <span class="o">{</span>
+        <span class="o">{</span>
+          <span class="s2">"syncToken"</span>:<span class="s2">"3"</span>,
+          <span class="s2">"clusterId"</span>:<span class="s2">"w-9081218528"</span>,
+          <span class="s2">"name"</span>:<span class="s2">"demodocs"</span>
+        <span class="o">}</span>
+      <span class="o">]</span>
+    <span class="o">}</span>
+</code></pre></div></div>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -1288,7 +1393,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#starburst-galaxy-api">Starburst Galaxy API</a><ul><li><a href="#authentication">Authentication</a></li><li><a href="#authorization">Authorization</a></li><li><a href="#endpoints">Endpoints</a></li></ul></li></ul>
+          <ul><li><a href="#starburst-galaxy-api">Starburst Galaxy API</a><ul><li><a href="#authentication">Authentication</a></li><li><a href="#authorization">Authorization</a><ul><li><a href="#access-the-api-">Access the API <a name="access"></a></a></li></ul></li><li><a href="#endpoints">Endpoints</a><ul><li><a href="#example-usage-">Example usage <a name="example"></a></a></li></ul></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
