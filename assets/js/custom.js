@@ -10,7 +10,7 @@ function toggle_navigation_visibility(id) {
     icon.style.transform = 'rotate(0deg)';
   } else {
     e.style.display = 'block';
-    icon.style.transform = 'rotate(-90deg)';
+    icon.style.transform = 'rotate(90deg)';
   }
 }
 
