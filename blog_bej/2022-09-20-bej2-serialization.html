@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Starburst | Serialization</title>
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Starburst - Serialization">
+    <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
+    <meta property="og:image" content="/assets/img/starburst-og-image.png">
+
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/mdb.min.css">
+    <link rel="stylesheet" href="/assets/css/highlight.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114610397-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-114610397-1');
+</script>
+
+<script>
+  var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights@2.2.1";
+
+  !function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+  (e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+  i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+  }(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Serialization | Starburst</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Serialization" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is part 2 of the Bleeding edge Java series. Start at the introduction if you haven’t already. Serializing a Java object is the process of taking the in-memory state of an object and translating it into a representation that can be stored. In this case, that representation is JSON. Now that we have a model for JSON tokens, our goal is to convert Java objects into a list of JSON tokens. For simple Java objects such as primitives like int, boolean, etc. or simple Java classes like String, this is straightforward. However, serializing Java classes has traditionally been complicated. There is no standard way to determine what the representative state of a Java class should be. Most existing serialization libraries rely on annotations to help discover what the state should be. Java records, however, now allow us to know what the representation of a Java class should be without the need for extra-class metadata such as annotations. For the first version of our library, we limit the types that can be serialized only to Java instances that need no extra metadata to know what their storage representation should be: Primitives (int, double, etc.) Strings Enumerations (enumeration constants always have a name) null Records Optional of any of the above Collection of any of the above The general algorithm for our serializer is: Java Object -&gt; [token1, token2, ...] We can define a Java interface for this: public interface JsonSerializer { Stream&lt;JsonToken&gt; serialize(Object o); } It’s a deceptively simple declaration which literally says: “for an object return a stream of JSON tokens”. It’s also simple to write. Here’s our decision flow: We can now code this flow using bleeding edge preview features of Java 19 - record patterns and pattern matching for switch: public interface JsonSerializer { default Stream&lt;JsonToken&gt; serialize(Object o) { return switch (o) { case null -&gt; Stream.of(new NullToken()); case String str -&gt; Stream.of(new StringToken(str)); case Number n -&gt; Stream.of(new NumberToken(n)); case Boolean b -&gt; Stream.of(new BooleanToken(b)); case Enum&lt;?&gt; e -&gt; Stream.of(new StringToken(e.name())); case Optional&lt;?&gt; optional -&gt; serialize(optional.orElse(null)); case Collection&lt;?&gt; collection -&gt; serializeCollection(collection); case Object __ when o.getClass().isRecord() -&gt; serializeRecord(o); default -&gt; throw new IllegalArgumentException(); // we don&#39;t support this type }; } } We still need to define serializeCollection() and serializeRecord() but let’s first describe what’s going on with the switch statement. Enhanced switch and patterns We’re all familiar with switch statements from Java and most other languages. In Java 19, switch is much more powerful with these additional features: Can switch on any object Use the “arrow” operator to obviate the need for break and old-style switch fall-through Case labels can be patterns Switch statements can return values A pattern is an expression that determines whether the object being switched matches the case. In the example shown above each case statement is translated into quasi if-statements. The first case statement turns into: if o == null, then if (o instanceof String), etc. This String case also uses Java’s “Pattern Matching for instanceof” feature to bind a new variable str if o is indeed a String. This is equivalent to: if (o instanceof String) { String str = (String) o; ... } The final case statement uses a when statement. Java first does the pattern match if o instanceof Object and if that’s true it tests the “when” statement. This is equivalent to: if (o instanceof Object) { if (o.getClass().isRecord()) { ... } } Pattern matching for switch requires us to provide a variable to bind the match, so we name it __ as we won’t be using it. Collections and records Let’s address writing serializeCollection() and serializeRecord(). First, serializeCollection. Serializing a collection must write a BeginArray token, write tokens for each value in the collection separated by ValueSeparator tokens ending with an EndArray token. The pseudocode for this is: emit(BeginArray) collection.forEach(value -&gt; emit(serialize(value) + separator); emit(EndArray) We can now write serializeCollection(): default Stream&lt;JsonToken&gt; serializeCollection(Collection&lt;?&gt; collection) { Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginArrayToken()); boolean first = true; for (Object value : collection) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } serialize(value).forEach(builder); // recursively serialize each value adding each token to our builder } builder.accept(new EndArrayToken()); return builder.build(); } We can also now write serializeRecord(): default Stream&lt;JsonToken&gt; serializeRecord(Object record) { RecordComponent[] recordComponents = record.getClass().getRecordComponents(); // Java records include a complete specification of the record&#39;s components Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginObjectToken()); boolean first = true; for (RecordComponent recordComponent : recordComponents) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } builder.accept(new ObjectNameToken(recordComponent.getName())); // for now, use the record component name - in future versions we might re-format the name try { Object o = recordComponent.getAccessor().invoke(record); // use the record&#39;s accessor to get its value via reflection serialize(o).forEach(builder); // recursively serialize each value adding each token to our builder } catch (IllegalAccessException | InvocationTargetException e) { throw new RuntimeException(e); } } builder.accept(new EndObjectToken()); return builder.build(); } Astute readers will note that both serializeCollection() and serializeRecord() could be made a lot more efficient. See the accompanying source code for better implementations of these methods. Test it out for yourself! This serialization framework is a surprisingly small amount of code. It’s small enough, in fact, to run in jshell. This example uses these files: TypeToken.java (needed utility - explained in a later article in this series) JsonToken.java JsonSerializer.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java Inside jshell you can now test some serializations: var serializer = JsonSerializer.instance(); // serialize a simple number and output each JsonToken to standard out serializer.serialize(1).forEach(System.out::println); // serialize a null and output each JsonToken to standard out serializer.serialize(null).forEach(System.out::println); // Define a complex record record Person(String name, int age) {} enum Level {JUNIOR, MID, SENIOR} record Employee(Person person, Level level, Optional&lt;String&gt; detail) {} Employee e1 = new Employee(new Person(&quot;jp&quot;, 42), Level.MID, Optional.empty()); Employee e2 = new Employee(new Person(&quot;ar&quot;, 19), Level.JUNIOR, Optional.of(&quot;jp&#39;s intern&quot;)); // serialize a list of employees serializer.serialize(List.of(e1, e2)) // serialize list of employees to a stream of JsonToken .forEach(System.out::println); // print each token to standard out Summary We now have a simple framework for serializing well-defined Java objects. The code needed to do this is surprisingly small and simple. You are ready to consider output next in printing. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy." />
+<meta property="og:description" content="This is part 2 of the Bleeding edge Java series. Start at the introduction if you haven’t already. Serializing a Java object is the process of taking the in-memory state of an object and translating it into a representation that can be stored. In this case, that representation is JSON. Now that we have a model for JSON tokens, our goal is to convert Java objects into a list of JSON tokens. For simple Java objects such as primitives like int, boolean, etc. or simple Java classes like String, this is straightforward. However, serializing Java classes has traditionally been complicated. There is no standard way to determine what the representative state of a Java class should be. Most existing serialization libraries rely on annotations to help discover what the state should be. Java records, however, now allow us to know what the representation of a Java class should be without the need for extra-class metadata such as annotations. For the first version of our library, we limit the types that can be serialized only to Java instances that need no extra metadata to know what their storage representation should be: Primitives (int, double, etc.) Strings Enumerations (enumeration constants always have a name) null Records Optional of any of the above Collection of any of the above The general algorithm for our serializer is: Java Object -&gt; [token1, token2, ...] We can define a Java interface for this: public interface JsonSerializer { Stream&lt;JsonToken&gt; serialize(Object o); } It’s a deceptively simple declaration which literally says: “for an object return a stream of JSON tokens”. It’s also simple to write. Here’s our decision flow: We can now code this flow using bleeding edge preview features of Java 19 - record patterns and pattern matching for switch: public interface JsonSerializer { default Stream&lt;JsonToken&gt; serialize(Object o) { return switch (o) { case null -&gt; Stream.of(new NullToken()); case String str -&gt; Stream.of(new StringToken(str)); case Number n -&gt; Stream.of(new NumberToken(n)); case Boolean b -&gt; Stream.of(new BooleanToken(b)); case Enum&lt;?&gt; e -&gt; Stream.of(new StringToken(e.name())); case Optional&lt;?&gt; optional -&gt; serialize(optional.orElse(null)); case Collection&lt;?&gt; collection -&gt; serializeCollection(collection); case Object __ when o.getClass().isRecord() -&gt; serializeRecord(o); default -&gt; throw new IllegalArgumentException(); // we don&#39;t support this type }; } } We still need to define serializeCollection() and serializeRecord() but let’s first describe what’s going on with the switch statement. Enhanced switch and patterns We’re all familiar with switch statements from Java and most other languages. In Java 19, switch is much more powerful with these additional features: Can switch on any object Use the “arrow” operator to obviate the need for break and old-style switch fall-through Case labels can be patterns Switch statements can return values A pattern is an expression that determines whether the object being switched matches the case. In the example shown above each case statement is translated into quasi if-statements. The first case statement turns into: if o == null, then if (o instanceof String), etc. This String case also uses Java’s “Pattern Matching for instanceof” feature to bind a new variable str if o is indeed a String. This is equivalent to: if (o instanceof String) { String str = (String) o; ... } The final case statement uses a when statement. Java first does the pattern match if o instanceof Object and if that’s true it tests the “when” statement. This is equivalent to: if (o instanceof Object) { if (o.getClass().isRecord()) { ... } } Pattern matching for switch requires us to provide a variable to bind the match, so we name it __ as we won’t be using it. Collections and records Let’s address writing serializeCollection() and serializeRecord(). First, serializeCollection. Serializing a collection must write a BeginArray token, write tokens for each value in the collection separated by ValueSeparator tokens ending with an EndArray token. The pseudocode for this is: emit(BeginArray) collection.forEach(value -&gt; emit(serialize(value) + separator); emit(EndArray) We can now write serializeCollection(): default Stream&lt;JsonToken&gt; serializeCollection(Collection&lt;?&gt; collection) { Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginArrayToken()); boolean first = true; for (Object value : collection) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } serialize(value).forEach(builder); // recursively serialize each value adding each token to our builder } builder.accept(new EndArrayToken()); return builder.build(); } We can also now write serializeRecord(): default Stream&lt;JsonToken&gt; serializeRecord(Object record) { RecordComponent[] recordComponents = record.getClass().getRecordComponents(); // Java records include a complete specification of the record&#39;s components Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginObjectToken()); boolean first = true; for (RecordComponent recordComponent : recordComponents) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } builder.accept(new ObjectNameToken(recordComponent.getName())); // for now, use the record component name - in future versions we might re-format the name try { Object o = recordComponent.getAccessor().invoke(record); // use the record&#39;s accessor to get its value via reflection serialize(o).forEach(builder); // recursively serialize each value adding each token to our builder } catch (IllegalAccessException | InvocationTargetException e) { throw new RuntimeException(e); } } builder.accept(new EndObjectToken()); return builder.build(); } Astute readers will note that both serializeCollection() and serializeRecord() could be made a lot more efficient. See the accompanying source code for better implementations of these methods. Test it out for yourself! This serialization framework is a surprisingly small amount of code. It’s small enough, in fact, to run in jshell. This example uses these files: TypeToken.java (needed utility - explained in a later article in this series) JsonToken.java JsonSerializer.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java Inside jshell you can now test some serializations: var serializer = JsonSerializer.instance(); // serialize a simple number and output each JsonToken to standard out serializer.serialize(1).forEach(System.out::println); // serialize a null and output each JsonToken to standard out serializer.serialize(null).forEach(System.out::println); // Define a complex record record Person(String name, int age) {} enum Level {JUNIOR, MID, SENIOR} record Employee(Person person, Level level, Optional&lt;String&gt; detail) {} Employee e1 = new Employee(new Person(&quot;jp&quot;, 42), Level.MID, Optional.empty()); Employee e2 = new Employee(new Person(&quot;ar&quot;, 19), Level.JUNIOR, Optional.of(&quot;jp&#39;s intern&quot;)); // serialize a list of employees serializer.serialize(List.of(e1, e2)) // serialize list of employees to a stream of JsonToken .forEach(System.out::println); // print each token to standard out Summary We now have a simple framework for serializing well-defined Java objects. The code needed to do this is surprisingly small and simple. You are ready to consider output next in printing. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy." />
+<link rel="canonical" href="https://docs.starburst.io/blog_bej/2022-09-20-bej2-serialization.html" />
+<meta property="og:url" content="https://docs.starburst.io/blog_bej/2022-09-20-bej2-serialization.html" />
+<meta property="og:site_name" content="Starburst" />
+<meta property="og:image" content="https://docs.starburst.io/assets/img/logo/java.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-09-20T00:00:00-05:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://docs.starburst.io/assets/img/logo/java.png" />
+<meta property="twitter:title" content="Serialization" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2022-09-20T00:00:00-05:00","datePublished":"2022-09-20T00:00:00-05:00","description":"This is part 2 of the Bleeding edge Java series. Start at the introduction if you haven’t already. Serializing a Java object is the process of taking the in-memory state of an object and translating it into a representation that can be stored. In this case, that representation is JSON. Now that we have a model for JSON tokens, our goal is to convert Java objects into a list of JSON tokens. For simple Java objects such as primitives like int, boolean, etc. or simple Java classes like String, this is straightforward. However, serializing Java classes has traditionally been complicated. There is no standard way to determine what the representative state of a Java class should be. Most existing serialization libraries rely on annotations to help discover what the state should be. Java records, however, now allow us to know what the representation of a Java class should be without the need for extra-class metadata such as annotations. For the first version of our library, we limit the types that can be serialized only to Java instances that need no extra metadata to know what their storage representation should be: Primitives (int, double, etc.) Strings Enumerations (enumeration constants always have a name) null Records Optional of any of the above Collection of any of the above The general algorithm for our serializer is: Java Object -&gt; [token1, token2, ...] We can define a Java interface for this: public interface JsonSerializer { Stream&lt;JsonToken&gt; serialize(Object o); } It’s a deceptively simple declaration which literally says: “for an object return a stream of JSON tokens”. It’s also simple to write. Here’s our decision flow: We can now code this flow using bleeding edge preview features of Java 19 - record patterns and pattern matching for switch: public interface JsonSerializer { default Stream&lt;JsonToken&gt; serialize(Object o) { return switch (o) { case null -&gt; Stream.of(new NullToken()); case String str -&gt; Stream.of(new StringToken(str)); case Number n -&gt; Stream.of(new NumberToken(n)); case Boolean b -&gt; Stream.of(new BooleanToken(b)); case Enum&lt;?&gt; e -&gt; Stream.of(new StringToken(e.name())); case Optional&lt;?&gt; optional -&gt; serialize(optional.orElse(null)); case Collection&lt;?&gt; collection -&gt; serializeCollection(collection); case Object __ when o.getClass().isRecord() -&gt; serializeRecord(o); default -&gt; throw new IllegalArgumentException(); // we don&#39;t support this type }; } } We still need to define serializeCollection() and serializeRecord() but let’s first describe what’s going on with the switch statement. Enhanced switch and patterns We’re all familiar with switch statements from Java and most other languages. In Java 19, switch is much more powerful with these additional features: Can switch on any object Use the “arrow” operator to obviate the need for break and old-style switch fall-through Case labels can be patterns Switch statements can return values A pattern is an expression that determines whether the object being switched matches the case. In the example shown above each case statement is translated into quasi if-statements. The first case statement turns into: if o == null, then if (o instanceof String), etc. This String case also uses Java’s “Pattern Matching for instanceof” feature to bind a new variable str if o is indeed a String. This is equivalent to: if (o instanceof String) { String str = (String) o; ... } The final case statement uses a when statement. Java first does the pattern match if o instanceof Object and if that’s true it tests the “when” statement. This is equivalent to: if (o instanceof Object) { if (o.getClass().isRecord()) { ... } } Pattern matching for switch requires us to provide a variable to bind the match, so we name it __ as we won’t be using it. Collections and records Let’s address writing serializeCollection() and serializeRecord(). First, serializeCollection. Serializing a collection must write a BeginArray token, write tokens for each value in the collection separated by ValueSeparator tokens ending with an EndArray token. The pseudocode for this is: emit(BeginArray) collection.forEach(value -&gt; emit(serialize(value) + separator); emit(EndArray) We can now write serializeCollection(): default Stream&lt;JsonToken&gt; serializeCollection(Collection&lt;?&gt; collection) { Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginArrayToken()); boolean first = true; for (Object value : collection) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } serialize(value).forEach(builder); // recursively serialize each value adding each token to our builder } builder.accept(new EndArrayToken()); return builder.build(); } We can also now write serializeRecord(): default Stream&lt;JsonToken&gt; serializeRecord(Object record) { RecordComponent[] recordComponents = record.getClass().getRecordComponents(); // Java records include a complete specification of the record&#39;s components Stream.Builder&lt;JsonToken&gt; builder = Stream.builder(); builder.accept(new BeginObjectToken()); boolean first = true; for (RecordComponent recordComponent : recordComponents) { if (first) { first = false; } else { builder.accept(new ValueSeparatorToken()); } builder.accept(new ObjectNameToken(recordComponent.getName())); // for now, use the record component name - in future versions we might re-format the name try { Object o = recordComponent.getAccessor().invoke(record); // use the record&#39;s accessor to get its value via reflection serialize(o).forEach(builder); // recursively serialize each value adding each token to our builder } catch (IllegalAccessException | InvocationTargetException e) { throw new RuntimeException(e); } } builder.accept(new EndObjectToken()); return builder.build(); } Astute readers will note that both serializeCollection() and serializeRecord() could be made a lot more efficient. See the accompanying source code for better implementations of these methods. Test it out for yourself! This serialization framework is a surprisingly small amount of code. It’s small enough, in fact, to run in jshell. This example uses these files: TypeToken.java (needed utility - explained in a later article in this series) JsonToken.java JsonSerializer.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java Inside jshell you can now test some serializations: var serializer = JsonSerializer.instance(); // serialize a simple number and output each JsonToken to standard out serializer.serialize(1).forEach(System.out::println); // serialize a null and output each JsonToken to standard out serializer.serialize(null).forEach(System.out::println); // Define a complex record record Person(String name, int age) {} enum Level {JUNIOR, MID, SENIOR} record Employee(Person person, Level level, Optional&lt;String&gt; detail) {} Employee e1 = new Employee(new Person(&quot;jp&quot;, 42), Level.MID, Optional.empty()); Employee e2 = new Employee(new Person(&quot;ar&quot;, 19), Level.JUNIOR, Optional.of(&quot;jp&#39;s intern&quot;)); // serialize a list of employees serializer.serialize(List.of(e1, e2)) // serialize list of employees to a stream of JsonToken .forEach(System.out::println); // print each token to standard out Summary We now have a simple framework for serializing well-defined Java objects. The code needed to do this is surprisingly small and simple. You are ready to consider output next in printing. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy.","headline":"Serialization","image":"https://docs.starburst.io/assets/img/logo/java.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://docs.starburst.io/blog_bej/2022-09-20-bej2-serialization.html"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://docs.starburst.io/assets/img/logo/starburst-reverse.png"}},"url":"https://docs.starburst.io/blog_bej/2022-09-20-bej2-serialization.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+
+
+<header class="main-header navbar-expand-sm">
+  <div class="navbar fixed-top navbar-dark">
+    <div class="navbar-left-container">
+      <a class="navbar-brand" href="https://www.starburst.io/">
+        <img src="/assets/img/logo/starburst_KO-T.png" height="32" alt="Starburst">
+      </a>
+      <span class="navbar-divider"></span>
+      <a href="/" class="header-text">Documentation</a>
+    </div>
+    
+    <div class="nav-item dropdown" id="site-search">
+  <div id="dropdownSearchDisplay" aria-labelledby="dropdownSearch">
+    <div id="algolia-search">
+      <div id="searchbox"></div>
+      <div id="refinement-list">
+        <h6>Filter:</h6>
+      </div>
+      <div id="hits"></div>
+      <div id="stats"></div>
+    </div>
+  </div>
+</div>
+
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+    <nav class="primary-nav">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-layout navbar-nav mr-auto">
+          <li class="nav-item dropdown">
+            <a id="get-started"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/get-started/index.html">Get started</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/get-started/concepts.html">Concepts</a>
+              <a class="dropdown-item" href="/get-started/architecture.html">Architecture</a>
+              <a class="dropdown-item" href="/get-started/data-sources-catalogs.html">Data sources and catalogs</a>
+              <a class="dropdown-item" href="/get-started/choose-your-starburst-product.html">Choose your Starburst product</a>
+              <a class="dropdown-item" href="/data-consumer/index.html">Data consumer</a>
+              <a class="dropdown-item" href="/data-engineer/index.html">Data engineer</a>
+              <a class="dropdown-item" href="/platform-administrator/index.html">Platform administrator</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-galaxy"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Starburst Galaxy" data-is-click="false"
+              href="/starburst-galaxy/index.html">Starburst Galaxy</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-galaxy/query/index.html">Query</a>
+              <a class="dropdown-item" href="/starburst-galaxy/catalogs/index.html">Catalogs</a>
+              <a class="dropdown-item" href="/starburst-galaxy/clusters/index.html">Clusters</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sql/index.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-galaxy/admin/index.html">Admin</a>
+              <a class="dropdown-item" href="/starburst-galaxy/access-control/index.html">Access control</a>
+              <a class="dropdown-item" href="/starburst-galaxy/cloud-settings/index.html">Cloud settings</a>
+              <a class="dropdown-item" href="/starburst-galaxy/security/index.html">Security</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sso/index.html">Single sign-on</a>
+              <a class="dropdown-item" href="/starburst-galaxy/api.html">API</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-enterprise"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/starburst-enterprise/index.html">Starburst Enterprise</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-enterprise/try/index.html">Try Starburst Enterprise</a>
+              <a class="dropdown-item" href="/starburst-enterprise/web-ui/index.html">Web UI</a>
+              <a class="dropdown-item" href="/starburst-enterprise/sql.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-enterprise/admin-topics/index.html">Administration</a>
+              <a class="dropdown-item" href="/starburst-enterprise/k8s/index.html">Kubernetes deployments</a>
+              <a class="dropdown-item" href="/starburst-enterprise/starburst-admin/index.html">Starburst Admin</a>
+              <a class="dropdown-item" href="/latest/index.html">Reference documentation</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="ecosystems"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/ecosystems/index.html">Ecosystems</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/ecosystems/amazon/index.html">Amazon AWS</a>
+              <a class="dropdown-item" href="/ecosystems/google/index.html">Google Cloud</a>
+              <a class="dropdown-item" href="/ecosystems/microsoft/index.html">Microsoft Azure</a>
+              <a class="dropdown-item" href="/ecosystems/redhat/index.html">Red Hat OpenShift</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="resources"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="resources" data-is-click="false"
+              href="/resources.html">Resources</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/support.html">Support</a>
+              <a class="dropdown-item" href="/security/index.html">Security</a>
+              <a class="dropdown-item" href="/blog/index.html">Developer blog</a>
+              <a class="dropdown-item" href="/videos/index.html">Video library</a>
+              <a class="dropdown-item" href="/glossary.html">Glossary</a>
+              <a class="dropdown-item" href="https://www.trinoforum.org/">Trino forum</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+</header>
+
+    <div class="landing-page">
+        <div class="sep-hero">
+  <div class="container sep-parent">
+    <div class="row">
+      <div class="col-md-12">
+        <h1><a href="/blog/">Starburst developer blog</a></h1>
+        <p class="lead">The latest news from our users, engineers, writers, and
+        product folks for all our peers and friends out there.</p>
+        <p>Want even more updates and information? Go to the
+          <a href="https://blog.starburst.io/">Starburst company blog</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+
+<div class="content container-fluid post-container clearfix spacer-30">
+
+  <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+    <div class="container">
+      <div class="row">
+
+        <div class="col-xl-3">
+          <h3>Contents</h3>
+          <ul class="list-group">
+            
+              
+                <a class="list-group-item" href="/blog/2022-09-20-bej0-introduction.html">Bleeding edge Java</a>
+              
+            
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej1-design.html">Designing a JSON model</a>
+              
+            
+              
+                <li class="list-group-item active">Serialization</li>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej3-printing.html">Printing</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej4-parsing.html">Parsing</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej5-deserialization.html">Deserialization part 1</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej6-deserialization.html">Deserialization part 2</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej7-conclusion.html">Conclusion</a>
+              
+            
+          </ul>
+        </div>
+
+        <div class="col-xl-9">
+          <header class="post-header">
+            <h1 class="post-title p-name" itemprop="name headline">
+              Serialization</h1>
+            <p class="post-meta">
+              <time class="dt-published" abbrtime="2022-09-20T00:00:00-05:00" itemprop="datePublished">
+                Sep 20, 2022
+              </time> |
+
+     Jordan Zimmerman
+     
+     
+     <a href="https://github.com/randgalt" target="_blank"><i class="fab fa-github"></i></a>
+     
+     
+</p>
+          </header>
+
+          <div class="content width clearfix" itemprop="articleBody"><img src="../assets/img/logo/java.png" style="float: right;"><p><em>This is part 2 of the Bleeding edge Java series. <a href="/blog/2022-09-20-bej0-introduction.html">Start at the
+introduction</a> if you haven’t
+already.</em></p>
+
+<p>Serializing a Java object is the process of taking the in-memory state of an
+object and translating it into a representation that can be stored. In this
+case, that representation is JSON. Now that we have a model for <a href="/blog_bej/2022-09-20-bej1-design.html">JSON tokens</a>, 
+our goal is to convert Java objects into a
+list of JSON tokens.</p>
+
+<p>For simple Java objects such as primitives like <code class="language-plaintext highlighter-rouge">int</code>, <code class="language-plaintext highlighter-rouge">boolean</code>, etc.
+or simple Java classes like <code class="language-plaintext highlighter-rouge">String</code>, this is straightforward. However,
+serializing Java classes has traditionally been complicated. There is no
+standard way to determine what the representative state of a Java class should
+be. Most existing serialization libraries rely on annotations to help discover
+what the state should be. Java records, however, now allow us to know what the
+representation of a Java class should be without the need for extra-class
+metadata such as annotations.</p>
+
+<p>For the first version of our library, we limit the types that can be serialized
+only to Java instances that need no extra metadata to know what their storage
+representation should be:</p>
+
+<ul>
+  <li>Primitives (<code class="language-plaintext highlighter-rouge">int</code>, <code class="language-plaintext highlighter-rouge">double</code>, etc.)</li>
+  <li>Strings</li>
+  <li>Enumerations (enumeration constants always have a name)</li>
+  <li><code class="language-plaintext highlighter-rouge">null</code></li>
+  <li>Records</li>
+  <li><code class="language-plaintext highlighter-rouge">Optional</code> of any of the above</li>
+  <li><code class="language-plaintext highlighter-rouge">Collection</code> of any of the above</li>
+</ul>
+
+<p>The general algorithm for our serializer is:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Java Object -&gt; [token1, token2, ...]
+</code></pre></div></div>
+
+<p>We can define a Java interface for this:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">JsonSerializer</span>
+<span class="o">{</span>
+    <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="nf">serialize</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>It’s a deceptively simple declaration which literally says: “for an object
+return a stream of JSON tokens”. It’s also simple to write. Here’s
+our decision flow:</p>
+
+<p><img src="../assets/img/blog/bej-serialize-flow.png" alt="" /></p>
+
+<p>We can now code this flow using bleeding edge preview features of Java 19 - 
+record patterns and pattern matching for switch:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">JsonSerializer</span>
+<span class="o">{</span>
+    <span class="k">default</span> <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="nf">serialize</span><span class="o">(</span><span class="nc">Object</span> <span class="n">o</span><span class="o">)</span>
+    <span class="o">{</span>
+        <span class="k">return</span> <span class="nf">switch</span> <span class="o">(</span><span class="n">o</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">case</span> <span class="kc">null</span> <span class="o">-&gt;</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="k">new</span> <span class="nc">NullToken</span><span class="o">());</span>
+            <span class="k">case</span> <span class="nc">String</span> <span class="n">str</span> <span class="o">-&gt;</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToken</span><span class="o">(</span><span class="n">str</span><span class="o">));</span>
+            <span class="k">case</span> <span class="nc">Number</span> <span class="n">n</span> <span class="o">-&gt;</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="k">new</span> <span class="nc">NumberToken</span><span class="o">(</span><span class="n">n</span><span class="o">));</span>
+            <span class="k">case</span> <span class="nc">Boolean</span> <span class="n">b</span> <span class="o">-&gt;</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="k">new</span> <span class="nc">BooleanToken</span><span class="o">(</span><span class="n">b</span><span class="o">));</span>
+            <span class="k">case</span> <span class="nc">Enum</span><span class="o">&lt;?&gt;</span> <span class="n">e</span> <span class="o">-&gt;</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="k">new</span> <span class="nc">StringToken</span><span class="o">(</span><span class="n">e</span><span class="o">.</span><span class="na">name</span><span class="o">()));</span>
+            <span class="k">case</span> <span class="nc">Optional</span><span class="o">&lt;?&gt;</span> <span class="n">optional</span> <span class="o">-&gt;</span> <span class="n">serialize</span><span class="o">(</span><span class="n">optional</span><span class="o">.</span><span class="na">orElse</span><span class="o">(</span><span class="kc">null</span><span class="o">));</span>
+            <span class="k">case</span> <span class="nc">Collection</span><span class="o">&lt;?&gt;</span> <span class="n">collection</span> <span class="o">-&gt;</span> <span class="n">serializeCollection</span><span class="o">(</span><span class="n">collection</span><span class="o">);</span>
+            <span class="k">case</span> <span class="nc">Object</span> <span class="n">__</span> <span class="n">when</span> <span class="n">o</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">isRecord</span><span class="o">()</span> <span class="o">-&gt;</span> <span class="n">serializeRecord</span><span class="o">(</span><span class="n">o</span><span class="o">);</span>
+            <span class="k">default</span> <span class="o">-&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">IllegalArgumentException</span><span class="o">();</span>    <span class="c1">// we don't support this type</span>
+        <span class="o">};</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We still need to define <code class="language-plaintext highlighter-rouge">serializeCollection()</code> and <code class="language-plaintext highlighter-rouge">serializeRecord()</code> but
+let’s first describe what’s going on with the switch statement.</p>
+
+<h2 id="enhanced-switch-and-patterns">Enhanced <code class="language-plaintext highlighter-rouge">switch</code> and patterns</h2>
+
+<p>We’re all familiar with <code class="language-plaintext highlighter-rouge">switch</code> statements from Java and most other languages.
+In Java 19, switch is much more powerful with these additional features:</p>
+
+<ul>
+  <li>Can switch on any object</li>
+  <li>Use the “arrow” operator to obviate the need for <code class="language-plaintext highlighter-rouge">break</code> and old-style switch
+fall-through</li>
+  <li>Case labels can be patterns</li>
+  <li>Switch statements can return values</li>
+</ul>
+
+<p>A pattern is an expression that determines whether the object being switched
+matches the case. In the example shown above each case statement is translated
+into quasi if-statements. The first case statement turns into: <code class="language-plaintext highlighter-rouge">if o == null</code>,
+then <code class="language-plaintext highlighter-rouge">if (o instanceof String)</code>, etc. This String case also uses Java’s “Pattern
+Matching for instanceof” feature to bind a new variable <code class="language-plaintext highlighter-rouge">str</code> if <code class="language-plaintext highlighter-rouge">o</code> is indeed a
+String. This is equivalent to:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">o</span> <span class="k">instanceof</span> <span class="nc">String</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nc">String</span> <span class="n">str</span> <span class="o">=</span> <span class="o">(</span><span class="nc">String</span><span class="o">)</span> <span class="n">o</span><span class="o">;</span>
+    <span class="o">...</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>The final case statement uses a <code class="language-plaintext highlighter-rouge">when</code> statement. Java first does the pattern
+match <code class="language-plaintext highlighter-rouge">if o instanceof Object</code> and if that’s true it tests the “when” statement.
+This is equivalent to:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="o">(</span><span class="n">o</span> <span class="k">instanceof</span> <span class="nc">Object</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">if</span> <span class="o">(</span><span class="n">o</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">isRecord</span><span class="o">())</span> <span class="o">{</span>
+        <span class="o">...</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Pattern matching for switch requires us to provide a variable to bind the match,
+so we name it <code class="language-plaintext highlighter-rouge">__</code> as we won’t be using it.</p>
+
+<h2 id="collections-and-records">Collections and records</h2>
+
+<p>Let’s address writing <code class="language-plaintext highlighter-rouge">serializeCollection()</code> and <code class="language-plaintext highlighter-rouge">serializeRecord()</code>. First,
+serializeCollection. Serializing a collection must write a BeginArray token,
+write tokens for each value in the collection separated by ValueSeparator tokens
+ending with an EndArray token. The pseudocode for this is:</p>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>emit(BeginArray)
+collection.forEach(value -&gt; emit(serialize(value) + separator);
+emit(EndArray)
+</code></pre></div></div>
+
+<p>We can now write <code class="language-plaintext highlighter-rouge">serializeCollection()</code>:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">default</span> <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="nf">serializeCollection</span><span class="o">(</span><span class="nc">Collection</span><span class="o">&lt;?&gt;</span> <span class="n">collection</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="nc">Stream</span><span class="o">.</span><span class="na">Builder</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="n">builder</span> <span class="o">=</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">builder</span><span class="o">();</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">BeginArrayToken</span><span class="o">());</span>
+    <span class="kt">boolean</span> <span class="n">first</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">Object</span> <span class="n">value</span> <span class="o">:</span> <span class="n">collection</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">first</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="o">{</span>
+            <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">ValueSeparatorToken</span><span class="o">());</span>
+        <span class="o">}</span>
+        <span class="n">serialize</span><span class="o">(</span><span class="n">value</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="n">builder</span><span class="o">);</span>      <span class="c1">// recursively serialize each value adding each token to our builder</span>
+    <span class="o">}</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">EndArrayToken</span><span class="o">());</span>
+    <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>We can also now write <code class="language-plaintext highlighter-rouge">serializeRecord()</code>:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">default</span> <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="nf">serializeRecord</span><span class="o">(</span><span class="nc">Object</span> <span class="n">record</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="nc">RecordComponent</span><span class="o">[]</span> <span class="n">recordComponents</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getRecordComponents</span><span class="o">();</span>   <span class="c1">// Java records include a complete specification of the record's components</span>
+    <span class="nc">Stream</span><span class="o">.</span><span class="na">Builder</span><span class="o">&lt;</span><span class="nc">JsonToken</span><span class="o">&gt;</span> <span class="n">builder</span> <span class="o">=</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">builder</span><span class="o">();</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">BeginObjectToken</span><span class="o">());</span>
+    <span class="kt">boolean</span> <span class="n">first</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+    <span class="k">for</span> <span class="o">(</span><span class="nc">RecordComponent</span> <span class="n">recordComponent</span> <span class="o">:</span> <span class="n">recordComponents</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">if</span> <span class="o">(</span><span class="n">first</span><span class="o">)</span> <span class="o">{</span>
+            <span class="n">first</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+        <span class="o">}</span>
+        <span class="k">else</span> <span class="o">{</span>
+            <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">ValueSeparatorToken</span><span class="o">());</span>
+        <span class="o">}</span>
+        <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">ObjectNameToken</span><span class="o">(</span><span class="n">recordComponent</span><span class="o">.</span><span class="na">getName</span><span class="o">()));</span>    <span class="c1">// for now, use the record component name - in future versions we might re-format the name</span>
+        <span class="k">try</span> <span class="o">{</span>
+            <span class="nc">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="n">recordComponent</span><span class="o">.</span><span class="na">getAccessor</span><span class="o">().</span><span class="na">invoke</span><span class="o">(</span><span class="n">record</span><span class="o">);</span>    <span class="c1">// use the record's accessor to get its value via reflection</span>
+            <span class="n">serialize</span><span class="o">(</span><span class="n">o</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="n">builder</span><span class="o">);</span>      <span class="c1">// recursively serialize each value adding each token to our builder</span>
+        <span class="o">}</span>
+        <span class="k">catch</span> <span class="o">(</span><span class="nc">IllegalAccessException</span> <span class="o">|</span> <span class="nc">InvocationTargetException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+        <span class="o">}</span>
+    <span class="o">}</span>
+    <span class="n">builder</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="k">new</span> <span class="nc">EndObjectToken</span><span class="o">());</span>
+    <span class="k">return</span> <span class="n">builder</span><span class="o">.</span><span class="na">build</span><span class="o">();</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Astute readers will note that both <code class="language-plaintext highlighter-rouge">serializeCollection()</code> and <code class="language-plaintext highlighter-rouge">serializeRecord()</code>
+could be made a lot more efficient. See the accompanying source code for better
+implementations of these methods.</p>
+
+<h2 id="test-it-out-for-yourself">Test it out for yourself!</h2>
+
+<p>This serialization framework is a surprisingly small amount of code. It’s small
+enough, in fact, to run in jshell. This example uses these files:</p>
+
+<ul>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java" target="_blank">TypeToken.java</a> (needed utility - explained in a later article in this series)</li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java" target="_blank">JsonToken.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java" target="_blank">JsonSerializer.java</a></li>
+</ul>
+
+<p>From a terminal with <a href="https://jdk.java.net/19/" target="_blank">Java 19</a> installed, run the following (note you’ll need the <a href="https://wiki.archiveteam.org/index.php/Wget_installation" target="_blank">wget utility</a>):</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java
+jshell <span class="nt">--enable-preview</span> TypeToken.java JsonToken.java JsonSerializer.java
+</code></pre></div></div>
+
+<p>Inside jshell you can now test some serializations:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">serializer</span> <span class="o">=</span> <span class="nc">JsonSerializer</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+
+<span class="c1">// serialize a simple number and output each JsonToken to standard out</span>
+<span class="n">serializer</span><span class="o">.</span><span class="na">serialize</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+
+<span class="c1">// serialize a null and output each JsonToken to standard out</span>
+<span class="n">serializer</span><span class="o">.</span><span class="na">serialize</span><span class="o">(</span><span class="kc">null</span><span class="o">).</span><span class="na">forEach</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>
+
+<span class="c1">// Define a complex record</span>
+<span class="n">record</span> <span class="nf">Person</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{}</span>
+<span class="kd">enum</span> <span class="nc">Level</span> <span class="o">{</span><span class="no">JUNIOR</span><span class="o">,</span> <span class="no">MID</span><span class="o">,</span> <span class="no">SENIOR</span><span class="o">}</span>
+<span class="n">record</span> <span class="nf">Employee</span><span class="o">(</span><span class="nc">Person</span> <span class="n">person</span><span class="o">,</span> <span class="nc">Level</span> <span class="n">level</span><span class="o">,</span> <span class="nc">Optional</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;</span> <span class="n">detail</span><span class="o">)</span> <span class="o">{}</span>
+
+<span class="nc">Employee</span> <span class="n">e1</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Employee</span><span class="o">(</span><span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"jp"</span><span class="o">,</span> <span class="mi">42</span><span class="o">),</span> <span class="nc">Level</span><span class="o">.</span><span class="na">MID</span><span class="o">,</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">empty</span><span class="o">());</span>
+<span class="nc">Employee</span> <span class="n">e2</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Employee</span><span class="o">(</span><span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"ar"</span><span class="o">,</span> <span class="mi">19</span><span class="o">),</span> <span class="nc">Level</span><span class="o">.</span><span class="na">JUNIOR</span><span class="o">,</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="s">"jp's intern"</span><span class="o">));</span>
+
+<span class="c1">// serialize a list of employees</span>
+<span class="n">serializer</span><span class="o">.</span><span class="na">serialize</span><span class="o">(</span><span class="nc">List</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">e1</span><span class="o">,</span> <span class="n">e2</span><span class="o">))</span>   <span class="c1">// serialize list of employees to a stream of JsonToken</span>
+    <span class="o">.</span><span class="na">forEach</span><span class="o">(</span><span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">::</span><span class="n">println</span><span class="o">);</span>      <span class="c1">// print each token to standard out</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>We now have a simple framework for serializing well-defined Java objects. The
+code needed to do this is surprisingly small and simple.</p>
+
+<p>You are ready to consider output next in <a href="/blog_bej/2022-09-20-bej3-printing.html">printing</a>.</p>
+
+<h2 id="were-hiring">We’re hiring</h2>
+
+<p>Want to be able to use the latest features of Java? <a href="https://www.starburst.io/careers/" target="_blank">We’re
+hiring!</a></p>
+
+<hr />
+
+<p>Jordan Zimmerman is a Senior Software Engineer working on <a href="https://www.starburst.io/platform/starburst-galaxy/" target="_blank">Starburst
+Galaxy</a>.</p>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="u-url" href="/blog_bej/2022-09-20-bej2-serialization.html" hidden></a>
+  </article>
+
+</div>
+
+
+
+    </div>
+
+
+<div style="margin-bottom: 50px"></div><footer class="page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <p style="font-weight:900">Resources</b></p>
+        <ul>
+          <li class="footer-item"><a href="/videos/index.html">Video library</a></li>
+          <li class="footer-item"><a href="/glossary.html">Glossary</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/info/oreilly-trino-guide/" target="_blank">Free O'Reilly book - Trino: The Definitive Guide</a></li>
+          <li class="footer-item"><a href="https://trino.io/broadcast/" target="_blank">Trino Community Broadcast</a></li>
+          <li class="footer-item"><a href="https://trinoforum.org" target="_blank">Trino Forum</a></li>
+          <li class="footer-item"><a href="https://blog.starburstdata.com/" target="_blank">Starburst blog</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <p style="font-weight:900">Contact and more</p>
+        <ul>
+          <li class="footer-item"><a href="https://www.starburst.io" target="_blank">Starburst</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/#download" target="_blank">Start a trial</a></li>
+          <li class="footer-item"><a href="/support.html" target="_blank">Get support</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/contact/" target="_blank">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3" style="text-align:right;">
+        <a href="https://www.starburst.io/" target="_blank"><img src="/assets/img/logo/starburst-reverse.png" height="60" alt=" Starburst" style="margin-bottom:20px;"></a>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#copyright">Copyright © 2017-2022<br> Starburst Data</a>
+        </li>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#trademarks">Trademark information</a>
+        </li>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12 center spacer-30">
+          <a href="https://twitter.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-twitter"></i></a>
+          <a href="https://linkedin.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-linkedin"></i></a>
+          <a href="https://www.youtube.com/channel/UCXjkuWSO9CV_cSI3Mvo4a4w" target="_blank" class="footer-icon"><i class="fab fa-youtube"></i></a>
+          <a href="https://github.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+  <script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+  <script type="text/javascript" src="/assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="/assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/assets/js/mdb.min.js"></script>
+  <script type="text/javascript" src="/assets/js/custom.js"></script>
+  <script type="text/javascript" src="/assets/js/algolia.js"></script>
+  <script type="text/javascript" src="/assets/js/search-box.js"></script>
+  <script type="text/javascript" src="/assets/js/search-results.js"></script>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Starburst | Deserialization part 2</title>
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Starburst - Deserialization part 2">
+    <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
+    <meta property="og:image" content="/assets/img/starburst-og-image.png">
+
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/mdb.min.css">
+    <link rel="stylesheet" href="/assets/css/highlight.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114610397-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-114610397-1');
+</script>
+
+<script>
+  var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights@2.2.1";
+
+  !function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+  (e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+  i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+  }(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Deserialization part 2 | Starburst</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Deserialization part 2" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is part 6 of the Bleeding edge Java series. Start at the introduction if you haven’t already. In the first part of the deserialization article we defined a framework for deserializing simple Java types. Now we add support for complex types. First we update the implementation of deserializerFor to include the complex types we handle: TypedDeserializer deserializerFor(TypedDeserializer parentTypedDeserializer, Type type) { return switch (type) { case Class&lt;?&gt; clazz when clazz.equals(byte.class) || clazz.equals(Byte.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().byteValue()); case Class&lt;?&gt; clazz when clazz.equals(short.class) || clazz.equals(Short.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().shortValue()); case Class&lt;?&gt; clazz when clazz.equals(int.class) || clazz.equals(Integer.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().intValue()); case Class&lt;?&gt; clazz when clazz.equals(long.class) || clazz.equals(Long.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().longValue()); case Class&lt;?&gt; clazz when clazz.equals(float.class) || clazz.equals(Float.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().floatValue()); case Class&lt;?&gt; clazz when clazz.equals(double.class) || clazz.equals(Double.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().doubleValue()); case Class&lt;?&gt; clazz when clazz.equals(boolean.class) || clazz.equals(Boolean.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, BooleanToken.class, BooleanToken::value); case Class&lt;?&gt; clazz when Number.class.isAssignableFrom(clazz) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, NumberToken::value); case Class&lt;?&gt; clazz when clazz.equals(String.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, StringToken::value); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Collection.class.isAssignableFrom(clazz) -&gt; collectionTypedDeserializer(parentTypedDeserializer, clazz, parameterizedType.getActualTypeArguments()[0]); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Optional.class.isAssignableFrom(clazz) -&gt; optionalTypedDeserializer(parentTypedDeserializer, parameterizedType.getActualTypeArguments()[0]); case Class&lt;?&gt; clazz when clazz.isRecord() -&gt; recordTypedDeserializer(parentTypedDeserializer, clazz); case Class&lt;?&gt; clazz when clazz.isEnum() -&gt; enumTypedDeserializer(parentTypedDeserializer, clazz); default -&gt; throw new RuntimeException(); }; } Enumerations Use simpleTypedDeserializer to accept a string and use the string to build the enum. TypedDeserializer enumTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; enumClass) { return simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, stringToken -&gt; Stream.of(enumClass.getEnumConstants()).filter(c -&gt; c.toString().equals(stringToken.value())).findFirst().orElseThrow(RuntimeException::new)); } Optional The pattern matching in the deserializerFor() switch will have extracted the Optional’s component type. We get the deserializer for that component type, get its value and then pass that value through Optional.ofNullable(). TypedDeserializer optionalTypedDeserializer(TypedDeserializer parentTypedDeserializer, Type componentType) { return new TypedDeserializer() { private final TypedDeserializer valueDeserializer = deserializerFor(parentTypedDeserializer, componentType); @Override public TypedDeserializer accept(JsonToken jsonToken) { return valueDeserializer.accept(jsonToken); } @Override public Object value() { return Optional.ofNullable(valueDeserializer.value()); } }; } Collections For collections we keep a list of a deserializers for each value in the collection. When the parent deserializer asks for the collection value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the collection must be processed before the value can be determined. The deserializer does the following: Wait for the BeginArrayToken to mark that the collection has started Set a flag to indicate that a value is expected once the collection has started Check the next token to see if it’s an EndArrayToken when the value-expected flag is set If so, the collection is complete If not, get a new deserializer for the list’s component type and add it to values and set it as the next deserializer If a ValueSeparatorToken is accepted, reset for a new value Otherwise wait for EndArrayToken TypedDeserializer collectionTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; collectionClass, Type componentType) { return new TypedDeserializer() { private final List&lt;TypedDeserializer&gt; values = new ArrayList&lt;&gt;(); private boolean started; private boolean isDone; private boolean expectingValue; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; if (expectingValue) { expectingValue = false; switch (jsonToken) { case EndArrayToken __ -&gt; { nextTypedDeserializer = accept(jsonToken); // it&#39;s an empty array } default -&gt; { TypedDeserializer valueTypedDeserializer = deserializerFor(this, componentType); values.add(valueTypedDeserializer); nextTypedDeserializer = valueTypedDeserializer.accept(jsonToken); } } } else { switch (jsonToken) { case BeginArrayToken __ -&gt; { if (started) { throw new RuntimeException(); } started = true; expectingValue = true; } case EndArrayToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started) { throw new RuntimeException(); } expectingValue = true; } default -&gt; throw new RuntimeException(); } } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } // get the final value from each of the stored deserializers Stream&lt;Object&gt; valueStream = values.stream().map(TypedDeserializer::value); // create either a set or a list depending on the collection class return Set.class.isAssignableFrom(collectionClass) ? valueStream.collect(Collectors.toSet()) : valueStream.toList(); } }; } Records For records we use the record’s array of RecordComponents to know the names and types of the fields to expect in the object. Similar to the collection deserializer we keep a map whose key is the name of the field and the value is the deserializer for the component’s type. Just like for collections, when the parent deserializer asks for the record value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the record must be processed before the value can be determined. The deserializer does the following: Wait for BeginObjectToken to mark that the object has started Expect that ObjectNameToken is the next token. Once the ObjectNameToken is accepted: Get a new deserializer for the record component’s type and add it to values map Set it as the next deserializer If a ValueSeparatorToken is accepted, reset for another BeginObjectToken, otherwise, wait for EndObjectToken Build the final value by using the RecordComponents to find the canonical Constructor, create an array of values and create the record via reflection TypedDeserializer recordTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; recordClass) { RecordComponent[] recordComponents = recordClass.getRecordComponents(); Map&lt;String, RecordComponent&gt; recordComponentMap = Stream.of(recordComponents).collect(Collectors.toMap(RecordComponent::getName, Function.identity())); return new TypedDeserializer() { private final Map&lt;String, TypedDeserializer&gt; valuesMap = new HashMap&lt;&gt;(); private String currentName; private boolean started; private boolean isDone; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; switch (jsonToken) { case BeginObjectToken __ -&gt; { if (started) { throw new RuntimeException(); } else { started = true; } } case ObjectNameToken(var name) -&gt; { if (!started || (currentName != null)) { throw new RuntimeException(); } currentName = name; RecordComponent recordComponent = recordComponentMap.get(currentName); if (recordComponent == null) { throw new RuntimeException(); } TypedDeserializer typedDeserializer = deserializerFor(this, recordComponent.getGenericType()); valuesMap.put(currentName, typedDeserializer); nextTypedDeserializer = typedDeserializer; } case EndObjectToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started || (currentName == null)) { throw new RuntimeException(); } currentName = null; } default -&gt; throw new RuntimeException(); } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } Class&lt;?&gt;[] argumentTypes = new Class[recordComponents.length]; Object[] arguments = new Object[recordComponents.length]; for (int i = 0; i &lt; recordComponents.length; ++i) { RecordComponent recordComponent = recordComponents[i]; argumentTypes[i] = recordComponent.getType(); TypedDeserializer valueTypedDeserializer = valuesMap.get(recordComponent.getName()); if (valueTypedDeserializer == null) { if (Optional.class.isAssignableFrom(recordComponent.getType())) { arguments[i] = Optional.empty(); } // otherwise leave it null } else { arguments[i] = valueTypedDeserializer.value(); } } try { return recordClass.getConstructor(argumentTypes).newInstance(arguments); } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | IllegalArgumentException e) { throw new RuntimeException(e); } } }; } Generics Because of erasure, there is no way in Java to specify many object types that we might want to deserialize such as generic lists (e.g. List&lt;String&gt;). However generic type information is not completely lost at compile-time in Java. The Java runtime retains a surprising amount of generic type information. In fact, we can create a real generic type for any generic definition we need by using a very simple utility called a “type token”. Sadly, the JDK does not include a utility to create these type tokens. Fortunately, the code to create them is just a few Java lines. The included TypeToken.java utility provides this. To create a type token for a list of strings write: // create a type token that represents a list of string TypeToken&lt;List&lt;String&gt;&gt; typeToken = new TypeToken&lt;&gt;(){}; We can use this type token to deserialize a list of records, strings, optionals, and others: var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); String jsonText = &quot;[1, 2, 3]&quot;; TypeToken&lt;List&lt;Integer&gt;&gt; typeToken = new TypeToken&lt;&gt;() {}; List&lt;Integer&gt; ints = parser.parse(jsonText.chars()).collect(JsonDeserializerCollector.deserializing(deserializer, typeToken)); Test it out for yourself! In the previous articles we developed a serializer, a printer and a parser. Now we can do a complete round trip from a Java object, to JSON tokens, to JSON text, back to JSON tokens and back to the original Java object. Let’s put this together in jshell. The example uses these files: TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/StringUtils.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonPrinter.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonParser.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializerCollector.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java Inside jshell let’s serialize a Java record into JSON tokens, print those tokens into JSON text, parse that text back into a stream of JSON tokens and finally deserialize those tokens back into a Java record. We can compare the two records to ensure it worked properly. var serializer = JsonSerializer.instance(); var printer = JsonPrinter.instance(); var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); record Person(String name, int age) {} var person = new Person(&quot;someone&quot;, 28); var deserializedPerson = serializer.serialize(person) // serialize to stream of JsonToken .map(printer::print) // map each JsonToken to a String (as a CharSequence) .map(CharSequence::chars) // map each CharSequence to an IntStream .flatMap(parser::parse) // pass each IntStream to the parser and flatten the resulting stream of tokens .collect(JsonDeserializerCollector.deserializing(deserializer, Person.class)); // use the collector to reduce the tokens into a Person via the deserializer if (person.equals(deserializedPerson)) { System.out.println(&quot;It worked!&quot;); } System.out.println(&quot;Done.&quot;); Summary We rounded out deserialization nicely now and have a full library at our hands. Lets move on to our final thoughts in the series conclusion. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy." />
+<meta property="og:description" content="This is part 6 of the Bleeding edge Java series. Start at the introduction if you haven’t already. In the first part of the deserialization article we defined a framework for deserializing simple Java types. Now we add support for complex types. First we update the implementation of deserializerFor to include the complex types we handle: TypedDeserializer deserializerFor(TypedDeserializer parentTypedDeserializer, Type type) { return switch (type) { case Class&lt;?&gt; clazz when clazz.equals(byte.class) || clazz.equals(Byte.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().byteValue()); case Class&lt;?&gt; clazz when clazz.equals(short.class) || clazz.equals(Short.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().shortValue()); case Class&lt;?&gt; clazz when clazz.equals(int.class) || clazz.equals(Integer.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().intValue()); case Class&lt;?&gt; clazz when clazz.equals(long.class) || clazz.equals(Long.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().longValue()); case Class&lt;?&gt; clazz when clazz.equals(float.class) || clazz.equals(Float.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().floatValue()); case Class&lt;?&gt; clazz when clazz.equals(double.class) || clazz.equals(Double.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().doubleValue()); case Class&lt;?&gt; clazz when clazz.equals(boolean.class) || clazz.equals(Boolean.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, BooleanToken.class, BooleanToken::value); case Class&lt;?&gt; clazz when Number.class.isAssignableFrom(clazz) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, NumberToken::value); case Class&lt;?&gt; clazz when clazz.equals(String.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, StringToken::value); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Collection.class.isAssignableFrom(clazz) -&gt; collectionTypedDeserializer(parentTypedDeserializer, clazz, parameterizedType.getActualTypeArguments()[0]); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Optional.class.isAssignableFrom(clazz) -&gt; optionalTypedDeserializer(parentTypedDeserializer, parameterizedType.getActualTypeArguments()[0]); case Class&lt;?&gt; clazz when clazz.isRecord() -&gt; recordTypedDeserializer(parentTypedDeserializer, clazz); case Class&lt;?&gt; clazz when clazz.isEnum() -&gt; enumTypedDeserializer(parentTypedDeserializer, clazz); default -&gt; throw new RuntimeException(); }; } Enumerations Use simpleTypedDeserializer to accept a string and use the string to build the enum. TypedDeserializer enumTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; enumClass) { return simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, stringToken -&gt; Stream.of(enumClass.getEnumConstants()).filter(c -&gt; c.toString().equals(stringToken.value())).findFirst().orElseThrow(RuntimeException::new)); } Optional The pattern matching in the deserializerFor() switch will have extracted the Optional’s component type. We get the deserializer for that component type, get its value and then pass that value through Optional.ofNullable(). TypedDeserializer optionalTypedDeserializer(TypedDeserializer parentTypedDeserializer, Type componentType) { return new TypedDeserializer() { private final TypedDeserializer valueDeserializer = deserializerFor(parentTypedDeserializer, componentType); @Override public TypedDeserializer accept(JsonToken jsonToken) { return valueDeserializer.accept(jsonToken); } @Override public Object value() { return Optional.ofNullable(valueDeserializer.value()); } }; } Collections For collections we keep a list of a deserializers for each value in the collection. When the parent deserializer asks for the collection value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the collection must be processed before the value can be determined. The deserializer does the following: Wait for the BeginArrayToken to mark that the collection has started Set a flag to indicate that a value is expected once the collection has started Check the next token to see if it’s an EndArrayToken when the value-expected flag is set If so, the collection is complete If not, get a new deserializer for the list’s component type and add it to values and set it as the next deserializer If a ValueSeparatorToken is accepted, reset for a new value Otherwise wait for EndArrayToken TypedDeserializer collectionTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; collectionClass, Type componentType) { return new TypedDeserializer() { private final List&lt;TypedDeserializer&gt; values = new ArrayList&lt;&gt;(); private boolean started; private boolean isDone; private boolean expectingValue; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; if (expectingValue) { expectingValue = false; switch (jsonToken) { case EndArrayToken __ -&gt; { nextTypedDeserializer = accept(jsonToken); // it&#39;s an empty array } default -&gt; { TypedDeserializer valueTypedDeserializer = deserializerFor(this, componentType); values.add(valueTypedDeserializer); nextTypedDeserializer = valueTypedDeserializer.accept(jsonToken); } } } else { switch (jsonToken) { case BeginArrayToken __ -&gt; { if (started) { throw new RuntimeException(); } started = true; expectingValue = true; } case EndArrayToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started) { throw new RuntimeException(); } expectingValue = true; } default -&gt; throw new RuntimeException(); } } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } // get the final value from each of the stored deserializers Stream&lt;Object&gt; valueStream = values.stream().map(TypedDeserializer::value); // create either a set or a list depending on the collection class return Set.class.isAssignableFrom(collectionClass) ? valueStream.collect(Collectors.toSet()) : valueStream.toList(); } }; } Records For records we use the record’s array of RecordComponents to know the names and types of the fields to expect in the object. Similar to the collection deserializer we keep a map whose key is the name of the field and the value is the deserializer for the component’s type. Just like for collections, when the parent deserializer asks for the record value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the record must be processed before the value can be determined. The deserializer does the following: Wait for BeginObjectToken to mark that the object has started Expect that ObjectNameToken is the next token. Once the ObjectNameToken is accepted: Get a new deserializer for the record component’s type and add it to values map Set it as the next deserializer If a ValueSeparatorToken is accepted, reset for another BeginObjectToken, otherwise, wait for EndObjectToken Build the final value by using the RecordComponents to find the canonical Constructor, create an array of values and create the record via reflection TypedDeserializer recordTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; recordClass) { RecordComponent[] recordComponents = recordClass.getRecordComponents(); Map&lt;String, RecordComponent&gt; recordComponentMap = Stream.of(recordComponents).collect(Collectors.toMap(RecordComponent::getName, Function.identity())); return new TypedDeserializer() { private final Map&lt;String, TypedDeserializer&gt; valuesMap = new HashMap&lt;&gt;(); private String currentName; private boolean started; private boolean isDone; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; switch (jsonToken) { case BeginObjectToken __ -&gt; { if (started) { throw new RuntimeException(); } else { started = true; } } case ObjectNameToken(var name) -&gt; { if (!started || (currentName != null)) { throw new RuntimeException(); } currentName = name; RecordComponent recordComponent = recordComponentMap.get(currentName); if (recordComponent == null) { throw new RuntimeException(); } TypedDeserializer typedDeserializer = deserializerFor(this, recordComponent.getGenericType()); valuesMap.put(currentName, typedDeserializer); nextTypedDeserializer = typedDeserializer; } case EndObjectToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started || (currentName == null)) { throw new RuntimeException(); } currentName = null; } default -&gt; throw new RuntimeException(); } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } Class&lt;?&gt;[] argumentTypes = new Class[recordComponents.length]; Object[] arguments = new Object[recordComponents.length]; for (int i = 0; i &lt; recordComponents.length; ++i) { RecordComponent recordComponent = recordComponents[i]; argumentTypes[i] = recordComponent.getType(); TypedDeserializer valueTypedDeserializer = valuesMap.get(recordComponent.getName()); if (valueTypedDeserializer == null) { if (Optional.class.isAssignableFrom(recordComponent.getType())) { arguments[i] = Optional.empty(); } // otherwise leave it null } else { arguments[i] = valueTypedDeserializer.value(); } } try { return recordClass.getConstructor(argumentTypes).newInstance(arguments); } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | IllegalArgumentException e) { throw new RuntimeException(e); } } }; } Generics Because of erasure, there is no way in Java to specify many object types that we might want to deserialize such as generic lists (e.g. List&lt;String&gt;). However generic type information is not completely lost at compile-time in Java. The Java runtime retains a surprising amount of generic type information. In fact, we can create a real generic type for any generic definition we need by using a very simple utility called a “type token”. Sadly, the JDK does not include a utility to create these type tokens. Fortunately, the code to create them is just a few Java lines. The included TypeToken.java utility provides this. To create a type token for a list of strings write: // create a type token that represents a list of string TypeToken&lt;List&lt;String&gt;&gt; typeToken = new TypeToken&lt;&gt;(){}; We can use this type token to deserialize a list of records, strings, optionals, and others: var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); String jsonText = &quot;[1, 2, 3]&quot;; TypeToken&lt;List&lt;Integer&gt;&gt; typeToken = new TypeToken&lt;&gt;() {}; List&lt;Integer&gt; ints = parser.parse(jsonText.chars()).collect(JsonDeserializerCollector.deserializing(deserializer, typeToken)); Test it out for yourself! In the previous articles we developed a serializer, a printer and a parser. Now we can do a complete round trip from a Java object, to JSON tokens, to JSON text, back to JSON tokens and back to the original Java object. Let’s put this together in jshell. The example uses these files: TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/StringUtils.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonPrinter.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonParser.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializerCollector.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java Inside jshell let’s serialize a Java record into JSON tokens, print those tokens into JSON text, parse that text back into a stream of JSON tokens and finally deserialize those tokens back into a Java record. We can compare the two records to ensure it worked properly. var serializer = JsonSerializer.instance(); var printer = JsonPrinter.instance(); var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); record Person(String name, int age) {} var person = new Person(&quot;someone&quot;, 28); var deserializedPerson = serializer.serialize(person) // serialize to stream of JsonToken .map(printer::print) // map each JsonToken to a String (as a CharSequence) .map(CharSequence::chars) // map each CharSequence to an IntStream .flatMap(parser::parse) // pass each IntStream to the parser and flatten the resulting stream of tokens .collect(JsonDeserializerCollector.deserializing(deserializer, Person.class)); // use the collector to reduce the tokens into a Person via the deserializer if (person.equals(deserializedPerson)) { System.out.println(&quot;It worked!&quot;); } System.out.println(&quot;Done.&quot;); Summary We rounded out deserialization nicely now and have a full library at our hands. Lets move on to our final thoughts in the series conclusion. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy." />
+<link rel="canonical" href="https://docs.starburst.io/blog_bej/2022-09-20-bej6-deserialization.html" />
+<meta property="og:url" content="https://docs.starburst.io/blog_bej/2022-09-20-bej6-deserialization.html" />
+<meta property="og:site_name" content="Starburst" />
+<meta property="og:image" content="https://docs.starburst.io/assets/img/logo/java.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-09-20T00:00:00-05:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://docs.starburst.io/assets/img/logo/java.png" />
+<meta property="twitter:title" content="Deserialization part 2" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2022-09-20T00:00:00-05:00","datePublished":"2022-09-20T00:00:00-05:00","description":"This is part 6 of the Bleeding edge Java series. Start at the introduction if you haven’t already. In the first part of the deserialization article we defined a framework for deserializing simple Java types. Now we add support for complex types. First we update the implementation of deserializerFor to include the complex types we handle: TypedDeserializer deserializerFor(TypedDeserializer parentTypedDeserializer, Type type) { return switch (type) { case Class&lt;?&gt; clazz when clazz.equals(byte.class) || clazz.equals(Byte.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().byteValue()); case Class&lt;?&gt; clazz when clazz.equals(short.class) || clazz.equals(Short.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().shortValue()); case Class&lt;?&gt; clazz when clazz.equals(int.class) || clazz.equals(Integer.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().intValue()); case Class&lt;?&gt; clazz when clazz.equals(long.class) || clazz.equals(Long.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().longValue()); case Class&lt;?&gt; clazz when clazz.equals(float.class) || clazz.equals(Float.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().floatValue()); case Class&lt;?&gt; clazz when clazz.equals(double.class) || clazz.equals(Double.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, numberToken -&gt; numberToken.value().doubleValue()); case Class&lt;?&gt; clazz when clazz.equals(boolean.class) || clazz.equals(Boolean.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, BooleanToken.class, BooleanToken::value); case Class&lt;?&gt; clazz when Number.class.isAssignableFrom(clazz) -&gt; simpleTypedDeserializer(parentTypedDeserializer, NumberToken.class, NumberToken::value); case Class&lt;?&gt; clazz when clazz.equals(String.class) -&gt; simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, StringToken::value); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Collection.class.isAssignableFrom(clazz) -&gt; collectionTypedDeserializer(parentTypedDeserializer, clazz, parameterizedType.getActualTypeArguments()[0]); case ParameterizedType parameterizedType when (parameterizedType.getRawType() instanceof Class&lt;?&gt; clazz) &amp;&amp; Optional.class.isAssignableFrom(clazz) -&gt; optionalTypedDeserializer(parentTypedDeserializer, parameterizedType.getActualTypeArguments()[0]); case Class&lt;?&gt; clazz when clazz.isRecord() -&gt; recordTypedDeserializer(parentTypedDeserializer, clazz); case Class&lt;?&gt; clazz when clazz.isEnum() -&gt; enumTypedDeserializer(parentTypedDeserializer, clazz); default -&gt; throw new RuntimeException(); }; } Enumerations Use simpleTypedDeserializer to accept a string and use the string to build the enum. TypedDeserializer enumTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; enumClass) { return simpleTypedDeserializer(parentTypedDeserializer, StringToken.class, stringToken -&gt; Stream.of(enumClass.getEnumConstants()).filter(c -&gt; c.toString().equals(stringToken.value())).findFirst().orElseThrow(RuntimeException::new)); } Optional The pattern matching in the deserializerFor() switch will have extracted the Optional’s component type. We get the deserializer for that component type, get its value and then pass that value through Optional.ofNullable(). TypedDeserializer optionalTypedDeserializer(TypedDeserializer parentTypedDeserializer, Type componentType) { return new TypedDeserializer() { private final TypedDeserializer valueDeserializer = deserializerFor(parentTypedDeserializer, componentType); @Override public TypedDeserializer accept(JsonToken jsonToken) { return valueDeserializer.accept(jsonToken); } @Override public Object value() { return Optional.ofNullable(valueDeserializer.value()); } }; } Collections For collections we keep a list of a deserializers for each value in the collection. When the parent deserializer asks for the collection value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the collection must be processed before the value can be determined. The deserializer does the following: Wait for the BeginArrayToken to mark that the collection has started Set a flag to indicate that a value is expected once the collection has started Check the next token to see if it’s an EndArrayToken when the value-expected flag is set If so, the collection is complete If not, get a new deserializer for the list’s component type and add it to values and set it as the next deserializer If a ValueSeparatorToken is accepted, reset for a new value Otherwise wait for EndArrayToken TypedDeserializer collectionTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; collectionClass, Type componentType) { return new TypedDeserializer() { private final List&lt;TypedDeserializer&gt; values = new ArrayList&lt;&gt;(); private boolean started; private boolean isDone; private boolean expectingValue; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; if (expectingValue) { expectingValue = false; switch (jsonToken) { case EndArrayToken __ -&gt; { nextTypedDeserializer = accept(jsonToken); // it&#39;s an empty array } default -&gt; { TypedDeserializer valueTypedDeserializer = deserializerFor(this, componentType); values.add(valueTypedDeserializer); nextTypedDeserializer = valueTypedDeserializer.accept(jsonToken); } } } else { switch (jsonToken) { case BeginArrayToken __ -&gt; { if (started) { throw new RuntimeException(); } started = true; expectingValue = true; } case EndArrayToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started) { throw new RuntimeException(); } expectingValue = true; } default -&gt; throw new RuntimeException(); } } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } // get the final value from each of the stored deserializers Stream&lt;Object&gt; valueStream = values.stream().map(TypedDeserializer::value); // create either a set or a list depending on the collection class return Set.class.isAssignableFrom(collectionClass) ? valueStream.collect(Collectors.toSet()) : valueStream.toList(); } }; } Records For records we use the record’s array of RecordComponents to know the names and types of the fields to expect in the object. Similar to the collection deserializer we keep a map whose key is the name of the field and the value is the deserializer for the component’s type. Just like for collections, when the parent deserializer asks for the record value, we can then process each deserializer to get its final value. We must perform this delayed value resolution because all the tokens that apply to the record must be processed before the value can be determined. The deserializer does the following: Wait for BeginObjectToken to mark that the object has started Expect that ObjectNameToken is the next token. Once the ObjectNameToken is accepted: Get a new deserializer for the record component’s type and add it to values map Set it as the next deserializer If a ValueSeparatorToken is accepted, reset for another BeginObjectToken, otherwise, wait for EndObjectToken Build the final value by using the RecordComponents to find the canonical Constructor, create an array of values and create the record via reflection TypedDeserializer recordTypedDeserializer(TypedDeserializer parentTypedDeserializer, Class&lt;?&gt; recordClass) { RecordComponent[] recordComponents = recordClass.getRecordComponents(); Map&lt;String, RecordComponent&gt; recordComponentMap = Stream.of(recordComponents).collect(Collectors.toMap(RecordComponent::getName, Function.identity())); return new TypedDeserializer() { private final Map&lt;String, TypedDeserializer&gt; valuesMap = new HashMap&lt;&gt;(); private String currentName; private boolean started; private boolean isDone; @Override public TypedDeserializer accept(JsonToken jsonToken) { TypedDeserializer nextTypedDeserializer = this; switch (jsonToken) { case BeginObjectToken __ -&gt; { if (started) { throw new RuntimeException(); } else { started = true; } } case ObjectNameToken(var name) -&gt; { if (!started || (currentName != null)) { throw new RuntimeException(); } currentName = name; RecordComponent recordComponent = recordComponentMap.get(currentName); if (recordComponent == null) { throw new RuntimeException(); } TypedDeserializer typedDeserializer = deserializerFor(this, recordComponent.getGenericType()); valuesMap.put(currentName, typedDeserializer); nextTypedDeserializer = typedDeserializer; } case EndObjectToken __ -&gt; { if (!started || isDone) { throw new RuntimeException(); } nextTypedDeserializer = parentTypedDeserializer; isDone = true; } case ValueSeparatorToken __ -&gt; { if (!started || (currentName == null)) { throw new RuntimeException(); } currentName = null; } default -&gt; throw new RuntimeException(); } return nextTypedDeserializer; } @Override public Object value() { if (!isDone) { throw new RuntimeException(); } Class&lt;?&gt;[] argumentTypes = new Class[recordComponents.length]; Object[] arguments = new Object[recordComponents.length]; for (int i = 0; i &lt; recordComponents.length; ++i) { RecordComponent recordComponent = recordComponents[i]; argumentTypes[i] = recordComponent.getType(); TypedDeserializer valueTypedDeserializer = valuesMap.get(recordComponent.getName()); if (valueTypedDeserializer == null) { if (Optional.class.isAssignableFrom(recordComponent.getType())) { arguments[i] = Optional.empty(); } // otherwise leave it null } else { arguments[i] = valueTypedDeserializer.value(); } } try { return recordClass.getConstructor(argumentTypes).newInstance(arguments); } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | IllegalArgumentException e) { throw new RuntimeException(e); } } }; } Generics Because of erasure, there is no way in Java to specify many object types that we might want to deserialize such as generic lists (e.g. List&lt;String&gt;). However generic type information is not completely lost at compile-time in Java. The Java runtime retains a surprising amount of generic type information. In fact, we can create a real generic type for any generic definition we need by using a very simple utility called a “type token”. Sadly, the JDK does not include a utility to create these type tokens. Fortunately, the code to create them is just a few Java lines. The included TypeToken.java utility provides this. To create a type token for a list of strings write: // create a type token that represents a list of string TypeToken&lt;List&lt;String&gt;&gt; typeToken = new TypeToken&lt;&gt;(){}; We can use this type token to deserialize a list of records, strings, optionals, and others: var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); String jsonText = &quot;[1, 2, 3]&quot;; TypeToken&lt;List&lt;Integer&gt;&gt; typeToken = new TypeToken&lt;&gt;() {}; List&lt;Integer&gt; ints = parser.parse(jsonText.chars()).collect(JsonDeserializerCollector.deserializing(deserializer, typeToken)); Test it out for yourself! In the previous articles we developed a serializer, a printer and a parser. Now we can do a complete round trip from a Java object, to JSON tokens, to JSON text, back to JSON tokens and back to the original Java object. Let’s put this together in jshell. The example uses these files: TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java From a terminal with Java 19 installed, run the following (note you’ll need the wget utility): wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/StringUtils.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonPrinter.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonParser.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializer.java wget -nc https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializerCollector.java jshell --enable-preview TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java Inside jshell let’s serialize a Java record into JSON tokens, print those tokens into JSON text, parse that text back into a stream of JSON tokens and finally deserialize those tokens back into a Java record. We can compare the two records to ensure it worked properly. var serializer = JsonSerializer.instance(); var printer = JsonPrinter.instance(); var parser = JsonParser.instance(); var deserializer = JsonDeserializer.instance(); record Person(String name, int age) {} var person = new Person(&quot;someone&quot;, 28); var deserializedPerson = serializer.serialize(person) // serialize to stream of JsonToken .map(printer::print) // map each JsonToken to a String (as a CharSequence) .map(CharSequence::chars) // map each CharSequence to an IntStream .flatMap(parser::parse) // pass each IntStream to the parser and flatten the resulting stream of tokens .collect(JsonDeserializerCollector.deserializing(deserializer, Person.class)); // use the collector to reduce the tokens into a Person via the deserializer if (person.equals(deserializedPerson)) { System.out.println(&quot;It worked!&quot;); } System.out.println(&quot;Done.&quot;); Summary We rounded out deserialization nicely now and have a full library at our hands. Lets move on to our final thoughts in the series conclusion. We’re hiring Want to be able to use the latest features of Java? We’re hiring! Jordan Zimmerman is a Senior Software Engineer working on Starburst Galaxy.","headline":"Deserialization part 2","image":"https://docs.starburst.io/assets/img/logo/java.png","mainEntityOfPage":{"@type":"WebPage","@id":"https://docs.starburst.io/blog_bej/2022-09-20-bej6-deserialization.html"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://docs.starburst.io/assets/img/logo/starburst-reverse.png"}},"url":"https://docs.starburst.io/blog_bej/2022-09-20-bej6-deserialization.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+
+
+<header class="main-header navbar-expand-sm">
+  <div class="navbar fixed-top navbar-dark">
+    <div class="navbar-left-container">
+      <a class="navbar-brand" href="https://www.starburst.io/">
+        <img src="/assets/img/logo/starburst_KO-T.png" height="32" alt="Starburst">
+      </a>
+      <span class="navbar-divider"></span>
+      <a href="/" class="header-text">Documentation</a>
+    </div>
+    
+    <div class="nav-item dropdown" id="site-search">
+  <div id="dropdownSearchDisplay" aria-labelledby="dropdownSearch">
+    <div id="algolia-search">
+      <div id="searchbox"></div>
+      <div id="refinement-list">
+        <h6>Filter:</h6>
+      </div>
+      <div id="hits"></div>
+      <div id="stats"></div>
+    </div>
+  </div>
+</div>
+
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+    <nav class="primary-nav">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-layout navbar-nav mr-auto">
+          <li class="nav-item dropdown">
+            <a id="get-started"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/get-started/index.html">Get started</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/get-started/concepts.html">Concepts</a>
+              <a class="dropdown-item" href="/get-started/architecture.html">Architecture</a>
+              <a class="dropdown-item" href="/get-started/data-sources-catalogs.html">Data sources and catalogs</a>
+              <a class="dropdown-item" href="/get-started/choose-your-starburst-product.html">Choose your Starburst product</a>
+              <a class="dropdown-item" href="/data-consumer/index.html">Data consumer</a>
+              <a class="dropdown-item" href="/data-engineer/index.html">Data engineer</a>
+              <a class="dropdown-item" href="/platform-administrator/index.html">Platform administrator</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-galaxy"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Starburst Galaxy" data-is-click="false"
+              href="/starburst-galaxy/index.html">Starburst Galaxy</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-galaxy/query/index.html">Query</a>
+              <a class="dropdown-item" href="/starburst-galaxy/catalogs/index.html">Catalogs</a>
+              <a class="dropdown-item" href="/starburst-galaxy/clusters/index.html">Clusters</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sql/index.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-galaxy/admin/index.html">Admin</a>
+              <a class="dropdown-item" href="/starburst-galaxy/access-control/index.html">Access control</a>
+              <a class="dropdown-item" href="/starburst-galaxy/cloud-settings/index.html">Cloud settings</a>
+              <a class="dropdown-item" href="/starburst-galaxy/security/index.html">Security</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sso/index.html">Single sign-on</a>
+              <a class="dropdown-item" href="/starburst-galaxy/api.html">API</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-enterprise"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/starburst-enterprise/index.html">Starburst Enterprise</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-enterprise/try/index.html">Try Starburst Enterprise</a>
+              <a class="dropdown-item" href="/starburst-enterprise/web-ui/index.html">Web UI</a>
+              <a class="dropdown-item" href="/starburst-enterprise/sql.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-enterprise/admin-topics/index.html">Administration</a>
+              <a class="dropdown-item" href="/starburst-enterprise/k8s/index.html">Kubernetes deployments</a>
+              <a class="dropdown-item" href="/starburst-enterprise/starburst-admin/index.html">Starburst Admin</a>
+              <a class="dropdown-item" href="/latest/index.html">Reference documentation</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="ecosystems"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/ecosystems/index.html">Ecosystems</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/ecosystems/amazon/index.html">Amazon AWS</a>
+              <a class="dropdown-item" href="/ecosystems/google/index.html">Google Cloud</a>
+              <a class="dropdown-item" href="/ecosystems/microsoft/index.html">Microsoft Azure</a>
+              <a class="dropdown-item" href="/ecosystems/redhat/index.html">Red Hat OpenShift</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="resources"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="resources" data-is-click="false"
+              href="/resources.html">Resources</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/support.html">Support</a>
+              <a class="dropdown-item" href="/security/index.html">Security</a>
+              <a class="dropdown-item" href="/blog/index.html">Developer blog</a>
+              <a class="dropdown-item" href="/videos/index.html">Video library</a>
+              <a class="dropdown-item" href="/glossary.html">Glossary</a>
+              <a class="dropdown-item" href="https://www.trinoforum.org/">Trino forum</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+</header>
+
+    <div class="landing-page">
+        <div class="sep-hero">
+  <div class="container sep-parent">
+    <div class="row">
+      <div class="col-md-12">
+        <h1><a href="/blog/">Starburst developer blog</a></h1>
+        <p class="lead">The latest news from our users, engineers, writers, and
+        product folks for all our peers and friends out there.</p>
+        <p>Want even more updates and information? Go to the
+          <a href="https://blog.starburst.io/">Starburst company blog</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+
+<div class="content container-fluid post-container clearfix spacer-30">
+
+  <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+    <div class="container">
+      <div class="row">
+
+        <div class="col-xl-3">
+          <h3>Contents</h3>
+          <ul class="list-group">
+            
+              
+                <a class="list-group-item" href="/blog/2022-09-20-bej0-introduction.html">Bleeding edge Java</a>
+              
+            
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej1-design.html">Designing a JSON model</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej2-serialization.html">Serialization</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej3-printing.html">Printing</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej4-parsing.html">Parsing</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej5-deserialization.html">Deserialization part 1</a>
+              
+            
+              
+                <li class="list-group-item active">Deserialization part 2</li>
+              
+            
+              
+                <a class="list-group-item" href="/blog_bej/2022-09-20-bej7-conclusion.html">Conclusion</a>
+              
+            
+          </ul>
+        </div>
+
+        <div class="col-xl-9">
+          <header class="post-header">
+            <h1 class="post-title p-name" itemprop="name headline">
+              Deserialization part 2</h1>
+            <p class="post-meta">
+              <time class="dt-published" abbrtime="2022-09-20T00:00:00-05:00" itemprop="datePublished">
+                Sep 20, 2022
+              </time> |
+
+     Jordan Zimmerman
+     
+     
+     <a href="https://github.com/randgalt" target="_blank"><i class="fab fa-github"></i></a>
+     
+     
+</p>
+          </header>
+
+          <div class="content width clearfix" itemprop="articleBody"><img src="../assets/img/logo/java.png" style="float: right;"><p><em>This is part 6 of the Bleeding edge Java series. <a href="/blog/2022-09-20-bej0-introduction.html">Start at the
+introduction</a> if you haven’t
+already.</em></p>
+
+<p>In the <a href="/blog_bej/2022-09-20-bej5-deserialization.html">first part</a> of the
+deserialization article we defined a framework for deserializing simple Java
+types. Now we add support for complex types.</p>
+
+<p>First we update the implementation of <code class="language-plaintext highlighter-rouge">deserializerFor</code> to include the complex
+types we handle:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">TypedDeserializer</span> <span class="nf">deserializerFor</span><span class="o">(</span><span class="nc">TypedDeserializer</span> <span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">Type</span> <span class="n">type</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="k">return</span> <span class="nf">switch</span> <span class="o">(</span><span class="n">type</span><span class="o">)</span> <span class="o">{</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">byte</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Byte</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">byteValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">short</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Short</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">shortValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">int</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Integer</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">intValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">long</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Long</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">longValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">float</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Float</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">floatValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">double</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Double</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">numberToken</span> <span class="o">-&gt;</span> <span class="n">numberToken</span><span class="o">.</span><span class="na">value</span><span class="o">().</span><span class="na">doubleValue</span><span class="o">());</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="kt">boolean</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">||</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">Boolean</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">BooleanToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nl">BooleanToken:</span><span class="o">:</span><span class="n">value</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="nc">Number</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">clazz</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">NumberToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nl">NumberToken:</span><span class="o">:</span><span class="n">value</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="nc">String</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">StringToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="nl">StringToken:</span><span class="o">:</span><span class="n">value</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nc">ParameterizedType</span> <span class="n">parameterizedType</span> <span class="nf">when</span> <span class="o">(</span><span class="n">parameterizedType</span><span class="o">.</span><span class="na">getRawType</span><span class="o">()</span> <span class="k">instanceof</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="nc">Collection</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">clazz</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">collectionTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="n">clazz</span><span class="o">,</span> <span class="n">parameterizedType</span><span class="o">.</span><span class="na">getActualTypeArguments</span><span class="o">()[</span><span class="mi">0</span><span class="o">]);</span>
+        <span class="k">case</span> <span class="nc">ParameterizedType</span> <span class="n">parameterizedType</span> <span class="nf">when</span> <span class="o">(</span><span class="n">parameterizedType</span><span class="o">.</span><span class="na">getRawType</span><span class="o">()</span> <span class="k">instanceof</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span><span class="o">)</span> <span class="o">&amp;&amp;</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">clazz</span><span class="o">)</span> <span class="o">-&gt;</span> 
+                <span class="n">optionalTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="n">parameterizedType</span><span class="o">.</span><span class="na">getActualTypeArguments</span><span class="o">()[</span><span class="mi">0</span><span class="o">]);</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">isRecord</span><span class="o">()</span> <span class="o">-&gt;</span> 
+                <span class="n">recordTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="n">clazz</span><span class="o">);</span>
+        <span class="k">case</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span> <span class="n">when</span> <span class="n">clazz</span><span class="o">.</span><span class="na">isEnum</span><span class="o">()</span> <span class="o">-&gt;</span> 
+                <span class="n">enumTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="n">clazz</span><span class="o">);</span>
+        <span class="k">default</span> <span class="o">-&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">();</span>
+    <span class="o">};</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="enumerations">Enumerations</h3>
+
+<p>Use <a href="/blog_bej/2022-09-20-bej5-deserialization.html#simpletypeddeserializer">simpleTypedDeserializer</a> to accept a string and use the string to build the
+enum.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">TypedDeserializer</span> <span class="nf">enumTypedDeserializer</span><span class="o">(</span><span class="nc">TypedDeserializer</span> <span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">enumClass</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="k">return</span> <span class="nf">simpleTypedDeserializer</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">StringToken</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">stringToken</span> <span class="o">-&gt;</span>
+            <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">enumClass</span><span class="o">.</span><span class="na">getEnumConstants</span><span class="o">()).</span><span class="na">filter</span><span class="o">(</span><span class="n">c</span> <span class="o">-&gt;</span> <span class="n">c</span><span class="o">.</span><span class="na">toString</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">stringToken</span><span class="o">.</span><span class="na">value</span><span class="o">())).</span><span class="na">findFirst</span><span class="o">().</span><span class="na">orElseThrow</span><span class="o">(</span><span class="nl">RuntimeException:</span><span class="o">:</span><span class="k">new</span><span class="o">));</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="optional">Optional</h3>
+
+<p>The pattern matching in the <code class="language-plaintext highlighter-rouge">deserializerFor()</code> switch will have extracted the
+Optional’s component type. We get the deserializer for that component type, get
+its value and then pass that value through <code class="language-plaintext highlighter-rouge">Optional.ofNullable()</code>.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">TypedDeserializer</span> <span class="nf">optionalTypedDeserializer</span><span class="o">(</span><span class="nc">TypedDeserializer</span> <span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">Type</span> <span class="n">componentType</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">TypedDeserializer</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="nc">TypedDeserializer</span> <span class="n">valueDeserializer</span> <span class="o">=</span> <span class="n">deserializerFor</span><span class="o">(</span><span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="n">componentType</span><span class="o">);</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">TypedDeserializer</span> <span class="nf">accept</span><span class="o">(</span><span class="nc">JsonToken</span> <span class="n">jsonToken</span><span class="o">)</span>
+        <span class="o">{</span>
+            <span class="k">return</span> <span class="n">valueDeserializer</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="n">jsonToken</span><span class="o">);</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">Object</span> <span class="nf">value</span><span class="o">()</span>
+        <span class="o">{</span>
+            <span class="k">return</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">ofNullable</span><span class="o">(</span><span class="n">valueDeserializer</span><span class="o">.</span><span class="na">value</span><span class="o">());</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="collections">Collections</h3>
+
+<p>For collections we keep a list of a deserializers for each value in the
+collection. When the parent deserializer asks for the collection value, we can
+then process each deserializer to get its final value. We must perform this
+delayed value resolution because all the tokens that apply to the collection
+must be processed before the value can be determined.</p>
+
+<p>The deserializer does the following:</p>
+
+<ul>
+  <li>Wait for the BeginArrayToken to mark that the collection has started</li>
+  <li>Set a flag to indicate that a value is expected once the collection
+has started</li>
+  <li>Check the next token to see if it’s an EndArrayToken when the
+value-expected flag is set
+    <ul>
+      <li>If so, the collection is complete</li>
+      <li>If not, get a new deserializer for the list’s component type and add it to
+values and set it as the next deserializer</li>
+    </ul>
+  </li>
+  <li>If a ValueSeparatorToken is accepted, reset for a new value</li>
+  <li>Otherwise wait for EndArrayToken</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">TypedDeserializer</span> <span class="nf">collectionTypedDeserializer</span><span class="o">(</span><span class="nc">TypedDeserializer</span> <span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">collectionClass</span><span class="o">,</span> <span class="nc">Type</span> <span class="n">componentType</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">TypedDeserializer</span><span class="o">()</span>
+    <span class="o">{</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="nc">List</span><span class="o">&lt;</span><span class="nc">TypedDeserializer</span><span class="o">&gt;</span> <span class="n">values</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">ArrayList</span><span class="o">&lt;&gt;();</span>
+        <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">started</span><span class="o">;</span>
+        <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">isDone</span><span class="o">;</span>
+        <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">expectingValue</span><span class="o">;</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">TypedDeserializer</span> <span class="nf">accept</span><span class="o">(</span><span class="nc">JsonToken</span> <span class="n">jsonToken</span><span class="o">)</span>
+        <span class="o">{</span>
+            <span class="nc">TypedDeserializer</span> <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="k">this</span><span class="o">;</span>
+            <span class="k">if</span> <span class="o">(</span><span class="n">expectingValue</span><span class="o">)</span> <span class="o">{</span>
+                <span class="n">expectingValue</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+                <span class="k">switch</span> <span class="o">(</span><span class="n">jsonToken</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">case</span> <span class="nc">EndArrayToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                        <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="n">accept</span><span class="o">(</span><span class="n">jsonToken</span><span class="o">);</span>    <span class="c1">// it's an empty array</span>
+                    <span class="o">}</span>
+                    <span class="k">default</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                        <span class="nc">TypedDeserializer</span> <span class="n">valueTypedDeserializer</span> <span class="o">=</span> <span class="n">deserializerFor</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">componentType</span><span class="o">);</span>
+                        <span class="n">values</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">valueTypedDeserializer</span><span class="o">);</span>
+                        <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="n">valueTypedDeserializer</span><span class="o">.</span><span class="na">accept</span><span class="o">(</span><span class="n">jsonToken</span><span class="o">);</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">else</span> <span class="o">{</span>
+                <span class="k">switch</span> <span class="o">(</span><span class="n">jsonToken</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">case</span> <span class="nc">BeginArrayToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                        <span class="o">}</span>
+                        <span class="n">started</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                        <span class="n">expectingValue</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">case</span> <span class="nc">EndArrayToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(!</span><span class="n">started</span> <span class="o">||</span> <span class="n">isDone</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                        <span class="o">}</span>
+                        <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="n">parentTypedDeserializer</span><span class="o">;</span>
+                        <span class="n">isDone</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">case</span> <span class="nc">ValueSeparatorToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                        <span class="k">if</span> <span class="o">(!</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+                            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                        <span class="o">}</span>
+                        <span class="n">expectingValue</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="o">}</span>
+                    <span class="k">default</span> <span class="o">-&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">return</span> <span class="n">nextTypedDeserializer</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">Object</span> <span class="nf">value</span><span class="o">()</span>
+        <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">isDone</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="c1">// get the final value from each of the stored deserializers</span>
+            <span class="nc">Stream</span><span class="o">&lt;</span><span class="nc">Object</span><span class="o">&gt;</span> <span class="n">valueStream</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="na">stream</span><span class="o">().</span><span class="na">map</span><span class="o">(</span><span class="nl">TypedDeserializer:</span><span class="o">:</span><span class="n">value</span><span class="o">);</span>
+            <span class="c1">// create either a set or a list depending on the collection class</span>
+            <span class="k">return</span> <span class="nc">Set</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">collectionClass</span><span class="o">)</span> <span class="o">?</span> <span class="n">valueStream</span><span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toSet</span><span class="o">())</span> <span class="o">:</span> <span class="n">valueStream</span><span class="o">.</span><span class="na">toList</span><span class="o">();</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h3 id="records">Records</h3>
+
+<p>For records we use the record’s array of RecordComponents to know the names and
+types of the fields to expect in the object. Similar to the collection
+deserializer we keep a map whose key is the name of the field and the value is
+the deserializer for the component’s type. Just like for collections, when the
+parent deserializer asks for the record value, we can then process each
+deserializer to get its final value. We must perform this delayed value
+resolution because all the tokens that apply to the record must be processed
+before the value can be determined.</p>
+
+<p>The deserializer does the following:</p>
+
+<ul>
+  <li>Wait for BeginObjectToken to mark that the object has started</li>
+  <li>Expect that ObjectNameToken is the next token. Once the ObjectNameToken is accepted:
+    <ul>
+      <li>Get a new deserializer for the record component’s type and add
+it to values map</li>
+      <li>Set it as the next deserializer</li>
+    </ul>
+  </li>
+  <li>If a ValueSeparatorToken is accepted, reset for another BeginObjectToken, otherwise, wait for EndObjectToken</li>
+  <li>Build the final value by using the RecordComponents to find the canonical
+Constructor, create an array of values and create the record via reflection</li>
+</ul>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nc">TypedDeserializer</span> <span class="nf">recordTypedDeserializer</span><span class="o">(</span><span class="nc">TypedDeserializer</span> <span class="n">parentTypedDeserializer</span><span class="o">,</span> <span class="nc">Class</span><span class="o">&lt;?&gt;</span> <span class="n">recordClass</span><span class="o">)</span>
+<span class="o">{</span>
+    <span class="nc">RecordComponent</span><span class="o">[]</span> <span class="n">recordComponents</span> <span class="o">=</span> <span class="n">recordClass</span><span class="o">.</span><span class="na">getRecordComponents</span><span class="o">();</span>
+    <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">RecordComponent</span><span class="o">&gt;</span> <span class="n">recordComponentMap</span> <span class="o">=</span> <span class="nc">Stream</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">recordComponents</span><span class="o">).</span><span class="na">collect</span><span class="o">(</span><span class="nc">Collectors</span><span class="o">.</span><span class="na">toMap</span><span class="o">(</span><span class="nl">RecordComponent:</span><span class="o">:</span><span class="n">getName</span><span class="o">,</span> <span class="nc">Function</span><span class="o">.</span><span class="na">identity</span><span class="o">()));</span>
+
+    <span class="k">return</span> <span class="k">new</span> <span class="nf">TypedDeserializer</span><span class="o">()</span> <span class="o">{</span>
+        <span class="kd">private</span> <span class="kd">final</span> <span class="nc">Map</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">,</span> <span class="nc">TypedDeserializer</span><span class="o">&gt;</span> <span class="n">valuesMap</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">HashMap</span><span class="o">&lt;&gt;();</span>
+        <span class="kd">private</span> <span class="nc">String</span> <span class="n">currentName</span><span class="o">;</span>
+        <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">started</span><span class="o">;</span>
+        <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">isDone</span><span class="o">;</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">TypedDeserializer</span> <span class="nf">accept</span><span class="o">(</span><span class="nc">JsonToken</span> <span class="n">jsonToken</span><span class="o">)</span>
+        <span class="o">{</span>
+            <span class="nc">TypedDeserializer</span> <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="k">this</span><span class="o">;</span>
+            <span class="k">switch</span> <span class="o">(</span><span class="n">jsonToken</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">case</span> <span class="nc">BeginObjectToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="k">else</span> <span class="o">{</span>
+                        <span class="n">started</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                    <span class="o">}</span>
+                <span class="o">}</span>
+                <span class="k">case</span> <span class="nf">ObjectNameToken</span><span class="o">(</span><span class="kt">var</span> <span class="n">name</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(!</span><span class="n">started</span> <span class="o">||</span> <span class="o">(</span><span class="n">currentName</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">))</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="n">currentName</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+                    <span class="nc">RecordComponent</span> <span class="n">recordComponent</span> <span class="o">=</span> <span class="n">recordComponentMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">currentName</span><span class="o">);</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="n">recordComponent</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="nc">TypedDeserializer</span> <span class="n">typedDeserializer</span> <span class="o">=</span> <span class="n">deserializerFor</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">recordComponent</span><span class="o">.</span><span class="na">getGenericType</span><span class="o">());</span>
+                    <span class="n">valuesMap</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">currentName</span><span class="o">,</span> <span class="n">typedDeserializer</span><span class="o">);</span>
+                    <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="n">typedDeserializer</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="k">case</span> <span class="nc">EndObjectToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(!</span><span class="n">started</span> <span class="o">||</span> <span class="n">isDone</span><span class="o">)</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="n">nextTypedDeserializer</span> <span class="o">=</span> <span class="n">parentTypedDeserializer</span><span class="o">;</span>
+                    <span class="n">isDone</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="k">case</span> <span class="nc">ValueSeparatorToken</span> <span class="n">__</span> <span class="o">-&gt;</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(!</span><span class="n">started</span> <span class="o">||</span> <span class="o">(</span><span class="n">currentName</span> <span class="o">==</span> <span class="kc">null</span><span class="o">))</span> <span class="o">{</span>
+                        <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="n">currentName</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+                <span class="o">}</span>
+                <span class="k">default</span> <span class="o">-&gt;</span> <span class="k">throw</span> <span class="k">new</span> <span class="nc">RuntimeException</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="k">return</span> <span class="n">nextTypedDeserializer</span><span class="o">;</span>
+        <span class="o">}</span>
+
+        <span class="nd">@Override</span>
+        <span class="kd">public</span> <span class="nc">Object</span> <span class="nf">value</span><span class="o">()</span>
+        <span class="o">{</span>
+            <span class="k">if</span> <span class="o">(!</span><span class="n">isDone</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">();</span>
+            <span class="o">}</span>
+            <span class="nc">Class</span><span class="o">&lt;?&gt;[]</span> <span class="n">argumentTypes</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Class</span><span class="o">[</span><span class="n">recordComponents</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+            <span class="nc">Object</span><span class="o">[]</span> <span class="n">arguments</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Object</span><span class="o">[</span><span class="n">recordComponents</span><span class="o">.</span><span class="na">length</span><span class="o">];</span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">recordComponents</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="o">++</span><span class="n">i</span><span class="o">)</span> <span class="o">{</span>
+                <span class="nc">RecordComponent</span> <span class="n">recordComponent</span> <span class="o">=</span> <span class="n">recordComponents</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+                <span class="n">argumentTypes</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">recordComponent</span><span class="o">.</span><span class="na">getType</span><span class="o">();</span>
+                <span class="nc">TypedDeserializer</span> <span class="n">valueTypedDeserializer</span> <span class="o">=</span> <span class="n">valuesMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">recordComponent</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+                <span class="k">if</span> <span class="o">(</span><span class="n">valueTypedDeserializer</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+                    <span class="k">if</span> <span class="o">(</span><span class="nc">Optional</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">isAssignableFrom</span><span class="o">(</span><span class="n">recordComponent</span><span class="o">.</span><span class="na">getType</span><span class="o">()))</span> <span class="o">{</span>
+                        <span class="n">arguments</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="nc">Optional</span><span class="o">.</span><span class="na">empty</span><span class="o">();</span>
+                    <span class="o">}</span>
+                    <span class="c1">// otherwise leave it null</span>
+                <span class="o">}</span>
+                <span class="k">else</span> <span class="o">{</span>
+                    <span class="n">arguments</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">valueTypedDeserializer</span><span class="o">.</span><span class="na">value</span><span class="o">();</span>
+                <span class="o">}</span>
+            <span class="o">}</span>
+            <span class="k">try</span> <span class="o">{</span>
+                <span class="k">return</span> <span class="n">recordClass</span><span class="o">.</span><span class="na">getConstructor</span><span class="o">(</span><span class="n">argumentTypes</span><span class="o">).</span><span class="na">newInstance</span><span class="o">(</span><span class="n">arguments</span><span class="o">);</span>
+            <span class="o">}</span>
+            <span class="k">catch</span> <span class="o">(</span><span class="nc">InstantiationException</span> <span class="o">|</span> <span class="nc">IllegalAccessException</span> <span class="o">|</span> <span class="nc">InvocationTargetException</span> <span class="o">|</span> <span class="nc">NoSuchMethodException</span> <span class="o">|</span> <span class="nc">IllegalArgumentException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
+            <span class="o">}</span>
+        <span class="o">}</span>
+    <span class="o">};</span>
+<span class="o">}</span>
+</code></pre></div></div>
+
+<h2 id="generics">Generics</h2>
+
+<p>Because of
+<a href="https://docs.oracle.com/javase/tutorial/java/generics/erasure.html" target="_blank">erasure</a>,
+there is no way in Java to specify many object types that we might want to
+deserialize such as generic lists (e.g. <code class="language-plaintext highlighter-rouge">List&lt;String&gt;</code>). However generic type
+information is not completely lost at compile-time in Java. The Java runtime
+retains a surprising amount of generic type information. In fact, we can create
+a real generic type for any generic definition we need by using a very simple
+utility called a “type token”. Sadly, the JDK does not include a utility to
+create these type tokens. Fortunately, the code to create them is just a few
+Java lines. The included
+<a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java" target="_blank">TypeToken.java</a>
+utility provides this. To create a type token for a list of strings write:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// create a type token that represents a list of string</span>
+<span class="nc">TypeToken</span><span class="o">&lt;</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">String</span><span class="o">&gt;&gt;</span> <span class="n">typeToken</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TypeToken</span><span class="o">&lt;&gt;(){};</span>
+</code></pre></div></div>
+
+<p>We can use this type token to deserialize a list of records, strings, optionals,
+and others:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">parser</span> <span class="o">=</span> <span class="nc">JsonParser</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+<span class="kt">var</span> <span class="n">deserializer</span> <span class="o">=</span> <span class="nc">JsonDeserializer</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+
+<span class="nc">String</span> <span class="n">jsonText</span> <span class="o">=</span> <span class="s">"[1, 2, 3]"</span><span class="o">;</span>
+<span class="nc">TypeToken</span><span class="o">&lt;</span><span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;&gt;</span> <span class="n">typeToken</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">TypeToken</span><span class="o">&lt;&gt;()</span> <span class="o">{};</span>
+<span class="nc">List</span><span class="o">&lt;</span><span class="nc">Integer</span><span class="o">&gt;</span> <span class="n">ints</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="n">jsonText</span><span class="o">.</span><span class="na">chars</span><span class="o">()).</span><span class="na">collect</span><span class="o">(</span><span class="nc">JsonDeserializerCollector</span><span class="o">.</span><span class="na">deserializing</span><span class="o">(</span><span class="n">deserializer</span><span class="o">,</span> <span class="n">typeToken</span><span class="o">));</span>
+</code></pre></div></div>
+
+<h2 id="test-it-out-for-yourself">Test it out for yourself!</h2>
+
+<p>In the previous articles we developed a serializer, a printer and a parser. Now
+we can do a complete round trip from a Java object, to JSON tokens, to JSON
+text, back to JSON tokens and back to the original Java object.</p>
+
+<p>Let’s put this together in jshell. The example uses these files:</p>
+
+<ul>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java" target="_blank">TypeToken.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java" target="_blank">JsonToken.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java" target="_blank">JsonSerializer.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/StringUtils.java" target="_blank">StringUtils.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonPrinter.java" target="_blank">JsonPrinter.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonParser.java" target="_blank">JsonParser.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializer.java" target="_blank">JsonDeserializer.java</a></li>
+  <li><a href="https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializerCollector.java" target="_blank">JsonDeserializerCollector.java</a></li>
+</ul>
+
+<p>From a terminal with <a href="https://jdk.java.net/19/" target="_blank">Java 19</a> installed, run the following (note you’ll need the <a href="https://wiki.archiveteam.org/index.php/Wget_installation" target="_blank">wget utility</a>):</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/TypeToken.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonToken.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonSerializer.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/StringUtils.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonPrinter.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonParser.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializer.java
+wget <span class="nt">-nc</span> https://raw.githubusercontent.com/starburstdata/developer-blog-assets/main/bleeding-edge-java/code/JsonDeserializerCollector.java
+jshell <span class="nt">--enable-preview</span> TypeToken.java JsonToken.java JsonSerializer.java StringUtils.java JsonPrinter.java JsonParser.java JsonDeserializer.java JsonDeserializerCollector.java
+</code></pre></div></div>
+
+<p>Inside jshell let’s serialize a Java record into JSON tokens, print those tokens
+into JSON text, parse that text back into a stream of JSON tokens and finally
+deserialize those tokens back into a Java record. We can compare the two records
+to ensure it worked properly.</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">serializer</span> <span class="o">=</span> <span class="nc">JsonSerializer</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+<span class="kt">var</span> <span class="n">printer</span> <span class="o">=</span> <span class="nc">JsonPrinter</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+<span class="kt">var</span> <span class="n">parser</span> <span class="o">=</span> <span class="nc">JsonParser</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+<span class="kt">var</span> <span class="n">deserializer</span> <span class="o">=</span> <span class="nc">JsonDeserializer</span><span class="o">.</span><span class="na">instance</span><span class="o">();</span>
+
+<span class="n">record</span> <span class="nf">Person</span><span class="o">(</span><span class="nc">String</span> <span class="n">name</span><span class="o">,</span> <span class="kt">int</span> <span class="n">age</span><span class="o">)</span> <span class="o">{}</span>
+<span class="kt">var</span> <span class="n">person</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Person</span><span class="o">(</span><span class="s">"someone"</span><span class="o">,</span> <span class="mi">28</span><span class="o">);</span>
+
+<span class="kt">var</span> <span class="n">deserializedPerson</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="na">serialize</span><span class="o">(</span><span class="n">person</span><span class="o">)</span>        <span class="c1">// serialize to stream of JsonToken</span>
+    <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="nl">printer:</span><span class="o">:</span><span class="n">print</span><span class="o">)</span>            <span class="c1">// map each JsonToken to a String (as a CharSequence)</span>
+    <span class="o">.</span><span class="na">map</span><span class="o">(</span><span class="nl">CharSequence:</span><span class="o">:</span><span class="n">chars</span><span class="o">)</span>       <span class="c1">// map each CharSequence to an IntStream</span>
+    <span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="nl">parser:</span><span class="o">:</span><span class="n">parse</span><span class="o">)</span>         <span class="c1">// pass each IntStream to the parser and flatten the resulting stream of tokens</span>
+    <span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="nc">JsonDeserializerCollector</span><span class="o">.</span><span class="na">deserializing</span><span class="o">(</span><span class="n">deserializer</span><span class="o">,</span> <span class="nc">Person</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>  <span class="c1">// use the collector to reduce the tokens into a Person via the deserializer</span>
+
+<span class="k">if</span> <span class="o">(</span><span class="n">person</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">deserializedPerson</span><span class="o">))</span> <span class="o">{</span>
+    <span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"It worked!"</span><span class="o">);</span>
+<span class="o">}</span>
+<span class="nc">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">"Done."</span><span class="o">);</span>
+</code></pre></div></div>
+
+<h2 id="summary">Summary</h2>
+
+<p>We rounded out deserialization nicely now and have a full library at our hands.
+Lets move on to our final thoughts in the <a href="/blog_bej/2022-09-20-bej7-conclusion.html">series conclusion</a>.</p>
+
+<h2 id="were-hiring">We’re hiring</h2>
+
+<p>Want to be able to use the latest features of Java? <a href="https://www.starburst.io/careers/" target="_blank">We’re
+hiring!</a></p>
+
+<hr />
+
+<p>Jordan Zimmerman is a Senior Software Engineer working on <a href="https://www.starburst.io/platform/starburst-galaxy/" target="_blank">Starburst
+Galaxy</a>.</p>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="u-url" href="/blog_bej/2022-09-20-bej6-deserialization.html" hidden></a>
+  </article>
+
+</div>
+
+
+
+    </div>
+
+
+<div style="margin-bottom: 50px"></div><footer class="page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <p style="font-weight:900">Resources</b></p>
+        <ul>
+          <li class="footer-item"><a href="/videos/index.html">Video library</a></li>
+          <li class="footer-item"><a href="/glossary.html">Glossary</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/info/oreilly-trino-guide/" target="_blank">Free O'Reilly book - Trino: The Definitive Guide</a></li>
+          <li class="footer-item"><a href="https://trino.io/broadcast/" target="_blank">Trino Community Broadcast</a></li>
+          <li class="footer-item"><a href="https://trinoforum.org" target="_blank">Trino Forum</a></li>
+          <li class="footer-item"><a href="https://blog.starburstdata.com/" target="_blank">Starburst blog</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <p style="font-weight:900">Contact and more</p>
+        <ul>
+          <li class="footer-item"><a href="https://www.starburst.io" target="_blank">Starburst</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/#download" target="_blank">Start a trial</a></li>
+          <li class="footer-item"><a href="/support.html" target="_blank">Get support</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/contact/" target="_blank">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3" style="text-align:right;">
+        <a href="https://www.starburst.io/" target="_blank"><img src="/assets/img/logo/starburst-reverse.png" height="60" alt=" Starburst" style="margin-bottom:20px;"></a>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#copyright">Copyright © 2017-2022<br> Starburst Data</a>
+        </li>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#trademarks">Trademark information</a>
+        </li>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12 center spacer-30">
+          <a href="https://twitter.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-twitter"></i></a>
+          <a href="https://linkedin.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-linkedin"></i></a>
+          <a href="https://www.youtube.com/channel/UCXjkuWSO9CV_cSI3Mvo4a4w" target="_blank" class="footer-icon"><i class="fab fa-youtube"></i></a>
+          <a href="https://github.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+  <script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+  <script type="text/javascript" src="/assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="/assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/assets/js/mdb.min.js"></script>
+  <script type="text/javascript" src="/assets/js/custom.js"></script>
+  <script type="text/javascript" src="/assets/js/algolia.js"></script>
+  <script type="text/javascript" src="/assets/js/search-box.js"></script>
+  <script type="text/javascript" src="/assets/js/search-results.js"></script>
+</body>
+</html>
