@@ -696,6 +696,8 @@
         </li></ul>
             </nav>
         </li>
+        <li class="md-nav__item"><a href="#table-redirection" class="md-nav__link">Table redirection</a>
+        </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
@@ -921,6 +923,8 @@
         <li class="md-nav__item"><a href="#authorization-checks" class="md-nav__link">Authorization checks</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#table-redirection" class="md-nav__link">Table redirection</a>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1227,6 +1231,79 @@ authorization configuration file.</p></td>
 </tbody>
 </table>
 
+
+
+<span id="iceberg-table-redirection"></span><h2 id="table-redirection">Table redirection<a class="headerlink" href="#table-redirection" title="Permalink to this headline">#</a></h2>
+<p>Trino offers the possibility to transparently redirect operations on an existing
+table to the appropriate catalog based on the format of the table and catalog configuration.</p>
+<p>In the context of connectors which depend on a metastore service
+(for example, <a class="reference internal" href="hive.html"><span class="doc">Hive connector</span></a>, <a class="reference internal" href="#"><span class="doc">Iceberg connector</span></a> and <a class="reference internal" href="delta-lake.html"><span class="doc">Delta Lake connector</span></a>),
+the metastore (Hive metastore service, <a class="reference external" href="https://aws.amazon.com/glue/">AWS Glue Data Catalog</a>)
+can be used to accustom tables with different table formats.
+Therefore, a metastore database can hold a variety of tables with different table formats.</p>
+<p>As a concrete example, let’s use the following
+simple scenario which makes use of table redirection:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">;</span>
+
+<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">mytable</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
+-------------------------------------------------------------------------
+Fragment 0 [SOURCE]
+     ...
+     Output[columnNames = [...]]
+     │   ...
+     └─ TableScan[table = another-catalog:myschema:mytable]
+            ...
+</pre></div>
+</div>
+<p>The output of the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> statement points out the actual
+catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">mytable</span></code>.</p>
+<p>The table redirection functionality works also when using
+fully qualified names for the tables:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">mytable</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
+-------------------------------------------------------------------------
+Fragment 0 [SOURCE]
+     ...
+     Output[columnNames = [...]]
+     │   ...
+     └─ TableScan[table = another-catalog:myschema:mytable]
+            ...
+</pre></div>
+</div>
+<p>Trino offers table redirection support for the following operations:</p>
+<ul class="simple">
+<li><p>Table read operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/select.html"><span class="doc">SELECT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/describe.html"><span class="doc">DESCRIBE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/show-create-table.html"><span class="doc">SHOW CREATE TABLE</span></a></p></li>
+</ul>
+</li>
+<li><p>Table write operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/update.html"><span class="doc">UPDATE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/merge.html"><span class="doc">MERGE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a></p></li>
+</ul>
+</li>
+<li><p>Table management operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/alter-table.html"><span class="doc">ALTER TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/drop-table.html"><span class="doc">DROP TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/comment.html"><span class="doc">COMMENT</span></a></p></li>
+</ul>
+</li>
+</ul>
+<p>Trino does not offer view redirection support.</p>
+<p>The connector supports redirection from Iceberg tables to Hive tables
+with the <code class="docutils literal notranslate"><span class="pre">iceberg.hive-catalog-name</span></code> catalog configuration property.</p>
 
 
 <span id="iceberg-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this headline">#</a></h2>
