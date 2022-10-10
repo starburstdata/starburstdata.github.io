@@ -117,7 +117,7 @@
            class="md-header-nav__button md-logo">
           
               <img src="../_static/starburst_KO-T.png"
-                   alt="Starburst Enterprise 399-e STS logo">
+                   alt="Starburst Enterprise 398-e STS logo">
           
         </a>
       </div>
@@ -129,7 +129,7 @@
         <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
-          Documentation: Starburst Enterprise 399-e STS</a>
+          Documentation: Starburst Enterprise 398-e STS</a>
           <span class="md-header-nav__topic"> Accumulo connector </span>
         </div>
       </div>
@@ -158,9 +158,9 @@
       
           <a title="364-e LTS" href="/364-e/">364-e LTS</a>
       
-          <a title="Latest STS (399-e)" href="/399-e/">Latest STS (399-e)</a>
+          <a title="Latest STS (398-e)" href="/398-e/">Latest STS (398-e)</a>
       
-          <a title="398-e STS" href="/398-e/">398-e STS</a>
+          <a title="397-e STS" href="/397-e/">397-e STS</a>
       
     </div>
   </div>
@@ -207,7 +207,7 @@
       
     </a>
     <a href="../index.html"
-       title="Starburst Enterprise">Starburst Enterprise 399-e STS</a>
+       title="Starburst Enterprise">Starburst Enterprise 398-e STS</a>
   </label>
   
 
@@ -818,7 +818,7 @@
     <li class="md-nav__item">
     
     
-      <a href="../versions.html" class="md-nav__link">399-e STS and others</a>
+      <a href="../versions.html" class="md-nav__link">398-e STS and others</a>
       
     
     </li>
@@ -906,7 +906,7 @@ server-side filtering, known as <em>predicate pushdown</em>. In order
 for the server-side iterators to work, you need to add the <code class="docutils literal notranslate"><span class="pre">trino-accumulo-iterators</span></code>
 JAR file to Accumulo’s <code class="docutils literal notranslate"><span class="pre">lib/ext</span></code> directory on each TabletServer node.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For each TabletServer node:</span>
-scp <span class="nv">$TRINO_HOME</span>/plugins/accumulo/trino-accumulo-iterators-*.jar <span class="o">[</span>tabletserver_address<span class="o">]</span>:<span class="nv">$ACCUMULO_HOME</span>/lib/ext
+scp <span class="nv">$PRESTO_HOME</span>/plugins/accumulo/trino-accumulo-iterators-*.jar <span class="o">[</span>tabletserver_address<span class="o">]</span>:<span class="nv">$ACCUMULO_HOME</span>/lib/ext
 
 <span class="c1"># TabletServer should pick up new JAR files in ext directory, but may require restart</span>
 </pre></div>
@@ -972,7 +972,7 @@ accumulo.password=password
 <td><p>Accumulo password for user</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">accumulo.zookeeper.metadata.root</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">/trino-accumulo</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/presto-accumulo</span></code></p></td>
 <td><p>No</p></td>
 <td><p>Root znode for storing metadata. Only relevant if using default Metadata Manager</p></td>
 </tr>
@@ -1026,7 +1026,7 @@ auto-generated column family and qualifier values (which, in practice,
 are both identical to the Trino column name).</p>
 <p>When creating a table using SQL, you can optionally specify a
 <code class="docutils literal notranslate"><span class="pre">column_mapping</span></code> table property. The value of this property is a
-comma-delimited list of triples, Trino column <strong>:</strong> Accumulo column
+comma-delimited list of triples, Presto column <strong>:</strong> Accumulo column
 family <strong>:</strong> accumulo column qualifier, with one triple for every
 non-row ID column. This sets the mapping of the Trino column name to
 the corresponding Accumulo column family and column qualifier.</p>
@@ -1194,8 +1194,14 @@ scans the data table.</p>
 
 <h2 id="loading-data">Loading data<a class="headerlink" href="#loading-data" title="Permalink to this headline">#</a></h2>
 <p>The Accumulo connector supports loading data via INSERT statements, however
-this method tends to be low-throughput and should not be relied on when
-throughput is a concern.</p>
+this method tends to be low-throughput and should not be relied on when throughput
+is a concern. Instead, users of the connector should use the <code class="docutils literal notranslate"><span class="pre">PrestoBatchWriter</span></code>
+tool that is provided as part of the presto-accumulo-tools subproject in the
+<a class="reference external" href="https://github.com/bloomberg/presto-accumulo">presto-accumulo repository</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PrestoBatchWriter</span></code> is a wrapper class for the typical <code class="docutils literal notranslate"><span class="pre">BatchWriter</span></code> that
+leverages the Trino/Accumulo metadata to write Mutations to the main data table.
+In particular, it handles indexing the given mutations on any indexed columns.
+Usage of the tool is provided in the README in the <a class="reference external" href="https://github.com/bloomberg/presto-accumulo">repository</a>.</p>
 
 
 <h2 id="external-tables">External tables<a class="headerlink" href="#external-tables" title="Permalink to this headline">#</a></h2>
@@ -1432,6 +1438,9 @@ intersection of ranges in the index. Secondary index must be enabled</p></td>
 <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">[table]</span> <span class="pre">ADD</span> <span class="pre">COLUMN</span> <span class="pre">[name]</span> <span class="pre">[type]</span></code> because of the additional
 metadata required for the columns to work; the column family, qualifier,
 and if the column is indexed.</p>
+<p>Instead, you can use one of the utilities in the
+<a class="reference external" href="https://github.com/bloomberg/presto-accumulo/tree/master/presto-accumulo-tools">presto-accumulo-tools</a>
+sub-project of the <code class="docutils literal notranslate"><span class="pre">presto-accumulo</span></code> repository.  Documentation and usage can be found in the README.</p>
 
 
 <h2 id="serializers">Serializers<a class="headerlink" href="#serializers" title="Permalink to this headline">#</a></h2>
@@ -1534,7 +1543,7 @@ follows:</p>
 </pre></div>
 </div>
 <p>Where <code class="docutils literal notranslate"><span class="pre">metadata-root</span></code> is the value of <code class="docutils literal notranslate"><span class="pre">zookeeper.metadata.root</span></code> in
-the config file (default is <code class="docutils literal notranslate"><span class="pre">/trino-accumulo</span></code>), <code class="docutils literal notranslate"><span class="pre">schema</span></code> is the
+the config file (default is <code class="docutils literal notranslate"><span class="pre">/presto-accumulo</span></code>), <code class="docutils literal notranslate"><span class="pre">schema</span></code> is the
 Trino schema (which is identical to the Accumulo namespace name), and
 <code class="docutils literal notranslate"><span class="pre">table</span></code> is the Trino table name (again, identical to Accumulo name).
 The data of the <code class="docutils literal notranslate"><span class="pre">table</span></code> ZooKeeper node is a serialized
@@ -1575,9 +1584,9 @@ when creating the external table.</p>
 </pre></div>
 </div>
 <p>2. Using the ZooKeeper CLI, delete the corresponding znode.  Note this uses the default ZooKeeper
-metadata root of <code class="docutils literal notranslate"><span class="pre">/trino-accumulo</span></code></p>
+metadata root of <code class="docutils literal notranslate"><span class="pre">/presto-accumulo</span></code></p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ zkCli.sh
-[zk: localhost:2181(CONNECTED) 1] delete /trino-accumulo/foo/bar
+[zk: localhost:2181(CONNECTED) 1] delete /presto-accumulo/foo/bar
 </pre></div>
 </div>
 <p>3. Re-create the table using the same DDL as before, but adding the <code class="docutils literal notranslate"><span class="pre">external=true</span></code> property.
@@ -1798,7 +1807,7 @@ feedback();
         <a href="https://www.starburst.io/" target="_blank">
           
             <img src="../_static/starburst_KO-T.png" height="26"
-                  alt="Starburst Enterprise 399-e STS logo">
+                  alt="Starburst Enterprise 398-e STS logo">
         
         </a>
         <li class="footer-item" style="padding-right:10px;">
