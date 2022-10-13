@@ -823,28 +823,66 @@ coordinator and workers and distributes them to all hosts.</p>
 
 <p>The following resources are used to create the set of configuration files:</p>
 
-<ul>
-  <li><code class="language-plaintext highlighter-rouge">files/vars.yml</code> - variable definitions to use in the configuration files that
-are templatized with Jinja2. These files use the extension <code class="language-plaintext highlighter-rouge">.j2</code>. Ansible uses
-the set values and replaces the variable placeholders. For example, the
-placeholder `` is replaced with the value <code class="language-plaintext highlighter-rouge">production</code>
-from  <code class="language-plaintext highlighter-rouge">node_environment: production</code>.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/coordinator</code> - the configuration files for the coordinator.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/worker</code> - the configuration files for all the workers.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/catalog</code> - the <a href="../../data-engineer/catalogs.html">catalog properties files to define the connection to
-any data sources</a>, required on the coordinator
-and all workers.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/extra/etc</code> - additional files that are placed in the directory
-specified by the <code class="language-plaintext highlighter-rouge">etc_directory</code> variable on all hosts, including the <a href="../../latest/installation/license-requirements.html">license
-file</a> as well as other
-configuration files.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/extra/lib</code> - additional files that are placed in the <code class="language-plaintext highlighter-rouge">lib</code> directory
-all hosts, typically binary files or configuration files that are added to the
-servers classpath such as custom user-defined function implementations.</li>
-  <li><code class="language-plaintext highlighter-rouge">files/extra/plugin</code> - additional files that are placed in the <code class="language-plaintext highlighter-rouge">plugin</code>
-directory all hosts, typically complete directories with binaries used for a
-custom-developed plugin such as a security extension or another connector.</li>
-</ul>
+<table width="100%">
+  <caption>Configuration files and resources</caption>
+  <colgroup>
+    <col span="1" style="width: 25%;" />
+    <col span="1" style="width: 75%;" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th>File name and relative path</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>files/vars.yml</code></td>
+      <td>Contains variable definitions to use in the configuration files that
+          are templatized with Jinja2. These files use the <code>.j2</code> extension.
+          Ansible uses the set values and replaces the variable placeholders.
+          For example, the placeholder <code>{{node_environment}}</code> is replaced
+          with the value <code>production</code> from  <code>node_environment: production</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>files/coordinator</code></td>
+      <td>Contains the configuration files for the coordinator.</td>
+    </tr>
+    <tr>
+      <td><code>files/worker</code></td>
+      <td>Contains the configuration files used for all workers.</td>
+    </tr>
+    <tr>
+      <td><code>files/catalog</code></td>
+      <td>Contains the
+          <a href="../../data-engineer/catalogs.html">catalog properties files</a>,
+          which define data source connections.</td>
+    </tr>
+    <tr>
+      <td><code>files/extra/etc</code></td>
+      <td>Includes additional files such as the
+          <a href="../../latest/installation/license-requirements.html">license file</a>,
+          as well as other configuration files.  These files are placed in the
+          directory specified by the <code>etc_directory</code> Ansible playbook
+          variable on all nodes.</td>
+    </tr>
+    <tr>
+      <td><code>files/extra/lib</code></td>
+      <td>Additional files that are placed in the <code>lib</code> directory on
+          all nodes. Typically, these are binary files or configuration files
+          that are added to the <code>classpath</code>, such as user-defined
+          functions.</td>
+    </tr>
+    <tr>
+      <td><code>files/extra/plugin</code></td>
+      <td>Additional files that are placed in the <code>plugin</code> directory
+          on all nodes. Typically, these are complete directories with binaries,
+          used for custom-developed plugins, such as a security extension or
+          a custom connector.</td>
+    </tr>
+  </tbody>
+</table>
 
 <p>Any changes, including deletion of catalog files is synchronized to the hosts.</p>
 
@@ -863,8 +901,9 @@ command to delete it:</p>
 </code></pre></div></div>
 
 <p>The supported files and configuration methods are <a href="../../latest/index.html">identical to the general
-configuration files and properties from SEP</a> for the
-identical version you deploy with Starburst Admin.</p>
+configuration files and properties from
+SEP</a> for the identical version you
+deploy with Starburst Admin.</p>
 
 <p>After you created or updated all the configuration as desired, you can run the
 playbook with the following command:</p>
@@ -885,6 +924,153 @@ nodes in the cluster and that they need to be identical for all workers.</p>
   <li><a href="#start">Start</a> the cluster.</li>
   <li>Verify the changes work.</li>
 </ul>
+
+<p><a name="mem_auto_config"></a></p>
+      <h3 id="automated-memory-configuration">
+        
+        
+          Automated memory configuration <a href="#automated-memory-configuration" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>For SEP versions 370-e and above, the <code class="language-plaintext highlighter-rouge">push-configs</code> playbook
+optionally sets up SEP’s memory configuration properties for you
+using the <code class="language-plaintext highlighter-rouge">memory_auto_config</code> section of the <code class="language-plaintext highlighter-rouge">vars.yml</code> file. The values you
+set are dependent upon the resources available in your cluster nodes:</p>
+
+<p>In this example which assumes instances with 256GB of memory, automated memory
+configuration is enabled, and the <code class="language-plaintext highlighter-rouge">total_memory</code> set at 245GB:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Memory Auto Configuration parameters</span>
+<span class="na">memory_auto_config</span><span class="pi">:</span>
+  <span class="na">use_auto_config</span><span class="pi">:</span> <span class="s">yes</span>
+  <span class="na">max_concurrent_queries</span><span class="pi">:</span> <span class="m">3</span>
+  <span class="na">coordinator</span><span class="pi">:</span>
+    <span class="na">total_memory</span><span class="pi">:</span> <span class="s">245GB</span>
+    <span class="na">node_memory_headroom</span><span class="pi">:</span> <span class="s">2GB</span>
+    <span class="na">heap_size_percentage</span><span class="pi">:</span> <span class="m">90</span>
+    <span class="na">heap_headroom_percentage</span><span class="pi">:</span> <span class="m">30</span>
+  <span class="na">worker</span><span class="pi">:</span>
+    <span class="na">total_memory</span><span class="pi">:</span> <span class="s">245GB</span>
+    <span class="na">node_memory_headroom</span><span class="pi">:</span> <span class="s">2GB</span>
+    <span class="na">heap_size_percentage</span><span class="pi">:</span> <span class="m">90</span>
+    <span class="na">heap_headroom_percentage</span><span class="pi">:</span> <span class="m">30</span>
+</code></pre></div></div>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+   We suggest using the default values provided in
+the <code class="language-plaintext highlighter-rouge">vars.yml</code> file for <code class="language-plaintext highlighter-rouge">heap_size_percentage</code> and <code class="language-plaintext highlighter-rouge">heap_headroom_percentage</code>. </div>
+
+<p>The following table describes the available parameters in the
+<code class="language-plaintext highlighter-rouge">memory_auto_config</code> YAML section:</p>
+
+<table width="100%">
+  <caption>Memory configuration parameters</caption>
+  <thead>
+    <tr>
+      <th>Parameter name</th>
+      <th>Description</th>
+      <th>Required?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>use_auto_config</code></td>
+      <td>Disabled by default. When set to "yes", the <code>push-configs</code>
+          playbook is enabled, and requires valid settings for all memory
+          configuration parameters.</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td><code>max_concurrent_queries</code></td>
+      <td>Defines the maximum number of queries allowed to run simultaneously.
+      </td>
+      <td>When <code>use_auto_config</code> is set to "yes", this must be set.
+      </td>
+    </tr>
+    <tr>
+      <td><code>total_memory</code></td>
+      <td>Defines the amount of memory available on your cluster nodes nodes for
+          SEP to use. This must be expressed in a human-readable
+          quantity such as "30GB" or "100MB".</td>
+      <td>When <code>use_auto_config</code> is set to "yes", this must be set
+          for both the <code>coordinator</code> and <code>worker</code> YAML
+          nodes.</td>
+    </tr>
+    <tr>
+      <td><code>node_memory_headroom</code></td>
+      <td>Defines the amount of memory to keep open beyond what
+          SEP can use. This must be expressed in a human-readable
+          quantity such as "30GB" or "100MB".</td>
+      <td>When <code>use_auto_config</code> is set to "yes", this must be set
+          for both the <code>coordinator</code> and <code>worker</code> YAML
+          nodes.</td>
+    </tr>
+    <tr>
+      <td><code>heap_size_pct</code></td>
+      <td>Defines the percentage of the node's memory to assign to the Java
+          heap. This must be expressed as an integer between 0 and 100.</td>
+      <td>When <code>use_auto_config</code> is set to "yes", this must be set
+          for both the <code>coordinator</code> and <code>worker</code> YAML
+          nodes.</td>
+    </tr>
+    <tr>
+      <td><code>heap_headroom_pct</code></td>
+      <td>Defines the percentage of the Java heap to not be tracked by
+          SEP. This must be expressed as an integer between 0 and
+          100.</td>
+      <td>When <code>use_auto_config</code> is set to "yes", this must be set
+          for both the <code>coordinator</code> and <code>worker</code> YAML
+          nodes.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>When <code class="language-plaintext highlighter-rouge">use_auto_config</code> is set to “yes”, <code class="language-plaintext highlighter-rouge">push-configs</code> uses the memory
+parameters to automatically calculate the following values:</p>
+
+<table width="100%">
+  <caption><code>memory_auto_config</code> calculations</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Configuration file</th>
+      <th>Calculation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>-Xmx</code></td>
+      <td><a href="../../latest/admin/cache-service.html#cache-service-jvm-config">jvm.config</a></td>
+      <td>Set to <code>total_memory</code> * <code>heap_size_percentage</code> / 100 - <code>node_memory_headroom</code>.</td>
+    </tr>
+    <tr>
+      <td><code>-Xms</code></td>
+      <td><a href="../../latest/admin/cache-service.html#cache-service-jvm-config">jvm.config</a></td>
+      <td>Set to the same value as <code>-Xmx</code>.</td>
+    </tr>
+    <tr>
+      <td><code>memory.heap-headroom-per-node</code></td>
+      <td><a href="../../latest/admin/properties-resource-management.html">config.properties</a></td>
+      <td>Set to (<code>-Xmx</code> * <code>heap_headroom_percentage</code>) / 100.</td>
+    </tr>
+    <tr>
+      <td><code>query.max-memory-per-node</code></td>
+      <td><a href="../../latest/admin/properties-resource-management.html">config.properties</a></td>
+      <td>Set to (<code>-Xmx</code> - <code>memory.heap-headroom-per-node</code>) / <code>max_concurrent_queries</code>.</td>
+    </tr>
+    <tr>
+      <td><code>query.max-memory</code></td>
+      <td><a href="../../latest/admin/properties-resource-management.html">config.properties</a></td>
+      <td>Automatically set to "1PB" to limit the total memory consumed on very
+          large clusters.</td>
+    </tr>
+  </tbody>
+</table>
 
 <p><a name="start"></a></p>
       <h2 id="start-cluster">
@@ -1223,7 +1409,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#starburst-admin-playbook-reference">Starburst Admin playbook reference</a><ul><li><a href="#install-cluster">Install cluster</a></li><li><a href="#push-configurations">Push configurations</a></li><li><a href="#start-cluster">Start cluster</a></li><li><a href="#stop-cluster">Stop cluster</a></li><li><a href="#restart-cluster">Restart cluster</a></li><li><a href="#check-service-status">Check service status</a></li><li><a href="#graceful-worker-shutdown">Graceful worker shutdown</a></li><li><a href="#rolling-worker-restart">Rolling worker restart</a></li><li><a href="#collect-logs">Collect logs</a></li><li><a href="#collect-jstack-dump">Collect Jstack Dump</a></li><li><a href="#uninstall-cluster">Uninstall cluster</a></li></ul></li></ul>
+          <ul><li><a href="#starburst-admin-playbook-reference">Starburst Admin playbook reference</a><ul><li><a href="#install-cluster">Install cluster</a></li><li><a href="#push-configurations">Push configurations</a><ul><li><a href="#automated-memory-configuration">Automated memory configuration</a></li></ul></li><li><a href="#start-cluster">Start cluster</a></li><li><a href="#stop-cluster">Stop cluster</a></li><li><a href="#restart-cluster">Restart cluster</a></li><li><a href="#check-service-status">Check service status</a></li><li><a href="#graceful-worker-shutdown">Graceful worker shutdown</a></li><li><a href="#rolling-worker-restart">Rolling worker restart</a></li><li><a href="#collect-logs">Collect logs</a></li><li><a href="#collect-jstack-dump">Collect Jstack Dump</a></li><li><a href="#uninstall-cluster">Uninstall cluster</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
