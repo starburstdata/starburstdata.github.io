@@ -809,11 +809,78 @@ SEP cluster (CloudFormation stack).</p>
     
 
 <p>When you create a cluster, an auto scaling group (ASG) is automatically created
-for all the workers. To view and manage this ASG, refer to the <a href="https://console.aws.amazon.com/ec2/autoscaling/home?#AutoScalingGroups">AWS
+for all the workers. To view and manage this ASG, log into your AWS account, and
+refer to the <a href="https://console.aws.amazon.com/ec2/autoscaling/home?#AutoScalingGroups">AWS
 ASG</a>
-page and log into your AWS account. There, you see a list of ASGs for all
-workers across all clusters you have running. Here, you can control how Amazon
-Auto Scaling manages your cluster.</p>
+page to see a list of ASGs for all workers across your running clusters.
+Here, you can control how Amazon Auto Scaling manages your cluster.</p>
+
+<p>It is important to know that auto scaling policies for your ASGs are not created
+automatically. You can create auto scaling policies for each ASG manually or by customizing your CFT.</p>
+
+<p>Once scale-down occurs in the <code class="language-plaintext highlighter-rouge">Workers</code> ASG, your worker’s EC2 instance remains
+in a default terminating state of 3600 seconds to accommodate CFT deployment. To
+change the timeout value, you can use one of the following methods:</p>
+
+<ul>
+  <li>
+    <p>Configure a <a href="https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-autoscaling-lifecyclehook.html">lifecycle
+hook</a>.</p>
+
+    <p>The following example uses a lifecycle hook configuration with a value of
+<code class="language-plaintext highlighter-rouge">600</code> seconds set in the <code class="language-plaintext highlighter-rouge">Heartbeattimeout</code> property:</p>
+  </li>
+</ul>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>GracefulStarburstNodeShutdownHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    #aws-permission @cft autoscaling:PutLifecycleHook
+    #aws-permission @cft autoscaling:DeleteLifecycleHook
+    #aws-permission @cft autoscaling:DescribeLifecycleHooks
+    Properties:
+      AutoScalingGroupName: !Ref Workers
+      LifecycleTransition: 'autoscaling:EC2_INSTANCE_TERMINATING'
+      NotificationTargetARN: !GetAtt GracefulNodeShutdownQueue.Arn
+      RoleARN: !GetAtt StarburstAutoScalingIAMRole.Arn
+      HeartbeatTimeout: 600
+</code></pre></div></div>
+
+<ul>
+  <li>
+    <p>Define a parameter.</p>
+
+    <p>The following example defines a new parameter with conditions, then refers to
+the new parameter in the <code class="language-plaintext highlighter-rouge">Heartbeattimeout</code> property:</p>
+  </li>
+</ul>
+
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - ...
+    - Label:
+        default: "EC2 Configuration"
+      Parameters:
+      - ...
+      - TerminationDelay
+      Description: &gt;
+      A delay (in seconds) before Worker Node would be fully terminated by auto-scaling group. Allows in-flight queries to finish. Max value is 2 hours.
+    Type: Number
+    MinValue: 30
+    MaxValue: 7200
+    Default: 3600
+    Conditions:
+    ...
+  GracefulStarburstNodeShutdownHook:
+    Type: "AWS::AutoScaling::LifecycleHook"
+    #aws-permission @cft autoscaling:PutLifecycleHook
+    #aws-permission @cft autoscaling:DeleteLifecycleHook
+    #aws-permission @cft autoscaling:DescribeLifecycleHooks
+    Properties:
+      ...
+      HeartbeatTimeout: !Ref TerminationDelay
+</code></pre></div></div>
       <h4 id="auto-scaling-models">
         
         
