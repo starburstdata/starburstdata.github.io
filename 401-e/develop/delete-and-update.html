@@ -2,10 +2,11 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <meta name="lang:clipboard.copy" content="Copy to clipboard">
@@ -57,25 +58,23 @@
   
   
     <title>Supporting DELETE and UPDATE &#8212; Starburst Enterprise</title>
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/material.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/material.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     <link rel="stylesheet" type="text/css" href="../_static/algolia.css" />
     <link rel="stylesheet" type="text/css" href="../_static/starburst.css" />
     <link rel="stylesheet" type="text/css" href="../_static/search.css" />
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
     <script src="../_static/main.js"></script>
     <script src="../_static/algolia.js"></script>
     <script src="../_static/searchbox.js"></script>
     <script src="../_static/searchresults.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["\\(", "\\)"]], "displayMath": [["\\[", "\\]"]], "processRefs": false, "processEnvironments": false}})</script>
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -536,14 +535,14 @@
         <div class="md-content">
           <article class="md-content__inner md-typeset" role="main">
             
-  
-<h1 id="develop-delete-and-update--page-root">Supporting <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code><a class="headerlink" href="#develop-delete-and-update--page-root" title="Permalink to this headline">#</a></h1>
+  <section id="supporting-delete-and-update">
+<h1 id="develop-delete-and-update--page-root">Supporting <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code><a class="headerlink" href="#develop-delete-and-update--page-root" title="Permalink to this heading">#</a></h1>
 <p>The Trino engine provides APIs to support row-level SQL <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>.
 To implement <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> or <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, a connector must layer an <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>
 on top of the connector’s usual <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>, and define <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code>
 methods to get a “rowId” column handle; to start the operation; and to finish the operation.</p>
-
-<h2 id="delete-and-update-data-flow"><code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> Data Flow<a class="headerlink" href="#delete-and-update-data-flow" title="Permalink to this headline">#</a></h2>
+<section id="delete-and-update-data-flow">
+<h2 id="delete-and-update-data-flow"><code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> Data Flow<a class="headerlink" href="#delete-and-update-data-flow" title="Permalink to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">DELETE</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> have a similar flow:</p>
 <ul class="simple">
 <li><p>For each split, the connector will create an <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code> instance, layered over the
@@ -565,16 +564,16 @@ representing connector-specific information about the rows processed by the call
 <code class="docutils literal notranslate"><span class="pre">finishUpdate</span></code>, passing a collection containing all the fragments from all the splits. The connector
 does what is required to finalize the operation, for example, committing the transaction.</p></li>
 </ul>
-
-
-<h2 id="the-rowid-column-abstraction">The rowId Column Abstraction<a class="headerlink" href="#the-rowid-column-abstraction" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="the-rowid-column-abstraction">
+<h2 id="the-rowid-column-abstraction">The rowId Column Abstraction<a class="headerlink" href="#the-rowid-column-abstraction" title="Permalink to this heading">#</a></h2>
 <p>The Trino engine and connectors use a “rowId” column handle abstraction to agree on the identities of rows
 to be updated or deleted. The rowId column handle is opaque to the Trino engine. Depending on the connector,
 the rowId column handle abstraction could represent several physical columns. For the JDBC connector, the rowId
 column handle points might be the primary key for the table. For deletion in Hive ACID tables, the rowId consists
 of the three ACID columns that uniquely identify rows.</p>
-
-<h3 id="the-rowid-column-for-delete">The rowId Column for <code class="docutils literal notranslate"><span class="pre">DELETE</span></code><a class="headerlink" href="#the-rowid-column-for-delete" title="Permalink to this headline">#</a></h3>
+<section id="the-rowid-column-for-delete">
+<h3 id="the-rowid-column-for-delete">The rowId Column for <code class="docutils literal notranslate"><span class="pre">DELETE</span></code><a class="headerlink" href="#the-rowid-column-for-delete" title="Permalink to this heading">#</a></h3>
 <p>The Trino engine identifies the rows to be deleted using a connector-specific
 rowId column handle, returned by the connector’s <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata.getDeleteRowIdColumnHandle()</span></code>
 method, whose full signature is:</p>
@@ -583,19 +582,19 @@ method, whose full signature is:</p>
     <span class="n">ConnectorTableHandle</span> <span class="n">tableHandle</span><span class="p">)</span>
 </pre></div>
 </div>
-
-
-<h3 id="the-rowid-column-for-update">The rowId Column for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code><a class="headerlink" href="#the-rowid-column-for-update" title="Permalink to this headline">#</a></h3>
+</section>
+<section id="the-rowid-column-for-update">
+<h3 id="the-rowid-column-for-update">The rowId Column for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code><a class="headerlink" href="#the-rowid-column-for-update" title="Permalink to this heading">#</a></h3>
 <p>The Trino engine identifies rows to be updated using a connector-specific rowId column handle,
 returned by the connector’s <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata.getUpdateRowIdColumnHandle()</span></code>
 method. In addition to the columns that identify the row, for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> the rowId column will contain
 any columns that the connector requires in order to perform the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation. In Hive ACID, for example,
 the rowId column contains the values of all columns <em>not</em> updated by the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operation, since Hive ACID
 implements <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> as a <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> paired with an INSERT.</p>
-
-
-
-<h2 id="updatablepagesource-api">UpdatablePageSource API<a class="headerlink" href="#updatablepagesource-api" title="Permalink to this headline">#</a></h2>
+</section>
+</section>
+<section id="updatablepagesource-api">
+<h2 id="updatablepagesource-api">UpdatablePageSource API<a class="headerlink" href="#updatablepagesource-api" title="Permalink to this heading">#</a></h2>
 <p>As mentioned above, to support <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> or <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, the connector must define a subclass of
 <code class="docutils literal notranslate"><span class="pre">UpdatablePageSource</span></code>, layered over the connector’s usual <code class="docutils literal notranslate"><span class="pre">ConnectorPageSource</span></code>. The interesting methods are:</p>
 <ul>
@@ -623,9 +622,9 @@ of a split have been processed. The connector returns a future containing a coll
 connector-specific information about the rows processed. Usually this will include the row count, and might
 include information like the files or partitions created or changed.</p></li>
 </ul>
-
-
-<h2 id="connectormetadata-delete-api"><code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> API<a class="headerlink" href="#connectormetadata-delete-api" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="connectormetadata-delete-api">
+<h2 id="connectormetadata-delete-api"><code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> API<a class="headerlink" href="#connectormetadata-delete-api" title="Permalink to this heading">#</a></h2>
 <p>A connector implementing <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> must specify three <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> methods.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">getDeleteRowIdColumnHandle()</span></code>:</p>
@@ -669,9 +668,9 @@ collection of <code class="docutils literal notranslate"><span class="pre">Slice
 Those actions might include committing the transaction, assuming the connector supports a transaction paradigm.</p>
 </li>
 </ul>
-
-
-<h2 id="connectormetadata-update-api"><code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> API<a class="headerlink" href="#connectormetadata-update-api" title="Permalink to this headline">#</a></h2>
+</section>
+<section id="connectormetadata-update-api">
+<h2 id="connectormetadata-update-api"><code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> API<a class="headerlink" href="#connectormetadata-update-api" title="Permalink to this heading">#</a></h2>
 <p>A connector implementing <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> must specify three <code class="docutils literal notranslate"><span class="pre">ConnectorMetadata</span></code> methods.</p>
 <ul>
 <li><p><code class="docutils literal notranslate"><span class="pre">getUpdateRowIdColumnHandle</span></code>:</p>
@@ -722,8 +721,8 @@ collection of <code class="docutils literal notranslate"><span class="pre">Slice
 Those actions might include committing the transaction, assuming the connector supports a transaction paradigm.</p>
 </li>
 </ul>
-
-
+</section>
+</section>
 
 
           </article>
