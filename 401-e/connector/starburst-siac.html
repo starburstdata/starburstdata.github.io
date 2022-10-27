@@ -880,7 +880,7 @@ questions or feedback.</p>
 </div>
 
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this headline">#</a></h2>
-<p>To use connector, you need:</p>
+<p>To use smart indexing and caching, you need:</p>
 <ul class="simple">
 <li><p>One or more catalogs that use the <a class="reference internal" href="starburst-hive.html"><span class="doc">Hive</span></a> or
 <a class="reference internal" href="starburst-iceberg.html"><span class="doc">Iceberg</span></a> connectors.</p></li>
@@ -899,7 +899,9 @@ Kubernetes-based platform Amazon EKS with one of the following node sizes:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">i3.4xlarge</span></code> or larger</p></li>
 </ul>
 <p>These sizes provide the necessary resources in terms of CPU, memory, and
-storage. Create an EKS Managed Node Group with a specific size, and use it for
+storage. Specifically the included SSD storage is heavily used. You need to
+ensure that these devices are not used for any other purpose.</p>
+<p>Create an EKS Managed Node Group with a specific size, and use it for
 all nodes in the cluster.</p>
 <p>Deployment and management is performed with the SEP Helm charts detailed in
 <a class="reference internal" href="../k8s.html"><span class="doc">Deploying with Kubernetes</span></a> and <a class="reference internal" href="../k8s/sep-configuration.html"><span class="doc">Configuring Starburst Enterprise in Kubernetes</span></a>.</p>
@@ -950,6 +952,9 @@ configuration to allow more splits:</p>
 <p>Use Helm to update the values and restart the cluster nodes. Confirm the cluster
 is operating correctly with the new configuration, but without any adjusted
 catalogs, and then proceed to configure catalogs.</p>
+<p>Related to the catalog usage, the cluster needs to allow internal communication
+between all workers, as well as with the coordinator on all the HTTP ports
+configured by the different values for <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> in all catalogs.</p>
 
 
 <span id="siac-catalog-configuration"></span><h2 id="catalog-configuration">Catalog configuration<a class="headerlink" href="#catalog-configuration" title="Permalink to this headline">#</a></h2>
@@ -976,7 +981,7 @@ to <code class="docutils literal notranslate"><span class="pre">siac</span></cod
     <span class="no">connector.name=siac</span>
     <span class="no">siac.proxied-connector=HIVE</span>
     <span class="no">siac.store.path=s3://example/path/</span>
-    <span class="no">siac.http-rest-port=8088</span>
+    <span class="no">http-rest-port=8088</span>
     <span class="no">hive.metastore=glue</span>
 </pre></div>
 </div>
@@ -992,7 +997,7 @@ the configuration of a catalog and update it:</p>
     <span class="no">connector.name=siac</span>
     <span class="no">siac.proxied-connector=HIVE</span>
     <span class="no">siac.store.path=s3://example/path/</span>
-    <span class="no">siac.http-rest-port=8088</span>
+    <span class="no">http-rest-port=8088</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
@@ -1040,7 +1045,7 @@ Write access privileges are necessary.</p></td>
 <td><p>Enable pushing logs and metadata to the object store path configured at
 <code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.http-rest-port</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code></p></td>
 <td><p><strong>Required.</strong> The port to use to run the REST server used for smart
 indexing and caching configuration. This port needs to be open across
 the cluster. Each catalog needs to use a different value. Defaults to
@@ -1048,7 +1053,7 @@ the cluster. Each catalog needs to use a different value. Defaults to
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.import-export.enabled</span></code></p></td>
 <td><p>Enable or disable the <a class="reference external" href="https://docs.varada.io/docs/fast-warming">index and cache resiliency</a> on the object store.
-Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>. TBD, port linked docs to starburst-universe.</p></td>
+Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1057,8 +1062,9 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">false</
 <h2 id="caching-and-indexing-configuration">Caching and indexing configuration<a class="headerlink" href="#caching-and-indexing-configuration" title="Permalink to this headline">#</a></h2>
 <p>Smart caching and indexing automatically creates and manages its data based on
 processed queries. In addition, you can further configure it with the REST API
-exposed on the coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">siac.http-rest-port</span></code>
-for each catalog.</p>
+exposed on the coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for
+each catalog. This port on the coordinator node needs to be exposed to the
+machine from where you call the REST API. Typically this is outside the cluster.</p>
 <p>The following sections detail this usage of the REST API and available
 endpoints.</p>
 
@@ -1078,8 +1084,6 @@ filtering operation in the following example is not accelerated:</p>
 <span class="k">WHERE</span> <span class="k">lower</span><span class="p">(</span><span class="n">company</span><span class="p">)</span> <span class="o">=</span> <span class="s1">'starburst'</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>The maximum supported string length for any data type used for caching and
-indexing is 50.000 characters.</p>
 <p>In addition, the following functions are accelerated by indexing when used on
 the left right or the right side of the predicate:</p>
 <ul class="simple">
@@ -1096,6 +1100,8 @@ the left right or the right side of the predicate:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">LIKE</span></code>, <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">LIKE</span></code> with <code class="docutils literal notranslate"><span class="pre">varchar</span></code> data type</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">contains(arr_varchar,</span> <span class="pre">value)</span></code> with array of <code class="docutils literal notranslate"><span class="pre">varchar</span></code> data type</p></li>
 </ul>
+<p>The maximum supported string length for any data type used for caching and
+indexing is 50.000 characters.</p>
 
 
 
