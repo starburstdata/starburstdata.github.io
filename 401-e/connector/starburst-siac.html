@@ -1169,6 +1169,15 @@ utilization:</p>
 </section>
 <section id="row-group-count">
 <h3 id="row-group-count">Row group count<a class="headerlink" href="#row-group-count" title="Permalink to this heading">#</a></h3>
+<p>A row group in smart indexing and caching is a collection of index and cache
+elements that are used in order to accelerate processing of Trino splits from
+the SSD storage.</p>
+<blockquote id="note">
+<div><p>A row group in smart indexing and caching is not equivalent to a Parquet row
+group or a ORC stripe, but a higher level artifacts specific to smart indexing
+and caching. It can be related to a specific Parquet row group or ORC stripe
+but can also represent data from a whole file or more.</p>
+</div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint exposes all currently warmed up
 columns via a HTTP GET:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
@@ -1177,7 +1186,8 @@ columns via a HTTP GET:</p>
 <p>The result is a list of columns specified by <code class="docutils literal notranslate"><span class="pre">schema.table.column.warumuptype</span></code>
 as key. The value represents the corresponding count of accelerated row groups.
 <code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_DATA</span></code> represents data cache acceleration.
-<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> represents index acceleration.</p>
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> represents index acceleration.
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_LUCENE</span></code> represents text acceleration.</p>
 <p>In the following example, 20 row groups of the <code class="docutils literal notranslate"><span class="pre">tripid</span></code> column of the
 <code class="docutils literal notranslate"><span class="pre">trips_data</span></code> table in the <code class="docutils literal notranslate"><span class="pre">trips</span></code> schema are accelerated with a data cache
 and an index.</p>
@@ -1203,7 +1213,8 @@ queries and the default acceleration.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> name of the schema</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> name of the table</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">colWarmUpType</span></code>, <code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_DATA</span></code> for data cache acceleration,
-<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> for index acceleration</p></li>
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> for index acceleration, <code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_LUCENE</span></code>
+for text acceleration</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">priority</span></code> priority for the warmup rule</p></li>
 </ul>
 <p>To ensure a column is accelerated even if the storage capacity is exceeded, you
@@ -1278,9 +1289,9 @@ the left right or the right side of the predicate:</p>
 <code class="docutils literal notranslate"><span class="pre">varchar</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">day(d)</span></code> and <code class="docutils literal notranslate"><span class="pre">day_of_month(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">day_of_year(d)</span></code> and <code class="docutils literal notranslate"><span class="pre">doy(y)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">day_of_week(d)``and</span> <span class="pre">``dow(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">day_of_week(d)</span></code> and <code class="docutils literal notranslate"><span class="pre">dow(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">year(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">year_of_week(d)``and</span> <span class="pre">``yow(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">year_of_week(d)</span></code> and <code class="docutils literal notranslate"><span class="pre">yow(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">week(d)</span></code> and <code class="docutils literal notranslate"><span class="pre">week_of_year(d)</span></code> with <code class="docutils literal notranslate"><span class="pre">date</span></code> and <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> data types</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">LIKE</span></code>, <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">LIKE</span></code> with <code class="docutils literal notranslate"><span class="pre">varchar</span></code> data type</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">contains(arr_varchar,</span> <span class="pre">value)</span></code> with array of <code class="docutils literal notranslate"><span class="pre">varchar</span></code> data type</p></li>
