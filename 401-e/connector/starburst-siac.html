@@ -454,7 +454,21 @@
         </li>
         <li class="md-nav__item"><a href="#catalog-configuration" class="md-nav__link">Catalog configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#caching-and-indexing-configuration" class="md-nav__link">Caching and indexing configuration</a>
+        <li class="md-nav__item"><a href="#indexing-and-caching-management" class="md-nav__link">Indexing and caching management</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#warming-status" class="md-nav__link">Warming status</a>
+        </li>
+        <li class="md-nav__item"><a href="#debug-tools" class="md-nav__link">Debug tools</a>
+        </li>
+        <li class="md-nav__item"><a href="#row-group-count" class="md-nav__link">Row group count</a>
+        </li>
+        <li class="md-nav__item"><a href="#create-a-warmup-rule" class="md-nav__link">Create a warmup rule</a>
+        </li>
+        <li class="md-nav__item"><a href="#get-all-warmup-rules" class="md-nav__link">Get all warmup rules</a>
+        </li>
+        <li class="md-nav__item"><a href="#delete-a-warmup-rule" class="md-nav__link">Delete a warmup rule</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
         </li></ul>
@@ -844,7 +858,21 @@
         </li>
         <li class="md-nav__item"><a href="#catalog-configuration" class="md-nav__link">Catalog configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#caching-and-indexing-configuration" class="md-nav__link">Caching and indexing configuration</a>
+        <li class="md-nav__item"><a href="#indexing-and-caching-management" class="md-nav__link">Indexing and caching management</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#warming-status" class="md-nav__link">Warming status</a>
+        </li>
+        <li class="md-nav__item"><a href="#debug-tools" class="md-nav__link">Debug tools</a>
+        </li>
+        <li class="md-nav__item"><a href="#row-group-count" class="md-nav__link">Row group count</a>
+        </li>
+        <li class="md-nav__item"><a href="#create-a-warmup-rule" class="md-nav__link">Create a warmup rule</a>
+        </li>
+        <li class="md-nav__item"><a href="#get-all-warmup-rules" class="md-nav__link">Get all warmup rules</a>
+        </li>
+        <li class="md-nav__item"><a href="#delete-a-warmup-rule" class="md-nav__link">Delete a warmup rule</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
         </li></ul>
@@ -1057,15 +1085,173 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">false</
 </tbody>
 </table>
 </section>
-<section id="caching-and-indexing-configuration">
-<h2 id="caching-and-indexing-configuration">Caching and indexing configuration<a class="headerlink" href="#caching-and-indexing-configuration" title="Permalink to this heading">#</a></h2>
+<section id="indexing-and-caching-management">
+<h2 id="indexing-and-caching-management">Indexing and caching management<a class="headerlink" href="#indexing-and-caching-management" title="Permalink to this heading">#</a></h2>
 <p>Smart caching and indexing automatically creates and manages its data based on
-processed queries. In addition, you can further configure it with the REST API
-exposed on the coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for
-each catalog. This port on the coordinator node needs to be exposed to the
-machine from where you call the REST API. Typically this is outside the cluster.</p>
-<p>The following sections detail this usage of the REST API and available
-endpoints.</p>
+processed queries, also called the <a class="reference external" href="../../../starburst-enterprise/admin-topics/siac.html#overview">default acceleration</a>.</p>
+<p>In addition, you can further configure it with the REST API exposed on the
+coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog.
+This port on the coordinator node needs to be exposed to the machine from where
+you call the REST API. Typically this is outside the cluster.</p>
+<p>The following example call accesses the <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint
+for the catalog configured for port 8088 on the cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code>
+via HTTP with a GET command.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>Alternatively you can use the <code class="docutils literal notranslate"><span class="pre">curl</span></code> installed on the coordinator, and execute
+commands towards <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint of the API directly on
+the coordinator container with localhost and the HTTP port for the specific
+catalog:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;ccoordinator-pod&gt; -c coordinator --  <span class="se">\</span>
+curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>The JSON-formatted response is returned on your machine, where you run
+<code class="docutils literal notranslate"><span class="pre">kubectl</span></code>. You can pipe results into a locally installed <code class="docutils literal notranslate"><span class="pre">jq</span></code> command to be
+able to read the result.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;ccoordinator-pod&gt; -c coordinator --  <span class="se">\</span>
+curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span> <span class="se">\</span>
+<span class="p">|</span> jq
+</pre></div>
+</div>
+<p>Alternatively you can pipe the output into a file and then view it with an editor or other tool that improves the JSON file formatting.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;ccoordinator-pod&gt; -c coordinator -- <span class="se">\</span>
+curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span> <span class="se">\</span>
+&gt; result.json
+</pre></div>
+</div>
+<p>The following sections detail the REST API and available endpoints. The example
+calls use plain curl calls to the endpoints at via HTTP on localhost. Adapt them
+to your usage by adding the kubectl invocation or update the coordinator URL.</p>
+<section id="warming-status">
+<h3 id="warming-status">Warming status<a class="headerlink" href="#warming-status" title="Permalink to this heading">#</a></h3>
+<p>You can determine the status of the warmup for smart indexing and caching with a
+GET operation of the <code class="docutils literal notranslate"><span class="pre">/warming/status</span></code> endpoint. It measures the warmup
+progress for splits across workers and if warming is currently taking place.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/warming/status"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>Example response:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{"nodesStatus":
+  {"172.31.16.98": {"started":22136,"finished":22136},
+   "172.31.25.207":{"started":20702,"finished":20702},
+   "172.31.19.167":{"started":21116,"finished":21116},
+   "172.31.22.28":{"started":20678,"finished":20678}},
+   "warming":false}
+</pre></div>
+</div>
+<p>The response shows that warmup started and finished on four workers, and is
+currently not in progress.</p>
+</section>
+<section id="debug-tools">
+<h3 id="debug-tools">Debug tools<a class="headerlink" href="#debug-tools" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">debug-tools</span></code> endpoint requires a HTTP POST to specify the detailed
+command with a JSON payload to retrieve the desired data. You can use it to return the storage
+utilization:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST <span class="s2">"http://localhost:8088/debug-tools"</span> -H <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+-d <span class="s1">'{"commandName" : "all","@class" : "io.trino.plugin.varada.execution.debugtools.DebugToolData"}'</span>
+</pre></div>
+</div>
+<p>Example response:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{"coordinator-container":
+  {"result":
+    {"Storage_capacity":15000000,
+     "Allocated 8k pages":1000000,
+     "Num used stripes":0
+    }
+  }
+}
+</pre></div>
+</div>
+<p>Calculate the storage utilization percentage with  <code class="docutils literal notranslate"><span class="pre">(Allocated</span> <span class="pre">8k</span> <span class="pre">pages</span> <span class="pre">/</span>
+<span class="pre">Storage_capacity)</span> <span class="pre">*</span> <span class="pre">100</span></code>.</p>
+</section>
+<section id="row-group-count">
+<h3 id="row-group-count">Row group count<a class="headerlink" href="#row-group-count" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint exposes all currently warmed up
+columns via a HTTP GET:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>The result is a list of columns specified by <code class="docutils literal notranslate"><span class="pre">schema.table.column.warumuptype</span></code>
+as key. The value represents the corresponding count of accelerated row groups.
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_DATA</span></code> represents data cache acceleration.
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> represents index acceleration.</p>
+<p>In the following example, 20 row groups of the <code class="docutils literal notranslate"><span class="pre">tripid</span></code> column of the
+<code class="docutils literal notranslate"><span class="pre">trips_data</span></code> table in the <code class="docutils literal notranslate"><span class="pre">trips</span></code> schema are accelerated with a data cache
+and an index.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  trips.trips_data.tripid.COL_WARM_UP_TYPE_DATA": 20,
+  trips.trips_data.tripdid.COL_WARM_UP_TYPE_BASIC": 20
+}
+</pre></div>
+</div>
+</section>
+<section id="create-a-warmup-rule">
+<h3 id="create-a-warmup-rule">Create a warmup rule<a class="headerlink" href="#create-a-warmup-rule" title="Permalink to this heading">#</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint with a HTTP POST and the JSON
+payload to create a new rule for a column of a table in a schema. This forces
+the creation of index and caching data for the column, independent of processed
+queries and the default acceleration.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST -H <span class="s2">"Content-Type: application/json"</span> http://localhost:8088/warmup/warmup-rule-set <span class="se">\</span>
+-d <span class="s1">'[ { "colNameId": "int_1", "schema": "tmp", "table": "aaa", "colWarmUpType": "COL_WARM_UP_TYPE_BASIC", "priority": 8, "ttl": "PT720H", "predicates": [ ] } ]'</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">colNameid</span></code> name of the column</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> name of the schema</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">table</span></code> name of the table</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">colWarmUpType</span></code>, <code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_DATA</span></code> for data cache acceleration,
+<code class="docutils literal notranslate"><span class="pre">COL_WARM_UP_TYPE_BASIC</span></code> for index acceleration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">priority</span></code> priority for the warmup rule</p></li>
+</ul>
+<p>To ensure a column is accelerated even if the storage capacity is exceeded, you
+can create an acceleration instruction for the column with the <code class="docutils literal notranslate"><span class="pre">priority</span></code> set
+as high as <code class="docutils literal notranslate"><span class="pre">10</span></code> maximum.</p>
+<p>Similarly, create an acceleration instruction for the column with the priority
+set as a negative number to ensure a column is never accelerated. For example,
+this can be appropriate for testing tables for which it is not desired to
+allocate index/cache and SSD storage.</p>
+<p>More information is available in the <a class="reference external" href="https://docs.varada.io/docs/acceleration-instruction-commands#create-an-instruction">legacy documentation</a>.</p>
+</section>
+<section id="get-all-warmup-rules">
+<h3 id="get-all-warmup-rules">Get all warmup rules<a class="headerlink" href="#get-all-warmup-rules" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-get</span></code> endpoint exposes all defined warmup rules via a
+HTTP GET:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/warmup/warmup-rule-get"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>Response:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>{
+  "id":186229827,
+  "schema":"ride_sharing_dataset",
+  "table":"trips_data_big",
+  "colNameId":"d_date",
+  "column":
+    {
+      "classType":"RegularColumn",
+      "key":"d_date"
+     },
+  "colWarmUpType":"COL_WARM_UP_TYPE_BASIC",
+  "priority":8.0,
+  "ttl":2592000.000000000,
+  "predicates":[]
+}
+</pre></div>
+</div>
+</section>
+<section id="delete-a-warmup-rule">
+<h3 id="delete-a-warmup-rule">Delete a warmup rule<a class="headerlink" href="#delete-a-warmup-rule" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-delete</span></code> endpoint allows you to delete a warmup rule
+via a HTTP DELETE. The identifier for the rule is a required parameter and can
+be see from the result of <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-get</span></code> in the <code class="docutils literal notranslate"><span class="pre">id</span></code> value.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X DELETE <span class="s2">"http://localhost:8088/warmup/warmup-rule-delete"</span> -H <span class="s2">"accept: application/json"</span> -H <span class="s2">"Content-Type: application/json"</span> -d <span class="s2">"[186229827]""</span>
+</pre></div>
+</div>
+<p>When you delete a warmup rule, the column index and cache data is de-prioritized
+to data from a default acceleration, and therefore subject to deletion earlier.</p>
+</section>
 </section>
 <section id="sql-support">
 <h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this heading">#</a></h2>
