@@ -491,6 +491,8 @@
         <li class="md-nav__item"><a href="#lake-formation-security-mapping" class="md-nav__link">Lake formation security mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#security-mapping-configuration-properties" class="md-nav__link">Security mapping configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#security-mapping-role-requirements" class="md-nav__link">Security mapping role requirements</a>
         </li></ul>
             </nav>
         </li>
@@ -718,14 +720,33 @@ properties:</p>
 </pre></div>
 </div>
 </section>
+<section id="security-mapping-role-requirements">
+<h3 id="security-mapping-role-requirements">Security mapping role requirements<a class="headerlink" href="#security-mapping-role-requirements" title="Permalink to this heading">#</a></h3>
+<p>AWS Lake Formation permissions are read from AWS using two different sets of
+impersonated role credentials when executing queries against catalogs protected
+by AWS Lake Formation security policies:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">admin</span></code> - Identified by <code class="docutils literal notranslate"><span class="pre">hive.metastore.glue.iam-role</span></code> configuration
+property.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> - Selected according to Security Mapping rules.</p></li>
+</ul>
+<p>You must configure the following in AWS IAM:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">admin</span></code> role must be configured to impersonate <code class="docutils literal notranslate"><span class="pre">user</span></code> role in
+<a class="reference external" href="https://docs.aws.amazon.com/mediapackage/latest/ug/setting-up-create-trust-rel-trust.html">AWS Trust Relationships</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sts:TagSession</span></code> and <code class="docutils literal notranslate"><span class="pre">sts:AssumeRole</span></code> actions must both be allowed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">glue:GetDatabases</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTables</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTable</span></code> AWS Glue API
+permissions must be granted for the <code class="docutils literal notranslate"><span class="pre">user</span></code> role.</p></li>
+</ul>
+</section>
 </section>
 <section id="caching">
 <h2 id="caching">Caching<a class="headerlink" href="#caching" title="Permalink to this heading">#</a></h2>
 <p>In order to make permission checks run as fast as possible, lake formation
 access control caches permission data for each user. By default, permissions
 are stored for a maximum of 1000 users, and expire ofter 10 minutes. In the
-following example, the permissions cache size is reduced to 100 users, and the
-permissions set to expire after two hours:</p>
+following example, the permissions cache size is reduced to 100 users, and the</p>
+<p>permissions set to expire after two hours:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">lake-formation.cache-ttl</span><span class="o">=</span><span class="s">2h</span>
 <span class="na">lake-formation.cache-size</span><span class="o">=</span><span class="s">100</span>
 </pre></div>
@@ -759,9 +780,10 @@ catalog:</p>
 </section>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
+<p>The following are not supported:</p>
 <ul class="simple">
-<li><p>Starburst Enterprise platform (SEP) does not support cell filters and column masking defined in AWS
-Lake Formation.</p></li>
+<li><p>Cell filters and column masking defined in AWS Lake Formation.</p></li>
+<li><p>DML or DDL operations in AWS Lake Formation.</p></li>
 </ul>
 </section>
 </section>
