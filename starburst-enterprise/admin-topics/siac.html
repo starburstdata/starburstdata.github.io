@@ -754,7 +754,7 @@ preview</a> feature. Contact
       </h2>
     
 
-<p>Smart indexing and caching is automatically creates and maintains indexes and
+<p>Smart indexing and caching automatically creates and maintains indexes and
 caches with your queried data, determined by the characteristics of the
 processed queries.</p>
       <h3 id="default-acceleration">
@@ -769,20 +769,24 @@ processed queries.</p>
 <p>When a query accesses a column that is not accelerated, the system performs data
 and index materialization on the cluster to accelerate future access to the data
 in the column. This process of creating the indexes and caches is also called
-warmup. When new data is added to the table or the index and cache creation are
-in progress, the new portions of the table that are not accelerated are served
-from the object storage. After the asynchronous indexing and caching is
+<em>warmup</em>. Warmup is performed individually by each worker based on the processed
+splits and uses the local high performance storage of the worker. Typically,
+these are SSD NVMe drives.</p>
+
+<p>When new data is added to the table or the index and cache creation
+are in progress, the new portions of the table that are not accelerated are
+served from the object storage. After the asynchronous indexing and caching is
 complete, query processing accessing that data is accelerated, because the data
 is available directly in the cluster from the indexes and caches, and no longer
 has to be retrieved from the remote object storage.</p>
 
 <p>This results in immediately improved performance for recently used datasets. In
-addition to the automatic default acceleration advanced users can create
+addition to the automatic default acceleration, advanced users can create
 specific indexing and caching instructions. The default acceleration has a lower
 priority than a created instruction.</p>
 
 <p>Default acceleration is not performed for <code class="language-plaintext highlighter-rouge">SELECT * FROM &lt;table_name&gt;</code> queries
-that are commonly used to explore a table, rather than to retrieve specific
+that are commonly used to explore a table rather than to retrieve specific
 data.</p>
       <h3 id="automated-clean-up">
         
@@ -794,19 +798,19 @@ data.</p>
     
 
 <p>When the available storage on the cluster is about to run out of storage space,
-index and cache elements are automatically deleted. As a user or administrator
+index and cache elements are automatically deleted. As a user or administrator,
 you don’t need to manage index and cache allocation. When the storage capacity
 threshold is exceeded, the system deletes the following content until the clean
 up threshold is reached:</p>
 
 <ul>
-  <li>All expired content based on the TTL value</li>
+  <li>All expired content based on the TTL value.</li>
   <li>Content with the lowest values on the priority property that were created as a
 result of the default acceleration.</li>
   <li>Content related to custom instructions for indexing and caching.</li>
 </ul>
 
-<p>After a clean up new data is index and caches as needed, based on the data
+<p>After a clean up, new data is indexed and cached as needed based on the data
 access by the processed queries.</p>
       <h2 id="configuration">
         
@@ -836,25 +840,25 @@ instructions</a> to get started.</p>
 <p><strong>What happens in case data is not cached and indexed? Am I getting partial
 results?</strong></p>
 
-<p>No. In case a split can be served from SSD it s served, but if not smart
+<p>No. In case a split can be served from SSD, it is served; but if not, smart
 indexing and caching gets the data for this split from the object storage to
-complete the query and send back the right results. Then asynchronously index
-and cache are created as appropriate so future queries can leverage the index
-and cache.</p>
+complete the query and sends back the right results. Then the index and cache
+are created asynchronously as appropriate so that future queries can leverage
+the index and cache.</p>
 
-<p><strong>Is there a chance a user gets stale results?</strong></p>
+<p><strong>Is there a chance a user can get stale results?</strong></p>
 
 <p>No. Smart indexing and caching uses a mapping between the generated splits and
-index and cache on SSDs  during query processing , so if a split can be served
-from SSD it is, but if not smart indexing and caching  gets the data for this
+index and cache data on SSDs during query processing. If a split can be served
+from SSD, it is; but if not, smart indexing and caching gets the data for this
 split from the object storage and then asynchronously indexes and caches it as
 appropriate.</p>
 
 <p><strong>What is the caching and indexing speed?</strong></p>
 
-<p>Performance depends on a lot of different factors. For example, indexing and
-caching the whole TPC-DS SF1000 dataset takes about 20 minutes on cluster with
-two workers with the machine size  <code class="language-plaintext highlighter-rouge">r5d.8xlarge</code>.</p>
+<p>Performance depends on many different factors. For example, indexing and caching
+the entire TPC-DS SF1000 dataset takes about 20 minutes on a cluster with two
+workers with the machine size <code class="language-plaintext highlighter-rouge">r5d.8xlarge</code>.</p>
 
         <div class="d-lg-none">
           <div class="feedback-container">
