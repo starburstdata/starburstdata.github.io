@@ -508,14 +508,9 @@ Cloud:</p>
 
 <p>This license requires the metering agent and the billing reporter agent, both of
 which are preconfigured. You must pass the reference to your unique reporting
-secret. The standard license includes an embedded JSON license file, which can
-be found at <code class="language-plaintext highlighter-rouge">starburst-enterprise-platform/files/gcp/starburstdata.license</code>.
-You can replace this file with your own SEP license, but you
-must remember to delete the secret with the old license file from the Kubernetes
-cluster, if it already exists, with the following command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ kubectl delete secret sep-license.
-</code></pre></div></div>
+secret. The standard license includes an additional sidecar container, that is
+responsible for managing the required license. It depends on a valid reporting
+secret as defined with the <code class="language-plaintext highlighter-rouge">reportingSecret</code> set to your license name.</p>
       <h3 id="paygo-with-starburst-enterprise-elite-license">
         
         
@@ -605,8 +600,8 @@ example:</p>
       </h3>
     
 
-<p>The version of the Helm Chart is 3.0.0. The associated
-Starburst Enterprise version is 393-e.2.</p>
+<p>The version of the Helm Chart is 3.1.0. The associated
+Starburst Enterprise version is 402-e.0.</p>
 
 <div class="alert alert-info" role="alert">
   <i class="fa fa-info-circle"></i>
@@ -620,17 +615,17 @@ of the archive downloaded in these steps.</div>
 
     <p>PAYGO with Starburst Enterprise standard license:</p>
 
-    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-charts-3.0.0.tgz
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-charts-3.1.0.tgz
 </code></pre></div>    </div>
 
     <p>PAYGO with Starburst Enterprise Elite license:</p>
 
-    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-elite-charts-3.0.0.tgz
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-elite-charts-3.1.0.tgz
 </code></pre></div>    </div>
 
     <p>Bring your own license:</p>
 
-    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-byol-charts-3.0.0.tgz
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>wget https://storage.googleapis.com/starburst-enterprise/helmCharts/sep-gcp/starburst-enterprise-platform-byol-charts-3.1.0.tgz
 </code></pre></div>    </div>
   </li>
   <li>
@@ -653,18 +648,18 @@ of the archive downloaded in these steps.</div>
     <p>Check the content of the default values distributed with the umbrella Helm
 chart:</p>
 
-    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm show values starburst-enterprise-platform-charts-3.0.0.tgz
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm show values starburst-enterprise-platform-charts-3.1.0.tgz
 </code></pre></div>    </div>
   </li>
   <li>
     <p>Check the default values.yaml for subcharts to ensure that they are using
 the Helm chart version. The correct Helm chart version matches the number
 found in the marketplace listing page in the <code class="language-plaintext highlighter-rouge">Tag</code> field. (Note: Tag numbers
-may omit the revision number.) For example, if version 3.0.0
-uses Helm charts in version 393-e.2, then for Starburst
+may omit the revision number.) For example, if version 3.1.0
+uses Helm charts in version 402-e.0, then for Starburst
 Enterprise Helm chart run:</p>
 
-    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ helm show values starburstdata/starburst-enterprise --version 393.2.1
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ helm show values starburstdata/starburst-enterprise --version 402.0.0
 </code></pre></div>    </div>
 
     <p>The same command can be used to print the values.yaml for Starburst Hive and
@@ -697,7 +692,7 @@ cluster configuation. This YAML requires the
 <code class="language-plaintext highlighter-rouge">starburst-enterprise.reportingSecret</code> value to deploy complete SEP cluster for
 PAYGO:</p>
 
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm <span class="nb">install </span>starburst-enterprise starburst-enterprise-platform-charts-3.0.0.tgz <span class="nt">--set</span> starburst-enterprise.reportingSecret<span class="o">=</span>starburst-enterprise-license-&lt;unique_suffix&gt;
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm <span class="nb">install </span>starburst-enterprise starburst-enterprise-platform-charts-3.1.0.tgz <span class="nt">--set</span> starburst-enterprise.reportingSecret<span class="o">=</span>starburst-enterprise-license-&lt;unique_suffix&gt;
 </code></pre></div></div>
 <p>To deploy PAYGO with an SEP elite license, you must append
 <code class="language-plaintext highlighter-rouge">--set starburst-enterprise.starburstPlatformLicense=&lt;secret_with_sep_license&gt;</code>.</p>
@@ -723,7 +718,7 @@ licenses:</p>
 <div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Starburst Enterprise chart</span>
 <span class="na">starburst-enterprise</span><span class="pi">:</span>
   <span class="na">reportingSecret</span><span class="pi">:</span> <span class="s">ENTERPRISE_LICENSE_NAME</span>
-  
+
   <span class="na">catalogs</span><span class="pi">:</span>
     <span class="na">bigquery</span><span class="pi">:</span> <span class="pi">|</span>
       <span class="s">connector.name=bigquery</span>
@@ -781,8 +776,6 @@ licenses:</p>
       <span class="na">annotations</span><span class="pi">:</span>
         <span class="s">kubernetes.io/ingress.class</span><span class="pi">:</span> <span class="s">nginx</span>
         <span class="s">cert-manager.io/cluster-issuer</span><span class="pi">:</span> <span class="s">letsencrypt</span>
-
-  <span class="na">starburstPlatformLicense</span><span class="pi">:</span> <span class="s">sep-license</span>
 
   <span class="na">userDatabase</span><span class="pi">:</span>
     <span class="na">enabled</span><span class="pi">:</span> <span class="no">true</span>
@@ -932,7 +925,7 @@ database.</li>
 
 <p>After you have configured the values file for your environment, run the
 following:</p>
-<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm <span class="nb">install </span>starburst-enterprise starburst-enterprise-platform-charts-3.0.0.tgz <span class="nt">--values</span> values.yaml
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>helm <span class="nb">install </span>starburst-enterprise starburst-enterprise-platform-charts-3.1.0.tgz <span class="nt">--values</span> values.yaml
 </code></pre></div></div>
       <h3 id="validate-your-deployment">
         
@@ -946,30 +939,29 @@ following:</p>
 <ol>
   <li>You can verify that all pods are in a running state or a completed state:
     <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl get pods <span class="nt">-o</span> wide
-NAME                                                     READY   STATUS      RESTARTS   AGE    IP           NODE                                             NOMINATED NODE   READINESS GATES
-coordinator-64cfdb94fd-v6bxv                             2/2     Running     0          4h8m   10.28.3.8    gke-test-mp-cluster-default-pool-5b89684f-6g3b   &lt;none&gt;           &lt;none&gt;
-hive-7c8b5b5495-v9gwz                                    2/2     Running     0          4h8m   10.28.0.27   gke-test-mp-cluster-nonsep-0be06378-b718         &lt;none&gt;           &lt;none&gt;
-ranger-7c6b59bdd5-b9v8s                                  2/2     Running     0          4h8m   10.28.0.28   gke-test-mp-cluster-nonsep-0be06378-b718         &lt;none&gt;           &lt;none&gt;
-starburst-enterprise-1-lic-secret-job-nfmqg              0/1     Completed   0          4h8m   10.28.2.31   gke-test-mp-cluster-default-pool-5b89684f-qfvp   &lt;none&gt;           &lt;none&gt;
-worker-76ff548b96-c2rwz                                  1/1     Running     0          4h8m   10.28.2.32   gke-test-mp-cluster-default-pool-5b89684f-qfvp   &lt;none&gt;           &lt;none&gt;
-worker-76ff548b96-wj996                                  1/1     Running     0          4h8m   10.28.1.12   gke-test-mp-cluster-default-pool-5b89684f-kfz2   &lt;none&gt;           &lt;none&gt;
+NAME                           READY   STATUS    RESTARTS   AGE   IP            NODE                                             NOMINATED NODE   READINESS GATES
+coordinator-6f646d7996-dttk4   4/4     Running   0          25m   10.104.0.19   gke-test-mp-cluster-default-pool-5b89684f-6g3b   &lt;none&gt;           &lt;none&gt;
+hive-7c8b5b5495-v9gwz          2/2     Running   0          25m   10.28.0.27    gke-test-mp-cluster-nonsep-0be06378-b718         &lt;none&gt;           &lt;none&gt;
+ranger-7c6b59bdd5-b9v8s        2/2     Running   0          25m   10.28.0.28    gke-test-mp-cluster-nonsep-0be06378-b718         &lt;none&gt;           &lt;none&gt;
+worker-76598b766c-dvgd7        3/3     Running   0          25m   10.104.0.18   gke-test-mp-cluster-default-pool-5b89684f-6g3b   &lt;none&gt;           &lt;none&gt;
+worker-76598b766c-pqg9p        3/3     Running   0          25m   10.104.0.17   gke-test-mp-cluster-default-pool-5b89684f-6g3b   &lt;none&gt;           &lt;none&gt;
 </code></pre></div>    </div>
   </li>
   <li>After deployment, confirm that the metrics reporter is able to submit metrics
 to Google Cloud metering service:
     <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl logs deployment/coordinator <span class="nt">-c</span> metrics-reporter
-2022-09-29 10:17:01 INFO     Starting a new job with Billing Handler...
-2022-09-29 10:17:01 INFO     Trying to get usage metrics from coordinator...
-2022-09-29 10:17:01 ERROR    Failure to get usage metrics from the coordinator because of metrics usage unavailability: Expecting value: line 1 column 1 <span class="o">(</span>char 0<span class="o">)</span>
-2022-09-29 10:17:01 WARNING  The coordinator failed to respond. Make sure it is up and running! Exiting...
-2022-09-29 10:17:01 INFO     Done
-2022-09-29 10:18:02 INFO     Starting a new job with Billing Handler...
-2022-09-29 10:18:02 INFO     Trying to get usage metrics from coordinator...
-2022-09-29 10:18:02 INFO     Number of cores <span class="k">in </span>this 60 second cycle: 45
-2022-09-29 10:18:02 INFO     Report submission status: 200 : OK :
-2022-09-29 10:18:02 INFO     Trying to get status from the Billing agent...
-2022-09-29 10:18:02 INFO     Status response from the Billing agent: <span class="o">{</span><span class="s2">"lastReportSuccess"</span>:<span class="s2">"0001-01-01T00:00:00Z"</span>,<span class="s2">"currentFailureCount"</span>:0,<span class="s2">"totalFailureCount"</span>:0<span class="o">}</span>
-2022-09-29 10:18:02 INFO     Done
+2022-11-17 08:57:01 INFO     Starting a new job with Billing Handler...
+2022-11-17 08:57:01 INFO     Trying to get usage metrics from coordinator...
+2022-11-17 08:57:01 ERROR    Failure to get usage metrics from the coordinator because of metrics usage unavailability: Expecting value: line 1 column 1 <span class="o">(</span>char 0<span class="o">)</span>
+2022-11-17 08:57:01 WARNING  The coordinator failed to respond. Make sure it is up and running! Exiting...
+2022-11-17 08:57:01 INFO     Done
+2022-11-17 08:58:02 INFO     Starting a new job with Billing Handler...
+2022-11-17 08:58:02 INFO     Trying to get usage metrics from coordinator...
+2022-11-17 08:58:02 INFO     Number of cores <span class="k">in </span>this 60 second cycle: 45
+2022-11-17 08:58:02 INFO     Report submission status: 200 : OK :
+2022-11-17 08:58:02 INFO     Trying to get status from the Billing agent...
+2022-11-17 08:58:02 INFO     Status response from the Billing agent: <span class="o">{</span><span class="s2">"lastReportSuccess"</span>:<span class="s2">"2022-11-17T08:56:48.771289323Z"</span>,<span class="s2">"currentFailureCount"</span>:0,<span class="s2">"totalFailureCount"</span>:0<span class="o">}</span>
+2022-11-17 08:58:02 INFO     Done
 </code></pre></div>    </div>
     <p>Every minute you should see:</p>
 
@@ -982,11 +974,10 @@ to Google Cloud metering service:
   <li>Please also verify that there are no errors reported by <code class="language-plaintext highlighter-rouge">ubbagent</code>:
     <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>kubectl logs deployment/coordinator <span class="nt">-c</span> ubbagent
 Listening locally on port 6080
-I0929 10:16:07.417723       1 main.go:104] Listening locally on port 6080
-I0929 10:18:02.332090       1 aggregator.go:88] aggregator: received report: cpu_usage_in_seconds_pricing
-I0929 10:18:07.421687       1 aggregator.go:197] aggregator: sending 1 report
-I0929 10:18:07.422444       1 servicecontrol.go:88] ServiceControlEndpoint:Send<span class="o">()</span>: serviceName:  starburst-presto.mp-starburst-public.appspot.com  body:  <span class="o">{</span><span class="s2">"operations"</span>:[<span class="o">{</span><span class="s2">"consumerId"</span>:<span class="s2">"project:pr-a19b90ff70ab666"</span>,<span class="s2">"endTime"</span>:<span class="s2">"2022-09-29T10:18:02Z"</span>,<span class="s2">"metricValueSets"</span>:[<span class="o">{</span><span class="s2">"metricName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/cpu_usage_in_seconds_pricing"</span>,<span class="s2">"metricValues"</span>:[<span class="o">{</span><span class="s2">"endTime"</span>:<span class="s2">"2022-09-29T10:18:02Z"</span>,<span class="s2">"int64Value"</span>:<span class="s2">"360"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-09-29T10:18:02Z"</span><span class="o">}]}]</span>,<span class="s2">"operationId"</span>:<span class="s2">"93aff215-c08b-4508-bf40-3a22189e6aa1"</span>,<span class="s2">"operationName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/report"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-09-29T10:18:02Z"</span>,<span class="s2">"userLabels"</span>:<span class="o">{</span><span class="s2">"goog-ubb-agent-id"</span>:<span class="s2">"8b240ba5-81b1-4f66-9674-b9d936e381d9"</span><span class="o">}}]}</span>
-I0929 10:18:07.554525       1 servicecontrol.go:112] ServiceControlEndpoint:Send<span class="o">()</span>: success
+I1117 08:56:48.616602       1 servicecontrol.go:88] ServiceControlEndpoint:Send<span class="o">()</span>: serviceName:  starburst-presto.mp-starburst-public.appspot.com  body:  <span class="o">{</span><span class="s2">"operations"</span>:[<span class="o">{</span><span class="s2">"consumerId"</span>:<span class="s2">"project:pr-a19b90ff70ab666"</span>,<span class="s2">"endTime"</span>:<span class="s2">"2022-11-17T08:56:48Z"</span>,<span class="s2">"metricValueSets"</span>:[<span class="o">{</span><span class="s2">"metricName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/cpu_usage_in_seconds_pricing"</span>,<span class="s2">"metricValues"</span>:[<span class="o">{</span><span class="s2">"endTime"</span>:<span class="s2">"2022-11-17T08:56:48Z"</span>,<span class="s2">"int64Value"</span>:<span class="s2">"0"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-11-17T08:56:48Z"</span><span class="o">}]}]</span>,<span class="s2">"operationId"</span>:<span class="s2">"71f2590e-27b6-4be0-9720-eee5918e4c00"</span>,<span class="s2">"operationName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/report"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-11-17T08:56:48Z"</span>,<span class="s2">"userLabels"</span>:<span class="o">{</span><span class="s2">"goog-ubb-agent-id"</span>:<span class="s2">"b33d9a75-56c8-4965-92ec-644346960142"</span><span class="o">}}]}</span>
+I1117 08:56:48.771219       1 servicecontrol.go:112] ServiceControlEndpoint:Send<span class="o">()</span>: success
+I1117 08:58:02.425575       1 servicecontrol.go:88] ServiceControlEndpoint:Send<span class="o">()</span>: serviceName:  starburst-presto.mp-starburst-public.appspot.com  body:  <span class="o">{</span><span class="s2">"operations"</span>:[<span class="o">{</span><span class="s2">"consumerId"</span>:<span class="s2">"project:pr-a19b90ff70ab666"</span>,<span class="s2">"endTime"</span>:<span class="s2">"2022-11-17T08:58:02Z"</span>,<span class="s2">"metricValueSets"</span>:[<span class="o">{</span><span class="s2">"metricName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/cpu_usage_in_seconds_pricing"</span>,<span class="s2">"metricValues"</span>:[<span class="o">{</span><span class="s2">"endTime"</span>:<span class="s2">"2022-11-17T08:58:02Z"</span>,<span class="s2">"int64Value"</span>:<span class="s2">"2700"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-11-17T08:58:02Z"</span><span class="o">}]}]</span>,<span class="s2">"operationId"</span>:<span class="s2">"e61490ef-6a1c-4aa3-8c2f-788de8b1a900"</span>,<span class="s2">"operationName"</span>:<span class="s2">"starburst-presto.mp-starburst-public.appspot.com/report"</span>,<span class="s2">"startTime"</span>:<span class="s2">"2022-11-17T08:58:02Z"</span>,<span class="s2">"userLabels"</span>:<span class="o">{</span><span class="s2">"goog-ubb-agent-id"</span>:<span class="s2">"b69d9a75-56c8-4965-92ec-644346960142"</span><span class="o">}}]}</span>
+I1117 08:58:02.499010       1 servicecontrol.go:112] ServiceControlEndpoint:Send<span class="o">()</span>: success
 </code></pre></div>    </div>
   </li>
 </ol>
