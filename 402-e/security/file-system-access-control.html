@@ -499,6 +499,8 @@
         <li class="md-nav__item"><a href="#column-constraint" class="md-nav__link">Column constraint</a>
         </li>
         <li class="md-nav__item"><a href="#filter-and-mask-environment" class="md-nav__link">Filter and mask environment</a>
+        </li>
+        <li class="md-nav__item"><a href="#function-rules" class="md-nav__link">Function rules</a>
         </li></ul>
             </nav>
         </li>
@@ -528,7 +530,9 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#id4" class="md-nav__link">Session property rules</a>
+        <li class="md-nav__item"><a href="#id4" class="md-nav__link">Function rules</a>
+        </li>
+        <li class="md-nav__item"><a href="#id5" class="md-nav__link">Session property rules</a>
         </li></ul>
             </nav>
         </li>
@@ -566,6 +570,12 @@ authorization.</p></li>
 cluster in a single JSON file.</p>
 <section id="configuration">
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Access to all functions including <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> is allowed by default.
+To mitigate unwanted access, you must add a <code class="docutils literal notranslate"><span class="pre">function</span></code>
+<a class="reference internal" href="#system-file-function-rules"><span class="std std-ref">rule</span></a> to deny the <code class="docutils literal notranslate"><span class="pre">TABLE</span></code> function type.</p>
+</div>
 <p>To use the access control plugin, add an <code class="docutils literal notranslate"><span class="pre">etc/access-control.properties</span></code> file
 containing two required properties: <code class="docutils literal notranslate"><span class="pre">access-control.name</span></code>, which must be set
 to <code class="docutils literal notranslate"><span class="pre">file</span></code>, and <code class="docutils literal notranslate"><span class="pre">security.config-file</span></code>, which must be set to the location
@@ -788,6 +798,38 @@ all, then access is granted.</p>
 </tr>
 </tbody>
 </table>
+<p>Permissions required for executing functions:</p>
+<table>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 10%"/>
+<col style="width: 15%"/>
+<col style="width: 15%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>SQL command</p></th>
+<th class="head"><p>Catalog</p></th>
+<th class="head"><p>Function permission</p></th>
+<th class="head"><p>Function kind</p></th>
+<th class="head"><p>Note</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">function()</span></code></p></td>
+<td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">execute</span></code>, <code class="docutils literal notranslate"><span class="pre">grant_execute*</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">aggregate</span></code>, <code class="docutils literal notranslate"><span class="pre">scalar</span></code>, <code class="docutils literal notranslate"><span class="pre">window</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">grant_execute</span></code> is required when function is executed with view owner privileges.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">FROM</span> <span class="pre">TABLE(table_function())</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">all</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">execute</span></code>, <code class="docutils literal notranslate"><span class="pre">grant_execute*</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">table</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">grant_execute</span></code> is required when <a class="reference internal" href="../functions/table.html"><span class="doc">table function</span></a> is executed with view owner privileges.</p></td>
+</tr>
+</tbody>
+</table>
 <section id="visibility">
 <span id="system-file-auth-visibility"></span><h4 id="visibility">Visibility<a class="headerlink" href="#visibility" title="Permalink to this heading">#</a></h4>
 <p>For a catalog, schema, or table to be visible in a <code class="docutils literal notranslate"><span class="pre">SHOW</span></code> command, the user
@@ -796,10 +838,10 @@ items do not need to already exist as any potential permission makes the item
 visible. Specifically:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">catalog</span></code>: Visible if user is the owner of any nested schema, has
-permissions on any nested table, or has permissions to set session properties
-in the catalog.</p></li>
+permissions on any nested table or <a class="reference internal" href="../functions/table.html"><span class="doc">table function</span></a>, or has permissions to
+set session properties in the catalog.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code>: Visible if the user is the owner of the schema, or has permissions
-on any nested table.</p></li>
+on any nested table or <a class="reference internal" href="../functions/table.html"><span class="doc">table function</span></a>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">table</span></code>: Visible if the user has any permissions on the table.</p></li>
 </ul>
 </section>
@@ -993,6 +1035,88 @@ is masked.</p></li>
               <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"system_user"</span>
             <span class="p">}</span>
          <span class="p">}</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="function-rules">
+<span id="system-file-function-rules"></span><h4 id="function-rules">Function rules<a class="headerlink" href="#function-rules" title="Permalink to this heading">#</a></h4>
+<p>These rules control the user’s ability to execute SQL all function kinds,
+such as <a class="reference internal" href="../functions/aggregate.html"><span class="doc">aggregate functions</span></a>, scalar functions,
+<a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> and <a class="reference internal" href="../functions/window.html"><span class="doc">window functions</span></a>.</p>
+<p>Each function rule is composed of the following fields:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regular expression to match against user name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">role</span></code> (optional): regular expression to match against role names.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regular expression to match against group names.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">catalog</span></code> (optional): regular expression to match against catalog name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regular expression to match against schema name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">function</span></code> (optional): regular expression to match against function names.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal notranslate"><span class="pre">EXECUTE</span></code>, <code class="docutils literal notranslate"><span class="pre">GRANT_EXECUTE</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">function_kinds</span></code> (required): one or more of <code class="docutils literal notranslate"><span class="pre">AGGREGATE</span></code>, <code class="docutils literal notranslate"><span class="pre">SCALAR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TABLES</span></code>, <code class="docutils literal notranslate"><span class="pre">WINDOW</span></code>. When a user defines a rule for <code class="docutils literal notranslate"><span class="pre">AGGREGATE</span></code>, <code class="docutils literal notranslate"><span class="pre">SCALAR</span></code>
+or <code class="docutils literal notranslate"><span class="pre">WINDOW</span></code> functions, the <code class="docutils literal notranslate"><span class="pre">catalog</span></code> and <code class="docutils literal notranslate"><span class="pre">schema</span></code> fields are disallowed
+because those functions are available globally without any catalogs involvement.</p></li>
+</ul>
+<p>To deny all <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> from any catalog,
+use the following rules:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"functions"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"EXECUTE"</span><span class="p">,</span>
+        <span class="s2">"GRANT_EXECUTE"</span>
+      <span class="p">],</span>
+      <span class="nt">"function_kinds"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"SCALAR"</span><span class="p">,</span>
+        <span class="s2">"AGGREGATE"</span><span class="p">,</span>
+        <span class="s2">"WINDOW"</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[],</span>
+      <span class="nt">"function_kinds"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"TABLE"</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>It’s a good practice to limit access to <code class="docutils literal notranslate"><span class="pre">query</span></code> table function because this
+table function works like a query passthrough and ignores  <code class="docutils literal notranslate"><span class="pre">tables</span></code> rules.
+The following example allows the <code class="docutils literal notranslate"><span class="pre">admin</span></code> user to execute <code class="docutils literal notranslate"><span class="pre">query</span></code> table
+function from any catalog:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"functions"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"EXECUTE"</span><span class="p">,</span>
+        <span class="s2">"GRANT_EXECUTE"</span>
+      <span class="p">],</span>
+      <span class="nt">"function_kinds"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"SCALAR"</span><span class="p">,</span>
+        <span class="s2">"AGGREGATE"</span><span class="p">,</span>
+        <span class="s2">"WINDOW"</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"function"</span><span class="p">:</span> <span class="s2">"query"</span><span class="p">,</span>
+      <span class="nt">"privileges"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"EXECUTE"</span>
+      <span class="p">],</span>
+      <span class="nt">"function_kinds"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"TABLE"</span>
       <span class="p">]</span>
     <span class="p">}</span>
   <span class="p">]</span>
@@ -1349,7 +1473,25 @@ to.</p></li>
 </section>
 </section>
 <section id="id4">
-<h4 id="id4">Session property rules<a class="headerlink" href="#id4" title="Permalink to this heading">#</a></h4>
+<h4 id="id4">Function rules<a class="headerlink" href="#id4" title="Permalink to this heading">#</a></h4>
+<p>Each function rule is composed of the following fields:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regular expression to match against user name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">group</span></code> (optional): regular expression to match against group names.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">schema</span></code> (optional): regular expression to match against schema name.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">function</span></code> (optional): regular expression to match against function names.
+Defaults to <code class="docutils literal notranslate"><span class="pre">.*</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">privileges</span></code> (required): zero or more of <code class="docutils literal notranslate"><span class="pre">EXECUTE</span></code>, <code class="docutils literal notranslate"><span class="pre">GRANT_EXECUTE</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">function_kinds</span></code> (required): one or more of <code class="docutils literal notranslate"><span class="pre">AGGREGATE</span></code>, <code class="docutils literal notranslate"><span class="pre">SCALAR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">TABLES</span></code>, <code class="docutils literal notranslate"><span class="pre">WINDOW</span></code>. When a user defines a rule for <code class="docutils literal notranslate"><span class="pre">AGGREGATE</span></code>, <code class="docutils literal notranslate"><span class="pre">SCALAR</span></code>
+or <code class="docutils literal notranslate"><span class="pre">WINDOW</span></code> functions, the <code class="docutils literal notranslate"><span class="pre">catalog</span></code> and <code class="docutils literal notranslate"><span class="pre">schema</span></code> fields are disallowed.</p></li>
+</ul>
+</section>
+<section id="id5">
+<h4 id="id5">Session property rules<a class="headerlink" href="#id5" title="Permalink to this heading">#</a></h4>
 <p>These rules govern who may set session properties.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">user</span></code> (optional): regex to match against user name.</p></li>
