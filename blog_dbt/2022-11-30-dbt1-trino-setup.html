@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Starburst | Setting up Trino for dbt</title>
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Starburst - Setting up Trino for dbt">
+    <meta property="og:description" content="Your hub to all knowledge about Starburst products.">
+    <meta property="og:image" content="/assets/img/starburst-og-image.png">
+
+    <link rel="stylesheet" href="/assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="/assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/assets/css/mdb.min.css">
+    <link rel="stylesheet" href="/assets/css/highlight.css">
+    <link rel="stylesheet" href="/assets/css/fonts.css">
+    <link rel="stylesheet" href="/assets/css/style.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-114610397-1"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-114610397-1');
+</script>
+
+<script>
+  var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights@2.2.1";
+
+  !function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+  (e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+  i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+  }(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Setting up Trino for dbt | Starburst</title>
+<meta name="generator" content="Jekyll v4.2.0" />
+<meta property="og:title" content="Setting up Trino for dbt" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This is part one of the lakehouse ETL with dbt and Trino series. Start at the introduction if you haven’t already. Trino introduction Trino is a distributed SQL query engine designed to query large datasets distributed over one or more heterogeneous data sources. Since Trino is being called a database by many members of the community, it makes sense to begin with a definition of what Trino is not. Do not mistake the fact that Trino understands SQL with it providing the features of a standard database. Trino is not a general-purpose relational database. It is not a replacement for databases like MySQL, PostgreSQL or Oracle. Trino is a tool designed to efficiently query vast amounts of data using distributed queries, and was designed to handle data warehousing, analytics, data analysis, and aggregating large amounts of data and producing reports. These workloads are often classified as Online Analytical Processing (OLAP). Trino ETL/ELT capabilities With fault-tolerant execution, Trino is now ready to handle production, business critical data pipelines, data transformation, and write operations using the unique feature of query federation. In version 393, Trino added support for the MERGE statement, which can be used to effectively load data into target tables. dbt-trino supports incremental models and snapshot features based on the MERGE statement. Note that MERGE is currently supported by a limited number of Trino connectors, such as Hive, Iceberg, Delta Lake and others. Starburst products Starburst Galaxy and Starburst Enterprise fully support dbt-trino. To learn more about these products, check out the official Starburst documentation. Initialization This page presumes you have Docker installed and running, and that you have some familiarity with Docker commands. For Mac and Windows evaluations, make sure you have Docker Desktop installed and running. You will go through all the steps of running Trino on your own computer and set up a set of docker containers using docker compose and the following: The Trino server. The webshop database on PostgreSQL. The clickstream data on MongoDB. The lakehouse powered by Iceberg table format. Configuring Trino Running Trino is fairly easy. Without docker compose you could simply run the following command and have a Trino instance running locally: docker run -d -p 8080:8080 --name trino --rm trinodb/trino:latest However, you are going to add all the data sources and our data lake later on. So, you need something that can run more than one container, that’s where Docker Compose comes in. Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration. Create this docker-compose.yml file, add the Trino container, and create a network so all our containers can talk to each other: version: &quot;3.9&quot; services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; networks: trino-network: driver: bridge To run your docker setup, run docker compose up. Once you see io.trino.server.Server ======== SERVER STARTED ========, your server has successfully started up, and you are ready to query. You can use the Trino CLI to run some queries: -- check version of Trino SELECT version(); -- Adding PostgreSQL webshop database Adding the PostgreSQL database requires additional configuration. Trino needs to know how to connect to your database. First, create a trino/catalog folder in your project, and add the Trino configuration there. This folder is mounted onto /etc/trino/catalog in the Trino container. Specify :ro for read-only, as it shouldn’t be possible to change these configurations once the container is started: ... services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; volumes: - ./trino/catalog:/etc/trino/catalog:ro ... Now, add the catalog configuration to connect to the PostgreSQL database. Create a webshop.properties file in the trino/catalog folder: connector.name=postgresql connection-url=jdbc:postgresql://jaffle_webshop:5432/postgres connection-user=postgres connection-password=postgres You now need to add the actual Postgres database: ... jaffle_webshop: image: postgres:11 container_name: jaffle_webshop volumes: - ./jaffle_webshop/init-customers.sql:/docker-entrypoint-initdb.d/init-customers.sql - ./jaffle_webshop/raw_customers.csv:/home/dump/raw_customers.csv - ./jaffle_webshop/init-payments.sql:/docker-entrypoint-initdb.d/init-payments.sql - ./jaffle_webshop/raw_payments.csv:/home/dump/raw_payments.csv - ./jaffle_webshop/init-orders.sql:/docker-entrypoint-initdb.d/init-orders.sql - ./jaffle_webshop/raw_orders.csv:/home/dump/raw_orders.csv - ./jaffle_webshop/init-sessions.sql:/docker-entrypoint-initdb.d/init-sessions.sql - ./jaffle_webshop/raw_sessions.csv:/home/dump/raw_sessions.csv environment: - POSTGRES_DB=postgres - POSTGRES_USER=postgres - POSTGRES_PASSWORD=postgres ports: - &quot;15432:5432&quot; ... Adding the click-stream database (Mongodb) MongoDB is a NoSQL document database where clickstream data from websites is loaded. Create a website.properties file in the trino/catalog folder: connector.name=mongodb mongodb.connection-url=mongodb://mongodb:27017/ Adding the lakehouse powered by Iceberg and MinIO The final step in setting up Trino with all underlying components and databases is to create and configure MinIO, which is an S3-compatible object storage. Create a datalake.properties file in the trino/catalog folder: connector.name=iceberg hive.metastore.uri=thrift://hive-metastore:9083 hive.s3.endpoint=http://minio:9000 hive.s3.path-style-access=true hive.s3.aws-access-key=minio hive.s3.aws-secret-key=minio123 hive.metastore-cache-ttl=0s hive.metastore-refresh-interval=5s hive.metastore-timeout=10s The Iceberg connector also requires a Hive metastore service (HMS), which is the hive-metastore container and the required database configured with the following docker-compose code snippet: # HMS backend database metastore_db: image: postgres:11 hostname: metastore_db container_name: metastore_db environment: POSTGRES_USER: hive POSTGRES_PASSWORD: hive POSTGRES_DB: metastore # Hive metastore service (HMS) hive-metastore: container_name: hive-metastore hostname: hive-metastore image: &#39;starburstdata/hive:3.1.2-e.15&#39; ports: - &#39;9083:9083&#39; # Metastore Thrift environment: HIVE_METASTORE_DRIVER: org.postgresql.Driver HIVE_METASTORE_JDBC_URL: jdbc:postgresql://metastore_db:5432/metastore HIVE_METASTORE_USER: hive HIVE_METASTORE_PASSWORD: hive HIVE_METASTORE_WAREHOUSE_DIR: s3://datalake/ S3_ENDPOINT: http://minio:9000 S3_ACCESS_KEY: minio S3_SECRET_KEY: minio123 S3_PATH_STYLE_ACCESS: &quot;true&quot; REGION: &quot;&quot; GOOGLE_CLOUD_KEY_FILE_PATH: &quot;&quot; AZURE_ADL_CLIENT_ID: &quot;&quot; AZURE_ADL_CREDENTIAL: &quot;&quot; AZURE_ADL_REFRESH_URL: &quot;&quot; AZURE_ABFS_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_ACCESS_KEY: &quot;&quot; AZURE_WASB_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_OAUTH: &quot;&quot; AZURE_ABFS_OAUTH_TOKEN_PROVIDER: &quot;&quot; AZURE_ABFS_OAUTH_CLIENT_ID: &quot;&quot; AZURE_ABFS_OAUTH_SECRET: &quot;&quot; AZURE_ABFS_OAUTH_ENDPOINT: &quot;&quot; AZURE_WASB_ACCESS_KEY: &quot;&quot; depends_on: - metastore_db # MinIO object storage minio: hostname: minio image: &#39;minio/minio:RELEASE.2022-05-26T05-48-41Z&#39; container_name: minio ports: - &#39;9000:9000&#39; - &#39;9001:9001&#39; environment: MINIO_ACCESS_KEY: minio MINIO_SECRET_KEY: minio123 command: server /data --console-address &quot;:9001&quot; # This job creates the &quot;datalake&quot; bucket on Minio mc-job: image: &#39;minio/mc:RELEASE.2022-05-09T04-08-26Z&#39; container_name: mc-job entrypoint: | /bin/bash -c &quot; sleep 5; /usr/bin/mc config --quiet host add myminio http://minio:9000 minio minio123; /usr/bin/mc mb --quiet myminio/datalake &quot; depends_on: - minio Run docker compose up -d to spin up all containers from the docker compose manifest. Now, all your infrastructure is up and running, and you are ready to create your first models using dbt and Trino!" />
+<meta property="og:description" content="This is part one of the lakehouse ETL with dbt and Trino series. Start at the introduction if you haven’t already. Trino introduction Trino is a distributed SQL query engine designed to query large datasets distributed over one or more heterogeneous data sources. Since Trino is being called a database by many members of the community, it makes sense to begin with a definition of what Trino is not. Do not mistake the fact that Trino understands SQL with it providing the features of a standard database. Trino is not a general-purpose relational database. It is not a replacement for databases like MySQL, PostgreSQL or Oracle. Trino is a tool designed to efficiently query vast amounts of data using distributed queries, and was designed to handle data warehousing, analytics, data analysis, and aggregating large amounts of data and producing reports. These workloads are often classified as Online Analytical Processing (OLAP). Trino ETL/ELT capabilities With fault-tolerant execution, Trino is now ready to handle production, business critical data pipelines, data transformation, and write operations using the unique feature of query federation. In version 393, Trino added support for the MERGE statement, which can be used to effectively load data into target tables. dbt-trino supports incremental models and snapshot features based on the MERGE statement. Note that MERGE is currently supported by a limited number of Trino connectors, such as Hive, Iceberg, Delta Lake and others. Starburst products Starburst Galaxy and Starburst Enterprise fully support dbt-trino. To learn more about these products, check out the official Starburst documentation. Initialization This page presumes you have Docker installed and running, and that you have some familiarity with Docker commands. For Mac and Windows evaluations, make sure you have Docker Desktop installed and running. You will go through all the steps of running Trino on your own computer and set up a set of docker containers using docker compose and the following: The Trino server. The webshop database on PostgreSQL. The clickstream data on MongoDB. The lakehouse powered by Iceberg table format. Configuring Trino Running Trino is fairly easy. Without docker compose you could simply run the following command and have a Trino instance running locally: docker run -d -p 8080:8080 --name trino --rm trinodb/trino:latest However, you are going to add all the data sources and our data lake later on. So, you need something that can run more than one container, that’s where Docker Compose comes in. Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration. Create this docker-compose.yml file, add the Trino container, and create a network so all our containers can talk to each other: version: &quot;3.9&quot; services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; networks: trino-network: driver: bridge To run your docker setup, run docker compose up. Once you see io.trino.server.Server ======== SERVER STARTED ========, your server has successfully started up, and you are ready to query. You can use the Trino CLI to run some queries: -- check version of Trino SELECT version(); -- Adding PostgreSQL webshop database Adding the PostgreSQL database requires additional configuration. Trino needs to know how to connect to your database. First, create a trino/catalog folder in your project, and add the Trino configuration there. This folder is mounted onto /etc/trino/catalog in the Trino container. Specify :ro for read-only, as it shouldn’t be possible to change these configurations once the container is started: ... services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; volumes: - ./trino/catalog:/etc/trino/catalog:ro ... Now, add the catalog configuration to connect to the PostgreSQL database. Create a webshop.properties file in the trino/catalog folder: connector.name=postgresql connection-url=jdbc:postgresql://jaffle_webshop:5432/postgres connection-user=postgres connection-password=postgres You now need to add the actual Postgres database: ... jaffle_webshop: image: postgres:11 container_name: jaffle_webshop volumes: - ./jaffle_webshop/init-customers.sql:/docker-entrypoint-initdb.d/init-customers.sql - ./jaffle_webshop/raw_customers.csv:/home/dump/raw_customers.csv - ./jaffle_webshop/init-payments.sql:/docker-entrypoint-initdb.d/init-payments.sql - ./jaffle_webshop/raw_payments.csv:/home/dump/raw_payments.csv - ./jaffle_webshop/init-orders.sql:/docker-entrypoint-initdb.d/init-orders.sql - ./jaffle_webshop/raw_orders.csv:/home/dump/raw_orders.csv - ./jaffle_webshop/init-sessions.sql:/docker-entrypoint-initdb.d/init-sessions.sql - ./jaffle_webshop/raw_sessions.csv:/home/dump/raw_sessions.csv environment: - POSTGRES_DB=postgres - POSTGRES_USER=postgres - POSTGRES_PASSWORD=postgres ports: - &quot;15432:5432&quot; ... Adding the click-stream database (Mongodb) MongoDB is a NoSQL document database where clickstream data from websites is loaded. Create a website.properties file in the trino/catalog folder: connector.name=mongodb mongodb.connection-url=mongodb://mongodb:27017/ Adding the lakehouse powered by Iceberg and MinIO The final step in setting up Trino with all underlying components and databases is to create and configure MinIO, which is an S3-compatible object storage. Create a datalake.properties file in the trino/catalog folder: connector.name=iceberg hive.metastore.uri=thrift://hive-metastore:9083 hive.s3.endpoint=http://minio:9000 hive.s3.path-style-access=true hive.s3.aws-access-key=minio hive.s3.aws-secret-key=minio123 hive.metastore-cache-ttl=0s hive.metastore-refresh-interval=5s hive.metastore-timeout=10s The Iceberg connector also requires a Hive metastore service (HMS), which is the hive-metastore container and the required database configured with the following docker-compose code snippet: # HMS backend database metastore_db: image: postgres:11 hostname: metastore_db container_name: metastore_db environment: POSTGRES_USER: hive POSTGRES_PASSWORD: hive POSTGRES_DB: metastore # Hive metastore service (HMS) hive-metastore: container_name: hive-metastore hostname: hive-metastore image: &#39;starburstdata/hive:3.1.2-e.15&#39; ports: - &#39;9083:9083&#39; # Metastore Thrift environment: HIVE_METASTORE_DRIVER: org.postgresql.Driver HIVE_METASTORE_JDBC_URL: jdbc:postgresql://metastore_db:5432/metastore HIVE_METASTORE_USER: hive HIVE_METASTORE_PASSWORD: hive HIVE_METASTORE_WAREHOUSE_DIR: s3://datalake/ S3_ENDPOINT: http://minio:9000 S3_ACCESS_KEY: minio S3_SECRET_KEY: minio123 S3_PATH_STYLE_ACCESS: &quot;true&quot; REGION: &quot;&quot; GOOGLE_CLOUD_KEY_FILE_PATH: &quot;&quot; AZURE_ADL_CLIENT_ID: &quot;&quot; AZURE_ADL_CREDENTIAL: &quot;&quot; AZURE_ADL_REFRESH_URL: &quot;&quot; AZURE_ABFS_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_ACCESS_KEY: &quot;&quot; AZURE_WASB_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_OAUTH: &quot;&quot; AZURE_ABFS_OAUTH_TOKEN_PROVIDER: &quot;&quot; AZURE_ABFS_OAUTH_CLIENT_ID: &quot;&quot; AZURE_ABFS_OAUTH_SECRET: &quot;&quot; AZURE_ABFS_OAUTH_ENDPOINT: &quot;&quot; AZURE_WASB_ACCESS_KEY: &quot;&quot; depends_on: - metastore_db # MinIO object storage minio: hostname: minio image: &#39;minio/minio:RELEASE.2022-05-26T05-48-41Z&#39; container_name: minio ports: - &#39;9000:9000&#39; - &#39;9001:9001&#39; environment: MINIO_ACCESS_KEY: minio MINIO_SECRET_KEY: minio123 command: server /data --console-address &quot;:9001&quot; # This job creates the &quot;datalake&quot; bucket on Minio mc-job: image: &#39;minio/mc:RELEASE.2022-05-09T04-08-26Z&#39; container_name: mc-job entrypoint: | /bin/bash -c &quot; sleep 5; /usr/bin/mc config --quiet host add myminio http://minio:9000 minio minio123; /usr/bin/mc mb --quiet myminio/datalake &quot; depends_on: - minio Run docker compose up -d to spin up all containers from the docker compose manifest. Now, all your infrastructure is up and running, and you are ready to create your first models using dbt and Trino!" />
+<link rel="canonical" href="https://docs.starburst.io/blog_dbt/2022-11-30-dbt1-trino-setup.html" />
+<meta property="og:url" content="https://docs.starburst.io/blog_dbt/2022-11-30-dbt1-trino-setup.html" />
+<meta property="og:site_name" content="Starburst" />
+<meta property="og:image" content="https://docs.starburst.io/assets/img/logo/dbt.svg" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-11-30T00:00:00-06:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://docs.starburst.io/assets/img/logo/dbt.svg" />
+<meta property="twitter:title" content="Setting up Trino for dbt" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2022-11-30T00:00:00-06:00","datePublished":"2022-11-30T00:00:00-06:00","description":"This is part one of the lakehouse ETL with dbt and Trino series. Start at the introduction if you haven’t already. Trino introduction Trino is a distributed SQL query engine designed to query large datasets distributed over one or more heterogeneous data sources. Since Trino is being called a database by many members of the community, it makes sense to begin with a definition of what Trino is not. Do not mistake the fact that Trino understands SQL with it providing the features of a standard database. Trino is not a general-purpose relational database. It is not a replacement for databases like MySQL, PostgreSQL or Oracle. Trino is a tool designed to efficiently query vast amounts of data using distributed queries, and was designed to handle data warehousing, analytics, data analysis, and aggregating large amounts of data and producing reports. These workloads are often classified as Online Analytical Processing (OLAP). Trino ETL/ELT capabilities With fault-tolerant execution, Trino is now ready to handle production, business critical data pipelines, data transformation, and write operations using the unique feature of query federation. In version 393, Trino added support for the MERGE statement, which can be used to effectively load data into target tables. dbt-trino supports incremental models and snapshot features based on the MERGE statement. Note that MERGE is currently supported by a limited number of Trino connectors, such as Hive, Iceberg, Delta Lake and others. Starburst products Starburst Galaxy and Starburst Enterprise fully support dbt-trino. To learn more about these products, check out the official Starburst documentation. Initialization This page presumes you have Docker installed and running, and that you have some familiarity with Docker commands. For Mac and Windows evaluations, make sure you have Docker Desktop installed and running. You will go through all the steps of running Trino on your own computer and set up a set of docker containers using docker compose and the following: The Trino server. The webshop database on PostgreSQL. The clickstream data on MongoDB. The lakehouse powered by Iceberg table format. Configuring Trino Running Trino is fairly easy. Without docker compose you could simply run the following command and have a Trino instance running locally: docker run -d -p 8080:8080 --name trino --rm trinodb/trino:latest However, you are going to add all the data sources and our data lake later on. So, you need something that can run more than one container, that’s where Docker Compose comes in. Compose is a tool for defining and running multi-container Docker applications. With Compose, you use a YAML file to configure your application’s services. Then, with a single command, you create and start all the services from your configuration. Create this docker-compose.yml file, add the Trino container, and create a network so all our containers can talk to each other: version: &quot;3.9&quot; services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; networks: trino-network: driver: bridge To run your docker setup, run docker compose up. Once you see io.trino.server.Server ======== SERVER STARTED ========, your server has successfully started up, and you are ready to query. You can use the Trino CLI to run some queries: -- check version of Trino SELECT version(); -- Adding PostgreSQL webshop database Adding the PostgreSQL database requires additional configuration. Trino needs to know how to connect to your database. First, create a trino/catalog folder in your project, and add the Trino configuration there. This folder is mounted onto /etc/trino/catalog in the Trino container. Specify :ro for read-only, as it shouldn’t be possible to change these configurations once the container is started: ... services: trino: hostname: trino image: &#39;trinodb/trino:latest&#39; ports: - &#39;8080:8080&#39; volumes: - ./trino/catalog:/etc/trino/catalog:ro ... Now, add the catalog configuration to connect to the PostgreSQL database. Create a webshop.properties file in the trino/catalog folder: connector.name=postgresql connection-url=jdbc:postgresql://jaffle_webshop:5432/postgres connection-user=postgres connection-password=postgres You now need to add the actual Postgres database: ... jaffle_webshop: image: postgres:11 container_name: jaffle_webshop volumes: - ./jaffle_webshop/init-customers.sql:/docker-entrypoint-initdb.d/init-customers.sql - ./jaffle_webshop/raw_customers.csv:/home/dump/raw_customers.csv - ./jaffle_webshop/init-payments.sql:/docker-entrypoint-initdb.d/init-payments.sql - ./jaffle_webshop/raw_payments.csv:/home/dump/raw_payments.csv - ./jaffle_webshop/init-orders.sql:/docker-entrypoint-initdb.d/init-orders.sql - ./jaffle_webshop/raw_orders.csv:/home/dump/raw_orders.csv - ./jaffle_webshop/init-sessions.sql:/docker-entrypoint-initdb.d/init-sessions.sql - ./jaffle_webshop/raw_sessions.csv:/home/dump/raw_sessions.csv environment: - POSTGRES_DB=postgres - POSTGRES_USER=postgres - POSTGRES_PASSWORD=postgres ports: - &quot;15432:5432&quot; ... Adding the click-stream database (Mongodb) MongoDB is a NoSQL document database where clickstream data from websites is loaded. Create a website.properties file in the trino/catalog folder: connector.name=mongodb mongodb.connection-url=mongodb://mongodb:27017/ Adding the lakehouse powered by Iceberg and MinIO The final step in setting up Trino with all underlying components and databases is to create and configure MinIO, which is an S3-compatible object storage. Create a datalake.properties file in the trino/catalog folder: connector.name=iceberg hive.metastore.uri=thrift://hive-metastore:9083 hive.s3.endpoint=http://minio:9000 hive.s3.path-style-access=true hive.s3.aws-access-key=minio hive.s3.aws-secret-key=minio123 hive.metastore-cache-ttl=0s hive.metastore-refresh-interval=5s hive.metastore-timeout=10s The Iceberg connector also requires a Hive metastore service (HMS), which is the hive-metastore container and the required database configured with the following docker-compose code snippet: # HMS backend database metastore_db: image: postgres:11 hostname: metastore_db container_name: metastore_db environment: POSTGRES_USER: hive POSTGRES_PASSWORD: hive POSTGRES_DB: metastore # Hive metastore service (HMS) hive-metastore: container_name: hive-metastore hostname: hive-metastore image: &#39;starburstdata/hive:3.1.2-e.15&#39; ports: - &#39;9083:9083&#39; # Metastore Thrift environment: HIVE_METASTORE_DRIVER: org.postgresql.Driver HIVE_METASTORE_JDBC_URL: jdbc:postgresql://metastore_db:5432/metastore HIVE_METASTORE_USER: hive HIVE_METASTORE_PASSWORD: hive HIVE_METASTORE_WAREHOUSE_DIR: s3://datalake/ S3_ENDPOINT: http://minio:9000 S3_ACCESS_KEY: minio S3_SECRET_KEY: minio123 S3_PATH_STYLE_ACCESS: &quot;true&quot; REGION: &quot;&quot; GOOGLE_CLOUD_KEY_FILE_PATH: &quot;&quot; AZURE_ADL_CLIENT_ID: &quot;&quot; AZURE_ADL_CREDENTIAL: &quot;&quot; AZURE_ADL_REFRESH_URL: &quot;&quot; AZURE_ABFS_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_ACCESS_KEY: &quot;&quot; AZURE_WASB_STORAGE_ACCOUNT: &quot;&quot; AZURE_ABFS_OAUTH: &quot;&quot; AZURE_ABFS_OAUTH_TOKEN_PROVIDER: &quot;&quot; AZURE_ABFS_OAUTH_CLIENT_ID: &quot;&quot; AZURE_ABFS_OAUTH_SECRET: &quot;&quot; AZURE_ABFS_OAUTH_ENDPOINT: &quot;&quot; AZURE_WASB_ACCESS_KEY: &quot;&quot; depends_on: - metastore_db # MinIO object storage minio: hostname: minio image: &#39;minio/minio:RELEASE.2022-05-26T05-48-41Z&#39; container_name: minio ports: - &#39;9000:9000&#39; - &#39;9001:9001&#39; environment: MINIO_ACCESS_KEY: minio MINIO_SECRET_KEY: minio123 command: server /data --console-address &quot;:9001&quot; # This job creates the &quot;datalake&quot; bucket on Minio mc-job: image: &#39;minio/mc:RELEASE.2022-05-09T04-08-26Z&#39; container_name: mc-job entrypoint: | /bin/bash -c &quot; sleep 5; /usr/bin/mc config --quiet host add myminio http://minio:9000 minio minio123; /usr/bin/mc mb --quiet myminio/datalake &quot; depends_on: - minio Run docker compose up -d to spin up all containers from the docker compose manifest. Now, all your infrastructure is up and running, and you are ready to create your first models using dbt and Trino!","headline":"Setting up Trino for dbt","image":"https://docs.starburst.io/assets/img/logo/dbt.svg","mainEntityOfPage":{"@type":"WebPage","@id":"https://docs.starburst.io/blog_dbt/2022-11-30-dbt1-trino-setup.html"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://docs.starburst.io/assets/img/logo/starburst-reverse.png"}},"url":"https://docs.starburst.io/blog_dbt/2022-11-30-dbt1-trino-setup.html"}</script>
+<!-- End Jekyll SEO tag -->
+
+</head>
+<body>
+
+
+<header class="main-header navbar-expand-sm">
+  <div class="navbar fixed-top navbar-dark">
+    <div class="navbar-left-container">
+      <a class="navbar-brand" href="https://www.starburst.io/">
+        <img src="/assets/img/logo/starburst_KO-T.png" height="32" alt="Starburst">
+      </a>
+      <span class="navbar-divider"></span>
+      <a href="/" class="header-text">Documentation</a>
+    </div>
+    
+    <div class="nav-item dropdown" id="site-search">
+  <div id="dropdownSearchDisplay" aria-labelledby="dropdownSearch">
+    <div id="algolia-search">
+      <div id="searchbox"></div>
+      <div id="refinement-list">
+        <h6>Filter:</h6>
+      </div>
+      <div id="hits"></div>
+      <div id="stats"></div>
+    </div>
+  </div>
+</div>
+
+    
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+  </div>
+    <nav class="primary-nav">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-layout navbar-nav mr-auto">
+          <li class="nav-item dropdown">
+            <a id="get-started"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/get-started/index.html">Get started</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/get-started/concepts.html">Concepts</a>
+              <a class="dropdown-item" href="/get-started/architecture.html">Architecture</a>
+              <a class="dropdown-item" href="/get-started/data-sources-catalogs.html">Data sources and catalogs</a>
+              <a class="dropdown-item" href="/get-started/security.html">Security</a>
+              <a class="dropdown-item" href="/get-started/choose-your-starburst-product.html">Choose your Starburst product</a>
+              <a class="dropdown-item" href="/data-consumer/index.html">Data consumer</a>
+              <a class="dropdown-item" href="/data-engineer/index.html">Data engineer</a>
+              <a class="dropdown-item" href="/platform-administrator/index.html">Platform administrator</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-galaxy"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Starburst Galaxy" data-is-click="false"
+              href="/starburst-galaxy/index.html">Starburst Galaxy</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-galaxy/query/index.html">Query</a>
+              <a class="dropdown-item" href="/starburst-galaxy/catalogs/index.html">Catalogs</a>
+              <a class="dropdown-item" href="/starburst-galaxy/catalog-explorer/index.html">Catalog explorer</a>
+              <a class="dropdown-item" href="/starburst-galaxy/clusters/index.html">Clusters</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sql/index.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-galaxy/admin/index.html">Admin</a>
+              <a class="dropdown-item" href="/starburst-galaxy/access-control/index.html">Access control</a>
+              <a class="dropdown-item" href="/starburst-galaxy/cloud-settings/index.html">Cloud settings</a>
+              <a class="dropdown-item" href="/starburst-galaxy/security/index.html">Security</a>
+              <a class="dropdown-item" href="/starburst-galaxy/sso/index.html">Single sign-on</a>
+              <a class="dropdown-item" href="/starburst-galaxy/api.html">API</a>
+              <a class="dropdown-item" href="/starburst-galaxy/tutorials/index.html">Tutorials</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="starburst-enterprise"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/starburst-enterprise/index.html">Starburst Enterprise</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/starburst-enterprise/try/index.html">Try Starburst Enterprise</a>
+              <a class="dropdown-item" href="/starburst-enterprise/web-ui/index.html">Web UI</a>
+              <a class="dropdown-item" href="/starburst-enterprise/sql.html">SQL</a>
+              <a class="dropdown-item" href="/starburst-enterprise/admin-topics/index.html">Administration</a>
+              <a class="dropdown-item" href="/starburst-enterprise/k8s/index.html">Kubernetes deployments</a>
+              <a class="dropdown-item" href="/starburst-enterprise/starburst-admin/index.html">Starburst Admin</a>
+              <a class="dropdown-item" href="/latest/index.html">Reference documentation</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="ecosystems"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="Get started" data-is-click="false"
+              href="/ecosystems/index.html">Ecosystems</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/ecosystems/amazon/index.html">Amazon AWS</a>
+              <a class="dropdown-item" href="/ecosystems/google/index.html">Google Cloud</a>
+              <a class="dropdown-item" href="/ecosystems/microsoft/index.html">Microsoft Azure</a>
+              <a class="dropdown-item" href="/ecosystems/redhat/index.html">Red Hat OpenShift</a>
+            </div>
+          </li>
+          <li class="nav-item dropdown">
+            <a id="resources"
+               class="nav-link dropdown-toggle" 
+              aria-haspopup="true" aria-label="resources" data-is-click="false"
+              href="/resources.html">Resources</a>
+            <div class="dropdown-menu dropdown-docs">
+              <a class="dropdown-item" href="/support.html">Support</a>
+              <a class="dropdown-item" href="/security/index.html">Security</a>
+              <a class="dropdown-item" href="/blog/index.html">Developer blog</a>
+              <a class="dropdown-item" href="/videos/index.html">Video library</a>
+              <a class="dropdown-item" href="/glossary.html">Glossary</a>
+              <a class="dropdown-item" href="https://www.trinoforum.org/">Trino forum</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </nav>
+</header>
+
+    <div class="landing-page">
+        <div class="sep-hero">
+  <div class="container sep-parent">
+    <div class="row">
+      <div class="col-md-12">
+        <h1><a href="/blog/">Starburst developer blog</a></h1>
+        <p class="lead">The latest news from our users, engineers, writers, and
+        product folks for all our peers and friends out there.</p>
+        <p>Want even more updates and information? Go to the
+          <a href="https://blog.starburst.io/">Starburst company blog</a>.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+
+<div class="content container-fluid post-container clearfix spacer-30">
+
+  <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+    <div class="container">
+      <div class="row">
+
+        <div class="col-xl-3">
+          <h3>Contents</h3>
+          <ul class="list-group">
+            
+              
+                <a class="list-group-item" href="/blog/2022-11-30-dbt0-introduction.html">Building lakehouse with dbt and Trino</a>
+              
+            
+            
+              
+                <li class="list-group-item active">Setting up Trino for dbt</li>
+              
+            
+              
+                <a class="list-group-item" href="/blog_dbt/2022-11-30-dbt2-first-dbt-data-pipeline.html">First dbt-trino data pipeline</a>
+              
+            
+              
+                <a class="list-group-item" href="/blog_dbt/2022-11-30-dbt3-refresh-your-data-faster.html">Refresh your data faster using incremental models</a>
+              
+            
+          </ul>
+        </div>
+
+        <div class="col-xl-9">
+          <header class="post-header">
+            <h1 class="post-title p-name" itemprop="name headline">
+              Setting up Trino for dbt</h1>
+            <p class="post-meta">
+              <time class="dt-published" abbrtime="2022-11-30T00:00:00-06:00" itemprop="datePublished">
+                Nov 30, 2022
+              </time> |
+
+     Michiel De Smet
+     
+     
+     <a href="https://github.com/mdesmet" target="_blank"><i class="fab fa-github"></i></a>
+     
+     ,
+     
+
+
+     Przemek Denkiewicz
+     
+     <a href="https://twitter.com/hovaesco" target="_blank"><i class="fab fa-twitter"></i></a>
+     
+     
+     <a href="https://github.com/hovaesco" target="_blank"><i class="fab fa-github"></i></a>
+     
+     
+</p>
+          </header>
+
+          <div class="content width clearfix" itemprop="articleBody"><img src="../assets/img/logo/dbt.svg" style="float: right;"><p><em>This is part one of the lakehouse ETL with dbt and Trino series. <a href="/blog/2022-11-30-dbt0-introduction.html">Start at the
+introduction</a> if you haven’t
+already.</em></p>
+
+<h2 id="trino-introduction">Trino introduction</h2>
+
+<p><a href="https://trino.io">Trino</a> is a distributed SQL query engine designed to query
+large datasets distributed over one or more heterogeneous data sources.</p>
+
+<p>Since Trino is being called a database by many members of the community, it
+makes sense to begin with a definition of what Trino is not.</p>
+
+<p>Do not mistake the fact that Trino understands SQL with it providing the
+features of a standard database. Trino is not a general-purpose relational
+database. It is not a replacement for databases like MySQL, PostgreSQL or
+Oracle.</p>
+
+<p>Trino is a tool designed to efficiently query vast amounts of data using
+distributed queries, and was designed to handle data warehousing, analytics,
+data analysis, and aggregating large amounts of data and producing reports.
+These workloads are often classified as Online Analytical Processing (OLAP).</p>
+
+<h2 id="trino-etlelt-capabilities">Trino ETL/ELT capabilities</h2>
+
+<p>With <a href="https://trino.io/docs/current/admin/fault-tolerant-execution.html">fault-tolerant
+execution</a>,
+Trino is now ready to handle production, business critical data pipelines, data
+transformation, and write operations using the unique feature of query
+federation.</p>
+
+<p>In version 393, Trino added support for the
+<a href="https://trino.io/docs/current/sql/merge.html">MERGE</a> statement, which can be
+used to effectively load data into target tables.
+<a href="https://github.com/starburstdata/dbt-trino">dbt-trino</a> supports incremental
+models and snapshot features based on the <code class="language-plaintext highlighter-rouge">MERGE</code> statement. Note that <code class="language-plaintext highlighter-rouge">MERGE</code>
+is currently supported by a limited number of Trino connectors, such as Hive,
+Iceberg, Delta Lake and others.</p>
+
+<h2 id="starburst-products">Starburst products</h2>
+
+<p>Starburst Galaxy and Starburst Enterprise fully support dbt-trino. To learn
+more about these products, check out the <a href="https://docs.starburst.io/">official Starburst
+documentation</a>.</p>
+
+<p><img src="../assets/img/blog/dbt-starburst.png" alt="How dbt works with Starburst" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+
+<h2 id="initialization">Initialization</h2>
+
+<p>This page presumes you have Docker installed and running, and that you have some
+familiarity with Docker commands. For Mac and Windows evaluations, make sure you
+have Docker Desktop installed and running.</p>
+
+<p>You will go through all the steps of running Trino on your own computer and set
+up a set of docker containers using <a href="https://docs.docker.com/compose/">docker
+compose</a> and the following:</p>
+
+<ul>
+  <li>The Trino server.</li>
+  <li>The webshop database on PostgreSQL.</li>
+  <li>The clickstream data on MongoDB.</li>
+  <li>The lakehouse powered by Iceberg table format.</li>
+</ul>
+
+<h2 id="configuring-trino">Configuring Trino</h2>
+
+<p>Running Trino is fairly easy. Without <code class="language-plaintext highlighter-rouge">docker compose</code> you could simply run the
+following command and have a Trino instance running locally:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-d</span> <span class="nt">-p</span> 8080:8080  <span class="nt">--name</span> trino <span class="nt">--rm</span> trinodb/trino:latest
+</code></pre></div></div>
+
+<p>However, you are going to add all the data sources and our data lake later on.
+So, you need something that can run more than one container, that’s where Docker
+Compose comes in.</p>
+
+<p>Compose is a tool for defining and running multi-container Docker applications.
+With Compose, you use a YAML file to configure your application’s services.
+Then, with a single command, you create and start all the services from your
+configuration.</p>
+
+<p>Create this <code class="language-plaintext highlighter-rouge">docker-compose.yml</code> file, add the Trino container, and create a
+network so all our containers can talk to each other:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">version</span><span class="pi">:</span> <span class="s2">"</span><span class="s">3.9"</span>
+
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">trino</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">trino</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">trinodb/trino:latest'</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">8080:8080'</span>
+
+<span class="na">networks</span><span class="pi">:</span>
+  <span class="na">trino-network</span><span class="pi">:</span>
+    <span class="na">driver</span><span class="pi">:</span> <span class="s">bridge</span>
+</code></pre></div></div>
+
+<p>To run your docker setup, run <code class="language-plaintext highlighter-rouge">docker compose up</code>.</p>
+
+<p>Once you see <code class="language-plaintext highlighter-rouge">io.trino.server.Server  ======== SERVER STARTED ========</code>, your
+server has successfully started up, and you are ready to query. You can use the
+<a href="https://trino.io/docs/current/client/cli.html">Trino CLI</a> to run some queries:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- check version of Trino</span>
+<span class="k">SELECT</span> <span class="k">version</span><span class="p">();</span>
+<span class="c1">--</span>
+</code></pre></div></div>
+
+<h2 id="adding-postgresql-webshop-database">Adding PostgreSQL webshop database</h2>
+
+<p>Adding the PostgreSQL database requires additional configuration. Trino needs to
+know how to connect to your database.</p>
+
+<p>First, create a <code class="language-plaintext highlighter-rouge">trino/catalog</code> folder in your project, and add the Trino
+configuration there. This folder is mounted onto <code class="language-plaintext highlighter-rouge">/etc/trino/catalog</code> in the
+Trino container.</p>
+
+<p>Specify <code class="language-plaintext highlighter-rouge">:ro</code> for read-only, as it shouldn’t be possible to change these
+configurations once the container is started:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">...</span>
+<span class="na">services</span><span class="pi">:</span>
+  <span class="na">trino</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">trino</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">trinodb/trino:latest'</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">8080:8080'</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">./trino/catalog:/etc/trino/catalog:ro</span>
+<span class="nn">...</span>
+</code></pre></div></div>
+
+<p>Now, add the catalog configuration to connect to the PostgreSQL database.
+Create a <code class="language-plaintext highlighter-rouge">webshop.properties</code> file in the <code class="language-plaintext highlighter-rouge">trino/catalog</code> folder:</p>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">connector.name</span><span class="p">=</span><span class="s">postgresql</span>
+<span class="py">connection-url</span><span class="p">=</span><span class="s">jdbc:postgresql://jaffle_webshop:5432/postgres</span>
+<span class="py">connection-user</span><span class="p">=</span><span class="s">postgres</span>
+<span class="py">connection-password</span><span class="p">=</span><span class="s">postgres</span>
+</code></pre></div></div>
+
+<p>You now need to add the actual Postgres database:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nn">...</span>
+  <span class="na">jaffle_webshop</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">postgres:11</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">jaffle_webshop</span>
+    <span class="na">volumes</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/init-customers.sql:/docker-entrypoint-initdb.d/init-customers.sql</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/raw_customers.csv:/home/dump/raw_customers.csv</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/init-payments.sql:/docker-entrypoint-initdb.d/init-payments.sql</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/raw_payments.csv:/home/dump/raw_payments.csv</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/init-orders.sql:/docker-entrypoint-initdb.d/init-orders.sql</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/raw_orders.csv:/home/dump/raw_orders.csv</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/init-sessions.sql:/docker-entrypoint-initdb.d/init-sessions.sql</span>
+      <span class="pi">-</span> <span class="s">./jaffle_webshop/raw_sessions.csv:/home/dump/raw_sessions.csv</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">POSTGRES_DB=postgres</span>
+      <span class="pi">-</span> <span class="s">POSTGRES_USER=postgres</span>
+      <span class="pi">-</span> <span class="s">POSTGRES_PASSWORD=postgres</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s2">"</span><span class="s">15432:5432"</span>
+<span class="nn">...</span>
+</code></pre></div></div>
+
+<h2 id="adding-the-click-stream-database-mongodb">Adding the click-stream database (Mongodb)</h2>
+
+<p>MongoDB is a NoSQL document database where clickstream data from websites is
+loaded.</p>
+
+<p>Create a <code class="language-plaintext highlighter-rouge">website.properties</code> file in the <code class="language-plaintext highlighter-rouge">trino/catalog</code> folder:</p>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">connector.name</span><span class="p">=</span><span class="s">mongodb</span>
+<span class="py">mongodb.connection-url</span><span class="p">=</span><span class="s">mongodb://mongodb:27017/</span>
+</code></pre></div></div>
+
+<h2 id="adding-the-lakehouse-powered-by-iceberg-and-minio">Adding the lakehouse powered by Iceberg and MinIO</h2>
+
+<p>The final step in setting up Trino with all underlying components and databases
+is to create and configure <a href="https://min.io/">MinIO</a>, which is an S3-compatible
+object storage.</p>
+
+<p>Create a <code class="language-plaintext highlighter-rouge">datalake.properties</code> file in the <code class="language-plaintext highlighter-rouge">trino/catalog</code> folder:</p>
+
+<div class="language-properties highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="py">connector.name</span><span class="p">=</span><span class="s">iceberg</span>
+<span class="py">hive.metastore.uri</span><span class="p">=</span><span class="s">thrift://hive-metastore:9083</span>
+<span class="py">hive.s3.endpoint</span><span class="p">=</span><span class="s">http://minio:9000</span>
+<span class="py">hive.s3.path-style-access</span><span class="p">=</span><span class="s">true</span>
+<span class="py">hive.s3.aws-access-key</span><span class="p">=</span><span class="s">minio</span>
+<span class="py">hive.s3.aws-secret-key</span><span class="p">=</span><span class="s">minio123</span>
+<span class="py">hive.metastore-cache-ttl</span><span class="p">=</span><span class="s">0s</span>
+<span class="py">hive.metastore-refresh-interval</span><span class="p">=</span><span class="s">5s</span>
+<span class="py">hive.metastore-timeout</span><span class="p">=</span><span class="s">10s</span>
+</code></pre></div></div>
+
+<p>The Iceberg connector also requires a Hive metastore service (HMS), which is the
+<code class="language-plaintext highlighter-rouge">hive-metastore</code> container and the required database configured with the
+following docker-compose code snippet:</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="c1"># HMS backend database</span>
+  <span class="na">metastore_db</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s">postgres:11</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">metastore_db</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">metastore_db</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">POSTGRES_USER</span><span class="pi">:</span> <span class="s">hive</span>
+      <span class="na">POSTGRES_PASSWORD</span><span class="pi">:</span> <span class="s">hive</span>
+      <span class="na">POSTGRES_DB</span><span class="pi">:</span> <span class="s">metastore</span>
+
+  <span class="c1"># Hive metastore service (HMS)</span>
+  <span class="na">hive-metastore</span><span class="pi">:</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">hive-metastore</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">hive-metastore</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">starburstdata/hive:3.1.2-e.15'</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">9083:9083'</span> <span class="c1"># Metastore Thrift</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">HIVE_METASTORE_DRIVER</span><span class="pi">:</span> <span class="s">org.postgresql.Driver</span>
+      <span class="na">HIVE_METASTORE_JDBC_URL</span><span class="pi">:</span> <span class="s">jdbc:postgresql://metastore_db:5432/metastore</span>
+      <span class="na">HIVE_METASTORE_USER</span><span class="pi">:</span> <span class="s">hive</span>
+      <span class="na">HIVE_METASTORE_PASSWORD</span><span class="pi">:</span> <span class="s">hive</span>
+      <span class="na">HIVE_METASTORE_WAREHOUSE_DIR</span><span class="pi">:</span> <span class="s">s3://datalake/</span>
+      <span class="na">S3_ENDPOINT</span><span class="pi">:</span> <span class="s">http://minio:9000</span>
+      <span class="na">S3_ACCESS_KEY</span><span class="pi">:</span> <span class="s">minio</span>
+      <span class="na">S3_SECRET_KEY</span><span class="pi">:</span> <span class="s">minio123</span>
+      <span class="na">S3_PATH_STYLE_ACCESS</span><span class="pi">:</span> <span class="s2">"</span><span class="s">true"</span>
+      <span class="na">REGION</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">GOOGLE_CLOUD_KEY_FILE_PATH</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ADL_CLIENT_ID</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ADL_CREDENTIAL</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ADL_REFRESH_URL</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_STORAGE_ACCOUNT</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_ACCESS_KEY</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_WASB_STORAGE_ACCOUNT</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_OAUTH</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_OAUTH_TOKEN_PROVIDER</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_OAUTH_CLIENT_ID</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_OAUTH_SECRET</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_ABFS_OAUTH_ENDPOINT</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+      <span class="na">AZURE_WASB_ACCESS_KEY</span><span class="pi">:</span> <span class="s2">"</span><span class="s">"</span>
+    <span class="na">depends_on</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">metastore_db</span>
+
+  <span class="c1"># MinIO object storage</span>
+  <span class="na">minio</span><span class="pi">:</span>
+    <span class="na">hostname</span><span class="pi">:</span> <span class="s">minio</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">minio/minio:RELEASE.2022-05-26T05-48-41Z'</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">minio</span>
+    <span class="na">ports</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">9000:9000'</span>
+      <span class="pi">-</span> <span class="s1">'</span><span class="s">9001:9001'</span>
+    <span class="na">environment</span><span class="pi">:</span>
+      <span class="na">MINIO_ACCESS_KEY</span><span class="pi">:</span> <span class="s">minio</span>
+      <span class="na">MINIO_SECRET_KEY</span><span class="pi">:</span> <span class="s">minio123</span>
+    <span class="na">command</span><span class="pi">:</span> <span class="s">server /data --console-address ":9001"</span>
+
+  <span class="c1"># This job creates the "datalake" bucket on Minio</span>
+  <span class="na">mc-job</span><span class="pi">:</span>
+    <span class="na">image</span><span class="pi">:</span> <span class="s1">'</span><span class="s">minio/mc:RELEASE.2022-05-09T04-08-26Z'</span>
+    <span class="na">container_name</span><span class="pi">:</span> <span class="s">mc-job</span>
+    <span class="na">entrypoint</span><span class="pi">:</span> <span class="pi">|</span>
+      <span class="s">/bin/bash -c "</span>
+      <span class="s">sleep 5;</span>
+      <span class="s">/usr/bin/mc config --quiet host add myminio http://minio:9000 minio minio123;</span>
+      <span class="s">/usr/bin/mc mb --quiet myminio/datalake</span>
+      <span class="s">"</span>
+    <span class="na">depends_on</span><span class="pi">:</span>
+      <span class="pi">-</span> <span class="s">minio</span>
+</code></pre></div></div>
+
+<p>Run <code class="language-plaintext highlighter-rouge">docker compose up -d</code> to spin up all containers from the docker compose
+manifest. Now, all your infrastructure is up and running, and you are ready to
+<a href="/blog_dbt/2022-11-30-dbt2-first-dbt-data-pipeline.html">create your first models using dbt and Trino</a>!</p>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="u-url" href="/blog_dbt/2022-11-30-dbt1-trino-setup.html" hidden></a>
+  </article>
+
+</div>
+
+
+
+    </div>
+
+
+<div style="margin-bottom: 50px"></div><footer class="page-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <p style="font-weight:900">Resources</b></p>
+        <ul>
+          <li class="footer-item"><a href="/videos/index.html">Video library</a></li>
+          <li class="footer-item"><a href="/glossary.html">Glossary</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/info/oreilly-trino-guide/" target="_blank">Free O'Reilly book - Trino: The Definitive Guide</a></li>
+          <li class="footer-item"><a href="https://trino.io/broadcast/" target="_blank">Trino Community Broadcast</a></li>
+          <li class="footer-item"><a href="https://trinoforum.org" target="_blank">Trino Forum</a></li>
+          <li class="footer-item"><a href="https://blog.starburstdata.com/" target="_blank">Starburst blog</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3">
+        <p style="font-weight:900">Contact and more</p>
+        <ul>
+          <li class="footer-item"><a href="https://www.starburst.io" target="_blank">Starburst</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/#download" target="_blank">Start a trial</a></li>
+          <li class="footer-item"><a href="/support.html" target="_blank">Get support</a></li>
+          <li class="footer-item"><a href="https://www.starburst.io/contact/" target="_blank">Contact us</a></li>
+        </ul>
+      </div>
+      <div class="col-md-3" style="text-align:right;">
+        <a href="https://www.starburst.io/" target="_blank"><img src="/assets/img/logo/starburst-reverse.png" height="60" alt=" Starburst" style="margin-bottom:20px;"></a>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#copyright">Copyright © 2017-2022<br> Starburst Data</a>
+        </li>
+        <li class="footer-item" style="padding-right:10px;">
+          <a href="/disclaimers.html#trademarks">Trademark information</a>
+        </li>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12 center spacer-30">
+          <a href="https://twitter.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-twitter"></i></a>
+          <a href="https://linkedin.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-linkedin"></i></a>
+          <a href="https://www.youtube.com/channel/UCXjkuWSO9CV_cSI3Mvo4a4w" target="_blank" class="footer-icon"><i class="fab fa-youtube"></i></a>
+          <a href="https://github.com/starburstdata" target="_blank" class="footer-icon"><i class="fab fa-github"></i></a>
+      </div>
+    </div>
+  </div>
+</footer>
+  <script type="text/javascript" src="/assets/js/jquery.min.js"></script>
+  <script type="text/javascript" src="/assets/js/popper.min.js"></script>
+  <script type="text/javascript" src="/assets/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/assets/js/mdb.min.js"></script>
+  <script type="text/javascript" src="/assets/js/custom.js"></script>
+  <script type="text/javascript" src="/assets/js/algolia.js"></script>
+  <script type="text/javascript" src="/assets/js/search-box.js"></script>
+  <script type="text/javascript" src="/assets/js/search-results.js"></script>
+</body>
+</html>
