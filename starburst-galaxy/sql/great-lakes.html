@@ -1314,16 +1314,7 @@ and file types when using certain write access statements for <a href="../catalo
 storage</a> systems. This connectivity is
 built into Starburst Galaxy, and is available to all users.</p>
 
-<p>This feature lets you use the following different table formats in the same
-catalog:</p>
-
-<ul>
-  <li><a href="#iceberg-type">Iceberg</a></li>
-  <li><a href="#delta-lake-type">Delta Lake</a></li>
-  <li><a href="#hive-type">Hive</a></li>
-</ul>
-
-<p>The following catalogs support Great Lakes connectivity:</p>
+<p>The following object storage catalogs support Great Lakes connectivity:</p>
 
 <ul>
   <li><a href="../catalogs/s3.html">Amazon S3</a></li>
@@ -1331,25 +1322,70 @@ catalog:</p>
   <li><a href="../catalogs/gcs.html">Google Cloud Storage</a></li>
 </ul>
 
-<p>Any read or write access to existing tables works transparently for all table
-formats. As before, Starburst Galaxy recognizes the format of your tables by
-reading the metastore associated with your object storage.</p>
+<p>This feature lets you read and write tables with the following types in the same
+object storage catalog:</p>
 
-<p>Starburst Galaxy provides a simple way to specify the default format for all
-newly created tables in an object storage catalog. When creating a new catalog,
-select from one of the options in the <strong>Default table format</strong> control. Your
-selection applies only to newly created tables, and does not convert any
-existing tables.</p>
+<ul>
+  <li><a href="#iceberg-type">Iceberg</a> table type</li>
+  <li><a href="#delta-lake-type">Delta Lake</a> table type</li>
+  <li><a href="#hive-type">Hive</a> table type</li>
+</ul>
+
+<p>In addition, the following table type is supported with read-only acces:</p>
+
+<ul>
+  <li><a href="#hudi-type">Hudi</a> table type</li>
+</ul>
+
+<p>Any read or write access to existing tables works transparently for all table
+formats. Starburst Galaxy recognizes the type and format of your tables by
+reading the metastore associated with your object storage.</p>
+      <h2 id="specify-default-table-format">
+        
+        
+          Specify default table format <a href="#specify-default-table-format" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>For data consumers who want to read from any object storage file in any
+supported table type, there are no configuration steps or commands.
+Starburst Galaxy reads each file’s type and format from the object store’s
+associated metadata file.</p>
+
+<p>For data engineers who want to create new tables in an object storage catalog,
+Starburst Galaxy provides a simple way to specify the default format for all
+newly created tables. When creating a new catalog, select from one of the
+options in the <strong>Default table format</strong> dialog. Your selection applies only to
+newly created tables, and does not convert any existing tables.</p>
 
 <p><img src="../../assets/img/galaxy/default-table-format.png" alt="Select default table format" class="img-fluid img-screenshot" description="" width="463px" style="" /></p>
 
-<p>To make the same selection using SQL statements such as <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> or
-<code class="language-plaintext highlighter-rouge">CREATE TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">type</code> parameter with <code class="language-plaintext highlighter-rouge">iceberg</code>, <code class="language-plaintext highlighter-rouge">delta</code>, or
-<code class="language-plaintext highlighter-rouge">hive</code> as its argument. A table created this way can override the default type
-specified for the catalog as a whole.</p>
+<p>You can also use a SQL statement to specify an individual table’s default format
+when creating that table. With a statement such as <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> or <code class="language-plaintext highlighter-rouge">CREATE
+TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">type</code> parameter with <code class="language-plaintext highlighter-rouge">iceberg</code>, <code class="language-plaintext highlighter-rouge">delta</code>, or <code class="language-plaintext highlighter-rouge">hive</code> as
+its argument. A table created this way can override the catalog’s overall
+default type.</p>
 
 <p>For the Hive and Iceberg types, you can optionally include a <code class="language-plaintext highlighter-rouge">format=</code> parameter
 with arguments as discussed in following sections.</p>
+
+<p>Examples of CREATE SQL statements are in each table type’s subsection.</p>
+      <h2 id="hudi-type">
+        
+        
+          Hudi type <a href="#hudi-type" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Hudi type tables have read only support. Existing tables of type Hudi that are
+detected in a Galaxy-connected object storage location are
+automatically read.</p>
+
+<p>Galaxy cannot create new Hudi tables or write to them.</p>
       <h2 id="iceberg-type">
         
         
@@ -1359,12 +1395,14 @@ with arguments as discussed in following sections.</p>
       </h2>
     
 
-<p>Apache Iceberg is an open table format for huge analytic datasets.
-Starburst Galaxy allows querying data stored in files written in Iceberg
-format, as defined in the <a href="https://iceberg.apache.org/spec/">Iceberg Table
-Spec</a>.</p>
+<p>Apache Iceberg is an open table type for huge analytic datasets.
+Starburst Galaxy allows querying data stored in files written in Iceberg type,
+as defined in the <a href="https://iceberg.apache.org/spec/">Iceberg Table Spec</a>.</p>
 
-<p>To create a table in Iceberg format, add <code class="language-plaintext highlighter-rouge">type='iceberg'</code> as a table property
+<p>Iceberg type tables are automatically detected and read based on information
+in the storage environment’s associated metadata file.</p>
+
+<p>To create an Iceberg type table, add <code class="language-plaintext highlighter-rouge">type='iceberg'</code> as a table property
 in your CREATE statement. For example:</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customer</span> <span class="p">(</span>
@@ -1420,10 +1458,13 @@ with value either <code class="language-plaintext highlighter-rouge">parquet</co
       </h2>
     
 
-<p>Delta Lake connectivity allows querying data stored in Delta Lake format,
+<p>Delta Lake connectivity allows querying data stored in Delta Lake type tables,
 including Databricks Delta Lake.</p>
 
-<p>To create a table in Delta Lake format, add <code class="language-plaintext highlighter-rouge">type='delta'</code> as a table property
+<p>Delta Lake type tables are automatically detected and read based on information
+in the storage environment’s associated metadata file.</p>
+
+<p>To create a Delta Lake type table, add <code class="language-plaintext highlighter-rouge">type='delta'</code> as a table property
 in your <code class="language-plaintext highlighter-rouge">CREATE</code> statement. There is no <code class="language-plaintext highlighter-rouge">format</code> parameter for Delta Lake, but
 you can append other table properties as required:</p>
 
@@ -1476,8 +1517,11 @@ you can append other table properties as required:</p>
 
 <p>Hive connectivity allows querying data stored in an Apache Hive data warehouse.</p>
 
-<p>To create a table in Hive format, add <code class="language-plaintext highlighter-rouge">type='hive'</code> as a table property
-in your CREATE statement. For example:</p>
+<p>Hive type tables are automatically detected and read based on information
+in the storage environment’s associated metadata file.</p>
+
+<p>To create a Hive type table, add <code class="language-plaintext highlighter-rouge">type='hive'</code> as a table property in your
+CREATE statement. For example:</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customer</span> <span class="p">(</span>
   <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
@@ -1665,7 +1709,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#iceberg-type">Iceberg type</a></li><li><a href="#delta-lake-type">Delta Lake type</a></li><li><a href="#hive-type">Hive type</a></li></ul></li></ul>
+          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#hudi-type">Hudi type</a></li><li><a href="#iceberg-type">Iceberg type</a></li><li><a href="#delta-lake-type">Delta Lake type</a></li><li><a href="#hive-type">Hive type</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
