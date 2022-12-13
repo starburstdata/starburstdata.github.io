@@ -468,7 +468,15 @@
         </li>
         <li class="md-nav__item"><a href="#cluster-configuration" class="md-nav__link">Cluster configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#catalog-configuration" class="md-nav__link">Catalog configuration</a>
+        <li class="md-nav__item"><a href="#catalog-configuration" class="md-nav__link">Catalog configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#hive-considerations" class="md-nav__link">Hive considerations</a>
+        </li>
+        <li class="md-nav__item"><a href="#iceberg-considerations" class="md-nav__link">Iceberg considerations</a>
+        </li>
+        <li class="md-nav__item"><a href="#delta-lake-considerations" class="md-nav__link">Delta Lake considerations</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#indexing-and-caching-management" class="md-nav__link">Indexing and caching management</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -613,7 +621,9 @@ accelerated:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">connector.name=iceberg</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">connector.name=delta-lake</span></code></p></li>
 </ul>
-<p><a class="reference internal" href="hive.html#hive-table-redirection"><span class="std std-ref">Table redirection from a catalog using the Hive connector</span></a> to Delta Lake or Iceberg is not supported.</p>
+<p>For more details, see <a class="reference internal" href="#siac-delta-lake-considerations"><span class="std std-ref">Delta Lake considerations</span></a>,
+<a class="reference internal" href="#siac-iceberg-considerations"><span class="std std-ref">Iceberg considerations</span></a>, and
+<a class="reference internal" href="#siac-hive-considerations"><span class="std std-ref">Hive considerations</span></a>.</p>
 <p>For example, update the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog that uses the Hive connector
 and AWS Glue as metastore in the values file.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
@@ -683,36 +693,90 @@ cold data through the smart indexing and caching connector. Defaults to
 properties supported by these connectors can be used to configure the
 catalog.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.cluster-uuid</span></code></p></td>
-<td><p><strong>Required.</strong> Unique identifier of the cluster. Used as the folder name in
-the store path. When creating a new cluster and the same
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code></p></td>
+<td><p><strong>Required.</strong> The path of the object store where call-home data,
+metadata, and import-export data is managed. Required to use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>.
+Write access privileges are necessary.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.cluster-uuid</span></code></p></td>
+<td><p><strong>Required.</strong> Unique identifier of the cluster. Used as the folder name
+in the store path. When creating a new cluster and the same
 <code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code> and <code class="docutils literal notranslate"><span class="pre">siac.cluster-uuid</span></code> is used, then the
 <a class="reference internal" href="#siac-management"><span class="std std-ref">cluster warmup rules</span></a> for index and cache
 creation are imported into the newly created cluster.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code></p></td>
-<td><p><strong>Required.</strong> The path of the object store where call-home data,
-metadata, import-export data, and warmup rules are stored. Required to
-use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>. Write access privileges are necessary.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.call-home.enable</span></code></p></td>
-<td><p>Enable pushing logs and metadata to the object store path configured at
-<code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.workerdb.hibernate.connection.url</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.workerdb.hibernate.connection.url</span></code></p></td>
 <td><p><strong>Required.</strong> JDBC connection string for the internal database. Must be
 set to
 <code class="docutils literal notranslate"><span class="pre">jdbc:hsqldb:file:/usr/lib/starburst/[CATALOG_NAME]/workerDB/db</span></code>.
 Write access privileges are necessary.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code></p></td>
 <td><p><strong>Required.</strong> The port to use to run the REST server used for smart
 indexing and caching configuration. This port needs to be open across
 the cluster. Each catalog needs to use a different value. Defaults to
 <code class="docutils literal notranslate"><span class="pre">8088</span></code>.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.call-home.enable</span></code></p></td>
+<td><p>Enable pushing logs and metadata to the object store path configured at
+<code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+</tr>
 </tbody>
 </table>
+<section id="hive-considerations">
+<span id="siac-hive-considerations"></span><h3 id="hive-considerations">Hive considerations<a class="headerlink" href="#hive-considerations" title="Permalink to this heading">#</a></h3>
+<p>All configurations of the <a class="reference internal" href="starburst-hive.html"><span class="doc">Hive connector</span></a> are
+supported. Additionally, the following considerations apply when using the Hive
+connector as the proxied connector for smart indexing and caching:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="hive.html#hive-table-redirection"><span class="std std-ref">Table redirection from a catalog using the Hive connector</span></a> to Delta Lake or Iceberg is not supported.</p></li>
+<li><p>Materialized views are supported.</p></li>
+</ul>
+<p>For optimal performance, add the following properties to your catalog
+configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
+  <span class="nt">example</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">...</span>
+    <span class="no">hive.max-outstanding-splits-size=512MB</span>
+    <span class="no">hive.max-initial-splits=0</span>
+    <span class="no">hive.max-outstanding-splits=2000</span>
+    <span class="no">hive.max-split-size=64MB</span>
+    <span class="no">...</span>
+</pre></div>
+</div>
+</section>
+<section id="iceberg-considerations">
+<span id="siac-iceberg-considerations"></span><h3 id="iceberg-considerations">Iceberg considerations<a class="headerlink" href="#iceberg-considerations" title="Permalink to this heading">#</a></h3>
+<p>All configurations of the <a class="reference internal" href="starburst-iceberg.html"><span class="doc">Iceberg connector</span></a> are supported. Additionally, the following
+considerations apply when using the Iceberg connector as the proxied connector
+for smart indexing and caching:</p>
+<ul class="simple">
+<li><p>Materialized views are not supported.</p></li>
+<li><p>An associated split is served from object storage and no acceleration occurs
+when:</p>
+<ul>
+<li><p>A row-level <a class="reference internal" href="iceberg.html#iceberg-data-management"><span class="std std-ref">update or delete operation</span></a>.</p></li>
+<li><p>A merge operation that causes a record update.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="delta-lake-considerations">
+<span id="siac-delta-lake-considerations"></span><h3 id="delta-lake-considerations">Delta Lake considerations<a class="headerlink" href="#delta-lake-considerations" title="Permalink to this heading">#</a></h3>
+<p>All configurations of the <a class="reference internal" href="starburst-delta-lake.html"><span class="doc">Delta Lake connector</span></a> are supported. Additionally, the following
+considerations apply when using the Delta Lake connector as the proxied connector
+for smart indexing and caching:</p>
+<ul class="simple">
+<li><p>Materialized views are not supported.</p></li>
+<li><p>An associated split is served from object storage and no acceleration occurs
+when:</p>
+<ul>
+<li><p>A row-level <a class="reference internal" href="delta-lake.html#delta-lake-write-support"><span class="std std-ref">update or delete operation</span></a>.</p></li>
+<li><p>A merge operation that causes a record update.</p></li>
+</ul>
+</li>
+</ul>
+</section>
 </section>
 <section id="indexing-and-caching-management">
 <span id="siac-management"></span><h2 id="indexing-and-caching-management">Indexing and caching management<a class="headerlink" href="#indexing-and-caching-management" title="Permalink to this heading">#</a></h2>
