@@ -868,14 +868,63 @@ configure index acceleration for a specific column with the REST API.</p>
 columns that is used in query predicates. It accelerates queries that use
 predicates of filters and searches on text columns.</p>
 
-<p>For example, a suitable use case is a search for a specific short string in a
-larger column such as a description.</p>
+<p>Smart indexing and caching uses <a href="https://lucene.apache.org/">Apache Lucene</a>
+indexing to accelerate text analytics queries and provide fast text filters,
+particularly with LIKE predicates. The
+<a href="https://lucene.apache.org/core/6_6_0/analyzers-common/org/apache/lucene/analysis/core/KeywordAnalyzer.html">KeywordAnalyzer</a>
+provides full LIKE semantics support to search for the exact appearance of a
+value in a filtered column.</p>
 
-<p>The index uses the well-known <a href="https://lucene.apache.org/">Apache Lucene
-library</a>.</p>
+<p>A suitable use case is a search for a specific short string in a larger column,
+such as a description. For example, consider a table with a column named
+<strong>city</strong> and a record in which <strong>city=”New York, United States”</strong>. The Lucene
+index is case-sensitive. When Lucene indexing is applied to the column, the
+following query returns that record because the LIKE predicate is an exact
+match:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">select * from tbl where city LIKE '%New York%'</code></li>
+</ul>
+
+<p>The following queries do not return the record because the LIKE predicates are
+not an exact match:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">select * from tbl where city LIKE '%NewYork%'</code></li>
+  <li><code class="language-plaintext highlighter-rouge">select * from tbl where city LIKE '%new york%'</code></li>
+</ul>
+
+<p>Lucene indexing is recommended for:</p>
+
+<ul>
+  <li>Queries with <code class="language-plaintext highlighter-rouge">LIKE</code> predicates, prefix or suffix queries, or queries that
+use the <a href="../../latest/functions/string.html">starts_with</a> functions.</li>
+  <li>Range queries on string columns. A common use is dates that are stored as
+strings that have range predicates. For example,
+<code class="language-plaintext highlighter-rouge">date_string&gt;='yyyy-mm-dd'</code>.</li>
+</ul>
+
+<p>Lucene indexing supports the following data types:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CHAR</code></li>
+  <li><code class="language-plaintext highlighter-rouge">VARCHAR</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CHAR ARRAY</code></li>
+  <li><code class="language-plaintext highlighter-rouge">VARCHAR ARRAY</code></li>
+</ul>
+
+<p>Smart indexing and caching automatically creates Lucene indexes.</p>
 
 <p>Use the <code class="language-plaintext highlighter-rouge">COL_WARM_UP_TYPE_LUCENE</code> value in the <code class="language-plaintext highlighter-rouge">colWarmUpType</code> property to
 configure text search acceleration for a specific column with the REST API.</p>
+
+<p>Limitations:</p>
+
+<ul>
+  <li>The maximum supported string length is 50k characters.</li>
+  <li>Lucene indexing does not accelerate queries with nested expressions such as:
+<code class="language-plaintext highlighter-rouge">select from table where starts_with(some_nested_method(col1), 'aaa')</code>.</li>
+</ul>
       <h3 id="automated-clean-up">
         
         
