@@ -481,6 +481,10 @@
         <li class="md-nav__item"><a href="#iceberg-considerations" class="md-nav__link">Iceberg considerations</a>
         </li>
         <li class="md-nav__item"><a href="#delta-lake-considerations" class="md-nav__link">Delta Lake considerations</a>
+        </li>
+        <li class="md-nav__item"><a href="#s3-considerations" class="md-nav__link">S3 considerations</a>
+        </li>
+        <li class="md-nav__item"><a href="#adls-considerations" class="md-nav__link">ADLS considerations</a>
         </li></ul>
             </nav>
         </li>
@@ -526,7 +530,7 @@ before using it.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Smart indexing and caching and the connector are <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> features. Contact <a class="reference external" href="../../support.html">Starburst support</a> with questions or feedback.</p>
+<p>Smart indexing and caching is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> feature. Contact <a class="reference external" href="../../support.html">Starburst support</a> with questions or feedback.</p>
 </div>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
@@ -543,8 +547,8 @@ Azure Kubernetes Service (AKS) as detailed in
 <span id="siac-object-storage-support"></span><h3 id="supported-object-storage">Supported object storage<a class="headerlink" href="#supported-object-storage" title="Permalink to this heading">#</a></h3>
 <p>Smart indexing and caching only supports the following object storage:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://aws.amazon.com/s3/">Amazon S3</a></p></li>
-<li><p><a class="reference external" href="https://azure.microsoft.com/en-us/products/storage/data-lake-storage/">Microsoft ADLS</a></p></li>
+<li><p><a class="reference internal" href="#siac-s3-considerations"><span class="std std-ref">Amazon S3</span></a>.</p></li>
+<li><p><a class="reference internal" href="#siac-adls-considerations"><span class="std std-ref">Microsoft ADLS Gen 2</span></a>.</p></li>
 </ul>
 <p>No other other object storage systems, including on-premises storage, Google
 Cloud Storage, S3-compatible storage such as MinIO, and any others are
@@ -641,6 +645,9 @@ accelerated:</p>
 <p>For more details, see <a class="reference internal" href="#siac-delta-lake-considerations"><span class="std std-ref">Delta Lake considerations</span></a>,
 <a class="reference internal" href="#siac-iceberg-considerations"><span class="std std-ref">Iceberg considerations</span></a>, and
 <a class="reference internal" href="#siac-hive-considerations"><span class="std std-ref">Hive considerations</span></a>.</p>
+<p>Only catalogs backed by S3 and ADLS object storage are supported. For more
+details, see <a class="reference internal" href="#siac-s3-considerations"><span class="std std-ref">S3 considerations</span></a> and
+<a class="reference internal" href="#siac-adls-considerations"><span class="std std-ref">ADLS considerations</span></a>.</p>
 <p>For example, update the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog that uses the Hive connector
 and AWS Glue as metastore in the values file.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
@@ -686,19 +693,6 @@ configuration of a catalog and update it:</p>
 <p>This allows you to query the same data with or without smart indexing and
 caching using different catalog names. However, existing scripts and statements
 that include the old catalog name <code class="docutils literal notranslate"><span class="pre">example</span></code> are not accelerated.</p>
-<p>If you are using <a class="reference internal" href="#siac-object-storage-support"><span class="std std-ref">ADLS for storage</span></a> with the
-Hive or Delta Lake connector, you must have the following configuration
-properties to connect to Azure storage:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
-  <span class="nt">faster</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-    <span class="no">...</span>
-    <span class="no">siac.store.path=abfs://&lt;container_name@account_name&gt;.dfs.core.windows.net/folder</span>
-    <span class="no">siac.config.azure.connection-string=&lt;connection_string&gt;</span>
-    <span class="no">hive.azure.abfs-storage-account=&lt;storage_account_name&gt;</span>
-    <span class="no">hive.azure.abfs-access-key=xxx</span>
-    <span class="no">...</span>
-</pre></div>
-</div>
 <section id="catalog-configuration-properties">
 <h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Permalink to this heading">#</a></h3>
 <p>The following table provides more information about the available catalog
@@ -727,8 +721,9 @@ catalog.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code></p></td>
 <td><p><strong>Required.</strong> The path of the object store where call-home data,
-metadata, and import-export data is managed. Required to use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>.
-Write access privileges are necessary.</p></td>
+metadata, and import-export data is managed. Required to use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>,
+<code class="docutils literal notranslate"><span class="pre">abfs://</span></code> or <code class="docutils literal notranslate"><span class="pre">abfss://</span></code> as protocol. Write access privileges are
+necessary.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.cluster-uuid</span></code></p></td>
 <td><p><strong>Required.</strong> Unique identifier of the cluster. Used as the folder name
@@ -818,6 +813,35 @@ when:</p>
 </ul>
 </li>
 </ul>
+</section>
+<section id="s3-considerations">
+<span id="siac-s3-considerations"></span><h3 id="s3-considerations">S3 considerations<a class="headerlink" href="#s3-considerations" title="Permalink to this heading">#</a></h3>
+<p>Smart indexing and caching supports <a class="reference external" href="https://aws.amazon.com/s3/">Amazon S3</a>
+with catalogs using the Hive, Iceberg and Delta Lake connectors.</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">s3://</span></code> protocol is required.</p>
+</section>
+<section id="adls-considerations">
+<span id="siac-adls-considerations"></span><h3 id="adls-considerations">ADLS considerations<a class="headerlink" href="#adls-considerations" title="Permalink to this heading">#</a></h3>
+<p>Smart indexing and caching supports
+<a class="reference external" href="https://azure.microsoft.com/en-us/products/storage/data-lake-storage/">Microsoft ADLS Gen 2</a>.
+<a class="reference external" href="https://learn.microsoft.com/en-us/azure/data-lake-store/data-lake-store-overview">ADLS Gen1</a>
+is not supported.</p>
+<p>Using the <code class="docutils literal notranslate"><span class="pre">abfs://</span></code> or <code class="docutils literal notranslate"><span class="pre">abfss://</span></code> protocol is required.</p>
+<p>ADLS can be used with catalogs using the Hive and Delta Lake connectors with the
+following configuration properties to connect to Azure storage:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
+  <span class="nt">faster</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+    <span class="no">...</span>
+    <span class="no">siac.store.path=abfs://&lt;container_name@account_name&gt;.dfs.core.windows.net/folder</span>
+    <span class="no">siac.config.azure.connection-string=&lt;connection_string&gt;</span>
+    <span class="no">hive.azure.abfs-storage-account=&lt;storage_account_name&gt;</span>
+    <span class="no">hive.azure.abfs-access-key=xxx</span>
+    <span class="no">...</span>
+</pre></div>
+</div>
+<p>In addition, <code class="docutils literal notranslate"><span class="pre">siac.call-home.enable</span></code> must be disabled. Then it is possible to
+secure the connection with TLS and use the <code class="docutils literal notranslate"><span class="pre">abfss</span></code> protocol with the <a class="reference external" href="https://learn.microsoft.com/en-us/azure/storage/blobs/data-lake-storage-introduction-abfs-uri#uri-syntax">URI
+syntax</a>.</p>
 </section>
 </section>
 <section id="indexing-and-caching-management">
