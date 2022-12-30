@@ -28,7 +28,7 @@ function copyToClipboard() {
 copyToClipboard();
 
 function copyCode() {
-  var codeblocks = document.querySelectorAll('pre.highlight');
+  var codeblocks = document.querySelectorAll('div.highlight');
 
   codeblocks.forEach(function (codeblock) {
     var cpBtn = document.createElement('button');
@@ -38,6 +38,7 @@ function copyCode() {
     cpBtn.innerText = 'Copy';
     cpBtn.style.position = 'relative';
     cpBtn.style.float = 'right';
+    cpBtn.style.marginLeft = '0.5em';
 
     codeblock.prepend(cpBtn);
 
@@ -45,7 +46,7 @@ function copyCode() {
       function () {
         var code = codeblock.querySelector('code').innerText.trim();
         window.navigator.clipboard.writeText(code);
-        cpBtn.innerText = 'Copied';
+        cpBtn.innerText = 'Done';
         setTimeout(function () { cpBtn.innerText = 'Copy';}, 2000);
       });
   });
