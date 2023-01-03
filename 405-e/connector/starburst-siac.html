@@ -742,16 +742,26 @@ for you. The brackets are required. Write access privileges are
 necessary.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code></p></td>
-<td><p><strong>Required.</strong> The port to use to run the REST server used for smart
-indexing and caching configuration. This port needs to be open across
-the cluster. Each catalog needs to use a different value. Defaults to
+<td><p><strong>Required</strong> if using a unique port for every catalog. The port to use
+to run the REST server used for smart indexing and caching
+configuration. The port needs to be open across the cluster. You can
+have each catalog use a different port value, or use a single port for
+all catalogs. For details, see <a class="reference internal" href="#siac-management"><span class="std std-ref">Indexing and caching management</span></a>. Defaults to
 <code class="docutils literal notranslate"><span class="pre">8088</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.call-home.enable</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code></p></td>
+<td><p>Enables the REST server for smart indexing and caching. Defaults to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>, which uses a unique port for each catalog. To use a single
+port for all requests, remove the <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your
+configuration and set the value of
+<code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>. For details, see
+<a class="reference internal" href="#siac-management"><span class="std std-ref">Indexing and caching management</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.call-home.enable</span></code></p></td>
 <td><p>Enable pushing logs and metadata to the object store path configured at
 <code class="docutils literal notranslate"><span class="pre">siac.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.config.azure.connection-string</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.config.azure.connection-string</span></code></p></td>
 <td><p><strong>Required</strong> when using <a class="reference internal" href="#siac-object-storage-support"><span class="std std-ref">ADLS for storage</span></a>. Authorizes access to data in an Azure
 Storage account. For more information, see <a class="reference external" href="https://learn.microsoft.com/en-us/azure/storage/common/storage-configure-connection-string#configure-a-connection-string-for-an-azure-storage-account">configure a connection
 string for an Azure storage account</a>
@@ -856,6 +866,16 @@ you call the REST API. Typically this is outside the cluster.</p>
 for the catalog configured for port 8088 on the cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code>
 via HTTP with a GET command.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>You can conveniently opt to use a single REST server port for all catalogs. To
+do so, remove <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your catalog configuration, and set
+<code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in your catalog
+configuration. The endpoints path structure changes to accommodate the ID of the
+catalog: <code class="docutils literal notranslate"><span class="pre">/ext/{catalogId}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the
+<code class="docutils literal notranslate"><span class="pre">/ext</span></code> path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named
+<code class="docutils literal notranslate"><span class="pre">faster</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
 <p>Alternatively you can use the <code class="docutils literal notranslate"><span class="pre">curl</span></code> installed on the coordinator, and execute
