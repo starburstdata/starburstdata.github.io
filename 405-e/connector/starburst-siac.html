@@ -490,6 +490,12 @@
         </li>
         <li class="md-nav__item"><a href="#indexing-and-caching-management" class="md-nav__link">Indexing and caching management</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#catalog-specific-rest-api-access" class="md-nav__link">Catalog-specific REST API access</a>
+        </li>
+        <li class="md-nav__item"><a href="#centralized-rest-api-access" class="md-nav__link">Centralized REST API access</a>
+        </li>
+        <li class="md-nav__item"><a href="#rest-api-overview" class="md-nav__link">REST API overview</a>
+        </li>
         <li class="md-nav__item"><a href="#warming-status" class="md-nav__link">Warming status</a>
         </li>
         <li class="md-nav__item"><a href="#debug-tools" class="md-nav__link">Debug tools</a>
@@ -858,24 +864,18 @@ syntax</a>.</p>
 <span id="siac-management"></span><h2 id="indexing-and-caching-management">Indexing and caching management<a class="headerlink" href="#indexing-and-caching-management" title="Permalink to this heading">#</a></h2>
 <p>Smart caching and indexing automatically creates and manages its data based on
 processed queries, also called the <a class="reference external" href="../../../starburst-enterprise/admin-topics/siac.html#overview">default acceleration</a>.</p>
-<p>In addition, you can further configure it with the REST API exposed on the
+<section id="catalog-specific-rest-api-access">
+<h3 id="catalog-specific-rest-api-access">Catalog-specific REST API access<a class="headerlink" href="#catalog-specific-rest-api-access" title="Permalink to this heading">#</a></h3>
+<p>You can configure smart indexing and caching with the REST API exposed on the
 coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog.
 This port on the coordinator node needs to be exposed to the machine from where
-you call the REST API. Typically this is outside the cluster.</p>
+you call the REST API. Typically this is outside the cluster. Every catalog
+requires a separate port and therefore REST API server. No authentication or
+authorization system is supported for API access.</p>
 <p>The following example call accesses the <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint
 for the catalog configured for port 8088 on the cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code>
 via HTTP with a GET command.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
-</pre></div>
-</div>
-<p>You can conveniently opt to use a single REST server port for all catalogs. To
-do so, remove <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your catalog configuration, and set
-<code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in your catalog
-configuration. The endpoints path structure changes to accommodate the ID of the
-catalog: <code class="docutils literal notranslate"><span class="pre">/ext/{catalogId}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the
-<code class="docutils literal notranslate"><span class="pre">/ext</span></code> path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named
-<code class="docutils literal notranslate"><span class="pre">faster</span></code>:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
 <p>Alternatively you can use the <code class="docutils literal notranslate"><span class="pre">curl</span></code> installed on the coordinator, and execute
@@ -901,9 +901,35 @@ curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</
 &gt; result.json
 </pre></div>
 </div>
+</section>
+<section id="centralized-rest-api-access">
+<h3 id="centralized-rest-api-access">Centralized REST API access<a class="headerlink" href="#centralized-rest-api-access" title="Permalink to this heading">#</a></h3>
+<p>You can configure smart indexing and caching with its REST API exposed on the
+coordinator in a separate context for each catalog on the same port and domain
+as the SEP web UI and the Trino REST API. Access to the REST API is controlled
+by the authentication-types system configured for SEP.</p>
+<p>To use centralized REST API access, remove <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your catalog
+configuration, and set <code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in
+all of your accelerated catalog configurations.</p>
+<p>The endpoints path structure changes to accommodate the ID of the catalog:
+<code class="docutils literal notranslate"><span class="pre">/ext/{catalogId}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code> path
+to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code> on a
+cluster without authentication exposed via HTTP:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8080/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+<p>An authenticated server needs to be accessed via HTTPS and include authetication
+information:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
+</pre></div>
+</div>
+</section>
+<section id="rest-api-overview">
+<h3 id="rest-api-overview">REST API overview<a class="headerlink" href="#rest-api-overview" title="Permalink to this heading">#</a></h3>
 <p>The following sections detail the REST API and available endpoints. The example
 calls use plain curl calls to the endpoints at via HTTP on localhost. Adapt them
 to your usage by adding the kubectl invocation or update the coordinator URL.</p>
+</section>
 <section id="warming-status">
 <h3 id="warming-status">Warming status<a class="headerlink" href="#warming-status" title="Permalink to this heading">#</a></h3>
 <p>You can determine the status of the warmup for smart indexing and caching with a
