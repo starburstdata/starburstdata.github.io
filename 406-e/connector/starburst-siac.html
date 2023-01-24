@@ -698,11 +698,26 @@ to <code class="docutils literal notranslate"><span class="pre">siac</span></cod
     <span class="no">siac.store.path=s3://example/path/</span>
     <span class="no">siac.cluster-uuid=example-cluster-567891234567</span>
     <span class="no">siac.workerdb.hibernate.connection.url=jdbc:hsqldb:file:/usr/lib/starburst/[CATALOG_NAME]/workerDB/db</span>
-    <span class="no">http-rest-port=8088</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
 </div>
+<p>If you want to expose the REST API on the coordinator at the port configured with
+<code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog, set the following properties:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
+  <span class="nt">example</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+   <span class="no">connector.name=siac</span>
+   <span class="no">siac.proxied-connector=HIVE</span>
+   <span class="no">siac.store.path=s3://example/path/</span>
+   <span class="no">siac.cluster-uuid=example-cluster-567891234567</span>
+   <span class="no">siac.workerdb.hibernate.connection.url=jdbc:hsqldb:file:/usr/lib/starburst/[CATALOG_NAME]/workerDB/db</span>
+   <span class="no">siac.use-http-server-port=false</span>
+   <span class="no">http-rest-port=8088</span>
+   <span class="no">hive.metastore=glue</span>
+   <span class="no">...</span>
+</pre></div>
+</div>
+<p>For details, see <a class="reference internal" href="#rest-api-access-per-catalog"><span class="std std-ref">Catalog-specific REST API access</span></a>.</p>
 <p>For testing purposes, or alternatively for permanent usage of a new catalog name
 (for example, <code class="docutils literal notranslate"><span class="pre">faster</span></code>), in parallel to the existing catalog, you can copy the
 configuration of a catalog and update it:</p>
@@ -717,7 +732,7 @@ configuration of a catalog and update it:</p>
     <span class="no">siac.store.path=s3://example/path/</span>
     <span class="no">siac.cluster-uuid=example-cluster-567891234567</span>
     <span class="no">siac.workerdb.hibernate.connection.url=jdbc:hsqldb:file:/usr/lib/starburst/[CATALOG_NAME]/workerDB/db</span>
-    <span class="no">http-rest-port=8088</span>
+    <span class="no">siac.use-http-server-port=true</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
@@ -773,13 +788,9 @@ Include <code class="docutils literal notranslate"><span class="pre">[CATALOG_NA
 for you. The brackets are required. Write access privileges are
 necessary.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code></p></td>
-<td><p><strong>Required</strong> if using a unique port for every catalog. The port to use
-to run the REST server used for smart indexing and caching
-configuration. The port needs to be open across the cluster. You can
-have each catalog use a different port value, or use a single port for
-all catalogs. For details, see <a class="reference internal" href="#siac-management"><span class="std std-ref">Indexing and caching management</span></a>. Defaults to
-<code class="docutils literal notranslate"><span class="pre">8088</span></code>.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">siac.use-http-server-port</span></code></p></td>
+<td><p>Specifies to run the REST API on the coordinator in the same server as
+SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">Centralized REST API access</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">siac.config.http-rest-server-enabled</span></code></p></td>
 <td><p>Enables the REST server for smart indexing and caching. Defaults to
@@ -973,13 +984,13 @@ processed queries, also called the <a class="reference external" href="../../../
 <p>Additional custom configuration can be applied with the REST API. Persistent
 storage of this configuration <a class="reference internal" href="#siac-database"><span class="std std-ref">requires a configured database</span></a>.</p>
 <section id="catalog-specific-rest-api-access">
-<h3 id="catalog-specific-rest-api-access">Catalog-specific REST API access<a class="headerlink" href="#catalog-specific-rest-api-access" title="Permalink to this heading">#</a></h3>
+<span id="rest-api-access-per-catalog"></span><h3 id="catalog-specific-rest-api-access">Catalog-specific REST API access<a class="headerlink" href="#catalog-specific-rest-api-access" title="Permalink to this heading">#</a></h3>
 <p>You can configure smart indexing and caching with the REST API exposed on the
 coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog.
 This port on the coordinator node needs to be exposed to the machine from where
-you call the REST API. Typically this is outside the cluster. Every catalog
-requires a separate port and therefore REST API server. No authentication or
-authorization system is supported for API access.</p>
+you call the REST API. Typically this is outside the cluster. In this scenario,
+every catalog requires a separate port and therefore REST API server. No
+authentication or authorization system is supported for API access.</p>
 <p>The following example call accesses the <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint
 for the catalog configured for port 8088 on the cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code>
 via HTTP with a GET command.</p>
@@ -1011,7 +1022,7 @@ curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</
 </div>
 </section>
 <section id="centralized-rest-api-access">
-<h3 id="centralized-rest-api-access">Centralized REST API access<a class="headerlink" href="#centralized-rest-api-access" title="Permalink to this heading">#</a></h3>
+<span id="rest-api-access"></span><h3 id="centralized-rest-api-access">Centralized REST API access<a class="headerlink" href="#centralized-rest-api-access" title="Permalink to this heading">#</a></h3>
 <p>You can configure smart indexing and caching with its REST API exposed on the
 coordinator in a separate context for each catalog on the same port and domain
 as the SEP web UI and the Trino REST API. Access to the REST API is controlled
@@ -1026,8 +1037,8 @@ cluster without authentication exposed via HTTP:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8080/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
-<p>An authenticated server needs to be accessed via HTTPS and include authetication
-information:</p>
+<p>An authenticated server needs to be accessed via HTTPS and include
+authentication information:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
