@@ -505,6 +505,8 @@
         <li class="md-nav__item"><a href="#security-mapping-configuration-properties" class="md-nav__link">Security mapping configuration properties</a>
         </li>
         <li class="md-nav__item"><a href="#security-mapping-role-requirements" class="md-nav__link">Security mapping role requirements</a>
+        </li>
+        <li class="md-nav__item"><a href="#listing-and-selecting-available-user-roles" class="md-nav__link">Listing and selecting available user roles</a>
         </li></ul>
             </nav>
         </li>
@@ -571,7 +573,6 @@ configured to use AWS Lake Formation for authorization with the Hive connector.<
 <span class="na">hive.s3.iam-role</span><span class="o">=</span><span class="s">arn:aws:iam::&lt;account_id&gt;:role/role_for_s3</span>
 <span class="na">lake-formation.authorized-caller-tag</span><span class="o">=</span><span class="s">starburst-enterprise</span>
 <span class="na">lake-formation.security-mapping.config-file</span><span class="o">=</span><span class="s">etc/lakeformation-security-mapping.json</span>
-<span class="na">lake-formation.security-mapping.iam-role-credential-name</span><span class="o">=</span><span class="s">Example_Role_Credential_Name</span>
 </pre></div>
 </div>
 <p>More information on lake formation security mapping can be found <a class="reference internal" href="#lake-formation-security-mapping"><span class="std std-ref">later in
@@ -591,16 +592,7 @@ this topic</span></a>.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.role-credential</span></code></p></td>
-<td><p>The name of the extra credential used to provide role ARN which is used
-when communicating with AWS Lake Formation. For example, given
-<code class="docutils literal notranslate"><span class="pre">lake-formation.role-credential=aws_lf_role</span></code> add
-<code class="docutils literal notranslate"><span class="pre">extraCredentials=aws_lf_role:arn:aws:iam::&lt;account_id&gt;:role/lf_role</span></code> to
-the parameters used with the <a class="reference internal" href="../client/jdbc.html"><span class="doc">JDBC driver</span></a> to connect to
-SEP. Users of the <a class="reference internal" href="../client/cli.html"><span class="doc">CLI</span></a> can use the
-<code class="docutils literal notranslate"><span class="pre">--extraCredential</span></code> option.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.authorized-caller-tag</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.authorized-caller-tag</span></code></p></td>
 <td><p>The value of <code class="docutils literal notranslate"><span class="pre">LakeFormationAuthorizedCaller</span></code> registered for SEP in
 <a class="reference external" href="https://docs.aws.amazon.com/lake-formation/latest/dg/permitting-third-party-call.html">third-party query engine integration</a>.</p></td>
 </tr>
@@ -617,7 +609,8 @@ subject to change and not supported for production environments.</p>
 <p>SEP supports flexible security mapping for lake formation, which associates
 SEP users or groups with AWS security entities like IAM roles according to a
 JSON mappings file. The IAM role for a specific query can be selected from a
-list of allowed roles by providing it as an extra credential.</p>
+list of allowed roles using <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">ROLE</span> <span class="pre">GRANTS</span> <span class="pre">FROM</span> <span class="pre">&lt;catalog&gt;</span></code> and
+<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">"..."</span> <span class="pre">IN</span> <span class="pre">&lt;catalog&gt;</span></code>  sql statements.</p>
 <p>Each security mapping entry may specify one or more match criteria. If multiple
 criteria are specified, all criteria must match. The following match criteria
 are available:</p>
@@ -631,18 +624,14 @@ sales groups in SEP.</p></li>
 <p>Each SEP match criteria can be mapped to one or more of the following AWS
 security entities:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">"iamRole":</span></code> IAM role to use if no user provided role is specified as an extra
-credential. This overrides any globally configured IAM role. This role is
-allowed to be specified as an extra credential, although specifying it
-explicitly has no effect, as it would be used anyway.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"iamRole":</span></code> IAM role to use if no user provided role is specified. This
+overrides any globally configured IAM role.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">"roleSessionName":</span></code> (Optional) Only valid when <code class="docutils literal notranslate"><span class="pre">iamRole</span></code> is specified. If
 <code class="docutils literal notranslate"><span class="pre">roleSessionName</span></code> includes the string <code class="docutils literal notranslate"><span class="pre">${USER}</span></code>, then the <code class="docutils literal notranslate"><span class="pre">${USER}</span></code>
 portion of the string will be replaced with the current session’s username. If
 <code class="docutils literal notranslate"><span class="pre">roleSessionName</span></code> is not specified, it defaults to <code class="docutils literal notranslate"><span class="pre">trino-session</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">"allowedIamRoles":</span></code> Comma-separated list of IAM roles that are allowed to be
-specified as an extra credential. This is useful because a particular AWS
-account may have permissions to use many roles, but a specific user should
-only be allowed to use a subset of those roles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">"allowedIamRoles":</span></code> Comma-separated list of IAM roles that specified
+AWS account users are limited to.</p></li>
 </ul>
 <p>The security mapping entries are processed in the order listed in the
 JSON mapping. More specific mapping entries should thus be specified
@@ -664,6 +653,7 @@ security entities in AWS lake formation:</p>
       <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"bob|charlie"</span><span class="p">,</span>
       <span class="nt">"iamRole"</span><span class="p">:</span> <span class="s2">"arn:aws:iam::123456789101:role/test_default"</span><span class="p">,</span>
       <span class="nt">"allowedIamRoles"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"arn:aws:iam::123456789101:role/test_default"</span>
         <span class="s2">"arn:aws:iam::123456789101:role/test1"</span><span class="p">,</span>
         <span class="s2">"arn:aws:iam::123456789101:role/test2"</span><span class="p">,</span>
         <span class="s2">"arn:aws:iam::123456789101:role/test3"</span>
@@ -702,33 +692,18 @@ security entities in AWS lake formation:</p>
 <td><p>Path and filename of the JSON mapping file, or REST-endpoint URI
 containing security mappings.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.security-mapping.iam-role-credential-name</span></code></p></td>
-<td><p>The name of the extra credential used to provide the IAM role.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.security-mapping.refresh-period</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.security-mapping.refresh-period</span></code></p></td>
 <td><p>How often to refresh the security mapping configuration. For example, use
 <code class="docutils literal notranslate"><span class="pre">5min</span></code> to direct SEP to refresh security mappings every 5 minutes
 against the JSON mapping.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">lake-formation.security-mapping.colon-replacement</span></code></p></td>
-<td><p>This property is for use in shells that do not handle the colon properly.
-It is otherwise not required. When defined, the character or characters
-are used in place of the colon (<code class="docutils literal notranslate"><span class="pre">:</span></code>) character in IAM role names used as
-an extra credential. Do not use quotes to enclose the replacement string.
-Any instances of this replacement string in the extra credential value are
-converted to a colon. Choose a value that is not used in any of your
-IAM ARNs, for example <code class="docutils literal notranslate"><span class="pre">%colon%</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 <p>The following example shows the lake formation security mapping configuration
 properties:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">lake-formation.role-credential</span><span class="o">=</span><span class="s">aws_role</span>
-<span class="na">lake-formation.authorized-caller-tag</span><span class="o">=</span><span class="s">starburst-enterprise</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">lake-formation.authorized-caller-tag</span><span class="o">=</span><span class="s">starburst-enterprise</span>
 <span class="na">lake-formation.security-mapping.config-file</span><span class="o">=</span><span class="s">etc/example-lake-formation-security-mapping.json</span>
-<span class="na">lake-formation.security-mapping.iam-role-credential-name</span><span class="o">=</span><span class="s">Example_Role_Credential_Name</span>
 <span class="na">lake-formation.security-mapping.refresh-period</span><span class="o">=</span><span class="s">5m</span>
-<span class="na">lake-formation.security-mapping.colon-replacement</span><span class="o">=</span><span class="s">%colon%</span>
 </pre></div>
 </div>
 </section>
@@ -750,6 +725,20 @@ property.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">glue:GetDatabases</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTables</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTable</span></code> AWS Glue API
 permissions must be granted for the <code class="docutils literal notranslate"><span class="pre">user</span></code> role.</p></li>
 </ul>
+</section>
+<section id="listing-and-selecting-available-user-roles">
+<h3 id="listing-and-selecting-available-user-roles">Listing and selecting available user roles<a class="headerlink" href="#listing-and-selecting-available-user-roles" title="Permalink to this heading">#</a></h3>
+<p>The following SQL statements are available to list and set roles:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">ROLE</span> <span class="pre">GRANTS</span> <span class="pre">FROM</span> <span class="pre">&lt;catalog_name&gt;</span></code> - Lists AWS roles available to the
+user in a catalog protected by lake formation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CURRENT</span> <span class="pre">ROLES</span> <span class="pre">IN</span> <span class="pre">&lt;catalog_name&gt;</span></code> - Returns currently enabled roles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">"arn:iam::..."</span> <span class="pre">IN</span> <span class="pre">&lt;catalog_name&gt;</span></code> - Selects a specific role.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">NONE</span> <span class="pre">IN</span> <span class="pre">&lt;catalog_name&gt;</span></code> - Causes the role to default to the role
+defined by <code class="docutils literal notranslate"><span class="pre">iamRole</span></code> in the security mapping configuration, if its set.</p></li>
+</ul>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">roles=&lt;catalog_name&gt;:arn:iam::...</span></code> connection property to select
+specific role for a jdbc connection.</p>
 </section>
 </section>
 <section id="caching">
