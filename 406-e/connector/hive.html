@@ -1132,11 +1132,22 @@ definition. The equivalent catalog session property is
 <code class="docutils literal notranslate"><span class="pre">parquet_use_column_names</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.max-read-block-row-count</span></code></p></td>
+<td><p>Sets the maximum number of rows read in a batch.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8192</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
 <td><p>Whether batched column readers should be used when reading Parquet files
 for improved performance. Set this property to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable the
 optimized parquet reader by default. The equivalent catalog session
 property is <code class="docutils literal notranslate"><span class="pre">parquet_optimized_reader_enabled</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.use-bloom-filter</span></code></p></td>
+<td><p>Whether bloom filters are used for predicate pushdown when reading
+Parquet files. Set this property to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable the usage of
+bloom filters by default. The equivalent catalog session property is
+<code class="docutils literal notranslate"><span class="pre">parquet_use_bloom_filter</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-writer.enabled</span></code></p></td>
@@ -1488,9 +1499,9 @@ can be used to accustom tables with different table formats.
 Therefore, a metastore database can hold a variety of tables with different table formats.</p>
 <p>As a concrete example, let’s use the following
 simple scenario which makes use of table redirection:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
 
-<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">mytable</span><span class="p">;</span>
+<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -1499,15 +1510,15 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
 <p>The output of the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> statement points out the actual
-catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">mytable</span></code>.</p>
+catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code>.</p>
 <p>The table redirection functionality works also when using
 fully qualified names for the tables:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">mytable</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">.</span><span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -1516,7 +1527,7 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
@@ -1547,10 +1558,11 @@ Fragment 0 [SOURCE]
 </li>
 </ul>
 <p>Trino does not offer view redirection support.</p>
-<p>The connector supports redirection from Hive tables to Iceberg
+<p>The connector supports redirection from Hive tables to Iceberg, Hudi
 and Delta Lake tables with the following catalog configuration properties:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hive.iceberg-catalog-name</span></code> for redirecting the query to <a class="reference internal" href="iceberg.html"><span class="doc">Iceberg connector</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.hudi-catalog-name</span></code> for redirecting the query to <a class="reference internal" href="hudi.html"><span class="doc">Hudi connector</span></a></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">hive.delta-lake-catalog-name</span></code> for redirecting the query to <a class="reference internal" href="delta-lake.html"><span class="doc">Delta Lake connector</span></a></p></li>
 </ul>
 </section>

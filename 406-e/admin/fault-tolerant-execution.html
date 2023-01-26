@@ -524,6 +524,8 @@
         </li>
         <li class="md-nav__item"><a href="#google-cloud-storage" class="md-nav__link">Google Cloud Storage</a>
         </li>
+        <li class="md-nav__item"><a href="#hdfs" class="md-nav__link">HDFS</a>
+        </li>
         <li class="md-nav__item"><a href="#local-filesystem-storage" class="md-nav__link">Local filesystem storage</a>
         </li></ul>
             </nav>
@@ -642,7 +644,7 @@ entire queries or a query’s individual tasks in the event of failure.</p>
 <section id="query">
 <h3 id="query">QUERY<a class="headerlink" href="#query" title="Permalink to this heading">#</a></h3>
 <p>A <code class="docutils literal notranslate"><span class="pre">QUERY</span></code> retry policy instructs Trino to automatically retry a query in the
-event of an error occurring on a worker node. A <code class="docutils literal notranslate"><span class="pre">QUERY</span></code> retry policy is
+event of an error occuring on a worker node. A <code class="docutils literal notranslate"><span class="pre">QUERY</span></code> retry policy is
 recommended when the majority of the Trino cluster’s workload consists of many
 small queries, or if an <a class="reference internal" href="#fte-exchange-manager"><span class="std std-ref">exchange manager</span></a> is not
 configured.</p>
@@ -918,13 +920,14 @@ per stage, before pausing scheduling for other tasks from this stage.</p></td>
 <span id="fte-exchange-manager"></span><h2 id="exchange-manager">Exchange manager<a class="headerlink" href="#exchange-manager" title="Permalink to this heading">#</a></h2>
 <p>Exchange spooling is responsible for storing and managing spooled data for
 fault-tolerant execution. You can configure a filesystem-based exchange manager
-that stores spooled data in a specified location, such as <a class="reference internal" href="#fte-exchange-aws-s3"><span class="std std-ref">AWS S3</span></a> and S3-compatible systems, <a class="reference internal" href="#fte-exchange-azure-blob"><span class="std std-ref">Azure Blob Storage</span></a>, or <a class="reference internal" href="#fte-exchange-gcs"><span class="std std-ref">Google Cloud Storage</span></a>.</p>
+that stores spooled data in a specified location, such as <a class="reference internal" href="#fte-exchange-aws-s3"><span class="std std-ref">AWS S3</span></a> and S3-compatible systems, <a class="reference internal" href="#fte-exchange-azure-blob"><span class="std std-ref">Azure Blob Storage</span></a>, <a class="reference internal" href="#fte-exchange-gcs"><span class="std std-ref">Google Cloud Storage</span></a>,
+or <a class="reference internal" href="#fte-exchange-hdfs"><span class="std std-ref">HDFS</span></a>.</p>
 <section id="id1">
 <h3 id="id1">Configuration<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
 <p>To configure an exchange manager, create a new
 <code class="docutils literal notranslate"><span class="pre">etc/exchange-manager.properties</span></code> configuration file on the coordinator and
 all worker nodes. In this file, set the <code class="docutils literal notranslate"><span class="pre">exchange-manager.name</span></code> configuration
-propertry to <code class="docutils literal notranslate"><span class="pre">filesystem</span></code>, and additional configuration properties as needed
+property to <code class="docutils literal notranslate"><span class="pre">filesystem</span></code> or <code class="docutils literal notranslate"><span class="pre">hdfs</span></code>, and set additional configuration properties as needed
 for your storage solution.</p>
 <p>The following table lists the available configuration properties for
 <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code>, their default values, and which filesystem(s)
@@ -947,7 +950,7 @@ the property may be configured for:</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.base-directories</span></code></p></td>
 <td><p>Comma-separated list of URI locations that the exchange manager uses to
-store spooling data. Only supports S3 and local filesystems.</p></td>
+store spooling data.</p></td>
 <td></td>
 <td><p>Any</p></td>
 </tr>
@@ -1055,6 +1058,17 @@ retry a request.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
 <td><p>Azure Blob Storage</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">exchange.hdfs.block-size</span></code></p></td>
+<td><p>Block size for HDFS storage.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4MB</span></code></p></td>
+<td><p>HDFS</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hdfs.config.resources</span></code></p></td>
+<td><p>Comma-separated list of paths to HDFS configuration files, for example <code class="docutils literal notranslate"><span class="pre">/etc/hdfs-site.xml</span></code>.
+The files must exist on all nodes in the Trino cluster.</p></td>
+<td></td>
+<td><p>HDFS</p></td>
+</tr>
 </tbody>
 </table>
 <p>It is recommended to set the <code class="docutils literal notranslate"><span class="pre">exchange.compression-enabled</span></code> property to
@@ -1113,6 +1127,16 @@ GCS bucket as the spooling storage destination.</p>
 <span class="na">exchange.s3.aws-secret-key</span><span class="o">=</span><span class="s">example-secret-key</span>
 <span class="na">exchange.s3.endpoint</span><span class="o">=</span><span class="s">https://storage.googleapis.com</span>
 <span class="na">exchange.gcs.json-key-file-path</span><span class="o">=</span><span class="s">/path/to/gcs_keyfile.json</span>
+</pre></div>
+</div>
+</section>
+<section id="hdfs">
+<span id="fte-exchange-hdfs"></span><h4 id="hdfs">HDFS<a class="headerlink" href="#hdfs" title="Permalink to this heading">#</a></h4>
+<p>The following <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code> configuration example specifies HDFS
+as the spooling storage destination.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">exchange-manager.name</span><span class="o">=</span><span class="s">hdfs</span>
+<span class="na">exchange.base-directories</span><span class="o">=</span><span class="s">hadoop-master:9000/exchange-spooling-directory</span>
+<span class="na">hdfs.config.resources</span><span class="o">=</span><span class="s">/usr/lib/hadoop/etc/hadoop/core-site.xml</span>
 </pre></div>
 </div>
 </section>

@@ -495,6 +495,8 @@
         </li>
         <li class="md-nav__item"><a href="#rest-catalog" class="md-nav__link">REST catalog</a>
         </li>
+        <li class="md-nav__item"><a href="#jdbc-catalog" class="md-nav__link">JDBC catalog</a>
+        </li>
         <li class="md-nav__item"><a href="#general-configuration" class="md-nav__link">General configuration</a>
         </li>
         <li class="md-nav__item"><a href="#orc-format-configuration" class="md-nav__link">ORC format configuration</a>
@@ -649,7 +651,7 @@ metastore access with the Thrift protocol defaults to using port 9083.</p></li>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
 <p>The connector supports multiple Iceberg catalog types, you may use either a Hive
 metastore service (HMS), AWS Glue, or a REST catalog. The catalog type is determined by the
-<code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type</span></code> property, it can be set to <code class="docutils literal notranslate"><span class="pre">HIVE_METASTORE</span></code>, <code class="docutils literal notranslate"><span class="pre">GLUE</span></code>, or <code class="docutils literal notranslate"><span class="pre">REST</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type</span></code> property, it can be set to <code class="docutils literal notranslate"><span class="pre">HIVE_METASTORE</span></code>, <code class="docutils literal notranslate"><span class="pre">GLUE</span></code>, <code class="docutils literal notranslate"><span class="pre">JDBC</span></code>, or <code class="docutils literal notranslate"><span class="pre">REST</span></code>.</p>
 <section id="hive-metastore-catalog">
 <span id="iceberg-hive-catalog"></span><h3 id="hive-metastore-catalog">Hive metastore catalog<a class="headerlink" href="#hive-metastore-catalog" title="Permalink to this heading">#</a></h3>
 <p>The Hive metastore catalog is the default implementation.
@@ -673,7 +675,7 @@ iceberg.catalog.type=glue
 </div>
 </section>
 <section id="rest-catalog">
-<h3 id="rest-catalog">REST catalog<a class="headerlink" href="#rest-catalog" title="Permalink to this heading">#</a></h3>
+<span id="iceberg-rest-catalog"></span><h3 id="rest-catalog">REST catalog<a class="headerlink" href="#rest-catalog" title="Permalink to this heading">#</a></h3>
 <p>In order to use the Iceberg REST catalog, ensure to configure the catalog type with
 <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=rest</span></code> and provide further details with the following
 properties:</p>
@@ -718,6 +720,24 @@ Example: <code class="docutils literal notranslate"><span class="pre">AbCdEf1234
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=iceberg
 iceberg.catalog.type=rest
 iceberg.rest-catalog.uri=http://iceberg-with-rest:8181
+</pre></div>
+</div>
+</section>
+<section id="jdbc-catalog">
+<span id="iceberg-jdbc-catalog"></span><h3 id="jdbc-catalog">JDBC catalog<a class="headerlink" href="#jdbc-catalog" title="Permalink to this heading">#</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The JDBC catalog may face the compatibility issue if Iceberg introduces breaking changes in the future.
+Consider the <a class="reference internal" href="#iceberg-rest-catalog"><span class="std std-ref">REST catalog</span></a> as an alternative solution.</p>
+</div>
+<p>At a minimum, <code class="docutils literal notranslate"><span class="pre">iceberg.jdbc-catalog.connection-url</span></code> and
+<code class="docutils literal notranslate"><span class="pre">iceberg.jdbc-catalog.catalog-name</span></code> must be configured.
+When using any database besides PostgreSQL, a JDBC driver jar file must be placed in the plugin directory.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=iceberg
+iceberg.catalog.type=jdbc
+iceberg.jdbc-catalog.catalog-name=test
+iceberg.jdbc-catalog.connection-url=jdbc:postgresql://example.net:5432/database?user=admin&amp;password=test
+iceberg.jdbc-catalog.default-warehouse-dir=s3://bucket
 </pre></div>
 </div>
 </section>
@@ -869,7 +889,11 @@ with Parquet files performed by the Iceberg connector.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.max-read-block-row-count</span></code></p></td>
+<td><p>Sets the maximum number of rows read in a batch.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8192</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
 <td><p>Whether batched column readers should be used when reading Parquet files
 for improved performance. Set this property to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable the
 optimized parquet reader by default. The equivalent catalog session
@@ -930,9 +954,9 @@ can be used to accustom tables with different table formats.
 Therefore, a metastore database can hold a variety of tables with different table formats.</p>
 <p>As a concrete example, let’s use the following
 simple scenario which makes use of table redirection:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
 
-<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">mytable</span><span class="p">;</span>
+<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -941,15 +965,15 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
 <p>The output of the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> statement points out the actual
-catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">mytable</span></code>.</p>
+catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code>.</p>
 <p>The table redirection functionality works also when using
 fully qualified names for the tables:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">mytable</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">.</span><span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -958,7 +982,7 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
@@ -1030,22 +1054,22 @@ a specified location.</p>
 <code class="docutils literal notranslate"><span class="pre">location</span></code> set in <a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a> statement, are located in a
 subdirectory under the directory corresponding to the schema location.</p>
 <p>Create a schema on S3:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">my_s3_schema</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_s3_schema</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path/'</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Create a schema on a S3 compatible object storage such as MinIO:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">my_s3a_schema</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_s3a_schema</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3a://my-bucket/a/path/'</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Create a schema on HDFS:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">my_hdfs_schema</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_hdfs_schema</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span><span class="o">=</span><span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/a/path/'</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Optionally, on HDFS, the location can be omitted:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">my_hdfs_schema</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_hdfs_schema</span><span class="p">;</span>
 </pre></div>
 </div>
 </section>
@@ -1054,7 +1078,7 @@ subdirectory under the directory corresponding to the schema location.</p>
 <p>The Iceberg connector supports creating tables using the <a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE
 TABLE</span></a> syntax. Optionally specify the
 <a class="reference internal" href="#iceberg-table-properties"><span class="std std-ref">table properties</span></a> supported by this connector:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">my_table</span> <span class="p">(</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example_table</span> <span class="p">(</span>
     <span class="n">c1</span> <span class="nb">integer</span><span class="p">,</span>
     <span class="n">c2</span> <span class="nb">date</span><span class="p">,</span>
     <span class="n">c3</span> <span class="n">double</span>
@@ -1101,7 +1125,7 @@ is with <a class="reference internal" href="../sql/values.html"><span class="doc
 <p>The Iceberg connector supports setting <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code> constraints on the table columns.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code> constraint can be set on the columns, while creating tables by
 using the <a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a> syntax:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">my_table</span> <span class="p">(</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example_table</span> <span class="p">(</span>
     <span class="k">year</span> <span class="nb">INTEGER</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
     <span class="n">name</span> <span class="nb">VARCHAR</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
     <span class="n">age</span> <span class="nb">INTEGER</span><span class="p">,</span>
@@ -1237,7 +1261,7 @@ partitions if the <code class="docutils literal notranslate"><span class="pre">W
 partitioning columns, that can match entire partitions. Given the table definition
 from <a class="reference internal" href="#iceberg-tables"><span class="std std-ref">Partitioned Tables</span></a> section,
 the following SQL statement deletes all partitions for which <code class="docutils literal notranslate"><span class="pre">country</span></code> is <code class="docutils literal notranslate"><span class="pre">US</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DELETE</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span>
 <span class="k">WHERE</span> <span class="n">country</span> <span class="o">=</span> <span class="s1">'US'</span>
 </pre></div>
 </div>
@@ -1452,7 +1476,7 @@ partition value is an integer hash of <code class="docutils literal notranslate"
 </table>
 <p>In this example, the table is partitioned by the month of <code class="docutils literal notranslate"><span class="pre">order_date</span></code>, a hash of
 <code class="docutils literal notranslate"><span class="pre">account_number</span></code> (with 10 buckets), and <code class="docutils literal notranslate"><span class="pre">country</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="p">(</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="p">(</span>
     <span class="n">order_id</span> <span class="nb">BIGINT</span><span class="p">,</span>
     <span class="n">order_date</span> <span class="nb">DATE</span><span class="p">,</span>
     <span class="n">account_number</span> <span class="nb">BIGINT</span><span class="p">,</span>
@@ -1471,12 +1495,12 @@ Iceberg table. Snapshots are identified by <code class="docutils literal notrans
 For example, you could find the snapshot IDs for the <code class="docutils literal notranslate"><span class="pre">customer_orders</span></code> table
 by running the following query:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">snapshot_id</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="ss">"customer_orders$snapshots"</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="ss">"customer_orders$snapshots"</span>
 <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">committed_at</span> <span class="k">DESC</span>
 </pre></div>
 </div>
 <section id="time-travel-queries">
-<h3 id="time-travel-queries">Time travel queries<a class="headerlink" href="#time-travel-queries" title="Permalink to this heading">#</a></h3>
+<span id="iceberg-time-travel"></span><h3 id="time-travel-queries">Time travel queries<a class="headerlink" href="#time-travel-queries" title="Permalink to this heading">#</a></h3>
 <p>The connector offers the ability to query historical data.
 This allows you to query the table as it was when a previous snapshot
 of the table was taken, even if the data has since been modified or deleted.</p>
@@ -1484,7 +1508,7 @@ of the table was taken, even if the data has since been modified or deleted.</p>
 snapshot identifier corresponding to the version of the table that
 needs to be retrieved:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">FOR</span> <span class="k">VERSION</span> <span class="k">AS</span> <span class="k">OF</span> <span class="mi">8954597067493422955</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">FOR</span> <span class="k">VERSION</span> <span class="k">AS</span> <span class="k">OF</span> <span class="mi">8954597067493422955</span>
 </pre></div>
 </div>
 <p>A different approach of retrieving historical data is to specify
@@ -1492,7 +1516,7 @@ a point in time in the past, such as a day or week ago. The latest snapshot
 of the table taken before or at the specified timestamp in the query is
 internally used for providing the previous state of the table:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">FOR</span> <span class="k">TIMESTAMP</span> <span class="k">AS</span> <span class="k">OF</span> <span class="k">TIMESTAMP</span> <span class="s1">'2022-03-23 09:59:29.803 Europe/Vienna'</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">FOR</span> <span class="k">TIMESTAMP</span> <span class="k">AS</span> <span class="k">OF</span> <span class="k">TIMESTAMP</span> <span class="s1">'2022-03-23 09:59:29.803 Europe/Vienna'</span>
 </pre></div>
 </div>
 </section>
@@ -1500,13 +1524,13 @@ internally used for providing the previous state of the table:</p>
 <h3 id="id2">Rolling back to a previous snapshot<a class="headerlink" href="#id2" title="Permalink to this heading">#</a></h3>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">$snapshots</span></code> metadata table to determine the latest snapshot ID of the table like in the following query:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">snapshot_id</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="ss">"customer_orders$snapshots"</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="ss">"customer_orders$snapshots"</span>
 <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">committed_at</span> <span class="k">DESC</span> <span class="k">LIMIT</span> <span class="mi">1</span>
 </pre></div>
 </div>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.rollback_to_snapshot</span></code> allows the caller to roll back
 the state of the table to a previous snapshot id:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">iceberg</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">rollback_to_snapshot</span><span class="p">(</span><span class="s1">'testdb'</span><span class="p">,</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="mi">8954597067493422955</span><span class="p">)</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">rollback_to_snapshot</span><span class="p">(</span><span class="s1">'testdb'</span><span class="p">,</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="mi">8954597067493422955</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1524,14 +1548,14 @@ query data created before the partitioning change.</p>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.register_table</span></code> allows the caller to register an
 existing Iceberg table in the metastore, using its existing metadata and data
 files:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">iceberg</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders-581fad8517934af6be1857a903559d44'</span><span class="p">)</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders-581fad8517934af6be1857a903559d44'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>In addition, you can provide a file name to register a table
 with specific metadata. This may be used to register the table with
 some specific table state, or may be necessary if the connector cannot
 automatically figure out the metadata version to use:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">iceberg</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders-581fad8517934af6be1857a903559d44'</span><span class="p">,</span> <span class="n">metadata_file_name</span> <span class="o">=&gt;</span> <span class="s1">'00003-409702ba-4735-4645-8f14-09537cc0b2c8.metadata.json'</span><span class="p">)</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders-581fad8517934af6be1857a903559d44'</span><span class="p">,</span> <span class="n">metadata_file_name</span> <span class="o">=&gt;</span> <span class="s1">'00003-409702ba-4735-4645-8f14-09537cc0b2c8.metadata.json'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To prevent unauthorized users from accessing data, this procedure is disabled by default.
@@ -1558,7 +1582,7 @@ the Iceberg API or Apache Spark.</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></td>
 <td><p>Optionally specifies the format of table data files;
-either <code class="docutils literal notranslate"><span class="pre">PARQUET</span></code>, <code class="docutils literal notranslate"><span class="pre">ORC</span></code> or <code class="docutils literal notranslate"><span class="pre">AVRO`</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.</p></td>
+either <code class="docutils literal notranslate"><span class="pre">PARQUET</span></code>, <code class="docutils literal notranslate"><span class="pre">ORC</span></code> or <code class="docutils literal notranslate"><span class="pre">AVRO</span></code>.  Defaults to <code class="docutils literal notranslate"><span class="pre">ORC</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">partitioning</span></code></p></td>
 <td><p>Optionally specifies table partitioning.
@@ -1590,7 +1614,7 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">0.05</s
 </tbody>
 </table>
 <p>The table definition below specifies format Parquet, partitioning by columns <code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>,
-and a file system location of <code class="docutils literal notranslate"><span class="pre">/var/my_tables/test_table</span></code>:</p>
+and a file system location of <code class="docutils literal notranslate"><span class="pre">/var/example_tables/test_table</span></code>:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="p">(</span>
     <span class="n">c1</span> <span class="nb">integer</span><span class="p">,</span>
     <span class="n">c2</span> <span class="nb">date</span><span class="p">,</span>
@@ -1598,18 +1622,18 @@ and a file system location of <code class="docutils literal notranslate"><span c
 <span class="k">WITH</span> <span class="p">(</span>
     <span class="n">format</span> <span class="o">=</span> <span class="s1">'PARQUET'</span><span class="p">,</span>
     <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
-    <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/my_tables/test_table'</span><span class="p">)</span>
+    <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/example_tables/test_table'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The table definition below specifies format ORC, bloom filter index by columns <code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>,
-fpp is 0.05, and a file system location of <code class="docutils literal notranslate"><span class="pre">/var/my_tables/test_table</span></code>:</p>
+fpp is 0.05, and a file system location of <code class="docutils literal notranslate"><span class="pre">/var/example_tables/test_table</span></code>:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="p">(</span>
     <span class="n">c1</span> <span class="nb">integer</span><span class="p">,</span>
     <span class="n">c2</span> <span class="nb">date</span><span class="p">,</span>
     <span class="n">c3</span> <span class="n">double</span><span class="p">)</span>
 <span class="k">WITH</span> <span class="p">(</span>
     <span class="n">format</span> <span class="o">=</span> <span class="s1">'ORC'</span><span class="p">,</span>
-    <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/my_tables/test_table'</span><span class="p">,</span>
+    <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/example_tables/test_table'</span><span class="p">,</span>
     <span class="n">orc_bloom_filter_columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
     <span class="n">orc_bloom_filter_fpp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">05</span><span class="p">)</span>
 </pre></div>
@@ -1627,18 +1651,18 @@ path metadata as a hidden column in each table:</p>
 can be selected directly, or used in conditional statements. For example, you
 can inspect the file path for each record:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span><span class="p">,</span> <span class="ss">"$path"</span><span class="p">,</span> <span class="ss">"$file_modified_time"</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span><span class="p">;</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>Retrieve all records that belong to a specific file using <code class="docutils literal notranslate"><span class="pre">"$path"</span></code> filter:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
 <span class="k">WHERE</span> <span class="ss">"$path"</span> <span class="o">=</span> <span class="s1">'/usr/iceberg/table/web.page_views/data/file_01.parquet'</span>
 </pre></div>
 </div>
 <p>Retrieve all records that belong to a specific file using <code class="docutils literal notranslate"><span class="pre">"$file_modified_time"</span></code> filter:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
-<span class="k">FROM</span> <span class="n">iceberg</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
 <span class="k">WHERE</span> <span class="ss">"$file_modified_time"</span> <span class="o">=</span> <span class="k">CAST</span><span class="p">(</span><span class="s1">'2022-07-01 01:02:03.456 UTC'</span> <span class="k">AS</span> <span class="k">timestamp</span> <span class="k">with</span> <span class="n">time</span> <span class="k">zone</span><span class="p">)</span>
 </pre></div>
 </div>

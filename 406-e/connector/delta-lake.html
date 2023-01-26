@@ -580,8 +580,8 @@ metastore configuration properties as the <a class="reference internal" href="hi
 <p>The connector recognizes Delta tables created in the metastore by the Databricks
 runtime. If non-Delta tables are present in the metastore, as well, they are not
 visible to the connector.</p>
-<p>To configure the Delta Lake connector, create a catalog properties file, for
-example <code class="docutils literal notranslate"><span class="pre">etc/catalog/delta.properties</span></code>, that references the <code class="docutils literal notranslate"><span class="pre">delta-lake</span></code>
+<p>To configure the Delta Lake connector, create a catalog properties file
+<code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code> that references the <code class="docutils literal notranslate"><span class="pre">delta-lake</span></code>
 connector. Update the <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> with the URI of your Hive metastore
 Thrift service:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">delta-lake</span>
@@ -795,13 +795,17 @@ can also use the corresponding catalog session property
 on tables with small files. A higher value may improve performance for queries with highly skewed aggregations or joins.</p></td>
 <td><p>0.05</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-writer.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.max-read-block-row-count</span></code></p></td>
+<td><p>Sets the maximum number of rows read in a batch.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8192</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-writer.enabled</span></code></p></td>
 <td><p>Whether the optimized writer should be used when writing Parquet files.
 The equivalent catalog session property is
 <code class="docutils literal notranslate"><span class="pre">parquet_optimized_writer_enabled</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet.optimized-reader.enabled</span></code></p></td>
 <td><p>Whether batched column readers should be used when reading Parquet files
 for improved performance. Set this property to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable the
 optimized parquet reader by default. The equivalent catalog session
@@ -1046,9 +1050,9 @@ can be used to accustom tables with different table formats.
 Therefore, a metastore database can hold a variety of tables with different table formats.</p>
 <p>As a concrete example, let’s use the following
 simple scenario which makes use of table redirection:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
 
-<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">mytable</span><span class="p">;</span>
+<span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -1057,15 +1061,15 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
 <p>The output of the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> statement points out the actual
-catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">mytable</span></code>.</p>
+catalog which is handling the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code>.</p>
 <p>The table redirection functionality works also when using
 fully qualified names for the tables:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">a</span><span class="o">-</span><span class="k">catalog</span><span class="p">.</span><span class="n">myschema</span><span class="p">.</span><span class="n">mytable</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">.</span><span class="n">example_table</span><span class="p">;</span>
 </pre></div>
 </div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
@@ -1074,7 +1078,7 @@ Fragment 0 [SOURCE]
      ...
      Output[columnNames = [...]]
      │   ...
-     └─ TableScan[table = another-catalog:myschema:mytable]
+     └─ TableScan[table = another_catalog:example_schema:example_table]
             ...
 </pre></div>
 </div>
@@ -1188,14 +1192,14 @@ a specified location.</p>
 <code class="docutils literal notranslate"><span class="pre">location</span></code> schema property. Tables in this schema are located in a
 subdirectory under the schema location. Data files for tables in this schema
 using the default location are cleaned up if the table is dropped:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">delta</span><span class="p">.</span><span class="n">my_schema</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Optionally, the location can be omitted. Tables in this schema must have a
 location included when you create them. The data files for these tables are not
 removed if the table is dropped:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">delta</span><span class="p">.</span><span class="n">my_schema</span><span class="p">;</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
 </pre></div>
 </div>
 </section>
@@ -1203,7 +1207,7 @@ removed if the table is dropped:</p>
 <span id="delta-lake-create-table"></span><h3 id="creating-tables">Creating tables<a class="headerlink" href="#creating-tables" title="Permalink to this heading">#</a></h3>
 <p>When Delta tables exist in storage, but not in the metastore, Trino can be used
 to register them:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">delta</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">my_table</span> <span class="p">(</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">example_table</span> <span class="p">(</span>
   <span class="n">dummy</span> <span class="nb">bigint</span>
 <span class="p">)</span>
 <span class="k">WITH</span> <span class="p">(</span>
@@ -1225,7 +1229,7 @@ config property or <code class="docutils literal notranslate"><span class="pre">
 <p>If the specified location does not already contain a Delta table, the connector
 automatically writes the initial transaction log entries and registers the table
 in the metastore. As a result, any Databricks engine can write to the table:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">delta</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">new_table</span> <span class="p">(</span><span class="n">id</span> <span class="nb">bigint</span><span class="p">,</span> <span class="n">address</span> <span class="nb">varchar</span><span class="p">);</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">new_table</span> <span class="p">(</span><span class="n">id</span> <span class="nb">bigint</span><span class="p">,</span> <span class="n">address</span> <span class="nb">varchar</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>The Delta Lake connector also supports creating tables using the <a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE
@@ -1255,7 +1259,7 @@ TABLE AS</span></a> syntax.</p>
 </tbody>
 </table>
 <p>The following example uses all three table properties:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">delta</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">my_partitioned_table</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">example_partitioned_table</span>
 <span class="k">WITH</span> <span class="p">(</span>
   <span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">,</span>
   <span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
@@ -1270,7 +1274,7 @@ TABLE AS</span></a> syntax.</p>
 <p>The connector can register table into the metastore with existing transaction logs and data files.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">system.register_table</span></code> procedure allows the caller to register an existing delta lake
 table in the metastore, using its existing transaction logs and data files:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">delta</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">)</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">register_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">table_location</span> <span class="o">=&gt;</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>To prevent unauthorized users from accessing data, this procedure is disabled by default.
@@ -1331,7 +1335,7 @@ statements on every large table that is frequently queried.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">files_modified_after</span></code> property is useful if you want to run the
 <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> statement on a table that was previously analyzed. You can use it to
 limit the amount of data used to generate the table statistics:</p>
-<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">my_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">files_modified_after</span> <span class="o">=</span> <span class="k">TIMESTAMP</span> <span class="s1">'2021-08-23</span>
+<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">example_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">files_modified_after</span> <span class="o">=</span> <span class="k">TIMESTAMP</span> <span class="s1">'2021-08-23</span>
 <span class="s1">16:43:01.321 Z'</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1339,7 +1343,7 @@ limit the amount of data used to generate the table statistics:</p>
 analysis.</p>
 <p>You can also specify a set or subset of columns to analyze using the <code class="docutils literal notranslate"><span class="pre">columns</span></code>
 property:</p>
-<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">my_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'nationkey'</span><span class="p">,</span> <span class="s1">'regionkey'</span><span class="p">])</span>
+<div class="highlight-SQL notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span> <span class="n">example_table</span> <span class="k">WITH</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'nationkey'</span><span class="p">,</span> <span class="s1">'regionkey'</span><span class="p">])</span>
 </pre></div>
 </div>
 <p>To run <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> with <code class="docutils literal notranslate"><span class="pre">columns</span></code> more than once, the next <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> must
@@ -1356,7 +1360,7 @@ does not result in accurate statistics. To correct the statistics you have to
 drop the extended stats and analyze table again.</p>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">system.drop_extended_stats</span></code> procedure in the catalog to drop the
 extended statistics for a specified table in a specified schema:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">delta_catalog</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">drop_extended_stats</span><span class="p">(</span><span class="s1">'my_schema'</span><span class="p">,</span> <span class="s1">'my_table'</span><span class="p">)</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">drop_extended_stats</span><span class="p">(</span><span class="s1">'example_schema'</span><span class="p">,</span> <span class="s1">'example_table'</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -1376,7 +1380,7 @@ current time minus the retention period defined by the <code class="docutils lit
 parameter.</p>
 <p>Users with <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> permissions on a table can run <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code>
 as follows:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CALL mydeltacatalog.system.vacuum<span class="o">(</span><span class="s1">'myschemaname'</span>, <span class="s1">'mytablename'</span>, <span class="s1">'7d'</span><span class="o">)</span><span class="p">;</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CALL example.system.vacuum<span class="o">(</span><span class="s1">'exampleschemaname'</span>, <span class="s1">'exampletablename'</span>, <span class="s1">'7d'</span><span class="o">)</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>All parameters are required, and must be presented in the following order:</p>
