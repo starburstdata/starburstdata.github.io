@@ -1340,29 +1340,23 @@ built into Starburst Galaxy, and is available to all users.</p>
 <p>The following object storage catalogs support Great Lakes connectivity:</p>
 
 <ul>
-  <li><a href="../catalogs/s3.html">Amazon S3</a></li>
-  <li><a href="../catalogs/adls.html">Azure Data Lake Storage</a></li>
-  <li><a href="../catalogs/gcs.html">Google Cloud Storage</a></li>
+  <li><a href="../catalogs/s3.html">Amazon S3 catalogs</a></li>
+  <li><a href="../catalogs/adls.html">Azure Data Lake Storage catalogs</a></li>
+  <li><a href="../catalogs/gcs.html">Google Cloud Storage catalogs</a></li>
 </ul>
 
-<p>This feature lets you read and write tables with the following types in the same
-object storage catalog:</p>
+<p>This feature supports the following table formats:</p>
 
 <ul>
-  <li><a href="#iceberg-type">Iceberg</a> table format</li>
-  <li><a href="#delta-lake-type">Delta Lake</a> table type</li>
-  <li><a href="#hive-type">Hive</a> table type</li>
+  <li><a href="#iceberg-table-format">Iceberg table format</a></li>
+  <li><a href="#delta-lake-table-format">Delta Lake table format</a></li>
+  <li><a href="#hive-table-format">Hive table format</a></li>
+  <li><a href="#hudi-table-format">Hudi table format</a></li>
 </ul>
 
-<p>In addition, the following table type is supported with read-only access:</p>
-
-<ul>
-  <li><a href="#hudi-type">Hudi</a> table type</li>
-</ul>
-
-<p>Any read or write access to existing tables works transparently for all table
-formats. Starburst Galaxy recognizes the type and format of your tables by
-reading the metastore associated with your object storage.</p>
+<p>Any access to existing tables works transparently for all table formats.
+Starburst Galaxy recognizes the format of your tables by reading the metastore
+associated with your object storage.</p>
       <h2 id="specify-default-table-format">
         
         
@@ -1373,7 +1367,7 @@ reading the metastore associated with your object storage.</p>
     
 
 <p>For data consumers who want to read from any object storage file in any
-supported table type, there are no configuration steps or commands.
+supported table format, there are no configuration steps or commands.
 Starburst Galaxy reads each file’s type and format from the object store’s
 associated metadata file.</p>
 
@@ -1387,32 +1381,28 @@ newly created tables, and does not convert any existing tables.</p>
 
 <p>You can also use a SQL statement to specify an individual table’s default format
 when creating that table. With a statement such as <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> or <code class="language-plaintext highlighter-rouge">CREATE
-TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">type</code> parameter with <code class="language-plaintext highlighter-rouge">iceberg</code>, <code class="language-plaintext highlighter-rouge">delta</code>, or <code class="language-plaintext highlighter-rouge">hive</code> as
-its argument. A table created this way can override the catalog’s overall
-default type.</p>
-
-<p>For the Hive and Iceberg types, you can optionally include a <code class="language-plaintext highlighter-rouge">format=</code> parameter
-with arguments as discussed in following sections.</p>
-
-<p>Examples of CREATE SQL statements are in each table type’s subsection.</p>
-      <h2 id="iceberg-type">
+TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">type</code> parameter with <code class="language-plaintext highlighter-rouge">iceberg</code>, <code class="language-plaintext highlighter-rouge">delta</code>, <code class="language-plaintext highlighter-rouge">hive, or
+</code>hudi` as its argument. A table created this way can override the catalog’s
+overall default table format.</p>
+      <h2 id="iceberg-table-format-">
         
         
-          Iceberg type <a href="#iceberg-type" class="titleAnchor">#</a>
+          Iceberg table format <a name="iceberg-table-format"></a> <a href="#iceberg-table-format-" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Apache Iceberg is an open table type for huge analytic datasets.
-Starburst Galaxy allows querying data stored in files written in Iceberg type,
-as defined in the <a href="https://iceberg.apache.org/spec/">Iceberg Table Spec</a>.</p>
+<p>Apache Iceberg is an open table format for huge analytic datasets.
+Starburst Galaxy allows querying data stored in files written in the Iceberg
+format, as defined in the <a href="https://iceberg.apache.org/spec/">Iceberg Table
+Spec</a>.</p>
 
-<p>Iceberg type tables are automatically detected and read based on information
-in the storage environment’s associated metadata file.</p>
+<p>Iceberg tables are automatically detected and read based on information in the
+storage environment’s associated metadata.</p>
 
-<p>To create an Iceberg type table, add <code class="language-plaintext highlighter-rouge">type='iceberg'</code> as a table property
-in your CREATE statement. For example:</p>
+<p>To create an Iceberg table, add <code class="language-plaintext highlighter-rouge">type='iceberg'</code> as a table property in your
+CREATE statement. For example:</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customer</span> <span class="p">(</span>
     <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
@@ -1420,7 +1410,7 @@ in your CREATE statement. For example:</p>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">type</span><span class="o">=</span><span class="s1">'iceberg'</span><span class="p">);</span>
 </code></pre></div></div>
 
-<p>Specify the format of table data files with an additional <code class="language-plaintext highlighter-rouge">format</code> property
+<p>Specify the file format of table data files with an additional <code class="language-plaintext highlighter-rouge">format</code> property
 with value either <code class="language-plaintext highlighter-rouge">parquet</code> or <code class="language-plaintext highlighter-rouge">orc</code>, defaulting to <code class="language-plaintext highlighter-rouge">orc</code>:</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">...</span>
@@ -1456,26 +1446,55 @@ with value either <code class="language-plaintext highlighter-rouge">parquet</co
     </tr>
   </tbody>
 </table>
+      <h3 id="sql-support-">
+        
+        
+          SQL support <a name="iceberg-sql"></a> <a href="#sql-support-" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
 
-<p>For the Iceberg type, only <code class="language-plaintext highlighter-rouge">INSERT</code> and <code class="language-plaintext highlighter-rouge">DELETE</code> by partition is supported.</p>
-      <h2 id="delta-lake-type">
+<p>When using the Iceberg table format with the Great Lakes connectivity, the
+following SQL statements are supported:</p>
+
+<ul>
+  <li><a href="../sql/ref/language/sql-support.html#globally-available-statements">Globally available
+statements</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#read-operations">Read operations</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#write-operations">Write operations</a>
+    <ul>
+      <li><a href="../sql/ref/language/sql-support.html#data-management">Data management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#materialized-view-management">Materialized view management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#schema-and-table-management">Schema and table management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#view-management">View management</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>The following additional considerations apply:</p>
+
+<ul>
+  <li>Only <code class="language-plaintext highlighter-rouge">INSERT</code> and <code class="language-plaintext highlighter-rouge">DELETE</code> by partition is supported.</li>
+</ul>
+      <h2 id="delta-lake-table-format-">
         
         
-          Delta Lake type <a href="#delta-lake-type" class="titleAnchor">#</a>
+          Delta Lake table format <a name="delta-lake-table-format"></a> <a href="#delta-lake-table-format-" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Delta Lake connectivity allows querying data stored in Delta Lake type tables,
+<p>Delta Lake connectivity allows querying data stored in Delta Lake tables,
 including Databricks Delta Lake.</p>
 
-<p>Delta Lake type tables are automatically detected and read based on information
-in the storage environment’s associated metadata file.</p>
+<p>Delta Lake tables are automatically detected and read based on information in
+the storage environment’s associated metadata.</p>
 
-<p>To create a Delta Lake type table, add <code class="language-plaintext highlighter-rouge">type='delta'</code> as a table property
-in your <code class="language-plaintext highlighter-rouge">CREATE</code> statement. There is no <code class="language-plaintext highlighter-rouge">format</code> parameter for Delta Lake, but
-you can append other table properties as required:</p>
+<p>To create a Delta Lake table, add <code class="language-plaintext highlighter-rouge">type='delta'</code> as a table property in your
+<code class="language-plaintext highlighter-rouge">CREATE</code> statement. There is no <code class="language-plaintext highlighter-rouge">format</code> parameter for Delta Lake, but you can
+append other table properties as required:</p>
 
 <table>
   <thead>
@@ -1515,10 +1534,34 @@ you can append other table properties as required:</p>
   <span class="k">SELECT</span> <span class="n">name</span><span class="p">,</span> <span class="k">comment</span><span class="p">,</span> <span class="n">regionkey</span>
   <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
 </code></pre></div></div>
-      <h2 id="hive-type">
+      <h3 id="sql-support--1">
         
         
-          Hive type <a href="#hive-type" class="titleAnchor">#</a>
+          SQL support <a name="delta-lake-sql"></a> <a href="#sql-support--1" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>When using the Delta Lake table format with the Great Lakes connectivity, the
+following SQL statements are supported:</p>
+
+<ul>
+  <li><a href="../sql/ref/language/sql-support.html#globally-available-statements">Globally available
+statements</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#read-operations">Read operations</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#write-operations">Write operations</a>
+    <ul>
+      <li><a href="../sql/ref/language/sql-support.html#data-management">Data management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#schema-and-table-management">Schema and table management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#view-management">View management</a></li>
+    </ul>
+  </li>
+</ul>
+      <h2 id="hive-table-format-">
+        
+        
+          Hive table format <a name="hive-table-format"></a> <a href="#hive-table-format-" class="titleAnchor">#</a>
         
         
       </h2>
@@ -1526,11 +1569,11 @@ you can append other table properties as required:</p>
 
 <p>Hive connectivity allows querying data stored in an Apache Hive data warehouse.</p>
 
-<p>Hive type tables are automatically detected and read based on information
-in the storage environment’s associated metadata file.</p>
+<p>Hive tables are automatically detected and read based on information in the
+storage environment’s associated metadata.</p>
 
-<p>To create a Hive type table, add <code class="language-plaintext highlighter-rouge">type='hive'</code> as a table property in your
-CREATE statement. For example:</p>
+<p>To create a Hive table, add <code class="language-plaintext highlighter-rouge">type='hive'</code> as a table property in your CREATE
+statement. For example:</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">customer</span> <span class="p">(</span>
   <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
@@ -1614,20 +1657,61 @@ example:</p>
   <span class="n">bucket_count</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="p">)</span>
 </code></pre></div></div>
-      <h2 id="hudi-type">
+      <h3 id="sql-support--2">
         
         
-          Hudi type <a href="#hudi-type" class="titleAnchor">#</a>
+          SQL support <a name="hive-sql"></a> <a href="#sql-support--2" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>When using the Hive table format with the Great Lakes connectivity, the
+following SQL statements are supported:</p>
+
+<ul>
+  <li><a href="../sql/ref/language/sql-support.html#globally-available-statements">Globally available
+statements</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#read-operations">Read operations</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#write-operations">Write operations</a>
+    <ul>
+      <li><a href="../sql/ref/language/sql-support.html#data-management">Data management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#schema-and-table-management">Schema and table management</a></li>
+      <li><a href="../sql/ref/language/sql-support.html#view-management">View management</a></li>
+    </ul>
+  </li>
+</ul>
+      <h2 id="hudi-table-format-">
+        
+        
+          Hudi table format <a name="hudi-table-format"></a> <a href="#hudi-table-format-" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Hudi type tables have read only support. Existing tables of type Hudi that are
-detected in a Galaxy-connected object storage location are
-automatically read.</p>
+<p>Hudi tables have read only support. Existing tables of the Hudi format that are
+detected in a Galaxy-connected object storage location are read
+automatically.</p>
 
 <p>Galaxy cannot create new Hudi tables or write to them.</p>
+      <h3 id="sql-support--3">
+        
+        
+          SQL support <a name="hudi-sql"></a> <a href="#sql-support--3" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>When using the Hudi table format with the Great Lakes connectivity, the
+following SQL statements are supported:</p>
+
+<ul>
+  <li><a href="../sql/ref/language/sql-support.html#globally-available-statements">Globally available
+statements</a></li>
+  <li><a href="../sql/ref/language/sql-support.html#read-operations">Read operations</a></li>
+</ul>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -1732,7 +1816,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#iceberg-type">Iceberg type</a></li><li><a href="#delta-lake-type">Delta Lake type</a></li><li><a href="#hive-type">Hive type</a></li><li><a href="#hudi-type">Hudi type</a></li></ul></li></ul>
+          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#iceberg-table-format-">Iceberg table format <a name="iceberg-table-format"></a></a><ul><li><a href="#sql-support-">SQL support <a name="iceberg-sql"></a></a></li></ul></li><li><a href="#delta-lake-table-format-">Delta Lake table format <a name="delta-lake-table-format"></a></a><ul><li><a href="#sql-support--1">SQL support <a name="delta-lake-sql"></a></a></li></ul></li><li><a href="#hive-table-format-">Hive table format <a name="hive-table-format"></a></a><ul><li><a href="#sql-support--2">SQL support <a name="hive-sql"></a></a></li></ul></li><li><a href="#hudi-table-format-">Hudi table format <a name="hudi-table-format"></a></a><ul><li><a href="#sql-support--3">SQL support <a name="hudi-sql"></a></a></li></ul></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
