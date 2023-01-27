@@ -528,7 +528,15 @@
         </li>
         <li class="md-nav__item"><a href="#row-group-count" class="md-nav__link">Row group count</a>
         </li>
-        <li class="md-nav__item"><a href="#create-a-warmup-rule" class="md-nav__link">Create a warmup rule</a>
+        <li class="md-nav__item"><a href="#create-a-warmup-rule" class="md-nav__link">Create a warmup rule</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#column-level-warmup-rule" class="md-nav__link">Column-level warmup rule</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-level-warmup-rule" class="md-nav__link">Table-level warmup rule</a>
+        </li>
+        <li class="md-nav__item"><a href="#warmup-rule-properties" class="md-nav__link">Warmup rule properties</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#get-all-warmup-rules" class="md-nav__link">Get all warmup rules</a>
         </li>
@@ -749,8 +757,8 @@ that include the old catalog name <code class="docutils literal notranslate"><sp
 <h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Permalink to this heading">#</a></h3>
 <p>The following table provides more information about the available catalog
 configuration properties:</p>
-<table id="id4">
-<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -1137,16 +1145,39 @@ and an index.</p>
 </section>
 <section id="create-a-warmup-rule">
 <span id="warmup-rule"></span><h3 id="create-a-warmup-rule">Create a warmup rule<a class="headerlink" href="#create-a-warmup-rule" title="Permalink to this heading">#</a></h3>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint with an HTTP POST and a JSON
-payload to create a new rule for a column of a table in a schema. This forces
-the creation of index and caching data for the column, independent of processed
-queries and the default acceleration.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint with an HTTP POST and a JSON payload
+to create a warmup rule. You can create a warmup rule at the column or table
+level. This forces or prevents the creation of index and caching data for the
+column or table independently of processed queries and the default acceleration.</p>
+<p>If there are warmup rules defined for both a column and its table, the column
+rule takes precedence, unless the priority of the column rule is lower than the
+priority of the table rule.</p>
+<section id="column-level-warmup-rule">
+<span id="warmup-rule-column"></span><h4 id="column-level-warmup-rule">Column-level warmup rule<a class="headerlink" href="#column-level-warmup-rule" title="Permalink to this heading">#</a></h4>
+<p>The following example creates a column-level warmup rule for the <code class="docutils literal notranslate"><span class="pre">int_1</span></code>
+column in the <code class="docutils literal notranslate"><span class="pre">aaa</span></code> table of the <code class="docutils literal notranslate"><span class="pre">tmp</span></code> schema:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST -H <span class="s2">"Content-Type: application/json"</span> http://localhost:8088/warmup/warmup-rule-set <span class="se">\</span>
 -d <span class="s1">'[ { "colNameId": "int_1", "schema": "tmp", "table": "aaa", "warmUpType": "WARM_UP_TYPE_BASIC", "priority": 8, "ttl": "PT720H", "predicates": [ ] } ]'</span>
 </pre></div>
 </div>
-<table id="id5">
-<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<p>Find more details about the JSON payload in the table
+<a class="reference internal" href="#warmup-rule-properties"><span class="std std-ref">Warmup rule properties</span></a>.</p>
+</section>
+<section id="table-level-warmup-rule">
+<span id="warmup-rule-table"></span><h4 id="table-level-warmup-rule">Table-level warmup rule<a class="headerlink" href="#table-level-warmup-rule" title="Permalink to this heading">#</a></h4>
+<p>The following example creates a table-level warmup rule for the <code class="docutils literal notranslate"><span class="pre">aaa</span></code> table of
+the <code class="docutils literal notranslate"><span class="pre">tmp</span></code> schema:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST -H <span class="s2">"Content-Type: application/json"</span> http://localhost:8088/warmup/warmup-rule-set <span class="se">\</span>
+-d <span class="s1">'[ {"column":{"classType":"WildcardColumn","key":"*"},"schema": "tmp","table": "aaa","warmUpType": "WARM_UP_TYPE_BASIC","priority": -1,"ttl": "PT720H","predicates": [ ]} ]'</span>
+</pre></div>
+</div>
+<p>Find more details about the JSON payload in the table
+<a class="reference internal" href="#warmup-rule-properties"><span class="std std-ref">Warmup rule properties</span></a>.</p>
+</section>
+<section id="warmup-rule-properties">
+<span id="id1"></span><h4 id="warmup-rule-properties">Warmup rule properties<a class="headerlink" href="#warmup-rule-properties" title="Permalink to this heading">#</a></h4>
+<table id="id6">
+<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -1160,36 +1191,43 @@ queries and the default acceleration.</p>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">colNameid</span></code></p></td>
 <td><p>Name of the column to which a warmup rule is attached.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">schema</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">column</span></code></p></td>
+<td><p>Defines the columns to accelerate in a table-level rule. Specify all
+columns by using <code class="docutils literal notranslate"><span class="pre">classType</span></code> set to <code class="docutils literal notranslate"><span class="pre">WildcardColumn</span></code> and <code class="docutils literal notranslate"><span class="pre">key</span></code> to
+<code class="docutils literal notranslate"><span class="pre">*</span></code> as used in <a class="reference internal" href="#warmup-rule-table"><span class="std std-ref">Table-level warmup rule</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">schema</span></code></p></td>
 <td><p>Name of the schema that contains the specified table.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">table</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">table</span></code></p></td>
 <td><p>Name of the table that contains the specified column.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">predicates</span></code></p></td>
-<td><p>Defaults to all partitions. Use the JSON array syntax <code class="docutils literal notranslate"><span class="pre">["example1",</span>
-<span class="pre">"example2"]</span></code> to limit to specific partitions.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warmUpType</span></code></p></td>
 <td><p>The materialization type performed on the specified column in the
-specified table. Valid values are <code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_DATA</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#data-cache-accel">data
-cache acceleration</a>,
-<code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_BASIC</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#index-accel">index acceleration</a>, and
-<code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_LUCENE</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#text-search-accel">text search acceleration</a>.</p></td>
+specified table. Valid values are <code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_DATA</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#data-cache-accel">data cache
+acceleration</a>,
+<code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_BASIC</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#index-accel">index acceleration</a>,
+and <code class="docutils literal notranslate"><span class="pre">WARM_UP_TYPE_LUCENE</span></code> for <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#text-search-accel">text search acceleration</a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">priority</span></code></p></td>
 <td><p>Priority for the warmup rule. To ensure a column is accelerated even if
-storage capacity is exceeded, set the <code class="docutils literal notranslate"><span class="pre">priority</span></code> as high as <code class="docutils literal notranslate"><span class="pre">10</span></code>. To
-ensure a column is never accelerated and prevent data cache or index
-creation, set to <code class="docutils literal notranslate"><span class="pre">-10</span></code>. Valid range of values: <code class="docutils literal notranslate"><span class="pre">-10</span></code> to <code class="docutils literal notranslate"><span class="pre">10</span></code>.</p></td>
+storage capacity is exceeded, set the <code class="docutils literal notranslate"><span class="pre">priority</span></code> as high as <code class="docutils literal notranslate"><span class="pre">10</span></code>.
+Rules with a higher priority take precedence. To ensure a column is never
+accelerated and prevent data cache or index creation, set to <code class="docutils literal notranslate"><span class="pre">-10</span></code>.
+Valid range of values: <code class="docutils literal notranslate"><span class="pre">-10</span></code> to <code class="docutils literal notranslate"><span class="pre">10</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ttl</span></code></p></td>
 <td><p>Duration for which the warmup rule remains active.  Use <code class="docutils literal notranslate"><span class="pre">PT0M</span></code> to
 prevent expiration of the rule. Use duration specified in <a class="reference external" href="https://en.wikipedia.org/wiki/ISO_8601#Durations">ISO-8601</a> duration format
 (PnDTnHnMn).</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">predicates</span></code></p></td>
+<td><p>Defaults to all partitions. Use the JSON array syntax <code class="docutils literal notranslate"><span class="pre">["example1",</span>
+<span class="pre">"example2"]</span></code> to limit to specific partitions.</p></td>
+</tr>
 </tbody>
 </table>
+</section>
 </section>
 <section id="get-all-warmup-rules">
 <h3 id="get-all-warmup-rules">Get all warmup rules<a class="headerlink" href="#get-all-warmup-rules" title="Permalink to this heading">#</a></h3>
