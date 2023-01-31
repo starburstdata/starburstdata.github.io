@@ -516,9 +516,7 @@
         </li>
         <li class="md-nav__item"><a href="#indexing-and-caching-management" class="md-nav__link">Indexing and caching management</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#catalog-specific-rest-api-access" class="md-nav__link">Catalog-specific REST API access</a>
-        </li>
-        <li class="md-nav__item"><a href="#centralized-rest-api-access" class="md-nav__link">Centralized REST API access</a>
+        <li class="md-nav__item"><a href="#rest-api-access" class="md-nav__link">REST API access</a>
         </li>
         <li class="md-nav__item"><a href="#rest-api-overview" class="md-nav__link">REST API overview</a>
         </li>
@@ -691,9 +689,9 @@ accelerated:</p>
 <p>For more details, see <a class="reference internal" href="#warp-speed-delta-lake-considerations"><span class="std std-ref">Delta Lake considerations</span></a>,
 <a class="reference internal" href="#warp-speed-iceberg-considerations"><span class="std std-ref">Iceberg considerations</span></a>, and
 <a class="reference internal" href="#warp-speed-hive-considerations"><span class="std std-ref">Hive considerations</span></a>.</p>
-<p>Only catalogs backed by S3 and ADLS object storage are supported. For more
-details, see <a class="reference internal" href="#warp-speed-s3-considerations"><span class="std std-ref">S3 considerations</span></a> and
-<a class="reference internal" href="#warp-speed-adls-considerations"><span class="std std-ref">ADLS considerations</span></a>.</p>
+<p>Only catalogs backed by S3, GCS, and ADLS object storage are supported. For more
+details, see <a class="reference internal" href="#warp-speed-s3-considerations"><span class="std std-ref">S3 considerations</span></a>,
+<a class="reference internal" href="#warp-speed-gcs-considerations"><span class="std std-ref">GCS considerations</span></a> and <a class="reference internal" href="#warp-speed-adls-considerations"><span class="std std-ref">ADLS considerations</span></a>.</p>
 <p>For example, update the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog that uses the Hive connector
 and AWS Glue as metastore in the values file.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
@@ -715,22 +713,8 @@ to <code class="docutils literal notranslate"><span class="pre">warp-speed</span
     <span class="no">...</span>
 </pre></div>
 </div>
-<p>If you want to expose the REST API on the coordinator at the port configured with
-<code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog, set the following properties:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
-  <span class="nt">example</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-   <span class="no">connector.name=warp-speed</span>
-   <span class="no">warp-speed.proxied-connector=HIVE</span>
-   <span class="no">warp-speed.store.path=s3://example/path/</span>
-   <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
-   <span class="no">http-rest-port=8088</span>
-   <span class="no">hive.metastore=glue</span>
-   <span class="no">...</span>
-</pre></div>
-</div>
-<p>For details, see <a class="reference internal" href="#rest-api-access-per-catalog"><span class="std std-ref">Catalog-specific REST API access</span></a>.</p>
-<p>For testing purposes, or alternatively for permanent usage of a new catalog name
-(for example, <code class="docutils literal notranslate"><span class="pre">faster</span></code>), in parallel to the existing catalog, you can copy the
+<p>For testing purposes, or alternatively for permanent usage of a new catalog
+name, such as <code class="docutils literal notranslate"><span class="pre">faster</span></code>, in parallel to the existing catalog, you can copy the
 configuration of a catalog and update it:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">catalogs</span><span class="p">:</span>
   <span class="nt">example</span><span class="p">:</span> <span class="p p-Indicator">|</span>
@@ -754,8 +738,8 @@ that include the old catalog name <code class="docutils literal notranslate"><sp
 <h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Permalink to this heading">#</a></h3>
 <p>The following table provides more information about the available catalog
 configuration properties:</p>
-<table id="id5">
-<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -797,15 +781,16 @@ deployment. Write access privileges are necessary.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
 <td><p>Specifies to run the REST API on the coordinator in the same server as
-SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">Centralized REST API access</span></a>.</p></td>
+SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code></p></td>
-<td><p>Enables the REST server for smart indexing and caching. Defaults to
-<code class="docutils literal notranslate"><span class="pre">true</span></code>, which uses a unique port for each catalog. To use a single
-port for all requests, remove the <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your
-configuration and set the value of
-<code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>. For details, see
-<a class="reference internal" href="#warp-speed-management"><span class="std std-ref">Indexing and caching management</span></a>.</p></td>
+<td><p>Required to be set to <code class="docutils literal notranslate"><span class="pre">false</span></code> for using the REST API on the
+coordinator. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>. With the default
+of <code class="docutils literal notranslate"><span class="pre">true</span></code> a separate REST API for each catalog is created separately.
+It must be exposed by setting <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> to a different value
+for each catalog, and then exposed outside the cluster network
+separately from the coordinator port. This is only suitable for testing
+and debugging purposes since no authentication is available.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.call-home.enable</span></code></p></td>
 <td><p>Enable pushing logs and metadata to the object store path configured at
@@ -945,7 +930,7 @@ Operation without a database uses a temporary database.</p>
 <ul class="simple">
 <li><p>MySQL</p></li>
 <li><p>PostgreSQL</p></li>
-<li><p>OracleDB</p></li>
+<li><p>Oracle</p></li>
 </ul>
 <p>Each catalog requires a separate database. You must create the database in an
 external server, and configure the JDBC connection string, including
@@ -1007,61 +992,23 @@ these sensitive values.</p>
 processed queries, also called the <a class="reference external" href="../../../starburst-enterprise/admin-topics/warp-speed.html#overview">default acceleration</a>.</p>
 <p>Additional custom configuration can be applied with the REST API. Persistent
 storage of this configuration <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">requires a configured database</span></a>.</p>
-<section id="catalog-specific-rest-api-access">
-<span id="rest-api-access-per-catalog"></span><h3 id="catalog-specific-rest-api-access">Catalog-specific REST API access<a class="headerlink" href="#catalog-specific-rest-api-access" title="Permalink to this heading">#</a></h3>
-<p>You can configure smart indexing and caching with the REST API exposed on the
-coordinator at the port configured with <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> for each catalog.
-This port on the coordinator node needs to be exposed to the machine from where
-you call the REST API. Typically this is outside the cluster. In this scenario,
-every catalog requires a separate port and therefore REST API server. No
-authentication or authorization system is supported for API access.</p>
-<p>The following example call accesses the <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint
-for the catalog configured for port 8088 on the cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code>
-via HTTP with a GET command.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
-</pre></div>
-</div>
-<p>Alternatively you can use the <code class="docutils literal notranslate"><span class="pre">curl</span></code> installed on the coordinator, and execute
-commands towards the <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint of the API directly
-on the coordinator container with localhost and the HTTP port for the specific
-catalog:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;coordinator-pod&gt; -c coordinator --  <span class="se">\</span>
-curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
-</pre></div>
-</div>
-<p>The JSON-formatted response is returned on your machine, where you run
-<code class="docutils literal notranslate"><span class="pre">kubectl</span></code>. You can pipe results into a locally installed <code class="docutils literal notranslate"><span class="pre">jq</span></code> command to be
-able to read the result.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;coordinator-pod&gt; -c coordinator --  <span class="se">\</span>
-curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span> <span class="se">\</span>
-<span class="p">|</span> jq
-</pre></div>
-</div>
-<p>Alternatively you can pipe the output into a file and then view it with an
-editor or other tool that improves the JSON file formatting.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl <span class="nb">exec</span> &lt;coordinator-pod&gt; -c coordinator -- <span class="se">\</span>
-curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span> <span class="se">\</span>
-&gt; result.json
-</pre></div>
-</div>
-</section>
-<section id="centralized-rest-api-access">
-<span id="rest-api-access"></span><h3 id="centralized-rest-api-access">Centralized REST API access<a class="headerlink" href="#centralized-rest-api-access" title="Permalink to this heading">#</a></h3>
+<section id="rest-api-access">
+<span id="id1"></span><h3 id="rest-api-access">REST API access<a class="headerlink" href="#rest-api-access" title="Permalink to this heading">#</a></h3>
 <p>You can configure smart indexing and caching with its REST API exposed on the
 coordinator in a separate context for each catalog on the same port and domain
 as the SEP web UI and the Trino REST API. Access to the REST API is controlled
 by the authentication-types system configured for SEP.</p>
-<p>To use centralized REST API access, remove <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your catalog
-configuration, and set <code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code> in
-all of your accelerated catalog configurations.</p>
-<p>The endpoints path structure changes to accommodate the name of the catalog:
-<code class="docutils literal notranslate"><span class="pre">/ext/{catalogName}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code> path
-to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code> on a
-cluster without authentication exposed via HTTP:</p>
+<p>To use the REST API, set <code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code> to
+<code class="docutils literal notranslate"><span class="pre">false</span></code> and remove <code class="docutils literal notranslate"><span class="pre">http-rest-port</span></code> from your catalog configuration in all
+of your accelerated catalog configurations.</p>
+<p>The endpoints path structure includes the name of the catalog:
+<code class="docutils literal notranslate"><span class="pre">/ext/{catalogName}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code>
+path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code>
+on a cluster without authentication exposed via HTTP:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://sep.example.com:8080/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
-<p>An authenticated server needs to be accessed via HTTPS and include
+<p>An authenticated server needs to be accessed via HTTPS and potentially include
 authentication information:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/warmup/warmup-rule-set"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
@@ -1070,15 +1017,15 @@ authentication information:</p>
 <section id="rest-api-overview">
 <h3 id="rest-api-overview">REST API overview<a class="headerlink" href="#rest-api-overview" title="Permalink to this heading">#</a></h3>
 <p>The following sections detail the REST API and available endpoints. The example
-calls use plain curl calls to the endpoints at via HTTP on localhost. Adapt them
-to your usage by adding the kubectl invocation or update the coordinator URL.</p>
+calls use plain curl calls to the endpoints for the <code class="docutils literal notranslate"><span class="pre">faster</span></code> catalog on the
+cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code> using HTTPS and omitting any authentication.</p>
 </section>
 <section id="warming-status">
 <h3 id="warming-status">Warming status<a class="headerlink" href="#warming-status" title="Permalink to this heading">#</a></h3>
 <p>You can determine the status of the warmup for smart indexing and caching with a
 GET operation of the <code class="docutils literal notranslate"><span class="pre">/warming/status</span></code> endpoint. It measures the warmup
 progress for splits across workers and if warming is currently taking place.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/warming/status"</span> -H <span class="s2">"accept: application/json"</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/warming/status"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
 <p>Example response:</p>
@@ -1098,7 +1045,7 @@ currently not in progress.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">debug-tools</span></code> endpoint requires an HTTP POST to specify the detailed
 command with a JSON payload to retrieve the desired data. You can use it to
 return the storage utilization:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST <span class="s2">"http://localhost:8088/debug-tools"</span> -H <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST <span class="s2">"https://sep.example.com/ext/faster/debug-tools"</span> -H <span class="s2">"Content-Type: application/json"</span> <span class="se">\</span>
 -d <span class="s1">'{"commandName" : "all","@class" : "io.trino.plugin.varada.execution.debugtools.DebugToolData"}'</span>
 </pre></div>
 </div>
@@ -1129,7 +1076,7 @@ but can also represent data from a whole file or more.</p>
 </div></blockquote>
 <p>The <code class="docutils literal notranslate"><span class="pre">row-group/row-group-count</span></code> endpoint exposes all currently warmed up
 columns via an HTTP GET:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/row-group/row-group-count"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
 <p>The result is a list of columns specified by <code class="docutils literal notranslate"><span class="pre">schema.table.column.warumuptype</span></code>
@@ -1163,7 +1110,7 @@ priority of the table rule.</p>
 <span id="warmup-rule-column"></span><h4 id="column-level-warmup-rule">Column-level warmup rule<a class="headerlink" href="#column-level-warmup-rule" title="Permalink to this heading">#</a></h4>
 <p>The following example creates a column-level warmup rule for the <code class="docutils literal notranslate"><span class="pre">int_1</span></code>
 column in the <code class="docutils literal notranslate"><span class="pre">aaa</span></code> table of the <code class="docutils literal notranslate"><span class="pre">tmp</span></code> schema:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST -H <span class="s2">"Content-Type: application/json"</span> http://localhost:8088/warmup/warmup-rule-set <span class="se">\</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST -H <span class="s2">"Content-Type: application/json"</span> https://sep.example.com/ext/faster/warmup/warmup-rule-set <span class="se">\</span>
 -d <span class="s1">'[ { "colNameId": "int_1", "schema": "tmp", "table": "aaa", "warmUpType": "WARM_UP_TYPE_BASIC", "priority": 8, "ttl": "PT720H", "predicates": [ ] } ]'</span>
 </pre></div>
 </div>
@@ -1182,9 +1129,9 @@ the <code class="docutils literal notranslate"><span class="pre">tmp</span></cod
 <a class="reference internal" href="#warmup-rule-properties"><span class="std std-ref">Warmup rule properties</span></a>.</p>
 </section>
 <section id="warmup-rule-properties">
-<span id="id1"></span><h4 id="warmup-rule-properties">Warmup rule properties<a class="headerlink" href="#warmup-rule-properties" title="Permalink to this heading">#</a></h4>
-<table id="id6">
-<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id6" title="Permalink to this table">#</a></caption>
+<span id="id2"></span><h4 id="warmup-rule-properties">Warmup rule properties<a class="headerlink" href="#warmup-rule-properties" title="Permalink to this heading">#</a></h4>
+<table id="id7">
+<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id7" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -1240,7 +1187,7 @@ prevent expiration of the rule. Use duration specified in <a class="reference ex
 <h3 id="get-all-warmup-rules">Get all warmup rules<a class="headerlink" href="#get-all-warmup-rules" title="Permalink to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-get</span></code> endpoint exposes all defined warmup rules via an
 HTTP GET:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"http://localhost:8088/warmup/warmup-rule-get"</span> -H <span class="s2">"accept: application/json"</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s2">"https://sep.example.com/ext/faster/warmup/warmup-rule-get"</span> -H <span class="s2">"accept: application/json"</span>
 </pre></div>
 </div>
 <p>Response:</p>
@@ -1267,7 +1214,7 @@ HTTP GET:</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-delete</span></code> endpoint allows you to delete a warmup rule
 via an HTTP DELETE. The identifier for the rule is a required parameter and can
 be seen from the result of <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-get</span></code> in the <code class="docutils literal notranslate"><span class="pre">id</span></code> value.</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X DELETE <span class="s2">"http://localhost:8088/warmup/warmup-rule-delete"</span> -H <span class="s2">"accept: application/json"</span> -H <span class="s2">"Content-Type: application/json"</span> -d <span class="s2">"[186229827]""</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X DELETE <span class="s2">"https://sep.example.com/ext/faster/warmup/warmup-rule-delete"</span> -H <span class="s2">"accept: application/json"</span> -H <span class="s2">"Content-Type: application/json"</span> -d <span class="s2">"[186229827]""</span>
 </pre></div>
 </div>
 <p>When you delete a warmup rule, the column index and cache data is de-prioritized
