@@ -1336,8 +1336,7 @@
 specific operations.</p>
 
 <p>The grantor of a privilege is not recorded as part of grant, it is only stored
-in the audit log. Issuing a grant with a specified grantor is not supported, and
-results in an error.</p>
+in the audit log.</p>
 
 <p><em>Entity privileges</em> grant rights to a single <a href="./entities.html">entity</a> or a
 collection of entities of the same kind, for example, the right to
@@ -1423,10 +1422,13 @@ of your Starburst Galaxy account:</p>
                   any role grant.</li>
               <li>Create, update, or delete any user or any role.</li>
           </ul>
-          As a result it can therefore assign any privilege on any other entity
-          to itself. Only grant this privilege to a minimal list of trusted
-          roles. Note that the <a href="./roles.html#accountadmin">accountadmin
-          role</a> is granted this privilege.
+          By itself, manage security does not grant full administrative access
+          to all privileges, all entities and therefore also to all connected
+          data sources. However a user with this privilege can grant themselves
+          full access to everything. Only grant this privilege to a minimal list
+          of trusted roles. Note that the
+          <a href="./roles.html#accountadmin">accountadmin role</a>
+          is granted this privilege.
       </td>
     </tr>
     <tr>
@@ -1694,9 +1696,10 @@ have a table-level grant of the same privilege with grant option.</p>
 <p> 
   <img src="../../assets/img/galaxy/privilege-add-location.png" alt="Location privilege selected" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
 
-<p>The <strong>location</strong> privilege applies only to object storage catalogs. Use this
-privilege to restrict creating or altering objects in unexpected object storage
-locations <em>outside</em> the configured default location of the current catalog.</p>
+<p>The <strong>location</strong> privilege applies only to <a href="../catalogs/index.html#object-storage">object storage
+catalogs</a>. Use this privilege to restrict
+creating or altering objects in unexpected object storage locations <em>outside</em>
+the configured default location of the current catalog.</p>
 
 <p>Your cloud provider credentials, such as an IAM role or AWS key for S3 catalogs,
 may have broad access rights to multiple locations. If you provide these
@@ -1725,7 +1728,7 @@ considered.</p>
 <code class="language-plaintext highlighter-rouge">UPDATE</code>, or <code class="language-plaintext highlighter-rouge">DELETE</code> operations on object storage tables, where <a href="#table-privs">table
 privileges</a> manage access instead.</p>
 
-<p>Object storage catalogs have a single <strong>location</strong> privilege:</p>
+<p>A single <strong>location</strong> privilege is available to grant to any role:</p>
 
 <table>
   <thead>
@@ -1749,10 +1752,14 @@ not with a SQL command. The <strong>Create SQL</strong> privilege does not corre
 SQL statement.</p>
 
 <p>When you select the <strong>Location</strong> button, Galaxy prompts you to enter
-an object storage URI. Use the formats shown in the following examples.</p>
+an object storage URI. Use a format similar to the following examples, and
+adapted to your object storage URI pattern and naming:</p>
 
-<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s3://bucket-name/abc/xyz/*
+<div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>s3://*
+s3://bucket-name/abc/xyz/*
+gs://*
 gs://bucket-name/abc/xyz/*
+abfs://file-system@storage-account.dfs.core.windows.net/*
 abfs://file-system@storage-account.dfs.core.windows.net/abc/xyz/*
 </code></pre></div></div>
 
@@ -1856,8 +1863,8 @@ catalog. Wildcard privileges are supported only for schema and table entities.</
       </h3>
     
 
-<p>Tables are identified by the name a catalog, the name of a schema contained in
-the catalog, and the name of a table within the schema. Table <code class="language-plaintext highlighter-rouge">june_sales</code> in
+<p>Tables are identified by the name of a catalog, the name of a schema contained
+in the catalog, and the name of a table within the schema. Table <code class="language-plaintext highlighter-rouge">june_sales</code> in
 schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> is represented as
 <code class="language-plaintext highlighter-rouge">prod_sales.monthly_sales.june_sales</code>.</p>
 
@@ -1886,12 +1893,12 @@ catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to r
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="nv">"prod_data.monthly_sales"</span><span class="p">.</span><span class="nv">"*"</span> <span class="k">to</span> <span class="k">ROLE</span> <span class="n">read_only_users</span>
 </code></pre></div></div>
 
-<p>You can create exceptions to wildcard table grants using deny table grants.
-Suppose a role has received a wildcard grant of SELECT on <code class="language-plaintext highlighter-rouge">prod_data.*.*</code>,
-allowing SELECT on any table in any schema in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>. If the role
-is denied the SELECT for wildcard <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales.*</code>, all tables in
-schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> will be inaccessible to that role no matter what other
-grants the role has received.</p>
+<p>You can create exceptions to wildcard table grants using <a href="#deny">deny table
+grants</a>. Suppose a role has received a wildcard grant of SELECT on
+<code class="language-plaintext highlighter-rouge">prod_data.*.*</code>, allowing SELECT on any table in any schema in catalog
+<code class="language-plaintext highlighter-rouge">prod_data</code>. If the role is denied the SELECT for wildcard
+<code class="language-plaintext highlighter-rouge">prod_data.monthly_sales.*</code>, all tables in schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> will be
+inaccessible to that role no matter what other grants the role has received.</p>
       <h3 id="schema-wildcard-privilege-grants">
         
         
@@ -1909,15 +1916,15 @@ done in the UI in the <strong>Add privileges</strong> dialog.</p>
 
 <p>You can grant <strong>Create table</strong> to a role in Trino:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">CREATE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="nv">"prod_data.monthly_sales"</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">prod_maintainer_role</span>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">GRANT</span> <span class="k">CREATE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="nv">"prod_data.*"</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">prod_maintainer_role</span>
 </code></pre></div></div>
 
-<p>You can create exceptions to a wildcard schema privilege grant by creating <em>deny
-privilege grants</em> in both the UI and in SQL. Given a grant of CREATE_TABLE to
-all schemas in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>, denoted by <code class="language-plaintext highlighter-rouge">prod_data.*</code>, granting a deny
-privilege for schema <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales</code> to the role creates an exception
-that denies the schema privilege CREATE_TABLE on schema <code class="language-plaintext highlighter-rouge">monthly_sales</code> to the
-role.</p>
+<p>You can create exceptions to a wildcard schema privilege grant by creating <a href="#deny">deny
+privilege grants</a> in both the UI and in SQL. Given a grant of
+CREATE_TABLE to all schemas in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>, denoted by <code class="language-plaintext highlighter-rouge">prod_data.*</code>,
+granting a deny privilege for schema <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales</code> to the role
+creates an exception that denies the schema privilege CREATE_TABLE on schema
+<code class="language-plaintext highlighter-rouge">monthly_sales</code> to the role.</p>
       <h3 id="read-only-access-with-wildcard-privileges-">
         
         
