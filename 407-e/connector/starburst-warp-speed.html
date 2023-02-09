@@ -704,7 +704,6 @@ adding the required configuration properties:</p>
   <span class="nt">example</span><span class="p">:</span> <span class="p p-Indicator">|</span>
     <span class="no">connector.name=warp-speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
-    <span class="no">warp-speed.store.path=s3://example/path/</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
@@ -721,9 +720,7 @@ configuration of a catalog and update it:</p>
   <span class="nt">faster</span><span class="p">:</span> <span class="p p-Indicator">|</span>
     <span class="no">connector.name=warp-speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
-    <span class="no">warp-speed.store.path=s3://example/path/</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
-    <span class="no">warp-speed.use-http-server-port=true</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
@@ -757,18 +754,22 @@ cold data through Starburst Warp Speed. Defaults to
 properties supported by these connectors can be used to configure the
 catalog.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code></p></td>
-<td><p><strong>Required.</strong> The path of the object store where call-home data,
-metadata, and import-export data is managed. Required to use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>,
-<code class="docutils literal notranslate"><span class="pre">abfs://</span></code> or <code class="docutils literal notranslate"><span class="pre">abfss://</span></code> as protocol. Write access privileges are
-necessary.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code></p></td>
 <td><p><strong>Required.</strong> Unique identifier of the cluster. Used as the folder name
 in the store path. When creating a new cluster and the same
 <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code> and <code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code> is used, then the
 <a class="reference internal" href="#warp-speed-management"><span class="std std-ref">cluster warmup rules</span></a> for index and cache
 creation are imported into the newly created cluster.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code></p></td>
+<td><p>The optional path of the storage where call-home data, metadata, and
+import-export data is managed. By default this is managed in memory. You
+can use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>, <code class="docutils literal notranslate"><span class="pre">abfs://</span></code> or <code class="docutils literal notranslate"><span class="pre">abfss://</span></code> as protocol for using
+remote object storage. Write access privileges are necessary.
+Alternatively, use <code class="docutils literal notranslate"><span class="pre">file://&lt;path&gt;</span></code> to configure a local path on the
+worker nodes in the cluster. In this case the import-export and call
+home features are disabled, and the local store path is used to save
+metadata on the worker nodes only.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.workerdb.db.path</span></code></p></td>
 <td><p>The path to store the internal database file. Default path is set to
@@ -790,7 +791,7 @@ separately from the coordinator port. This is only suitable for testing
 and debugging purposes since no authentication is available.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.call-home.enable</span></code></p></td>
-<td><p>Enable pushing logs and metadata to the object store path configured at
+<td><p>Enable pushing logs and metadata to the storage configured at
 <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. If you are not
 currently using k8s-native logging tools for troubleshooting, be sure to
 set the <code class="docutils literal notranslate"><span class="pre">log.path=&lt;path&gt;</span></code>. The <code class="docutils literal notranslate"><span class="pre">server.log</span></code> must be set in the
