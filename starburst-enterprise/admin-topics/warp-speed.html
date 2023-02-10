@@ -734,13 +734,13 @@
       </h1>
     
 
-<p>Starburst Enterprise includes Smart indexing and caching. You can take advantage
-of the performance improvements by updating your cluster to suitable hardware
-and configuring the Smart indexing and caching utility connector for any catalog
-accessing object storage with the Hive, Iceberg, or Delta Lake connector. A
-cluster deployment on Amazon Elastic Kubernetes Service (EKS), Microsoft Azure
-Kubernetes Service (AKS), or Google Kubernetes Engine (GKE) is required. 
-For more information, see the <a href="../../latest/connector/starburst-warp-speed.html">installation and configuration
+<p>Starburst Enterprise includes Smart indexing and caching. You can take advantage of
+the performance improvements by updating your cluster to suitable hardware and
+configuring the Smart indexing and caching utility connector for any catalog accessing
+object storage with the Hive, Iceberg, or Delta Lake connector. A cluster
+deployment on Amazon Elastic Kubernetes Service (EKS), Microsoft Azure
+Kubernetes Service (AKS), or Google Kubernetes Engine (GKE) is required. For
+more information, see the <a href="../../latest/connector/starburst-warp-speed.html">installation and configuration
 instructions</a>.</p>
       <h2 id="overview">
         
@@ -770,7 +770,7 @@ in the column. This process of creating the indexes and caches is also called
 splits and uses the local high performance storage of the worker. Typically,
 these are SSD NVMe drives.</p>
 
-<p>When new data is added to the table or the index and cache creation
+<p>When new data is added to a table or the index and cache creation
 are in progress, the new portions of the table that are not accelerated are
 served from the object storage. After the asynchronous indexing and caching is
 complete, query processing accessing that data is accelerated, because the data
@@ -786,6 +786,48 @@ The default acceleration has a lower priority than a user-created warmup rule.</
 <p>Default acceleration is not performed for <code class="language-plaintext highlighter-rouge">SELECT * FROM &lt;table_name&gt;</code> queries
 that are commonly used to explore a table rather than to retrieve specific
 data.</p>
+      <h3 id="index-and-cache-resiliency-">
+        
+        
+          Index and cache resiliency <a name="resiliency"></a> <a href="#index-and-cache-resiliency-" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Smart indexing and caching optionally provides index and cache resiliency. When a new
+index is created or data is cached, it is stored on the SSD NVMe (nonvolatile
+memory express) drives attached to each worker by default, and in addition on a
+dedicated, shared bucket in your object storage. When you scale the cluster,
+the indexes and data cache remain available in the shared storage.</p>
+
+<p>The resiliency feature enables fast warmup when scaling up by adding worker
+nodes to a cluster. This also eliminates the need for keeping instances idling
+when a cluster is not in use. Instead, when a cluster needs to warm an index or
+data cache, it first accesses the designated bucket on the object storage to
+check if the indexes or cache are ready and loads them accordingly. If the
+indexes or cache are not available in the shared object storage or cannot be
+loaded for any reason, the data is warmed as usual.</p>
+
+<p>There are three storage tiers accessed for queries:</p>
+
+<ul>
+  <li><strong>Hot data and index</strong>: Uses SSD NVMe attached to the workers in a cluster to
+process queries and store hot data and a cache for optimal performance. This
+layer is enabled by default with Smart indexing and caching.</li>
+  <li><strong>Warm data and index</strong>: Indexes and cached data are stored in a designated
+object storage bucket. This layer is shared amongst all of your workers to
+ensure minimal resources are allocated to indexing when scaling up a cluster
+and adds resiliency. When a cluster is scaled down or eliminated, and nodes
+are shut down, the indexes remain available as warm data. The warm layer is
+disabled by default. <a href="../../latest/connector/starburst-warp-speed.html#warp-speed-catalog-configuration">Enabling index and cache
+resiliency</a>
+makes the warm tier available for fast warmup of indexes and caches.</li>
+  <li><strong>Cold data</strong>: Direct access of your object storage.</li>
+</ul>
+
+<p>With this tiered approach, you can continue using your existing scaling and
+auto-scaling policies.</p>
       <h3 id="acceleration-types">
         
         
@@ -859,8 +901,8 @@ configure index acceleration for a specific column with the REST API.</p>
 columns that is used in query predicates. It accelerates queries that use
 predicates of filters and searches on text columns.</p>
 
-<p>Smart indexing and caching automatically enables text search acceleration, and
-maintains the indexes.</p>
+<p>Smart indexing and caching automatically enables text search acceleration, and maintains
+the indexes.</p>
 
 <p>Text search acceleration uses <a href="https://lucene.apache.org/">Apache Lucene</a>
 indexing to accelerate text analytics and provide fast text filters,
@@ -973,7 +1015,7 @@ instructions</a> to get started.</p>
       </h2>
     
 
-<p>Now that you have configured Smart indexing and caching, you can view acceleration
+<p>Now that you have configured , you can view acceleration
 details and other summary statistics on the <strong>Index and cache usage</strong> tab in the
 Starburst Enterprise web UI.</p>
 
@@ -1032,7 +1074,7 @@ the index and cache.</p>
 
 <p>No. Smart indexing and caching uses a mapping between the generated splits and
 index and cache data on SSDs during query processing. If a split can be served
-from SSD, it is; but if not, Smart indexing and caching gets the data for this
+from SSD, it is; but if not,  gets the data for this
 split from the object storage and then asynchronously indexes and caches it as
 appropriate.</p>
 
@@ -1145,7 +1187,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#smart-indexing-and-caching">Smart indexing and caching</a><ul><li><a href="#overview">Overview</a><ul><li><a href="#default-acceleration-">Default acceleration <a name="default-accel"></a></a></li><li><a href="#acceleration-types">Acceleration types</a><ul><li><a href="#data-cache-acceleration-">Data cache acceleration <a name="data-cache-accel"></a></a></li><li><a href="#index-acceleration-">Index acceleration <a name="index-accel"></a></a></li><li><a href="#text-search-acceleration-">Text search acceleration <a name="text-search-accel"></a></a></li></ul></li><li><a href="#automated-clean-up">Automated clean up</a></li></ul></li><li><a href="#configuration">Configuration</a></li><li><a href="#index-and-cache-usage">Index and cache usage</a></li><li><a href="#cluster-management">Cluster management</a></li><li><a href="#faq">FAQ</a></li></ul></li></ul>
+          <ul><li><a href="#smart-indexing-and-caching">Smart indexing and caching</a><ul><li><a href="#overview">Overview</a><ul><li><a href="#default-acceleration-">Default acceleration <a name="default-accel"></a></a></li><li><a href="#index-and-cache-resiliency-">Index and cache resiliency <a name="resiliency"></a></a></li><li><a href="#acceleration-types">Acceleration types</a><ul><li><a href="#data-cache-acceleration-">Data cache acceleration <a name="data-cache-accel"></a></a></li><li><a href="#index-acceleration-">Index acceleration <a name="index-accel"></a></a></li><li><a href="#text-search-acceleration-">Text search acceleration <a name="text-search-accel"></a></a></li></ul></li><li><a href="#automated-clean-up">Automated clean up</a></li></ul></li><li><a href="#configuration">Configuration</a></li><li><a href="#index-and-cache-usage">Index and cache usage</a></li><li><a href="#cluster-management">Cluster management</a></li><li><a href="#faq">FAQ</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
