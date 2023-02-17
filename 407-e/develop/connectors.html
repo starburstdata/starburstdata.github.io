@@ -306,6 +306,8 @@
         <li class="md-nav__item"><a href="#connectormetadata" class="md-nav__link">ConnectorMetadata</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limit-and-top-n-pushdown" class="md-nav__link">Limit and top-N pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#predicate-pushdown" class="md-nav__link">Predicate pushdown</a>
         </li></ul>
             </nav>
         </li>
@@ -639,6 +641,8 @@
         <li class="md-nav__item"><a href="#connectormetadata" class="md-nav__link">ConnectorMetadata</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#limit-and-top-n-pushdown" class="md-nav__link">Limit and top-N pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#predicate-pushdown" class="md-nav__link">Predicate pushdown</a>
         </li></ul>
             </nav>
         </li>
@@ -858,7 +862,7 @@ and collecting statistics during writes and when analyzing selected tables.</p><
 <li><p>Pushing down:</p>
 <ul>
 <li><p><a class="reference internal" href="#connector-limit-pushdown"><span class="std std-ref">Limit and Top N - limit with sort items</span></a></p></li>
-<li><p>Predicates</p></li>
+<li><p><a class="reference internal" href="#dev-predicate-pushdown"><span class="std std-ref">Predicates</span></a></p></li>
 <li><p>Projections</p></li>
 <li><p>Sampling</p></li>
 <li><p>Aggregations</p></li>
@@ -895,10 +899,12 @@ this method has no effect for that invocation, even if the connector generally
 supports a particular pushdown. Doing otherwise can cause the optimizer
 to loop indefinitely.</p>
 </div>
-<p>Otherwise, these methods return a result object containing a new table handle.</p>
-<p>The new table handle represents the virtual table derived from applying the
+<p>Otherwise, these methods return a result object containing a new table handle.
+The new table handle represents the virtual table derived from applying the
 operation (filter, project, limit, etc.) to the table produced by the table
-scan node.</p>
+scan node. Once the query actually runs, <code class="docutils literal notranslate"><span class="pre">ConnectorRecordSetProvider</span></code> or
+<code class="docutils literal notranslate"><span class="pre">ConnectorPageSourceProvider</span></code> can use whatever optimizations were pushed down to
+<code class="docutils literal notranslate"><span class="pre">ConnectorTableHandle</span></code>.</p>
 <p>The returned table handle is later passed to other services that the connector
 implements, like the <code class="docutils literal notranslate"><span class="pre">ConnectorRecordSetProvider</span></code> or
 <code class="docutils literal notranslate"><span class="pre">ConnectorPageSourceProvider</span></code>.</p>
@@ -933,6 +939,295 @@ the data would be too expensive or time consuming. When throwing
 an exception, use the <code class="docutils literal notranslate"><span class="pre">TrinoException</span></code> class with the <code class="docutils literal notranslate"><span class="pre">INVALID_ORDER_BY</span></code>
 error code and an actionable message, to let users know how to write a valid
 query.</p>
+</section>
+<section id="predicate-pushdown">
+<span id="dev-predicate-pushdown"></span><h3 id="predicate-pushdown">Predicate pushdown<a class="headerlink" href="#predicate-pushdown" title="Permalink to this heading">#</a></h3>
+<p>When executing a query with a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause, the query plan can
+contain a <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> plan node/node with a predicate constraint.</p>
+<p>A predicate constraint is a description of the constraint imposed on the
+results of the stage/fragment as expressed in the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause. For example,
+<code class="docutils literal notranslate"><span class="pre">WHERE</span> <span class="pre">x</span> <span class="pre">&gt;</span> <span class="pre">5</span> <span class="pre">AND</span> <span class="pre">y</span> <span class="pre">=</span> <span class="pre">3</span></code> translates into a constraint where the
+<code class="docutils literal notranslate"><span class="pre">summary</span></code> field means the <code class="docutils literal notranslate"><span class="pre">x</span></code> column’s domain must be greater than
+<code class="docutils literal notranslate"><span class="pre">5</span></code> and the <code class="docutils literal notranslate"><span class="pre">y</span></code> column domain equals <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p>
+<p>When the query plan contains a <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> operation, Trino
+tries to optimize the query by pushing down the predicate constraint
+into the connector by calling the <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code> method of the
+connector metadata service. This method receives a table handle with
+all optimizations applied thus far, and returns either
+<code class="docutils literal notranslate"><span class="pre">Optional.empty()</span></code> or a response with a new table handle derived from
+the old one.</p>
+<p>The query optimizer may call <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code> for a single query multiple times,
+as it searches for an optimal query plan. Connectors must
+return <code class="docutils literal notranslate"><span class="pre">Optional.empty()</span></code> from <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code> if they cannot apply the
+constraint for this invocation, even if they support <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code>
+pushdown in general. Connectors must also return <code class="docutils literal notranslate"><span class="pre">Optional.empty()</span></code> if the
+constraint has already been applied.</p>
+<p>A constraint contains the following elements:</p>
+<ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code> defining the mapping between columns and their domains.
+A <code class="docutils literal notranslate"><span class="pre">Domain</span></code> is either a list of possible values, or a list of ranges, and
+also contains information about nullability.</p></li>
+<li><p>Expression for pushing down function calls.</p></li>
+<li><p>Map of assignments from variables in the expression to columns.</p></li>
+<li><p>(optional) Predicate which tests a map of columns and their values;
+it cannot be held on to after the <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code> call returns.</p></li>
+<li><p>(optional) Set of columns the predicate depends on; must be present
+if predicate is present.</p></li>
+</ul>
+<p>If both a predicate and a summary are available, the predicate is guaranteed to
+be more strict in filtering of values, and can provide a significant boost to
+query performance if used.</p>
+<p>However it is not possible to store a predicate in the table handle and use
+it later, as the predicate cannot be held on to after the <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code>
+call returns. It is used for filtering of entire partitions, and is not pushed
+down. The summary can be pushed down instead by storing it in the table handle.</p>
+<p>This overlap between the predicate and summary is due to historical reasons,
+as simple comparison pushdown was implemented first via summary, and more
+complex filters such as <code class="docutils literal notranslate"><span class="pre">LIKE</span></code> which required more expressive predicates
+were added later.</p>
+<p>If a constraint can only be partially pushed down, for example when a connector
+for a database that does not support range matching is used in a query with
+<code class="docutils literal notranslate"><span class="pre">WHERE</span> <span class="pre">x</span> <span class="pre">=</span> <span class="pre">2</span> <span class="pre">AND</span> <span class="pre">y</span> <span class="pre">&gt;</span> <span class="pre">5</span></code>, the <code class="docutils literal notranslate"><span class="pre">y</span></code> column constraint must be
+returned in the <code class="docutils literal notranslate"><span class="pre">ConstraintApplicationResult</span></code> from <code class="docutils literal notranslate"><span class="pre">applyFilter</span></code>.
+In this case the <code class="docutils literal notranslate"><span class="pre">y</span> <span class="pre">&gt;</span> <span class="pre">5</span></code> condition is applied in Trino,
+and not pushed down.</p>
+<p>The following is a simple example which only looks at <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code>:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">ConstraintApplicationResult</span><span class="o">&lt;</span><span class="n">ConnectorTableHandle</span><span class="o">&gt;&gt;</span> <span class="nf">applyFilter</span><span class="p">(</span>
+        <span class="n">ConnectorSession</span> <span class="n">session</span><span class="p">,</span>
+        <span class="n">ConnectorTableHandle</span> <span class="n">tableHandle</span><span class="p">,</span>
+        <span class="n">Constraint</span> <span class="n">constraint</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">ExampleTableHandle</span> <span class="n">handle</span> <span class="o">=</span> <span class="p">(</span><span class="n">ExampleTableHandle</span><span class="p">)</span> <span class="n">tableHandle</span><span class="p">;</span>
+
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">oldDomain</span> <span class="o">=</span> <span class="n">handle</span><span class="p">.</span><span class="na">getConstraint</span><span class="p">();</span>
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">newDomain</span> <span class="o">=</span> <span class="n">oldDomain</span><span class="p">.</span><span class="na">intersect</span><span class="p">(</span><span class="n">constraint</span><span class="p">.</span><span class="na">getSummary</span><span class="p">());</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">oldDomain</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">newDomain</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">// Nothing has changed, return empty Option</span>
+        <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="n">handle</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ExampleTableHandle</span><span class="p">(</span><span class="n">newDomain</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="k">new</span> <span class="n">ConstraintApplicationResult</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">all</span><span class="p">(),</span> <span class="kc">false</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code> from the constraint is intersected with the <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code>
+already applied to the <code class="docutils literal notranslate"><span class="pre">TableHandle</span></code> to form <code class="docutils literal notranslate"><span class="pre">newDomain</span></code>.
+If filtering has not changed, an <code class="docutils literal notranslate"><span class="pre">Optional.empty()</span></code> result is returned to
+notify the planner that this optimization path has reached its end.</p>
+<p>In this example, the connector pushes down the <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code>
+with all Trino data types supported with same semantics in the
+data source. As a result, no filters are needed in Trino,
+and the <code class="docutils literal notranslate"><span class="pre">ConstraintApplicationResult</span></code> sets <code class="docutils literal notranslate"><span class="pre">remainingFilter</span></code> to
+<code class="docutils literal notranslate"><span class="pre">TupleDomain.all()</span></code>.</p>
+<p>This pushdown implementation is quite similar to many Trino connectors,
+including  <code class="docutils literal notranslate"><span class="pre">MongoMetadata</span></code>, <code class="docutils literal notranslate"><span class="pre">BigQueryMetadata</span></code>, <code class="docutils literal notranslate"><span class="pre">KafkaMetadata</span></code>.</p>
+<p>The following, more complex example shows data types from Trino that are
+not available directly in the underlying data source, and must be mapped:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">ConstraintApplicationResult</span><span class="o">&lt;</span><span class="n">ConnectorTableHandle</span><span class="o">&gt;&gt;</span> <span class="nf">applyFilter</span><span class="p">(</span>
+        <span class="n">ConnectorSession</span> <span class="n">session</span><span class="p">,</span>
+        <span class="n">ConnectorTableHandle</span> <span class="n">table</span><span class="p">,</span>
+        <span class="n">Constraint</span> <span class="n">constraint</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">JdbcTableHandle</span> <span class="n">handle</span> <span class="o">=</span> <span class="p">(</span><span class="n">JdbcTableHandle</span><span class="p">)</span> <span class="n">table</span><span class="p">;</span>
+
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">oldDomain</span> <span class="o">=</span> <span class="n">handle</span><span class="p">.</span><span class="na">getConstraint</span><span class="p">();</span>
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">newDomain</span> <span class="o">=</span> <span class="n">oldDomain</span><span class="p">.</span><span class="na">intersect</span><span class="p">(</span><span class="n">constraint</span><span class="p">.</span><span class="na">getSummary</span><span class="p">());</span>
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">remainingFilter</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">newDomain</span><span class="p">.</span><span class="na">isNone</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">newConstraintExpressions</span> <span class="o">=</span> <span class="n">ImmutableList</span><span class="p">.</span><span class="na">of</span><span class="p">();</span>
+        <span class="n">remainingFilter</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">all</span><span class="p">();</span>
+        <span class="n">remainingExpression</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Constant</span><span class="p">.</span><span class="na">TRUE</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// We need to decide which columns to push down.</span>
+        <span class="c1">// Since this is a base class for many JDBC-based connectors, each</span>
+        <span class="c1">// having different Trino type mappings and comparison semantics</span>
+        <span class="c1">// it needs to be flexible.</span>
+
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">domains</span> <span class="o">=</span> <span class="n">newDomain</span><span class="p">.</span><span class="na">getDomains</span><span class="p">().</span><span class="na">orElseThrow</span><span class="p">();</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">JdbcColumnHandle</span><span class="o">&gt;</span> <span class="n">columnHandles</span> <span class="o">=</span> <span class="n">domains</span><span class="p">.</span><span class="na">keySet</span><span class="p">().</span><span class="na">stream</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">JdbcColumnHandle</span><span class="p">.</span><span class="na">class</span><span class="p">::</span><span class="n">cast</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">toImmutableList</span><span class="p">());</span>
+
+        <span class="c1">// Get information about how to push down every column based on its</span>
+        <span class="c1">// JDBC data type</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">ColumnMapping</span><span class="o">&gt;</span> <span class="n">columnMappings</span> <span class="o">=</span> <span class="n">jdbcClient</span><span class="p">.</span><span class="na">toColumnMappings</span><span class="p">(</span>
+                <span class="n">session</span><span class="p">,</span>
+                <span class="n">columnHandles</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span>
+                        <span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">JdbcColumnHandle</span><span class="p">::</span><span class="n">getJdbcTypeHandle</span><span class="p">)</span>
+                        <span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">toImmutableList</span><span class="p">()));</span>
+
+        <span class="c1">// Calculate the domains which can be safely pushed down (supported)</span>
+        <span class="c1">// and those which need to be filtered in Trino (unsupported)</span>
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">supported</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">unsupported</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">columnHandles</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">JdbcColumnHandle</span> <span class="n">column</span> <span class="o">=</span> <span class="n">columnHandles</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="n">DomainPushdownResult</span> <span class="n">pushdownResult</span> <span class="o">=</span>
+                <span class="n">columnMappings</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="na">getPredicatePushdownController</span><span class="p">().</span><span class="na">apply</span><span class="p">(</span>
+                    <span class="n">session</span><span class="p">,</span>
+                    <span class="n">domains</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">column</span><span class="p">));</span>
+            <span class="n">supported</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">pushdownResult</span><span class="p">.</span><span class="na">getPushedDown</span><span class="p">());</span>
+            <span class="n">unsupported</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">pushdownResult</span><span class="p">.</span><span class="na">getRemainingFilter</span><span class="p">());</span>
+        <span class="p">}</span>
+
+        <span class="n">newDomain</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">withColumnDomains</span><span class="p">(</span><span class="n">supported</span><span class="p">);</span>
+        <span class="n">remainingFilter</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">withColumnDomains</span><span class="p">(</span><span class="n">unsupported</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Return empty Optional if nothing changed in filtering</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">oldDomain</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">newDomain</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="n">handle</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JdbcTableHandle</span><span class="p">(</span>
+            <span class="n">handle</span><span class="p">.</span><span class="na">getRelationHandle</span><span class="p">(),</span>
+            <span class="n">newDomain</span><span class="p">,</span>
+            <span class="p">...);</span>
+
+    <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
+            <span class="k">new</span> <span class="n">ConstraintApplicationResult</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+                <span class="n">handle</span><span class="p">,</span>
+                <span class="n">remainingFilter</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This example illustrates implementing a base class for many JDBC connectors
+while handling the specific requirements of multiple JDBC-compliant data sources.
+It ensures that if a constraint gets pushed down, it works exactly the same in
+the underlying data source, and produces the same results as it would in Trino.
+For example, in databases where string comparisons are case-insensitive,
+pushdown does not work, as string comparison operations in Trino are
+case-sensitive.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">PredicatePushdownController</span></code> interface determines if a column domain can
+be pushed down in JDBC-compliant data sources. In the preceding example, it is
+called from a <code class="docutils literal notranslate"><span class="pre">JdbcClient</span></code> implementation specific to that database.
+In non-JDBC-compliant data sources, type-based push downs are implemented
+directly, without going through the <code class="docutils literal notranslate"><span class="pre">PredicatePushdownController</span></code> interface.</p>
+<p>The following example adds expression pushdown enabled by a session flag:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@Override</span>
+<span class="kd">public</span> <span class="n">Optional</span><span class="o">&lt;</span><span class="n">ConstraintApplicationResult</span><span class="o">&lt;</span><span class="n">ConnectorTableHandle</span><span class="o">&gt;&gt;</span> <span class="nf">applyFilter</span><span class="p">(</span>
+        <span class="n">ConnectorSession</span> <span class="n">session</span><span class="p">,</span>
+        <span class="n">ConnectorTableHandle</span> <span class="n">table</span><span class="p">,</span>
+        <span class="n">Constraint</span> <span class="n">constraint</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">JdbcTableHandle</span> <span class="n">handle</span> <span class="o">=</span> <span class="p">(</span><span class="n">JdbcTableHandle</span><span class="p">)</span> <span class="n">table</span><span class="p">;</span>
+
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">oldDomain</span> <span class="o">=</span> <span class="n">handle</span><span class="p">.</span><span class="na">getConstraint</span><span class="p">();</span>
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">newDomain</span> <span class="o">=</span> <span class="n">oldDomain</span><span class="p">.</span><span class="na">intersect</span><span class="p">(</span><span class="n">constraint</span><span class="p">.</span><span class="na">getSummary</span><span class="p">());</span>
+    <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">newConstraintExpressions</span><span class="p">;</span>
+    <span class="n">TupleDomain</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="o">&gt;</span> <span class="n">remainingFilter</span><span class="p">;</span>
+    <span class="n">Optional</span><span class="o">&lt;</span><span class="n">ConnectorExpression</span><span class="o">&gt;</span> <span class="n">remainingExpression</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">newDomain</span><span class="p">.</span><span class="na">isNone</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">newConstraintExpressions</span> <span class="o">=</span> <span class="n">ImmutableList</span><span class="p">.</span><span class="na">of</span><span class="p">();</span>
+        <span class="n">remainingFilter</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">all</span><span class="p">();</span>
+        <span class="n">remainingExpression</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">Constant</span><span class="p">.</span><span class="na">TRUE</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">// We need to decide which columns to push down.</span>
+        <span class="c1">// Since this is a base class for many JDBC-based connectors, each</span>
+        <span class="c1">// having different Trino type mappings and comparison semantics</span>
+        <span class="c1">// it needs to be flexible.</span>
+
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">domains</span> <span class="o">=</span> <span class="n">newDomain</span><span class="p">.</span><span class="na">getDomains</span><span class="p">().</span><span class="na">orElseThrow</span><span class="p">();</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">JdbcColumnHandle</span><span class="o">&gt;</span> <span class="n">columnHandles</span> <span class="o">=</span> <span class="n">domains</span><span class="p">.</span><span class="na">keySet</span><span class="p">().</span><span class="na">stream</span><span class="p">()</span>
+                <span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">JdbcColumnHandle</span><span class="p">.</span><span class="na">class</span><span class="p">::</span><span class="n">cast</span><span class="p">)</span>
+                <span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">toImmutableList</span><span class="p">());</span>
+
+        <span class="c1">// Get information about how to push down every column based on its</span>
+        <span class="c1">// JDBC data type</span>
+        <span class="n">List</span><span class="o">&lt;</span><span class="n">ColumnMapping</span><span class="o">&gt;</span> <span class="n">columnMappings</span> <span class="o">=</span> <span class="n">jdbcClient</span><span class="p">.</span><span class="na">toColumnMappings</span><span class="p">(</span>
+                <span class="n">session</span><span class="p">,</span>
+                <span class="n">columnHandles</span><span class="p">.</span><span class="na">stream</span><span class="p">()</span>
+                        <span class="p">.</span><span class="na">map</span><span class="p">(</span><span class="n">JdbcColumnHandle</span><span class="p">::</span><span class="n">getJdbcTypeHandle</span><span class="p">)</span>
+                        <span class="p">.</span><span class="na">collect</span><span class="p">(</span><span class="n">toImmutableList</span><span class="p">()));</span>
+
+        <span class="c1">// Calculate the domains which can be safely pushed down (supported)</span>
+        <span class="c1">// and those which need to be filtered in Trino (unsupported)</span>
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">supported</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="n">Map</span><span class="o">&lt;</span><span class="n">ColumnHandle</span><span class="p">,</span> <span class="n">Domain</span><span class="o">&gt;</span> <span class="n">unsupported</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">columnHandles</span><span class="p">.</span><span class="na">size</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">JdbcColumnHandle</span> <span class="n">column</span> <span class="o">=</span> <span class="n">columnHandles</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+            <span class="n">DomainPushdownResult</span> <span class="n">pushdownResult</span> <span class="o">=</span>
+                <span class="n">columnMappings</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">i</span><span class="p">).</span><span class="na">getPredicatePushdownController</span><span class="p">().</span><span class="na">apply</span><span class="p">(</span>
+                    <span class="n">session</span><span class="p">,</span>
+                    <span class="n">domains</span><span class="p">.</span><span class="na">get</span><span class="p">(</span><span class="n">column</span><span class="p">));</span>
+            <span class="n">supported</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">pushdownResult</span><span class="p">.</span><span class="na">getPushedDown</span><span class="p">());</span>
+            <span class="n">unsupported</span><span class="p">.</span><span class="na">put</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">pushdownResult</span><span class="p">.</span><span class="na">getRemainingFilter</span><span class="p">());</span>
+        <span class="p">}</span>
+
+        <span class="n">newDomain</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">withColumnDomains</span><span class="p">(</span><span class="n">supported</span><span class="p">);</span>
+        <span class="n">remainingFilter</span> <span class="o">=</span> <span class="n">TupleDomain</span><span class="p">.</span><span class="na">withColumnDomains</span><span class="p">(</span><span class="n">unsupported</span><span class="p">);</span>
+
+        <span class="c1">// Do we want to handle expression pushdown?</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">isComplexExpressionPushdown</span><span class="p">(</span><span class="n">session</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">newExpressions</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+            <span class="n">List</span><span class="o">&lt;</span><span class="n">ConnectorExpression</span><span class="o">&gt;</span> <span class="n">remainingExpressions</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+            <span class="c1">// Each expression can be broken down into a list of conjuncts</span>
+            <span class="c1">// joined with AND. We handle each conjunct separately.</span>
+            <span class="k">for</span> <span class="p">(</span><span class="n">ConnectorExpression</span> <span class="n">expression</span> <span class="p">:</span> <span class="n">extractConjuncts</span><span class="p">(</span><span class="n">constraint</span><span class="p">.</span><span class="na">getExpression</span><span class="p">()))</span> <span class="p">{</span>
+                <span class="c1">// Try to convert the conjunct into something which is</span>
+                <span class="c1">// understood by the underlying JDBC data source</span>
+                <span class="n">Optional</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">converted</span> <span class="o">=</span> <span class="n">jdbcClient</span><span class="p">.</span><span class="na">convertPredicate</span><span class="p">(</span>
+                    <span class="n">session</span><span class="p">,</span>
+                    <span class="n">expression</span><span class="p">,</span>
+                    <span class="n">constraint</span><span class="p">.</span><span class="na">getAssignments</span><span class="p">());</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">converted</span><span class="p">.</span><span class="na">isPresent</span><span class="p">())</span> <span class="p">{</span>
+                    <span class="n">newExpressions</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">converted</span><span class="p">.</span><span class="na">get</span><span class="p">());</span>
+                <span class="p">}</span>
+                <span class="k">else</span> <span class="p">{</span>
+                    <span class="n">remainingExpressions</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">expression</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1">// Calculate which parts of the expression can be pushed down</span>
+            <span class="c1">// and which need to be calculated in Trino engine</span>
+            <span class="n">newConstraintExpressions</span> <span class="o">=</span> <span class="n">ImmutableSet</span><span class="p">.</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="n">builder</span><span class="p">()</span>
+                    <span class="p">.</span><span class="na">addAll</span><span class="p">(</span><span class="n">handle</span><span class="p">.</span><span class="na">getConstraintExpressions</span><span class="p">())</span>
+                    <span class="p">.</span><span class="na">addAll</span><span class="p">(</span><span class="n">newExpressions</span><span class="p">)</span>
+                    <span class="p">.</span><span class="na">build</span><span class="p">().</span><span class="na">asList</span><span class="p">();</span>
+            <span class="n">remainingExpression</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">and</span><span class="p">(</span><span class="n">remainingExpressions</span><span class="p">));</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="n">newConstraintExpressions</span> <span class="o">=</span> <span class="n">ImmutableList</span><span class="p">.</span><span class="na">of</span><span class="p">();</span>
+            <span class="n">remainingExpression</span> <span class="o">=</span> <span class="n">Optional</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// Return empty Optional if nothing changed in filtering</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">oldDomain</span><span class="p">.</span><span class="na">equals</span><span class="p">(</span><span class="n">newDomain</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+            <span class="n">handle</span><span class="p">.</span><span class="na">getConstraintExpressions</span><span class="p">().</span><span class="na">equals</span><span class="p">(</span><span class="n">newConstraintExpressions</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">empty</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="n">handle</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JdbcTableHandle</span><span class="p">(</span>
+            <span class="n">handle</span><span class="p">.</span><span class="na">getRelationHandle</span><span class="p">(),</span>
+            <span class="n">newDomain</span><span class="p">,</span>
+            <span class="n">newConstraintExpressions</span><span class="p">,</span>
+            <span class="p">...);</span>
+
+    <span class="k">return</span> <span class="n">Optional</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
+            <span class="n">remainingExpression</span><span class="p">.</span><span class="na">isPresent</span><span class="p">()</span>
+                    <span class="o">?</span> <span class="k">new</span> <span class="n">ConstraintApplicationResult</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+                        <span class="n">handle</span><span class="p">,</span>
+                        <span class="n">remainingFilter</span><span class="p">,</span>
+                        <span class="n">remainingExpression</span><span class="p">.</span><span class="na">get</span><span class="p">())</span>
+                    <span class="p">:</span> <span class="k">new</span> <span class="n">ConstraintApplicationResult</span><span class="o">&lt;&gt;</span><span class="p">(</span>
+                        <span class="n">handle</span><span class="p">,</span>
+                        <span class="n">remainingFilter</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ConnectorExpression</span></code> is split similarly to <code class="docutils literal notranslate"><span class="pre">TupleDomain</span></code>.
+Each expression can be broken down into independent <em>conjuncts</em>. Conjuncts are
+smaller expressions which, if joined together using an <code class="docutils literal notranslate"><span class="pre">AND</span></code> operator, are
+equivalent to the original expression. Every conjunct can be handled
+individually. Each one is converted using connector-specific rules, as defined
+by the <code class="docutils literal notranslate"><span class="pre">JdbcClient</span></code> implementation, to be more flexible. Unconverted
+conjuncts are returned as <code class="docutils literal notranslate"><span class="pre">remainingExpression</span></code> and are evaluated by
+the Trino engine.</p>
 </section>
 </section>
 <section id="connectorsplitmanager">

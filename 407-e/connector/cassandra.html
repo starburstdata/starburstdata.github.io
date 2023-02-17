@@ -511,8 +511,12 @@
         </li>
         <li class="md-nav__item"><a href="#limitations" class="md-nav__link">Limitations</a>
         </li>
-        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#query-varchar-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a>
+        </li>
         <li class="md-nav__item"><a href="#drop-table" class="md-nav__link">DROP TABLE</a>
         </li>
         <li class="md-nav__item"><a href="#sql-delete-limitation" class="md-nav__link">SQL delete limitation</a>
@@ -990,6 +994,40 @@ statements, the connector supports the following features:</p>
 <li><p><a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a></p></li>
 <li><p><a class="reference internal" href="../sql/drop-table.html"><span class="doc">DROP TABLE</span></a></p></li>
 </ul>
+</section>
+<section id="table-functions">
+<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<p>The connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to
+access Cassandra.
+.. _cassandra-query-function:</p>
+<section id="query-varchar-table">
+<h3 id="query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code><a class="headerlink" href="#query-varchar-table" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">query</span></code> function allows you to query the underlying Cassandra directly. It
+requires syntax native to Cassandra, because the full query is pushed down and
+processed by Cassandra. This can be useful for accessing native features which are
+not available in Trino or for improving query performance in situations where
+running a query natively may be faster.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Polymorphic table functions may not preserve the order of the query result.
+If the table function contains a query with an <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span></code> clause, the
+function result may not be ordered as expected.</p>
+</div>
+<p>As a simple example, to select an entire table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">query</span><span class="p">(</span>
+      <span class="n">query</span> <span class="o">=&gt;</span> <span class="s1">'SELECT</span>
+<span class="s1">        *</span>
+<span class="s1">      FROM</span>
+<span class="s1">        tpch.nation'</span>
+    <span class="p">)</span>
+  <span class="p">);</span>
+</pre></div>
+</div>
+</section>
 <section id="drop-table">
 <h3 id="drop-table">DROP TABLE<a class="headerlink" href="#drop-table" title="Permalink to this heading">#</a></h3>
 <p>By default, <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">TABLE</span></code> operations are disabled on Cassandra catalogs. To
