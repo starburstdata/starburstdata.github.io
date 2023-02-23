@@ -1367,50 +1367,38 @@
     
 
 <p>You can use an SSH tunnel between Starburst Galaxy and your data source for an
-added layer of security. The server providing this SSH tunnel access is known as
-<a href="https://en.wikipedia.org/wiki/Bastion_host">bastion host</a> or jump server.</p>
+added layer of security. The server that provides this SSH tunnel access is
+known as a <a href="https://www.wikipedia.org/wiki/Bastion_host">bastion host</a> or jump
+server.</p>
 
-<p>This setup enables access to data sources that are not accessible directly from
-Starburst Galaxy, such as databases with no public access from outside the
-cloud provider network and protected in a virtual private network (VPC). All
-connections from Starburst Galaxy go to the bastion host, and are forwarded
-inside the private network to the data source.</p>
-      <h2 id="requirements">
+<p>This configuration allows access to data sources that are not accessible
+directly from Starburst Galaxy, such as databases with no public access from
+outside the virtual private cloud (VPC) that protects your assets in the cloud
+provider network. All connections from Starburst Galaxy go to the bastion host,
+and are forwarded inside the private network to the data source.</p>
+      <h2 id="bastion-host-requirements">
         
         
-          Requirements <a href="#requirements" class="titleAnchor">#</a>
+          Bastion host requirements <a href="#bastion-host-requirements" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>To use an SSH tunnel, you need the following:</p>
+<p>To use an SSH tunnel, you must have the following:</p>
 
 <ul>
-  <li>A server running SSH, and configured as bastion host.</li>
-  <li>Network access from the bastion host to the data source.</li>
-  <li>A public IP address or fully qualified domain name (FQDN) for the bastion
-host, and network access to it from  Starburst Galaxy, typically on port 22.</li>
+  <li>A server that runs SSH and is configured as a bastion host that resides within
+the VPC on your cloud provider.</li>
+  <li>Network access from the bastion host to the data source within the VPC.</li>
+  <li>An assigned public IP address or fully qualified domain name (FQDN) for the
+bastion host, and network access to it from Starburst Galaxy, typically on
+port 22.</li>
+  <li>The catalog for the target data source must support using SSH tunnels,
+confirmed on the data source’s <a href="../catalogs/index.html">catalog page</a>.</li>
+  <li><a href="../catalogs/index.html#object-storage">Object storage catalogs</a> do not
+support access through SSH tunnels.</li>
 </ul>
-
-<p>Use our tips to configure a bastion host in your cloud provider:</p>
-
-<ul>
-  <li><a href="./ssh-bastion-aws.html">AWS</a></li>
-</ul>
-
-<!--
-* [Azure](./ssh-bastion-azure.html)
-* [Google Cloud](./ssh-bastion-gc.html)
--->
-      <h2 id="considerations">
-        
-        
-          Considerations <a href="#considerations" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
 
 <p>Once configured, all network traffic and data transfer between Starburst Galaxy
 and your data source is encrypted, and moves through the bastion host.</p>
@@ -1421,89 +1409,191 @@ negative performance impacts.</p>
 
 <p>The server also needs to be sufficiently performant to process the data
 transfer, and have sufficient network connectivity.</p>
-      <h2 id="configuration">
+      <h2 id="bastion-host-options">
         
         
-          Configuration <a href="#configuration" class="titleAnchor">#</a>
+          Bastion host options <a href="#bastion-host-options" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Configure the use of a SSH tunnel for the connection to the data source in your
-catalog:</p>
+<p>There are many ways to configure and maintain an SSH tunnel through a bastion
+host. Consider the following points:</p>
 
 <ul>
-  <li>Select <strong>Connect via SSH tunnel</strong> in the configuration for the connection
-type.</li>
-  <li>Click on <strong>Generate RSA key</strong> and copy the value.</li>
-  <li>Add the <a href="#add-key">key to the desired user on the bastion host</a>.</li>
-  <li>Add a name for the SSH tunnel in <strong>SSH tunnel alias</strong>. You can use the alias
-to identify the SSH tunnel configuration, and use it with other catalog
-configurations.</li>
-  <li>Add the public IP address or FQDN for the bastion host in <strong>SSH host</strong>.</li>
-  <li>Leave the port to use for the SSH-encrypted data transfers at the default 22,
-unless you have configured SSH on the bastion server to use a different port.</li>
-  <li>Add the name of the operating system user on the bastion host with the
-generated RSA key in <strong>SSH user</strong>.</li>
-  <li>Click <strong>Validate and save SSH tunnel</strong> to complete the configuration.</li>
-  <li>If the connections fails, the error message exposes the specific IP address
-range/CIDR that you need to allow on the bastion host for inbound traffic.</li>
+  <li>How many bastion hosts do you need? Use one bastion per data source, one per
+region, or one per cloud provider?</li>
+  <li>Does the simplicity and troubleshooting ease of having one bastion per data
+source outweigh the cost?</li>
+  <li>Should you create and configure the bastion host step by step or use a cloud
+provider’s bastion host service?</li>
+  <li>If configuring your own bastion host:
+    <ul>
+      <li>Use a container or virtual machine?</li>
+      <li>Run Windows or Linux as the host’s OS? If Linux, which distribution?</li>
+      <li>How will you monitor the performance of the host so that it does not become
+a bottleneck blocking access to the data source?</li>
+    </ul>
+  </li>
 </ul>
-
-<p>Now you can proceed to configure the data source connection, and use host name
-and port values that are only available via the SSH tunnel.</p>
-
-<p><a name="add-key"></a></p>
-      <h2 id="add-key-to-bastion-server">
+      <h2 id="general-setup-phases">
         
         
-          Add key to bastion server <a href="#add-key-to-bastion-server" class="titleAnchor">#</a>
+          General setup phases <a href="#general-setup-phases" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>The SSH tunnel needs the RSA key from Starburst Galaxy in the SSH bastion
-server. Copy the value of the key from the user interface. Paste it into a new
-text file and save it in your user home directory in <code class="language-plaintext highlighter-rouge">~/.ssh/examplekey</code>.</p>
-
-<p>Use the username and host name of the bastion server, and copy the key to it
-with the <code class="language-plaintext highlighter-rouge">ssh-copy-id</code> command:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ssh-copy-id -i ~/.ssh/examplekey sshuser@bastionhostname
-</code></pre></div></div>
-
-<p>Alternatively, you can use the SSH key from the user interface of your cloud
-provider to SSH into the machine and perform the configuration remotely on the
-bastion host as described in the following section. Steps vary with different
-Linux distributions used.</p>
+<p>Because there are so many site-specific decisions to make when setting up a
+network of bastion hosts, Starburst cannot provide detailed setup steps
+for each possible case. In general, configuring to use an SSH tunnel goes
+through the following phases:</p>
 
 <ol>
-  <li>The certificate file of the bastion host as pem file (bastion.pem).</li>
-  <li>Connect to the bastion host with SSH <code class="language-plaintext highlighter-rouge">ssh -i bastion.pem user@&lt;ip_address&gt;</code></li>
-  <li>Create a group with <code class="language-plaintext highlighter-rouge">sudo groupadd starburst-galaxy</code></li>
-  <li>Create a user  with <code class="language-plaintext highlighter-rouge">sudo useradd -m -g starburst-galaxy starburst-galaxy</code></li>
-  <li>Switch to the new user <code class="language-plaintext highlighter-rouge">sudo su - starburst-galaxy</code></li>
-  <li>Create the users SSH configuration directory with <code class="language-plaintext highlighter-rouge">mkdir ~/.ssh</code></li>
-  <li>Set permissions on the directory with <code class="language-plaintext highlighter-rouge">chmod 700 ~/.ssh</code></li>
-  <li>Create the authorized_keys file with <code class="language-plaintext highlighter-rouge">touch ~/.ssh/authorized_keys</code></li>
-  <li>Set permissions with <code class="language-plaintext highlighter-rouge">chmod 600 ~/.ssh/authorized_keys</code></li>
-  <li>Add the RSA key from the Starburst Galaxy SSH tunnel dialog into the
-  authorized_keys file with a text editor.</li>
-</ol>
+  <li>
+    <p><strong>On the cloud provider</strong>: Configure the bastion host or bastion service of
+choice using your cloud provider’s documentation and assistance:</p>
 
-<p>The details for setting up the bastion also vary on your cloud provider platform
-and bastion host details:</p>
+    <ul>
+      <li><a href="https://aws.amazon.com/solutions/implementations/linux-bastion/">AWS</a></li>
+      <li><a href="https://learn.microsoft.com/en-us/azure/bastion/">Azure</a></li>
+      <li><a href="https://cloud.google.com/solutions/connecting-securely#bastion">Google Cloud</a>
+<br /><br /></li>
+    </ul>
+
+    <p>Configure the bastion host’s security to accept input only from
+Starburst Galaxy. Use the IP range and CIDR block from the <a href="./ip-allowlist.html">IP
+allowlist</a> that matches the cloud provider and region of
+your VPC.</p>
+
+    <p>Configure a service account on the bastion host to accept the pass-through
+SSH traffic from Starburst Galaxy, and set up SSH for that account.</p>
+  </li>
+  <li>
+    <p><strong>In Starburst Galaxy</strong>: In the navigation menu, click <strong>Cloud Settings</strong>,
+then click the name of your cloud provider. On the resulting pane, use the
+<strong>SSH tunnel</strong> pane to generate an RSA key pair for communication
+between Starburst Galaxy and one or more bastion hosts, as described in <a href="#use-ssh-tunnel-pane">Use
+the SSH tunnel pane</a>.</p>
+  </li>
+  <li>
+    <p><strong>In a Terminal session or SSH management app</strong>: Copy and install the
+generated public key to the bastion host to the <code class="language-plaintext highlighter-rouge">authorized_keys</code> file of the
+service account on the bastion host.</p>
+  </li>
+  <li>
+    <p><strong>In Starburst Galaxy</strong>: Use the same <strong>SSH tunnels</strong> pane as in phase 2 to
+create and name an SSH tunnel alias for use within Galaxy.</p>
+  </li>
+  <li>
+    <p><strong>In Starburst Galaxy</strong>: Specify the SSH tunnel’s alias when <a href="../catalogs/index.html#manage-catalogs">creating a
+catalog</a> for connection to a data
+source on the other side of the bastion host.</p>
+  </li>
+</ol>
+      <h2 id="example-bastion-configuration">
+        
+        
+          Example bastion configuration <a href="#example-bastion-configuration" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>As one example, Starburst provides the <a href="./ssh-bastion-aws.html">steps to configure an SSH tunnel
+to a bastion host on AWS</a>. You can adapt these steps to
+your site’s requirements as necessary.</p>
+      <h2 id="use-the-ssh-tunnel-pane-">
+        
+        
+          Use the SSH tunnel pane <a name="use-ssh-tunnel-pane"></a> <a href="#use-the-ssh-tunnel-pane-" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>To accomplish the second and fourth bastion host configuration
+<a href="#general-setup-phases">phases</a> described in a previous section, use the <strong>SSH
+tunnels</strong> pane to generate RSA keys and create an SSH tunnel alias.</p>
+
+<p>In the navigation menu, click <strong>Cloud settings</strong>, then click the menu for your
+cloud provider. Each provider’s pane contains an <strong>SSH tunnels</strong> section. In
+that section, click the <strong>Configure SSH tunnel</strong> button to open the <strong>SSH
+tunnels</strong> pane.</p>
+
+<p><img src="../../assets/img/galaxy/ssh-tunnel-keys-initial.png" alt="SSH tunnel keys" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+      <h3 id="generate-rsa-key">
+        
+        
+          Generate RSA key <a href="#generate-rsa-key" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Use the <strong>SSH tunnels</strong> pane to generate a pair of RSA keys to secure
+communication between Starburst Galaxy and one bastion host.</p>
+
+<p>Click <strong>Generate RSA key</strong>. This generates an RSA key pair and displays the
+generated public key. The generated private key remains internal to
+Starburst Galaxy. Copy the generated public key to the service account on the
+bastion host.</p>
+
+<p><img src="../../assets/img/galaxy/ssh-tunnel-keys-generated.png" alt="SSH tunnel keys generated" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+
+<p>Save the public key from the UI to a local file such as <code class="language-plaintext highlighter-rouge">~/.ssh/bastionkey</code>.</p>
+
+<p>If the bastion host’s account permissions allow it, use the <code class="language-plaintext highlighter-rouge">ssh-copy-id</code>
+command to copy the public key to the <code class="language-plaintext highlighter-rouge">~/.ssh/authorized_keys</code> file of the
+service account on the bastion host. For example, your bastion host
+configuration might create a service account named <code class="language-plaintext highlighter-rouge">starburst-galaxy</code>. Your
+copy command would resemble the following:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ssh-copy-id -i ~/.ssh/bastionkey starburst-galaxy@bastionhostname
+</code></pre></div></div>
+
+<p>You can also open an interactive <code class="language-plaintext highlighter-rouge">ssh</code> session to the bastion host to edit the
+<code class="language-plaintext highlighter-rouge">authorized_keys</code> file directly, and paste the public key to the end of that
+file.</p>
+
+<p>As an alternative, your site might use an SSH key management package
+instead of these manual methods to copy the public key to the bastion host.</p>
+      <h3 id="create-ssh-tunnel-alias">
+        
+        
+          Create SSH tunnel alias <a href="#create-ssh-tunnel-alias" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>When the RSA public key is generated and installed, next validate the connection
+and create a named SSH tunnel to use within Starburst Galaxy. You can specify
+the tunnel’s alias name when <a href="../catalogs/index.html#manage-catalogs">configuring a
+catalog</a> for a data source.</p>
+
+<p>Create at least one tunnel alias for each bastion host. You can create more than
+one alias to the same host, and use them for different purposes or roles.</p>
+
+<p>The fields of the <strong>Configure an SSH tunnel</strong> section are as follows:</p>
 
 <ul>
-  <li><a href="./ssh-bastion-aws.html">AWS</a></li>
+  <li><strong>SSH tunnel alias</strong>: Provide a name for this tunnel. Starburst
+suggests using a descriptive name that includes the bastion host name and the
+connected catalog.</li>
+  <li><strong>SSH host</strong>: The FQDN or IP address of the bastion host as reachable from
+Starburst Galaxy.</li>
+  <li><strong>SSH user</strong>: The name of the user account or service account on the bastion
+host.</li>
+  <li><strong>SSH port</strong>: Leave the default SSH port number of 22 unless you have a known
+working SSH port redirection on the bastion host.</li>
 </ul>
 
-<!--
-* [Azure](./ssh-bastion-azure.html)
-* [Google Cloud](./ssh-bastion-gc.html)
--->
+<p>With all fields filled in, click <strong>Validate and save</strong>. Starburst Galaxy
+confirms connectivity with the specified configuration, then saves the tunnel
+with its generated private key and alias name.</p>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -1608,7 +1698,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#ssh-tunnels">SSH tunnels</a><ul><li><a href="#requirements">Requirements</a></li><li><a href="#considerations">Considerations</a></li><li><a href="#configuration">Configuration</a></li><li><a href="#add-key-to-bastion-server">Add key to bastion server</a></li></ul></li></ul>
+          <ul><li><a href="#ssh-tunnels">SSH tunnels</a><ul><li><a href="#bastion-host-requirements">Bastion host requirements</a></li><li><a href="#bastion-host-options">Bastion host options</a></li><li><a href="#general-setup-phases">General setup phases</a></li><li><a href="#example-bastion-configuration">Example bastion configuration</a></li><li><a href="#use-the-ssh-tunnel-pane-">Use the SSH tunnel pane <a name="use-ssh-tunnel-pane"></a></a><ul><li><a href="#generate-rsa-key">Generate RSA key</a></li><li><a href="#create-ssh-tunnel-alias">Create SSH tunnel alias</a></li></ul></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
