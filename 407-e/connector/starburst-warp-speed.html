@@ -699,7 +699,7 @@ invalid warnings such as <code class="docutils literal notranslate"><span class=
 <section id="catalog-configuration">
 <span id="warp-speed-catalog-configuration"></span><h2 id="catalog-configuration">Catalog configuration<a class="headerlink" href="#catalog-configuration" title="Permalink to this heading">#</a></h2>
 <p>After a successful <a class="reference internal" href="#warp-speed-cluster-configuration"><span class="std std-ref">Cluster configuration</span></a>, you can configure
-the desired catalog to use Starburst Warp Speed.</p>
+the desired catalogs to use Starburst Warp Speed.</p>
 <p>Only catalogs using the Hive, Iceberg, or Delta Lake connectors can be
 accelerated:</p>
 <ul class="simple">
@@ -729,10 +729,16 @@ adding the required configuration properties:</p>
     <span class="no">connector.name=warp-speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
+    <span class="no">warp-speed.config.internal-communication.shared-secret=aLongSecretString</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
 </div>
+<p>The properties setting the connector name, the proxied connector and the cluster
+identifier are required.</p>
+<p>The shared secret must be set to the same value as the secret for the cluster
+itself set in <code class="docutils literal notranslate"><span class="pre">sharedSecret:</span></code>. This is required unless the REST API is
+disabled.</p>
 <p>For testing purposes, or alternatively for permanent usage of a new catalog
 name, such as <code class="docutils literal notranslate"><span class="pre">faster</span></code>, in parallel to the existing catalog, you can copy the
 configuration of a catalog and update it:</p>
@@ -745,6 +751,7 @@ configuration of a catalog and update it:</p>
     <span class="no">connector.name=warp-speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
+    <span class="no">warp-speed.config.internal-communication.shared-secret=aLongSecretString</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
 </pre></div>
@@ -779,34 +786,42 @@ connectors can be used to configure the catalog.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code></p></td>
 <td><p><strong>Required.</strong> Unique identifier of the cluster. Used as the folder name
-in the store path. When creating a new cluster and the same
-<code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code> and <code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code> are used, then
-the <a class="reference internal" href="#warp-speed-management"><span class="std std-ref">cluster warmup rules</span></a> for index and
-cache creation are imported into the newly created cluster.</p></td>
+in the store path. Use the same value for all catalogs. When creating a
+new cluster and the same <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code> and
+<code class="docutils literal notranslate"><span class="pre">warp-speed.cluster-uuid</span></code> are used, then the <a class="reference internal" href="#warp-speed-management"><span class="std std-ref">cluster warmup
+rules</span></a> for index and cache creation are imported
+into the newly created cluster.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code></p></td>
+<td><p><strong>Required, unless REST API is disabled.</strong>  The shared secret value of
+the cluster. It is configured for <a class="reference internal" href="../security/internal-communication.html"><span class="doc">secure internal communication</span></a> in <code class="docutils literal notranslate"><span class="pre">sharedSecret:</span></code> for the
+Kubernetes deployment. The identical value used for the property
+<code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code> for each
+catalog.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code></p></td>
 <td><p>The optional path of the storage where metadata is managed. By default,
 this is managed in memory of the workers. You can use <code class="docutils literal notranslate"><span class="pre">s3://</span></code>,
 <code class="docutils literal notranslate"><span class="pre">abfs://</span></code>, or <code class="docutils literal notranslate"><span class="pre">abfss://</span></code> as protocol for using remote object
 storage. Write access privileges are necessary. With remote a object
 storage configuration import-export and call-home data is also managed.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.enable.import-export</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.enable.import-export</span></code></p></td>
 <td><p>Enable or disable <a class="reference external" href="../../starburst-enterprise/admin-topics/warp-speed.html#resiliency">index and cache resiliency</a>.
 Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>. Requires an object storage configured with
 <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.workerdb.db.path</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.workerdb.db.path</span></code></p></td>
 <td><p>The path to store the internal database file. Default path is set to
 <code class="docutils literal notranslate"><span class="pre">/usr/lib/starburst/warp-speed/workerDB</span></code>. The option to change the
 path should only be used if the default path is not suitable for your
 deployment. Write access privileges are necessary.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
 <td><p>Specifies to run the REST API on the coordinator in the same server as
 SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-server-enabled</span></code></p></td>
 <td><p>Optional parameter to enable the REST API server on the coordinator and
 each worker for each catalog. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>. This REST API is
 only suitable for testing and debugging purposes, since it is not
@@ -819,7 +834,7 @@ cluster, so users need to forward the port or call the API from inside
 the cluster.</p>
 </td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.call-home.enable</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.call-home.enable</span></code></p></td>
 <td><p>Enable pushing logs and metadata to the storage configured at
 <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. If you are not
 currently using k8s-native logging tools for troubleshooting, be sure to
@@ -1047,7 +1062,9 @@ REST API and the Trino REST API.</p>
 <p>Access to the REST API is controlled by the authentication and authorization
 identical to the <a class="reference internal" href="../starburst-rest-api.html"><span class="doc">Starburst Enterprise REST API</span></a>.</p>
 <p>The REST API is enabled by default, and can be disabled with
-<code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>. The shared secret value of
+the cluster, configured for <a class="reference internal" href="../security/internal-communication.html"><span class="doc">secure internal communication</span></a>, must be set in
+<code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code> for each catalog.</p>
 <p>The endpoints path structure includes the name of the catalog,
 <code class="docutils literal notranslate"><span class="pre">/ext/{catalogName}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code>
 path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code>
