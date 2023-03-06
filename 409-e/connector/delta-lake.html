@@ -524,6 +524,8 @@
         <li class="md-nav__item"><a href="#unregister-table" class="md-nav__link">Unregister table</a>
         </li>
         <li class="md-nav__item"><a href="#updating-data" class="md-nav__link">Updating data</a>
+        </li>
+        <li class="md-nav__item"><a href="#vacuum" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code></a>
         </li></ul>
             </nav>
         </li>
@@ -547,8 +549,6 @@
         </li>
         <li class="md-nav__item"><a href="#memory-usage" class="md-nav__link">Memory usage</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#vacuum" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code></a>
-        </li>
         <li class="md-nav__item"><a href="#memory-monitoring" class="md-nav__link">Memory monitoring</a>
         </li></ul>
             </nav>
@@ -1266,23 +1266,15 @@ TABLE AS</span></a> syntax.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">change_data_feed_enabled</span></code></p></td>
 <td><p>Enables storing change data feed entries.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">reader_version</span></code></p></td>
-<td><p>Set reader version.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">writer_version</span></code></p></td>
-<td><p>Set writer version.</p></td>
-</tr>
 </tbody>
 </table>
-<p>The following example uses all six table properties:</p>
+<p>The following example uses all available table properties:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">example_partitioned_table</span>
 <span class="k">WITH</span> <span class="p">(</span>
   <span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path'</span><span class="p">,</span>
   <span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
   <span class="n">checkpoint_interval</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-  <span class="n">change_data_feed_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">,</span>
-  <span class="n">reader_version</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-  <span class="n">writer_version</span> <span class="o">=</span> <span class="mi">4</span>
+  <span class="n">change_data_feed_enabled</span> <span class="o">=</span> <span class="k">true</span>
 <span class="p">)</span>
 <span class="k">AS</span> <span class="k">SELECT</span> <span class="n">name</span><span class="p">,</span> <span class="k">comment</span><span class="p">,</span> <span class="n">regionkey</span> <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
 </pre></div>
@@ -1328,6 +1320,28 @@ make sure that no concurrent data modifications are run to avoid data
 corruption.</p>
 </li>
 </ul>
+</section>
+<section id="vacuum">
+<span id="delta-lake-vacuum"></span><h3 id="vacuum"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code><a class="headerlink" href="#vacuum" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> procedure removes all old files that are not in the transaction
+log, as well as files that are not needed to read table snapshots newer than the
+current time minus the retention period defined by the <code class="docutils literal notranslate"><span class="pre">retention</span> <span class="pre">period</span></code>
+parameter.</p>
+<p>Users with <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> permissions on a table can run <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code>
+as follows:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CALL example.system.vacuum<span class="o">(</span><span class="s1">'exampleschemaname'</span>, <span class="s1">'exampletablename'</span>, <span class="s1">'7d'</span><span class="o">)</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>All parameters are required, and must be presented in the following order:</p>
+<ul class="simple">
+<li><p>Schema name</p></li>
+<li><p>Table name</p></li>
+<li><p>Retention period</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">delta.vacuum.min-retention</span></code> config property provides a safety
+measure to ensure that files are retained as expected.  The minimum value for
+this property is <code class="docutils literal notranslate"><span class="pre">0s</span></code>. There is a minimum retention session property as well,
+<code class="docutils literal notranslate"><span class="pre">vacuum_min_retention</span></code>.</p>
 </section>
 </section>
 <section id="metadata-tables">
@@ -1496,28 +1510,6 @@ grows with the size of Delta Lake transaction logs of any accessed tables. It is
 important to take that into account when provisioning the coordinator.</p>
 <p>You need to decrease memory usage by keeping the number of active data files in
 table low by running <code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> and <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> in Delta Lake regularly.</p>
-<section id="vacuum">
-<span id="delta-lake-vacuum"></span><h4 id="vacuum"><code class="docutils literal notranslate"><span class="pre">VACUUM</span></code><a class="headerlink" href="#vacuum" title="Permalink to this heading">#</a></h4>
-<p>The <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code> procedure removes all old files that are not in the transaction
-log, as well as files that are not needed to read table snapshots newer than the
-current time minus the retention period defined by the <code class="docutils literal notranslate"><span class="pre">retention</span> <span class="pre">period</span></code>
-parameter.</p>
-<p>Users with <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> permissions on a table can run <code class="docutils literal notranslate"><span class="pre">VACUUM</span></code>
-as follows:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>CALL example.system.vacuum<span class="o">(</span><span class="s1">'exampleschemaname'</span>, <span class="s1">'exampletablename'</span>, <span class="s1">'7d'</span><span class="o">)</span><span class="p">;</span>
-</pre></div>
-</div>
-<p>All parameters are required, and must be presented in the following order:</p>
-<ul class="simple">
-<li><p>Schema name</p></li>
-<li><p>Table name</p></li>
-<li><p>Retention period</p></li>
-</ul>
-<p>The <code class="docutils literal notranslate"><span class="pre">delta.vacuum.min-retention</span></code> config property provides a safety
-measure to ensure that files are retained as expected.  The minimum value for
-this property is <code class="docutils literal notranslate"><span class="pre">0s</span></code>. There is a minimum retention session property as well,
-<code class="docutils literal notranslate"><span class="pre">vacuum_min_retention</span></code>.</p>
-</section>
 <section id="memory-monitoring">
 <h4 id="memory-monitoring">Memory monitoring<a class="headerlink" href="#memory-monitoring" title="Permalink to this heading">#</a></h4>
 <p>When using the Delta Lake connector you need to monitor memory usage on the

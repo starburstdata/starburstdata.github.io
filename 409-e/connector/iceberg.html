@@ -559,6 +559,8 @@
         </li>
         <li class="md-nav__item"><a href="#partitioned-tables" class="md-nav__link">Partitioned tables</a>
         </li>
+        <li class="md-nav__item"><a href="#sorted-tables" class="md-nav__link">Sorted tables</a>
+        </li>
         <li class="md-nav__item"><a href="#rolling-back-to-a-previous-snapshot" class="md-nav__link">Rolling back to a previous snapshot</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#time-travel-queries" class="md-nav__link">Time travel queries</a>
@@ -1107,6 +1109,7 @@ TABLE</span></a> syntax. Optionally specify the
 <span class="k">WITH</span> <span class="p">(</span>
     <span class="n">format</span> <span class="o">=</span> <span class="s1">'PARQUET'</span><span class="p">,</span>
     <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
+    <span class="n">sorted_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c3'</span><span class="p">],</span>
     <span class="k">location</span> <span class="o">=</span> <span class="s1">'s3://my-bucket/a/path/'</span>
 <span class="p">);</span>
 </pre></div>
@@ -1244,6 +1247,7 @@ the table.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">format</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">format_version</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">partitioning</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sorted_by</span></code></p></li>
 </ul>
 <p>For example, to update a table from v1 of the Iceberg specification to v2:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">table_name</span> <span class="k">SET</span> <span class="n">PROPERTIES</span> <span class="n">format_version</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
@@ -1506,6 +1510,43 @@ partition value is an integer hash of <code class="docutils literal notranslate"
 <span class="k">WITH</span> <span class="p">(</span><span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'month(order_date)'</span><span class="p">,</span> <span class="s1">'bucket(account_number, 10)'</span><span class="p">,</span> <span class="s1">'country'</span><span class="p">])</span>
 </pre></div>
 </div>
+</section>
+<section id="sorted-tables">
+<h2 id="sorted-tables">Sorted tables<a class="headerlink" href="#sorted-tables" title="Permalink to this heading">#</a></h2>
+<p>The connector supports sorted files as a performance improvement. Data is
+sorted during writes within each file based on the specified array of one
+or more columns.</p>
+<p>Sorting is particularly beneficial when the sorted columns show a
+high cardinality and are used as a filter for selective reads.</p>
+<p>The sort order is configured with the <code class="docutils literal notranslate"><span class="pre">sorted_by</span></code> table property.
+Specify an array of one or more columns to use for sorting
+when creating the table. The following example configures the
+<code class="docutils literal notranslate"><span class="pre">order_date</span></code> column of the <code class="docutils literal notranslate"><span class="pre">orders</span></code> table in the <code class="docutils literal notranslate"><span class="pre">customers</span></code>
+schema in the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">customers</span><span class="p">.</span><span class="n">orders</span> <span class="p">(</span>
+    <span class="n">order_id</span> <span class="nb">BIGINT</span><span class="p">,</span>
+    <span class="n">order_date</span> <span class="nb">DATE</span><span class="p">,</span>
+    <span class="n">account_number</span> <span class="nb">BIGINT</span><span class="p">,</span>
+    <span class="n">customer</span> <span class="nb">VARCHAR</span><span class="p">,</span>
+    <span class="n">country</span> <span class="nb">VARCHAR</span><span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">sorted_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'order_date'</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Sorting can be combined with partitioning on the same column. For example:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">customers</span><span class="p">.</span><span class="n">orders</span> <span class="p">(</span>
+    <span class="n">order_id</span> <span class="nb">BIGINT</span><span class="p">,</span>
+    <span class="n">order_date</span> <span class="nb">DATE</span><span class="p">,</span>
+    <span class="n">account_number</span> <span class="nb">BIGINT</span><span class="p">,</span>
+    <span class="n">customer</span> <span class="nb">VARCHAR</span><span class="p">,</span>
+    <span class="n">country</span> <span class="nb">VARCHAR</span><span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'month(order_date)'</span><span class="p">],</span>
+    <span class="n">sorted_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'order_date'</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>You can disable sorted writing with the session property
+<code class="docutils literal notranslate"><span class="pre">sorted_writing_enabled</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 </section>
 <section id="rolling-back-to-a-previous-snapshot">
 <h2 id="rolling-back-to-a-previous-snapshot">Rolling back to a previous snapshot<a class="headerlink" href="#rolling-back-to-a-previous-snapshot" title="Permalink to this heading">#</a></h2>
