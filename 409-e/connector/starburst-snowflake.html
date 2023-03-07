@@ -506,6 +506,12 @@
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#sql-delete" class="md-nav__link">SQL DELETE</a>
+        </li>
+        <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#collect-statistics" class="md-nav__link">collect_statistics</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -518,6 +524,8 @@
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a>
+        </li>
+        <li class="md-nav__item"><a href="#managed-statistics" class="md-nav__link">Managed statistics</a>
         </li>
         <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1030,6 +1038,30 @@ statements, the connector supports the following features:</p>
 <p>If a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause is specified, the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operation only works if the
 predicate in the clause can be fully pushed down to the data source.</p>
 </section>
+<section id="alter-table-execute">
+<h3 id="alter-table-execute">ALTER TABLE EXECUTE<a class="headerlink" href="#alter-table-execute" title="Permalink to this heading">#</a></h3>
+<p>The connector supports the following commands for use with
+<a class="reference internal" href="../sql/alter-table.html#alter-table-execute"><span class="std std-ref">ALTER TABLE EXECUTE</span></a>:</p>
+<section id="collect-statistics">
+<span id="starburst-snowflake-collect-statistics"></span><h4 id="collect-statistics">collect_statistics<a class="headerlink" href="#collect-statistics" title="Permalink to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">collect_statistics</span></code> command is used with
+<a class="reference internal" href="../optimizer/managed-statistics.html"><span class="doc">Managed statistics</span></a> to collect statistics for a table
+and its columns.</p>
+<p>The following statement collects statistics for the <code class="docutils literal notranslate"><span class="pre">example_table</span></code> table
+and all of its columns:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example_table</span> <span class="k">EXECUTE</span> <span class="n">collect_statistics</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Collecting statistics for all columns in a table may be unnecessarily
+performance-intensive, especially for wide tables. To only collect statistics
+for a subset of columns, you can include the <code class="docutils literal notranslate"><span class="pre">columns</span></code> parameter with an
+array of column names. For example:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example_table</span>
+    <span class="k">EXECUTE</span> <span class="n">collect_statistics</span><span class="p">(</span><span class="n">columns</span> <span class="o">=&gt;</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'customer'</span><span class="p">,</span><span class="s1">'line_item'</span><span class="p">]);</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 <section id="table-functions">
 <h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
@@ -1070,10 +1102,20 @@ processing performance based on the actual data in the data source. These table
 statistics are read from Snowflake’s <code class="docutils literal notranslate"><span class="pre">INFORMATION_SCHEMA.TABLES</span></code> table.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The Snowflake connector can only collect table statistics. Column
-statistics are not made available and therefore return as <code class="docutils literal notranslate"><span class="pre">NULL</span></code> in a
-<a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a> query.</p>
+<p>The Snowflake connector can only collect table statistics. Column statistics
+are not made available and therefore return as <code class="docutils literal notranslate"><span class="pre">NULL</span></code> in a
+<a class="reference internal" href="../sql/show-stats.html"><span class="doc">SHOW STATS</span></a> query. You can instead use managed statistics to have
+SEP collect statistics from Snowflake, including column statistics.</p>
 </div>
+</section>
+<section id="managed-statistics">
+<h3 id="managed-statistics">Managed statistics<a class="headerlink" href="#managed-statistics" title="Permalink to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../optimizer/managed-statistics.html"><span class="doc">Managed statistics</span></a> allowing
+SEP to collect and store its own table and column statistics that can then be
+used for performance optimizations in query planning.</p>
+<p>Statistics must be collected manually using the built-in
+<code class="docutils literal notranslate"><span class="pre">collect_statistics</span></code> command, see
+<a class="reference internal" href="#starburst-snowflake-collect-statistics"><span class="std std-ref">collect_statistics</span></a> for details and examples.</p>
 </section>
 <section id="pushdown">
 <h3 id="pushdown">Pushdown<a class="headerlink" href="#pushdown" title="Permalink to this heading">#</a></h3>
