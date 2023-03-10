@@ -640,16 +640,15 @@ on the coordinator:</p>
 <td><p>Enables managed statistics on a cluster. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">managed-statistics.cache-ttl</span></code></p></td>
-<td><p>Maximum amount of time for managed statistics to be stored on the optional
+<td><p>Maximum amount of time for managed statistics to be stored on the
 in-memory cache on the coordinator before they are retrieved from the
-database. For more information see <a class="reference internal" href="#managed-statistics-storage"><span class="std std-ref">statistics storage and management</span></a>. Default value is <code class="docutils literal notranslate"><span class="pre">0</span></code> (in-memory
-statistics cache disabled).</p></td>
+database. For more information see <a class="reference internal" href="#managed-statistics-storage"><span class="std std-ref">statistics storage and management</span></a>. Default value is <code class="docutils literal notranslate"><span class="pre">10m</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">managed-statistics.cache-maximum-size</span></code></p></td>
-<td><p>Maximum number of objects stored in the in-memory statistics cache, if it
-is enabled. If this value is exceeded, the least-used statistics are
-discarded and only re-collected when the query planner needs to reference
-them. Defaults to <code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></td>
+<td><p>Maximum number of objects stored in the in-memory statistics cache. If
+this value is exceeded, the least-used statistics are discarded and only
+retrieved again from the database when the query planner needs to
+reference them. Defaults to <code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -682,13 +681,15 @@ on <code class="docutils literal notranslate"><span class="pre">ALTER</span> <sp
 <span id="managed-statistics-storage"></span><h3 id="storage-and-management">Storage and management<a class="headerlink" href="#storage-and-management" title="Permalink to this heading">#</a></h3>
 <p>When statistics are collected, they are stored in the query logger database
 indefinitely until <code class="docutils literal notranslate"><span class="pre">collect_statistics</span></code> is run again and overwrites any stale
-statistics. By default, the query planner accesses this database directly to
-reference these statistics.</p>
-<p>You can optionally set <code class="docutils literal notranslate"><span class="pre">managed-statistics.cache-ttl</span></code> to a value greater than
-<code class="docutils literal notranslate"><span class="pre">0</span></code> to enable an in-memory cache on the coordinator. If enabled, this cache is
-accessed by the query planner instead of the database, reducing network I/O on
-the database at the cost of additional memory usage on the coordinator node. The
-in-memory cache retrieves its statistics from the SEP database, not from
+statistics. These statistics are pulled from the database into an in-memory
+cache on the coordinator at a frequency defined by the
+<code class="docutils literal notranslate"><span class="pre">managed-statistics.cache-ttl</span></code> configuration property which defaults to 10
+minutes. The query planner accesses this in-memory cache for statistics instead
+of the query logger database, reducing network I/O on the database at the cost
+of additional memory usage on the coordinator node. To disable the in-memory
+cache and have the query planner directly access the query logger database for
+statistics, set the <code class="docutils literal notranslate"><span class="pre">managed-statistics.cache-ttl</span></code> property to <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+<p>The in-memory cache retrieves its statistics from the SEP database, not from
 catalogs directly, so you must still routinely run the <code class="docutils literal notranslate"><span class="pre">collect_statistics</span></code>
 command to ensure that the cache does not store stale statistics.</p>
 </section>
