@@ -580,6 +580,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#function-resolution" class="md-nav__link">Function resolution</a>
         </li>
+        <li class="md-nav__item"><a href="#arguments" class="md-nav__link">Arguments</a>
+        </li>
         <li class="md-nav__item"><a href="#argument-passing-conventions" class="md-nav__link">Argument passing conventions</a>
         </li></ul>
             </nav>
@@ -707,6 +709,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#function-resolution" class="md-nav__link">Function resolution</a>
         </li>
+        <li class="md-nav__item"><a href="#arguments" class="md-nav__link">Arguments</a>
+        </li>
         <li class="md-nav__item"><a href="#argument-passing-conventions" class="md-nav__link">Argument passing conventions</a>
         </li></ul>
             </nav>
@@ -761,6 +765,56 @@ by the specified catalog, the query fails.</p>
 <p>The table function name is resolved case-insensitive, analogically to scalar
 function and table resolution in Trino.</p>
 </section>
+<section id="arguments">
+<h3 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permalink to this heading">#</a></h3>
+<p>There are three types of arguments.</p>
+<ol class="arabic simple">
+<li><p>Scalar arguments</p></li>
+</ol>
+<p>They must be constant expressions, and they can be of any SQL type, which is
+compatible with the declared argument type:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">factor</span> <span class="o">=&gt;</span> <span class="mi">42</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Descriptor arguments</p></li>
+</ol>
+<p>Descriptors consist of fields with names and optional data types:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">schema</span> <span class="o">=&gt;</span> <span class="k">DESCRIPTOR</span><span class="p">(</span><span class="n">id</span> <span class="nb">BIGINT</span><span class="p">,</span> <span class="n">name</span> <span class="nb">VARCHAR</span><span class="p">)</span>
+<span class="n">columns</span> <span class="o">=&gt;</span> <span class="k">DESCRIPTOR</span><span class="p">(</span><span class="nb">date</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="k">comment</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To pass <code class="docutils literal notranslate"><span class="pre">null</span></code> for a descriptor, use:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">schema</span> <span class="o">=&gt;</span> <span class="k">CAST</span><span class="p">(</span><span class="k">null</span> <span class="k">AS</span> <span class="k">DESCRIPTOR</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Table arguments</p></li>
+</ol>
+<p>You can pass a table name, or a query. Use the keyword <code class="docutils literal notranslate"><span class="pre">TABLE</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
+<span class="k">data</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">region</span><span class="p">,</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">region</span><span class="p">.</span><span class="n">regionkey</span> <span class="o">=</span> <span class="n">nation</span><span class="p">.</span><span class="n">regionkey</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If the table argument is declared as <a class="reference internal" href="../develop/table-functions.html#tf-set-or-row-semantics"><span class="std std-ref">set semantics</span></a>,
+you can specify partitioning and ordering. Each partition is processed
+independently by the table function. If you do not specify partitioning, the
+argument is processed as a single partition. You can also specify
+<code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>. With <code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> you
+declare that you are not interested in the function result if the argument is
+empty. This information is used by the Trino engine to optimize the query. The
+<code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> option indicates that the function should be executed even
+if the table argument is empty. Note that by specifying <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or
+<code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>, you override the property set for the argument by the
+function author.</p>
+<p>The following example shows how the table argument properties should be ordered:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
+                    <span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">orderstatus</span>
+                    <span class="n">KEEP</span> <span class="k">WHEN</span> <span class="n">EMPTY</span>
+                    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">orderdate</span>
+</pre></div>
+</div>
+</section>
 <section id="argument-passing-conventions">
 <h3 id="argument-passing-conventions">Argument passing conventions<a class="headerlink" href="#argument-passing-conventions" title="Permalink to this heading">#</a></h3>
 <p>There are two conventions of passing arguments to a table function:</p>
@@ -785,9 +839,7 @@ case-sensitive, and with automatic uppercasing of unquoted names.</p>
 declared. You can skip a suffix of the argument list, provided that all the
 skipped arguments are declared with default values.</p>
 <p>You cannot mix the argument conventions in one invocation.</p>
-<p>All arguments must be constant expressions, and they can be of any SQL type,
-which is compatible with the declared argument type. You can also use
-parameters in arguments:</p>
+<p>You can also use parameters in arguments:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">PREPARE</span> <span class="n">stmt</span> <span class="k">FROM</span>
 <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">my_function</span><span class="p">(</span><span class="k">row_count</span> <span class="o">=&gt;</span> <span class="o">?</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">column_count</span> <span class="o">=&gt;</span> <span class="o">?</span><span class="p">));</span>
 

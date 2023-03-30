@@ -583,8 +583,6 @@
         </li>
         <li class="md-nav__item"><a href="#metadata-tables" class="md-nav__link">Metadata tables</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#data-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$data</span></code> table</a>
-        </li>
         <li class="md-nav__item"><a href="#properties-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$properties</span></code> table</a>
         </li>
         <li class="md-nav__item"><a href="#history-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table</a>
@@ -596,6 +594,8 @@
         <li class="md-nav__item"><a href="#partitions-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$partitions</span></code> table</a>
         </li>
         <li class="md-nav__item"><a href="#files-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$files</span></code> table</a>
+        </li>
+        <li class="md-nav__item"><a href="#refs-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$refs</span></code> table</a>
         </li></ul>
             </nav>
         </li>
@@ -1635,8 +1635,19 @@ existing Iceberg table from the metastores without deleting the data:</p>
 <section id="migrating-existing-tables">
 <h2 id="migrating-existing-tables">Migrating existing tables<a class="headerlink" href="#migrating-existing-tables" title="Permalink to this heading">#</a></h2>
 <p>The connector can read from or write to Hive tables that have been migrated to Iceberg.
-There is no Trino support for migrating Hive tables to Iceberg, so you need to either use
-the Iceberg API or Apache Spark.</p>
+An SQL procedure <code class="docutils literal notranslate"><span class="pre">system.migrate</span></code> allows the caller to replace
+a Hive table with an Iceberg table, loaded with the source’s data files.
+Table schema, partitioning, properties, and location will be copied from the source table.
+Migrate will fail if any table partition uses an unsupported format:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">iceberg</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">migrate</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In addition, you can provide a <code class="docutils literal notranslate"><span class="pre">recursive_directory</span></code> argument to migrate the table with recursive directories.
+The possible values are <code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">false</span></code> and <code class="docutils literal notranslate"><span class="pre">fail</span></code>. The default value is <code class="docutils literal notranslate"><span class="pre">fail</span></code> that throws an exception
+if nested directory exists:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">iceberg</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">migrate</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">,</span> <span class="n">recursive_directory</span> <span class="o">=&gt;</span> <span class="s1">'true'</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="iceberg-table-properties">
 <span id="id3"></span><h2 id="iceberg-table-properties">Iceberg table properties<a class="headerlink" href="#iceberg-table-properties" title="Permalink to this heading">#</a></h2>
@@ -1744,21 +1755,9 @@ can inspect the file path for each record:</p>
 These metadata tables contain information about the internal structure
 of the Iceberg table. You can query each metadata table by appending the
 metadata table name to the table name:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="ss">"test_table$data"</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="ss">"test_table$properties"</span>
 </pre></div>
 </div>
-<section id="data-table">
-<h3 id="data-table"><code class="docutils literal notranslate"><span class="pre">$data</span></code> table<a class="headerlink" href="#data-table" title="Permalink to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">$data</span></code> table is an alias for the Iceberg table itself.</p>
-<p>The statement:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="ss">"test_table$data"</span>
-</pre></div>
-</div>
-<p>is equivalent to:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">test_table</span>
-</pre></div>
-</div>
-</section>
 <section id="properties-table">
 <h3 id="properties-table"><code class="docutils literal notranslate"><span class="pre">$properties</span></code> table<a class="headerlink" href="#properties-table" title="Permalink to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">$properties</span></code> table provides access to general information about Iceberg
@@ -2109,6 +2108,61 @@ The supported content types in Iceberg are:</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">equality_ids</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">array(integer)</span></code></p></td>
 <td><p>The set of field IDs used for equality comparison in equality delete files</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="refs-table">
+<h3 id="refs-table"><code class="docutils literal notranslate"><span class="pre">$refs</span></code> table<a class="headerlink" href="#refs-table" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">$refs</span></code> table provides information about Iceberg references including branches and tags.</p>
+<p>You can retrieve the references of the Iceberg table <code class="docutils literal notranslate"><span class="pre">test_table</span></code> by using the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="ss">"test_table$refs"</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>name            | type   | snapshot_id | max_reference_age_in_ms | min_snapshots_to_keep | max_snapshot_age_in_ms |
+----------------+--------+-------------+-------------------------+-----------------------+------------------------+
+example_tag     | TAG    | 10000000000 | 10000                   | null                  | null                   |
+example_branch  | BRANCH | 20000000000 | 20000                   | 2                     | 30000                  |
+</pre></div>
+</div>
+<p>The output of the query has the following columns:</p>
+<table id="id15">
+<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id15" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 20%"/>
+<col style="width: 30%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">varchar</span></code></p></td>
+<td><p>Name of the reference</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">varchar</span></code></p></td>
+<td><p>Type of the reference, either <code class="docutils literal notranslate"><span class="pre">BRANCH</span></code> or <code class="docutils literal notranslate"><span class="pre">TAG</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snapshot_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
+<td><p>The snapshot ID of the reference</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_reference_age_in_ms</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
+<td><p>The maximum age of the reference before it could be expired.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">min_snapshots_to_keep</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">integer</span></code></p></td>
+<td><p>For branch only, the minimum number of snapshots to keep in a branch.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_snapshot_age_in_ms</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigint</span></code></p></td>
+<td><p>For branch only, the max snapshot age allowed in a branch. Older snapshots in the branch will be expired.</p></td>
 </tr>
 </tbody>
 </table>
