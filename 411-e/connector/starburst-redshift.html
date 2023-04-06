@@ -487,7 +487,31 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#connection-security" class="md-nav__link">Connection security</a>
+        </li>
+        <li class="md-nav__item"><a href="#data-source-authentication" class="md-nav__link">Data source authentication</a>
+        </li>
+        <li class="md-nav__item"><a href="#multiple-redshift-databases-or-clusters" class="md-nav__link">Multiple Redshift databases or clusters</a>
+        </li>
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#domain-compaction-threshold" class="md-nav__link">Domain compaction threshold</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#case-insensitive-matching" class="md-nav__link">Case insensitive matching</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#non-transactional-insert" class="md-nav__link">Non-transactional INSERT</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#querying-redshift" class="md-nav__link">Querying Redshift</a>
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -501,11 +525,23 @@
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#sql-delete" class="md-nav__link">SQL DELETE</a>
+        </li>
+        <li class="md-nav__item"><a href="#alter-table" class="md-nav__link">ALTER TABLE</a>
+        </li>
+        <li class="md-nav__item"><a href="#alter-schema" class="md-nav__link">ALTER SCHEMA</a>
+        </li>
         <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#collect-statistics" class="md-nav__link">collect_statistics</a>
         </li></ul>
             </nav>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#query-varchar-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a>
         </li></ul>
             </nav>
         </li>
@@ -566,22 +602,20 @@
             
   <section id="sb-redshift-connector">
 <h1 id="connector-starburst-redshift--page-root">Starburst Redshift connector<a class="headerlink" href="#connector-starburst-redshift--page-root" title="Permalink to this heading">#</a></h1>
-<img class="connector-logo" src="../_static/img/redshift.png"/><p>The Starburst Redshift connector is an extended version of the <a class="reference internal" href="redshift.html"><span class="doc">Redshift
-connector</span></a>. It can be used to connect and query <a class="reference external" href="https://aws.amazon.com/redshift/">Redshift</a> databases. Configuration and usage is
-identical.</p>
-<p>The following improvements are included:</p>
+<img class="connector-logo" src="../_static/img/redshift.png"/><p>The Starburst Redshift connector is an improved version of the Trino <a class="reference external" href="https://trino.io/docs/current/connector/redshift.html">Redshift
+connector</a> that allows
+querying and creating tables in an external <a class="reference external" href="https://aws.amazon.com/redshift/">Amazon Redshift</a> cluster.</p>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
+<p>To connect to Redshift, you need:</p>
 <ul class="simple">
-<li><p>Fulfill the <a class="reference internal" href="redshift.html"><span class="doc">Redshift connector</span></a> requirements.</p></li>
-<li><p>Additional features of the connector require a valid
-<a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>, unless otherwise noted.</p></li>
+<li><p>Network access from the Trino coordinator and workers to Redshift.
+Port 5439 is the default port.</p></li>
+<li><p>A valid <a class="reference internal" href="../installation/license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>.</p></li>
 </ul>
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
-<p>The Starburst Redshift connector supports all configuration options available for the
-base <a class="reference internal" href="redshift.html"><span class="doc">Redshift connector</span></a>.</p>
 <p>To configure a Redshift catalog, create a catalog properties file in
 <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named, for example, <code class="docutils literal notranslate"><span class="pre">example.properties</span></code>. The following
 is a minimal configuration for a Redshift catalog properties file:</p>
@@ -591,9 +625,105 @@ is a minimal configuration for a Redshift catalog properties file:</p>
 <span class="na">connection-password</span><span class="o">=</span><span class="s">redshift_password</span>
 </pre></div>
 </div>
-<p>The Starburst extension adds the following additional catalog configuration property:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-user</span></code> and <code class="docutils literal notranslate"><span class="pre">connection-password</span></code> are typically required and
+determine the user credentials for the connection, often a service user. You can
+use <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a> to avoid using actual values in the
+catalog properties files.</p>
+<section id="connection-security">
+<span id="redshift-tls"></span><h3 id="connection-security">Connection security<a class="headerlink" href="#connection-security" title="Permalink to this heading">#</a></h3>
+<p>If you have TLS configured with a globally-trusted certificate installed on your
+data source, you can enable TLS between your cluster and the data
+source by appending a parameter to the JDBC connection string set in the
+<code class="docutils literal notranslate"><span class="pre">connection-url</span></code> catalog configuration property.</p>
+<p>For example, in version 2.1 of the Redshift JDBC driver, TLS/SSL is enabled by
+default with the <code class="docutils literal notranslate"><span class="pre">SSL</span></code> parameter. You can disable or further configure TLS
+by appending parameters to the <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> configuration property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:redshift://example.net:5439/database;SSL=TRUE;</span>
+</pre></div>
+</div>
+<p>For more information on TLS configuration options, see the <a class="reference external" href="https://docs.aws.amazon.com/redshift/latest/mgmt/jdbc20-configuration-options.html#jdbc20-ssl-option">Redshift JDBC driver
+documentation</a>.</p>
+</section>
+<section id="data-source-authentication">
+<h3 id="data-source-authentication">Data source authentication<a class="headerlink" href="#data-source-authentication" title="Permalink to this heading">#</a></h3>
+<p>The connector can provide credentials for the data source connection
+in multiple ways:</p>
+<ul class="simple">
+<li><p>inline, in the connector configuration file</p></li>
+<li><p>in a separate properties file</p></li>
+<li><p>in a key store file</p></li>
+<li><p>as extra credentials set when connecting to Trino</p></li>
+</ul>
+<p>You can use <a class="reference internal" href="../security/secrets.html"><span class="doc">secrets</span></a> to avoid storing sensitive
+values in the catalog properties files.</p>
+<p>The following table describes configuration properties
+for connection credentials:</p>
+<table>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credential-provider.type</span></code></p></td>
+<td><p>Type of the credential provider. Must be one of <code class="docutils literal notranslate"><span class="pre">INLINE</span></code>, <code class="docutils literal notranslate"><span class="pre">FILE</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">KEYSTORE</span></code>; defaults to <code class="docutils literal notranslate"><span class="pre">INLINE</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connection-user</span></code></p></td>
+<td><p>Connection user name.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connection-password</span></code></p></td>
+<td><p>Connection password.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">user-credential-name</span></code></p></td>
+<td><p>Name of the extra credentials property, whose value to use as the user
+name. See <code class="docutils literal notranslate"><span class="pre">extraCredentials</span></code> in <a class="reference internal" href="../client/jdbc.html#jdbc-parameter-reference"><span class="std std-ref">Parameter reference</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">password-credential-name</span></code></p></td>
+<td><p>Name of the extra credentials property, whose value to use as the
+password.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">connection-credential-file</span></code></p></td>
+<td><p>Location of the properties file where credentials are present. It must
+contain the <code class="docutils literal notranslate"><span class="pre">connection-user</span></code> and <code class="docutils literal notranslate"><span class="pre">connection-password</span></code> properties.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-file-path</span></code></p></td>
+<td><p>The location of the Java Keystore file, from which to read credentials.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-type</span></code></p></td>
+<td><p>File format of the keystore file, for example <code class="docutils literal notranslate"><span class="pre">JKS</span></code> or <code class="docutils literal notranslate"><span class="pre">PEM</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-password</span></code></p></td>
+<td><p>Password for the key store.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-user-credential-name</span></code></p></td>
+<td><p>Name of the key store entity to use as the user name.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-user-credential-password</span></code></p></td>
+<td><p>Password for the user name key store entity.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-password-credential-name</span></code></p></td>
+<td><p>Name of the key store entity to use as the password.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">keystore-password-credential-password</span></code></p></td>
+<td><p>Password for the password key store entity.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="multiple-redshift-databases-or-clusters">
+<h3 id="multiple-redshift-databases-or-clusters">Multiple Redshift databases or clusters<a class="headerlink" href="#multiple-redshift-databases-or-clusters" title="Permalink to this heading">#</a></h3>
+<p>By default, the Redshift connector can only access a single database within
+a Redshift cluster. Enable the
+<code class="docutils literal notranslate"><span class="pre">redshift.database-prefix-for-schema.enabled</span></code> catalog configuration property
+to access multiple databases on a Redshift cluster as described in the
+following table:</p>
 <table id="id2">
-<caption><span class="caption-text">Starburst Redshift extended connector configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<caption><span class="caption-text">Starburst Redshift connector configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -623,6 +753,193 @@ supports <a class="reference internal" href="../language/sql-support.html#sql-gl
 </tr>
 </tbody>
 </table>
+<p>To connect to multiple Redshift clusters, you must configure additional catalogs
+using the Redshift connector for each cluster.</p>
+</section>
+<section id="general-configuration-properties">
+<h3 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Permalink to this heading">#</a></h3>
+<p>The following table describes general catalog configuration properties for the
+connector:</p>
+<table>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching</span></code></p></td>
+<td><p>Support case insensitive schema and table names.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.cache-ttl</span></code></p></td>
+<td><p>This value should be a <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.config-file</span></code></p></td>
+<td><p>Path to a name mapping configuration file in JSON format that allows
+Trino to disambiguate between schemas and tables with similar names in
+different cases.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">null</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.config-file.refresh-period</span></code></p></td>
+<td><p>Frequency with which Trino checks the name matching configuration file
+for changes. This value should be a <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a>.</p></td>
+<td><p>(refresh disabled)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-ttl</span></code></p></td>
+<td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">The duration</span></a> for which metadata, including
+table and column statistics, is cached.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0s</span></code> (caching disabled)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-missing</span></code></p></td>
+<td><p>Cache the fact that metadata, including table and column statistics, is
+not available</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-maximum-size</span></code></p></td>
+<td><p>Maximum number of objects stored in the metadata cache</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">write.batch-size</span></code></p></td>
+<td><p>Maximum number of statements in a batched execution.
+Do not change this setting from the default. Non-default values may
+negatively impact performance.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<td><p>Push down dynamic filters into JDBC queries</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<td><p>Maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for which Trino will wait for dynamic
+filters to be collected from the build side of joins before starting a
+JDBC query. Using a large timeout can potentially result in more detailed
+dynamic filters. However, it can also increase latency for some queries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="domain-compaction-threshold">
+<h4 id="domain-compaction-threshold">Domain compaction threshold<a class="headerlink" href="#domain-compaction-threshold" title="Permalink to this heading">#</a></h4>
+<p>Pushing down a large list of predicates to the data source can compromise
+performance. Trino compacts large predicates into a simpler range predicate
+by default to ensure a balance between performance and predicate pushdown.
+If necessary, the threshold for this compaction can be increased to improve
+performance when the data source is capable of taking advantage of large
+predicates. Increasing this threshold may improve pushdown of large
+<a class="reference internal" href="../admin/dynamic-filtering.html"><span class="doc">dynamic filters</span></a>.
+The <code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> catalog configuration property or the
+<code class="docutils literal notranslate"><span class="pre">domain_compaction_threshold</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">catalog session property</span></a> can be used to adjust the default value of
+<code class="docutils literal notranslate"><span class="pre">32</span></code> for this threshold.</p>
+</section>
+</section>
+<section id="procedures">
+<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Permalink to this heading">#</a></h3>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></p>
+<p>Flush JDBC metadata caches. For example, the following system call
+flushes the metadata caches for all schemas in the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">flush_metadata_cache</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<section id="case-insensitive-matching">
+<h4 id="case-insensitive-matching">Case insensitive matching<a class="headerlink" href="#case-insensitive-matching" title="Permalink to this heading">#</a></h4>
+<p>When <code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, Trino
+is able to query non-lowercase schemas and tables by maintaining a mapping of
+the lowercase name to the actual name in the remote system. However, if two
+schemas and/or tables have names that differ only in case (such as “customers”
+and “Customers”) then Trino fails to query them due to ambiguity.</p>
+<p>In these cases, use the <code class="docutils literal notranslate"><span class="pre">case-insensitive-name-matching.config-file</span></code> catalog
+configuration property to specify a configuration file that maps these remote
+schemas/tables to their respective Trino schemas/tables:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"schemas"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"remoteSchema"</span><span class="p">:</span> <span class="s2">"CaseSensitiveName"</span><span class="p">,</span>
+      <span class="nt">"mapping"</span><span class="p">:</span> <span class="s2">"case_insensitive_1"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"remoteSchema"</span><span class="p">:</span> <span class="s2">"cASEsENSITIVEnAME"</span><span class="p">,</span>
+      <span class="nt">"mapping"</span><span class="p">:</span> <span class="s2">"case_insensitive_2"</span>
+    <span class="p">}],</span>
+  <span class="nt">"tables"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"remoteSchema"</span><span class="p">:</span> <span class="s2">"CaseSensitiveName"</span><span class="p">,</span>
+      <span class="nt">"remoteTable"</span><span class="p">:</span> <span class="s2">"tablex"</span><span class="p">,</span>
+      <span class="nt">"mapping"</span><span class="p">:</span> <span class="s2">"table_1"</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"remoteSchema"</span><span class="p">:</span> <span class="s2">"CaseSensitiveName"</span><span class="p">,</span>
+      <span class="nt">"remoteTable"</span><span class="p">:</span> <span class="s2">"TABLEX"</span><span class="p">,</span>
+      <span class="nt">"mapping"</span><span class="p">:</span> <span class="s2">"table_2"</span>
+    <span class="p">}]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Queries against one of the tables or schemes defined in the <code class="docutils literal notranslate"><span class="pre">mapping</span></code>
+attributes are run against the corresponding remote entity. For example, a query
+against tables in the <code class="docutils literal notranslate"><span class="pre">case_insensitive_1</span></code> schema is forwarded to the
+CaseSensitiveName schema and a query against <code class="docutils literal notranslate"><span class="pre">case_insensitive_2</span></code> is forwarded
+to the <code class="docutils literal notranslate"><span class="pre">cASEsENSITIVEnAME</span></code> schema.</p>
+<p>At the table mapping level, a query on <code class="docutils literal notranslate"><span class="pre">case_insensitive_1.table_1</span></code> as
+configured above is forwarded to <code class="docutils literal notranslate"><span class="pre">CaseSensitiveName.tablex</span></code>, and a query on
+<code class="docutils literal notranslate"><span class="pre">case_insensitive_1.table_2</span></code> is forwarded to <code class="docutils literal notranslate"><span class="pre">CaseSensitiveName.TABLEX</span></code>.</p>
+<p>By default, when a change is made to the mapping configuration file, Trino must
+be restarted to load the changes. Optionally, you can set the
+<code class="docutils literal notranslate"><span class="pre">case-insensitive-name-mapping.refresh-period</span></code> to have Trino refresh the
+properties without requiring a restart:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">case-insensitive-name-mapping.refresh-period</span><span class="o">=</span><span class="s">30s</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="non-transactional-insert">
+<h3 id="non-transactional-insert">Non-transactional INSERT<a class="headerlink" href="#non-transactional-insert" title="Permalink to this heading">#</a></h3>
+<p>The connector supports adding rows using <a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT statements</span></a>.
+By default, data insertion is performed by writing data to a temporary table.
+You can skip this step to improve performance and write directly to the target
+table. Set the <code class="docutils literal notranslate"><span class="pre">insert.non-transactional-insert.enabled</span></code> catalog property
+or the corresponding <code class="docutils literal notranslate"><span class="pre">non_transactional_insert</span></code> catalog session property to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<p>Note that with this property enabled, data can be corrupted in rare cases where
+exceptions occur during the insert operation. With transactions disabled, no
+rollback can be performed.</p>
+</section>
+</section>
+<section id="querying-redshift">
+<h2 id="querying-redshift">Querying Redshift<a class="headerlink" href="#querying-redshift" title="Permalink to this heading">#</a></h2>
+<p>The Redshift connector provides a schema for every Redshift schema.
+See the available Redshift schemas by running <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">SCHEMAS</span></code>. The following
+example shows the Redshift schemas available in a catalog named <code class="docutils literal notranslate"><span class="pre">example</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span> <span class="n">SCHEMAS</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>If you have a Redshift schema named <code class="docutils literal notranslate"><span class="pre">web</span></code>, view the tables in this schema by
+running <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">TABLES</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span> <span class="n">TABLES</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>See a list of the columns in the <code class="docutils literal notranslate"><span class="pre">clicks</span></code> table in the <code class="docutils literal notranslate"><span class="pre">web</span></code>
+database using either <code class="docutils literal notranslate"><span class="pre">DESCRIBE</span></code> or <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">COLUMNS</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DESCRIBE</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">clicks</span><span class="p">;</span>
+<span class="k">SHOW</span> <span class="n">COLUMNS</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">clicks</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Finally, access the <code class="docutils literal notranslate"><span class="pre">clicks</span></code> table in the <code class="docutils literal notranslate"><span class="pre">web</span></code> schema:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">clicks</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>If you used a different name for your catalog properties file, use that catalog
+name instead of <code class="docutils literal notranslate"><span class="pre">example</span></code> in the above examples.</p>
 </section>
 <section id="type-mapping">
 <h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this heading">#</a></h2>
@@ -799,11 +1116,41 @@ the time is rounded to the nearest microsecond before being inserted.</p>
 </section>
 <section id="sql-support">
 <h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this heading">#</a></h2>
-<p>The connector supports all of the SQL statements listed in the <a class="reference internal" href="redshift.html#redshift-sql-support"><span class="std std-ref">Redshift
-connector documentation</span></a>.</p>
+<p>The connector provides read and write access to data and metadata in
+Redshift. In addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a>
+statements, the connector supports the following features:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/truncate.html"><span class="doc">TRUNCATE</span></a></p></li>
+<li><p><a class="reference internal" href="../language/sql-support.html#sql-schema-table-management"><span class="std std-ref">Schema and table management</span></a></p></li>
+</ul>
 <p>When the <code class="docutils literal notranslate"><span class="pre">redshift.database-prefix-for-schema.enabled</span></code> catalog configuration
 property is enabled, the connector only supports <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a> SQL
 statements.</p>
+<section id="sql-delete">
+<h3 id="sql-delete">SQL DELETE<a class="headerlink" href="#sql-delete" title="Permalink to this heading">#</a></h3>
+<p>If a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause is specified, the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operation only works if the
+predicate in the clause can be fully pushed down to the data source.</p>
+</section>
+<section id="alter-table">
+<h3 id="alter-table">ALTER TABLE<a class="headerlink" href="#alter-table" title="Permalink to this heading">#</a></h3>
+<p>The connector does not support renaming tables across multiple schemas. For
+example, the following statement is supported:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">schema_one</span><span class="p">.</span><span class="n">table_one</span> <span class="k">RENAME</span> <span class="k">TO</span> <span class="n">example</span><span class="p">.</span><span class="n">schema_one</span><span class="p">.</span><span class="n">table_two</span>
+</pre></div>
+</div>
+<p>The following statement attempts to rename a table across schemas, and therefore
+is not supported:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">schema_one</span><span class="p">.</span><span class="n">table_one</span> <span class="k">RENAME</span> <span class="k">TO</span> <span class="n">example</span><span class="p">.</span><span class="n">schema_two</span><span class="p">.</span><span class="n">table_two</span>
+</pre></div>
+</div>
+</section>
+<section id="alter-schema">
+<h3 id="alter-schema">ALTER SCHEMA<a class="headerlink" href="#alter-schema" title="Permalink to this heading">#</a></h3>
+<p>The connector supports renaming a schema with the <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">RENAME</span></code>
+statement. <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">SET</span> <span class="pre">AUTHORIZATION</span></code> is not supported.</p>
+</section>
 <section id="alter-table-execute">
 <h3 id="alter-table-execute">ALTER TABLE EXECUTE<a class="headerlink" href="#alter-table-execute" title="Permalink to this heading">#</a></h3>
 <p>The connector supports the following commands for use with <a class="reference internal" href="../sql/alter-table.html#alter-table-execute"><span class="std std-ref">ALTER TABLE
@@ -827,6 +1174,41 @@ array of column names. For example:</p>
 </pre></div>
 </div>
 </section>
+</section>
+</section>
+<section id="table-functions">
+<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<p>The connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to
+access Redshift.</p>
+<section id="query-varchar-table">
+<span id="redshift-query-function"></span><h3 id="query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code><a class="headerlink" href="#query-varchar-table" title="Permalink to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">query</span></code> function allows you to query the underlying database directly. It
+requires syntax native to Redshift, because the full query is pushed down and
+processed in Redshift. This can be useful for accessing native features which
+are not implemented in Trino, or for improving query performance in situations
+where running a query natively may be faster.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Polymorphic table functions may not preserve the order of the query result.
+If the table function contains a query with an <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span></code> clause, the
+function result may not be ordered as expected.</p>
+</div>
+<p>For example, select the top 10 nations by population:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">query</span><span class="p">(</span>
+      <span class="n">query</span> <span class="o">=&gt;</span> <span class="s1">'SELECT</span>
+<span class="s1">        TOP 10 *</span>
+<span class="s1">      FROM</span>
+<span class="s1">        tpch.nation</span>
+<span class="s1">      ORDER BY</span>
+<span class="s1">        population DESC'</span>
+    <span class="p">)</span>
+  <span class="p">);</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="performance">
@@ -899,7 +1281,7 @@ testing and troubleshooting purposes.</p></td>
 </section>
 <section id="table-statistics">
 <h3 id="table-statistics">Table statistics<a class="headerlink" href="#table-statistics" title="Permalink to this heading">#</a></h3>
-<p>The Redshift connector can use <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">table and column statistics</span></a> for <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">cost based optimizations</span></a>, to improve query processing performance
+<p>The connector can use <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">table and column statistics</span></a> for <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc">cost based optimizations</span></a>, to improve query processing performance
 based on the actual data in the data source.</p>
 <p>The statistics are collected by Redshift and retrieved by the connector.</p>
 <p><code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> may be run automatically depending on your Redshift configuration.
@@ -978,7 +1360,7 @@ the time spent waiting for dynamic filters.</p>
 </section>
 <section id="sb-cached-views">
 <h3 id="sb-cached-views">Starburst Cached Views<a class="headerlink" href="#sb-cached-views" title="Permalink to this heading">#</a></h3>
-<p>The connectors supports <a class="reference internal" href="../admin/table-scan-redirection.html"><span class="doc">table scan redirection</span></a> to improve performance and reduce load on the
+<p>The connector supports <a class="reference internal" href="../admin/table-scan-redirection.html"><span class="doc">table scan redirection</span></a> to improve performance and reduce load on the
 data source.</p>
 </section>
 </section>
@@ -1095,7 +1477,7 @@ properties:</p>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
 <ul class="simple">
-<li><p>The Redshift connector doesn’t push down queries with a <code class="docutils literal notranslate"><span class="pre">GROUP</span> <span class="pre">BY</span></code> and
+<li><p>The Starburst Redshift connector does not push down queries with a <code class="docutils literal notranslate"><span class="pre">GROUP</span> <span class="pre">BY</span></code> and
 <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause on the same column for tables using <code class="docutils literal notranslate"><span class="pre">ALL</span></code> or <code class="docutils literal notranslate"><span class="pre">AUTO(ALL)</span></code>
 distribution styles due to a limitation in Redshift. You can work around this
 by changing the table to use an <code class="docutils literal notranslate"><span class="pre">EVEN</span></code> or <code class="docutils literal notranslate"><span class="pre">KEY</span></code> distribution style as
