@@ -735,11 +735,12 @@ all connected data sources are made through the JDBC driver.</p>
 <strong>Workbook</strong>. In the <strong>Connect to Data</strong> pane, click the <strong>Connectors</strong> tab.</p>
       </li>
       <li>
-        <p>In the list of server types, select <strong>Starburst Enterprise by Starburst</strong>.
-This opens a <strong>Connector Details</strong> dialog that describes the data connector.</p>
+        <p>In the list of server types, select <strong>Starburst Enterprise by Starburst</strong>. If
+this is your first time using this connector, a <strong>Connector Details</strong> dialog
+will pop up. Click the <strong>Install and Restart Tableau</strong> button.</p>
       </li>
       <li>
-        <p>Click <strong>Install</strong>. This opens a connection dialog:</p>
+        <p>This opens a connection dialog:</p>
 
         <p>  
   <img src="../../../assets/img/general/Tableau_initial-login-screen.png" alt="Tableau Connector login dialog" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
@@ -765,14 +766,20 @@ This opens a <strong>Connector Details</strong> dialog that describes the data c
    </tr>
    <tr>
      <td>Authentication</td>
-     <td>Use the drop-down list to select among four options:
-         <strong>Username</strong> for a cluster with no authentication,
-         <strong>Username and Password</strong> for a cluster with a
-         password-based authentication method such as LDAP,
-         <strong>Kerberos</strong>, or <strong>OAuth</strong>.
+     <td>Use the drop-down list to select among five options:
+       <ul>
+         <li><strong>Username</strong> for a cluster with no authentication</li>
+         <li><strong>Username and Password</strong> for a cluster with a
+         password-based authentication method such as LDAP</li>
+         <li><strong>Kerberos</strong></li>
+         <li><strong>OAuth</strong></li>
+         <li><strong>JWT</strong></li>
+       </ul>
+       <br />
          If you select <strong>Kerberos</strong>, see <a href="#kerberos-authentication">Kerberos
          authentication</a>. If you select <strong>OAuth</strong>,
-         see <a href="#oauth-20-authentication">OAuth 2.0 authentication</a>.</td>
+         see <a href="#oauth-20-authentication">OAuth 2.0 authentication</a>.
+         If you select <strong>JWT</strong>, see <a href="#jwt-authentication">JWT authentication</a>.</td>
    </tr>
    <tr>
      <td>Username</td>
@@ -928,8 +935,10 @@ on the limitations of the feature.</p>
       </h3>
     
 
-    <p>There are additional configuration steps if you need to authenticate with
-OAuth 2.0 or Kerberos, described in the following sections.</p>
+    <p>There are additional configuration steps if you need to authenticate with OAuth
+2.0, as described in the following section. If you are using SEP,
+you may also authenticate with Kerberos or JWT. Configuration steps for those
+two authentication methods are also described in the following sections.</p>
       <h4 id="oauth-20-authentication">
         
         
@@ -957,7 +966,7 @@ custom data connector file. Contact your account team for more information.</p>
 <strong>Kerberos</strong> in the <strong>Authentication</strong> drop-down, additional connection options
 appear in the Connection dialog.</p>
 
-    <p><img src="../../../assets/img/general/Tableau_connections_kerberos.png" alt="Tableau Connector login dialog with Kerberos authentication" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+    <p><img src="../../../assets/img/general/Tableau_connections_kerberos.png" alt="Tableau Connector login dialog with Kerberos authentication" class="img-fluid img-screenshot" description="" width="250px" style="" /></p>
 
     <p>The first four fields including <strong>Username</strong> are the same as described.
 The Kerberos-specific fields are described in the following table:</p>
@@ -997,6 +1006,17 @@ The Kerberos-specific fields are described in the following table:</p>
       <td>Kerberos keytab file path</td>
       <td>Path to the local Kerberos keytab file.</td>
     </tr>
+    <tr>
+      <td>Kerberos Use Canonical Hostname</td>
+      <td>Use the canonical hostname of the Starburst Galaxy or
+          SEP coordinator for the Kerberos service principal by
+          first resolving the hostname to an IP address and then doing a reverse
+          DNS lookup for that IP address. This is enabled by default.</td>
+    </tr>
+    <tr>
+      <td>Kerberos cache file path</td>
+      <td>Path to the local Kerberos credential cache file.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -1030,33 +1050,28 @@ see:</p>
       <li><a href="https://help.tableau.com/current/server/en-us/kerberos_delegation_jdbc.htm">Enable Kerberos Delegation for JDBC Connectors</a></li>
       <li><a href="https://help.tableau.com/current/server/en-us/kerberos_trouble.htm">Troubleshoot Kerberos</a></li>
     </ul>
-      <h3 id="optional-customized-jdbc-connections">
+      <h4 id="jwt-authentication">
         
         
-          (optional) Customized JDBC connections <a href="#optional-customized-jdbc-connections" class="titleAnchor">#</a>
+          JWT authentication <a href="#jwt-authentication" class="titleAnchor">#</a>
         
         
-      </h3>
+      </h4>
     
 
-    <p>If you need to set additional connection properties that are not included in
-Tableau’s connection dialog, customize the connection using a properties file.</p>
+    <p>You can enable the <a href="../../../latest/overview/sep-ui.html#ui-client-token">client token authentication page</a>
+in the SEP web UI that exposes a JWT for use with any clients
+that support JWT authentication. To enable this page, set the following
+configuration property to <code class="language-plaintext highlighter-rouge">true</code> in the coordinator’s <code class="language-plaintext highlighter-rouge">config.properties</code> file:</p>
 
-    <p>For more information, see the Tableau documentation on how to <a href="https://community.tableau.com/s/question/0D54T00000F339uSAB/customize-jdbc-connections-using-a-properties-file">customize JDBC
-connections using a properties
-file</a>
-in the Tableau Community and the <a href="../../../latest/client/jdbc.html#parameter-reference">list of available parameters for the JDBC
-driver</a>.</p>
+    <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  web-ui.token-copy.enabled=true
+</code></pre></div>    </div>
 
-    <p>Newer versions of the Tableau connector show a third tab, <strong>Advanced</strong>, in the
-<strong>Connector Details</strong> dialog. This tab has a single field. <strong>Extra JDBC
-properties</strong>, where you can enter one or more comma-separated key-value pairs of
-properties that are to be added to the JDBC connection string. This
-allows you to populate the <code class="language-plaintext highlighter-rouge">extraCredentials</code> property of the <a href="../../../latest/client/jdbc.html#parameter-reference">JDBC
-driver</a> for
-authentication systems that need this parameter.</p>
+    <p>When using the Trino <a href="../../../latest/client/cli.html">CLI</a>,
+specify a JWT as described in <a href="../../../latest/client/cli.html#cli-jwt-auth">JWT authentication</a>.</p>
 
-    <p><img src="../../../assets/img/general/Tableau_connections_three_tabs.png" alt="Tableau Connector login dialog showing Advanced tab" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+    <p>When using the Trino JDBC driver, specify a JWT with the
+<a href="./../../latest/client/jdbc.html#jdbc-parameter-reference">accessToken parameter</a>.</p>
       <h2 id="starburst-advantage">
         
         
@@ -1210,7 +1225,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#tableau-server">Tableau Server</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector">Tableau data connector</a><ul><li><a href="#connect-to-starburst">Connect to Starburst</a><ul><li><a href="#download-data-connector-for-older-versions">Download data connector (for older versions)</a></li></ul></li><li><a href="#configure-an-initial-sql-query">Configure an initial SQL query</a></li><li><a href="#additional-authentication-options">Additional authentication options</a><ul><li><a href="#oauth-20-authentication">OAuth 2.0 authentication</a></li><li><a href="#kerberos-authentication">Kerberos authentication</a></li></ul></li><li><a href="#optional-customized-jdbc-connections">(optional) Customized JDBC connections</a></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li></ul></li></ul>
+          <ul><li><a href="#tableau-server">Tableau Server</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#tableau-data-connector">Tableau data connector</a><ul><li><a href="#connect-to-starburst">Connect to Starburst</a><ul><li><a href="#download-data-connector-for-older-versions">Download data connector (for older versions)</a></li></ul></li><li><a href="#configure-an-initial-sql-query">Configure an initial SQL query</a></li><li><a href="#additional-authentication-options">Additional authentication options</a><ul><li><a href="#oauth-20-authentication">OAuth 2.0 authentication</a></li><li><a href="#kerberos-authentication">Kerberos authentication</a></li><li><a href="#jwt-authentication">JWT authentication</a></li></ul></li></ul></li><li><a href="#starburst-advantage">Starburst advantage</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
