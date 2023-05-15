@@ -57,7 +57,7 @@
   <script async src='https://www.google-analytics.com/analytics.js'></script>
   
   
-    <title>Hive connector GCS tutorial &#8212; Starburst Enterprise</title>
+    <title>Google Cloud Storage &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/material.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
@@ -129,7 +129,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 415-e STS</a>
-          <span class="md-header-nav__topic"> Hive connector GCS tutorial </span>
+          <span class="md-header-nav__topic"> Google Cloud Storage </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -484,35 +484,13 @@
 <nav class="md-nav md-nav--secondary">
     <label class="md-nav__title" for="__toc">Contents</label>
   <ul class="md-nav__list" data-md-scrollfix="">
-        <li class="md-nav__item"><a href="#connector-hive-gcs-tutorial--page-root" class="md-nav__link">Hive connector GCS tutorial</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#connector-hive-gcs-tutorial--page-root" class="md-nav__link">Google Cloud Storage</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#preliminary-steps" class="md-nav__link">Preliminary steps</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#ensure-access-to-gcs" class="md-nav__link">Ensure access to GCS</a>
+        <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#hive-connector-configuration" class="md-nav__link">Hive connector configuration</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
-        <li class="md-nav__item"><a href="#hive-metastore-configuration" class="md-nav__link">Hive Metastore configuration</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#accessing-gcs-data-from-trino-for-the-first-time" class="md-nav__link">Accessing GCS data from Trino for the first time</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#accessing-data-already-mapped-in-the-hive-metastore" class="md-nav__link">Accessing data already mapped in the Hive metastore</a>
-        </li>
-        <li class="md-nav__item"><a href="#accessing-data-not-yet-mapped-in-the-hive-metastore" class="md-nav__link">Accessing data not yet mapped in the Hive metastore</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#writing-gcs-data-with-trino" class="md-nav__link">Writing GCS data with Trino</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#prerequisites" class="md-nav__link">Prerequisites</a>
-        </li>
-        <li class="md-nav__item"><a href="#create-export-schema" class="md-nav__link">Create export schema</a>
-        </li>
-        <li class="md-nav__item"><a href="#export-data-to-gcs" class="md-nav__link">Export data to GCS</a>
-        </li></ul>
-            </nav>
+        <li class="md-nav__item"><a href="#general-usage" class="md-nav__link">General usage</a>
         </li></ul>
             </nav>
         </li>
@@ -525,151 +503,82 @@
         <div class="md-content">
           <article class="md-content__inner md-typeset" role="main">
             
-  <section id="hive-connector-gcs-tutorial">
-<h1 id="connector-hive-gcs-tutorial--page-root">Hive connector GCS tutorial<a class="headerlink" href="#connector-hive-gcs-tutorial--page-root" title="Permalink to this heading">#</a></h1>
-<section id="preliminary-steps">
-<h2 id="preliminary-steps">Preliminary steps<a class="headerlink" href="#preliminary-steps" title="Permalink to this heading">#</a></h2>
-<section id="ensure-access-to-gcs">
-<h3 id="ensure-access-to-gcs">Ensure access to GCS<a class="headerlink" href="#ensure-access-to-gcs" title="Permalink to this heading">#</a></h3>
-<p>The <a class="reference internal" href="hive.html"><span class="doc">Hive connector</span></a> can access
-<a class="reference external" href="https://cloud.google.com/storage/">Google Cloud Storage</a> data using the
-<a class="reference external" href="https://cloud.google.com/dataproc/docs/concepts/connectors/cloud-storage">Cloud Storage connector</a>.</p>
-<p>If your data is publicly available, you do not need to do anything here.
-However, in most cases data is not publicly available, and the Trino cluster needs to have access to it.
-This is typically achieved by creating a service account, which has permissions to access your data.
-You can do this on the
-<a class="reference external" href="https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts">service accounts page in GCP</a>.
-Once you create a service account, create a key for it and download the key in JSON format.</p>
-</section>
-<section id="hive-connector-configuration">
-<h3 id="hive-connector-configuration">Hive connector configuration<a class="headerlink" href="#hive-connector-configuration" title="Permalink to this heading">#</a></h3>
-<p>Another requirement is that you have enabled and configured a Hive connector in Trino.
-The connector uses Hive metastore for data discovery and is not limited to data residing on HDFS.</p>
-<p><strong>Configuring Hive Connector</strong></p>
-<ul>
-<li><p>URL to Hive metastore:</p>
-<ul>
-<li><p>New Hive metastore on GCP:</p>
-<p>If your Trino nodes are provisioned by GCP, your Hive metastore should also be on GCP
-to minimize latency and costs. The simplest way to create a new Hive metastore on GCP
-is to create a small Cloud DataProc cluster (1 master, 0 workers), accessible from
-your Trino cluster. Follow the steps for existing Hive metastore after finishing this step.</p>
-</li>
-<li><p>Existing Hive metastore:</p>
-<p>To use an existing Hive metastore with a Trino cluster, you need to set the
-<code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> property in your Hive catalog properties file to
-<code class="docutils literal notranslate"><span class="pre">thrift://${METASTORE_ADDRESS}:${METASTORE_THRIFT_PORT}</span></code>.
-If the metastore uses authentication, please refer to <a class="reference internal" href="hive-security.html"><span class="doc">Hive connector security configuration</span></a>.</p>
-</li>
+  <section id="google-cloud-storage">
+<h1 id="connector-hive-gcs-tutorial--page-root">Google Cloud Storage<a class="headerlink" href="#connector-hive-gcs-tutorial--page-root" title="Permalink to this heading">#</a></h1>
+<p>Object storage connectors can access <a class="reference external" href="https://cloud.google.com/storage/">Google Cloud Storage</a> data using the <code class="docutils literal notranslate"><span class="pre">gs://</span></code> URI prefix.</p>
+<section id="requirements">
+<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
+<p>To use Google Cloud Storage with non-anonymous access objects, you need:</p>
+<ul class="simple">
+<li><p>A <a class="reference external" href="https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts">Google Cloud service account</a></p></li>
+<li><p>The key for the service account in JSON format</p></li>
 </ul>
-</li>
-<li><p>GCS access:</p>
-<p>Here are example values for all GCS configuration properties which can be set in Hive
-catalog properties file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="c"># JSON key file used to access Google Cloud Storage</span>
-<span class="na">hive.gcs.json-key-file-path</span><span class="o">=</span><span class="s">/path/to/gcs_keyfile.json</span>
-
-<span class="c"># Use client-provided OAuth token to access Google Cloud Storage</span>
-<span class="na">hive.gcs.use-access-token</span><span class="o">=</span><span class="s">false</span>
+</section>
+<section id="configuration">
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
+<p>The use of Google Cloud Storage as a storage location for an object storage
+catalog requires setting a configuration property that defines the
+<a class="reference external" href="https://cloud.google.com/storage/docs/authentication">authentication method for any non-anonymous access object</a>. Access methods cannot
+be combined.</p>
+<p>The default root path used by the <code class="docutils literal notranslate"><span class="pre">gs:\\</span></code> prefix is set in the catalog by the
+contents of the specified key file, or the key file used to create the OAuth
+token.</p>
+<table id="id2">
+<caption><span class="caption-text">Google Cloud Storage configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 35%"/>
+<col style="width: 65%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.gcs.json-key-file-path</span></code></p></td>
+<td><p>JSON key file used to authenticate your Google Cloud service account
+with Google Cloud Storage.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.gcs.use-access-token</span></code></p></td>
+<td><p>Use client-provided OAuth token to access Google Cloud Storage.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following uses the Delta Lake connector in an example of a minimal
+configuration file for an object storage catalog using a JSON key file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">delta_lake</span>
+<span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://example.net:9083</span>
+<span class="na">hive.gcs.json-key-file-path</span><span class="o">=</span><span class="s">${ENV:GCP_CREDENTIALS_FILE_PATH}</span>
 </pre></div>
 </div>
-</li>
-</ul>
 </section>
-<section id="hive-metastore-configuration">
-<h3 id="hive-metastore-configuration">Hive Metastore configuration<a class="headerlink" href="#hive-metastore-configuration" title="Permalink to this heading">#</a></h3>
-<p>If your Hive metastore uses StorageBasedAuthorization, it needs to access GCS
-to perform POSIX permission checks.
-Configuring GCS access for Hive is outside the scope of this tutorial, but there
-are some excellent guides online:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://cloud.google.com/dataproc/docs/concepts/connectors/install-storage-connector">Google: Installing the Cloud Storage connector</a></p></li>
-<li><p><a class="reference external" href="https://docs.hortonworks.com/HDPDocuments/HDP3/HDP-3.1.0/bk_cloud-data-access/content/gcp-get-started.html">HortonWorks: Working with Google Cloud Storage</a></p></li>
-<li><p><a class="reference external" href="https://www.cloudera.com/documentation/enterprise/latest/topics/admin_gcs_config.html">Cloudera: Configuring Google Cloud Storage Connectivity</a></p></li>
-</ul>
-<p>GCS access is typically configured in <code class="docutils literal notranslate"><span class="pre">core-site.xml</span></code>, to be used by all components using Apache Hadoop.</p>
-<p>GCS connector for Hadoop provides an implementation of a Hadoop FileSystem.
-Unfortunately GCS IAM permissions don’t map to POSIX permissions required by Hadoop FileSystem,
-so the GCS connector presents fake POSIX file permissions.</p>
-<p>When Hive metastore accesses GCS, it see fake POSIX permissions equal to <code class="docutils literal notranslate"><span class="pre">0700</span></code> by default.
-If Trino and Hive metastore are running as different user accounts, this causes Hive metastore
-to deny Trino data access.
-There are two possible solutions to this problem:</p>
-<ul class="simple">
-<li><p>Run Trino service and Hive service as the same user.</p></li>
-<li><p>Make sure Hive GCS configuration includes a <code class="docutils literal notranslate"><span class="pre">fs.gs.reported.permissions</span></code> property
-with a value of <code class="docutils literal notranslate"><span class="pre">777</span></code>.</p></li>
-</ul>
-</section>
-</section>
-<section id="accessing-gcs-data-from-trino-for-the-first-time">
-<h2 id="accessing-gcs-data-from-trino-for-the-first-time">Accessing GCS data from Trino for the first time<a class="headerlink" href="#accessing-gcs-data-from-trino-for-the-first-time" title="Permalink to this heading">#</a></h2>
-<section id="accessing-data-already-mapped-in-the-hive-metastore">
-<h3 id="accessing-data-already-mapped-in-the-hive-metastore">Accessing data already mapped in the Hive metastore<a class="headerlink" href="#accessing-data-already-mapped-in-the-hive-metastore" title="Permalink to this heading">#</a></h3>
-<p>If you migrate to Trino from Hive, chances are that your GCS data is already mapped to
-SQL tables in the metastore.
-In that case, you should be able to query it.</p>
-</section>
-<section id="accessing-data-not-yet-mapped-in-the-hive-metastore">
-<h3 id="accessing-data-not-yet-mapped-in-the-hive-metastore">Accessing data not yet mapped in the Hive metastore<a class="headerlink" href="#accessing-data-not-yet-mapped-in-the-hive-metastore" title="Permalink to this heading">#</a></h3>
-<p>To access GCS data that is not yet mapped in the Hive metastore you need to provide the
-schema of the data, the file format, and the data location.
-For example, if you have ORC or Parquet files in an GCS bucket <code class="docutils literal notranslate"><span class="pre">my_bucket</span></code>, you need to execute a query:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- select schema in which the table will be defined, must already exist</span>
-<span class="n">USE</span> <span class="n">hive</span><span class="p">.</span><span class="k">default</span><span class="p">;</span>
-
-<span class="c1">-- create table</span>
-<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">orders</span> <span class="p">(</span>
-     <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
-     <span class="n">custkey</span> <span class="nb">bigint</span><span class="p">,</span>
-     <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
-     <span class="n">totalprice</span> <span class="n">double</span><span class="p">,</span>
-     <span class="n">orderdate</span> <span class="nb">date</span><span class="p">,</span>
-     <span class="n">orderpriority</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
-     <span class="n">clerk</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
-     <span class="n">shippriority</span> <span class="nb">integer</span><span class="p">,</span>
-     <span class="k">comment</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">79</span><span class="p">)</span>
-<span class="p">)</span> <span class="k">WITH</span> <span class="p">(</span>
-     <span class="n">external_location</span> <span class="o">=</span> <span class="s1">'gs://my_bucket/path/to/folder'</span><span class="p">,</span>
-     <span class="n">format</span> <span class="o">=</span> <span class="s1">'ORC'</span> <span class="c1">-- or 'PARQUET'</span>
+<section id="general-usage">
+<h2 id="general-usage">General usage<a class="headerlink" href="#general-usage" title="Permalink to this heading">#</a></h2>
+<p>Create a schema to use if one does not already exist, as in the following
+example:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">storage_catalog</span><span class="p">.</span><span class="n">sales_data_in_gcs</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'gs://example_location'</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Once you have created a schema, you can create tables in the schema, as in the
+following example:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">storage_catalog</span><span class="p">.</span><span class="n">sales_data_in_gcs</span><span class="p">.</span><span class="n">orders</span> <span class="p">(</span>
+    <span class="n">orderkey</span> <span class="nb">bigint</span><span class="p">,</span>
+    <span class="n">custkey</span> <span class="nb">bigint</span><span class="p">,</span>
+    <span class="n">orderstatus</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">totalprice</span> <span class="n">double</span><span class="p">,</span>
+    <span class="n">orderdate</span> <span class="nb">date</span><span class="p">,</span>
+    <span class="n">orderpriority</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+    <span class="n">clerk</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">15</span><span class="p">),</span>
+    <span class="n">shippriority</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="k">comment</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">79</span><span class="p">)</span>
 <span class="p">);</span>
 </pre></div>
 </div>
-<p>Now you should be able to query the newly mapped table:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">orders</span><span class="p">;</span>
-</pre></div>
-</div>
-</section>
-</section>
-<section id="writing-gcs-data-with-trino">
-<h2 id="writing-gcs-data-with-trino">Writing GCS data with Trino<a class="headerlink" href="#writing-gcs-data-with-trino" title="Permalink to this heading">#</a></h2>
-<section id="prerequisites">
-<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading">#</a></h3>
-<p>Before you attempt to write data to GCS, make sure you have configured everything
-necessary to read data from GCS.</p>
-</section>
-<section id="create-export-schema">
-<h3 id="create-export-schema">Create export schema<a class="headerlink" href="#create-export-schema" title="Permalink to this heading">#</a></h3>
-<p>If Hive metastore contains schema(s) mapped to GCS locations, you can use them to
-export data to GCS.
-If you don’t want to use existing schemas, or there are no appropriate schemas in
-the Hive metastore, you need to create a new one:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="n">hive</span><span class="p">.</span><span class="n">gcs_export</span> <span class="k">WITH</span> <span class="p">(</span><span class="k">location</span> <span class="o">=</span> <span class="s1">'gs://my_bucket/some/path'</span><span class="p">);</span>
-</pre></div>
-</div>
-</section>
-<section id="export-data-to-gcs">
-<h3 id="export-data-to-gcs">Export data to GCS<a class="headerlink" href="#export-data-to-gcs" title="Permalink to this heading">#</a></h3>
-<p>Once you have a schema pointing to a location, where you want to export the data, you can issue
-the export using a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> statement and select your desired file format. The data
-is written to one or more files within the <code class="docutils literal notranslate"><span class="pre">gs://my_bucket/some/path/my_table</span></code> namespace.
-Example:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">hive</span><span class="p">.</span><span class="n">gcs_export</span><span class="p">.</span><span class="n">orders_export</span>
-<span class="k">WITH</span> <span class="p">(</span><span class="n">format</span> <span class="o">=</span> <span class="s1">'ORC'</span><span class="p">)</span>
-<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
-</pre></div>
-</div>
-</section>
+<p>This statement creates the folder <code class="docutils literal notranslate"><span class="pre">gs://sales_data_in_gcs/orders</span></code> in the root
+folder defined in the JSON key file.</p>
+<p>Your table is now ready to populate with data using <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> statements.
+Alternatively, you can use <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code> statements to create and
+populate the table in a single statement.</p>
 </section>
 </section>
 
