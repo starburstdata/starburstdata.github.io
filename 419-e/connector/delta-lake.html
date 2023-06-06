@@ -553,6 +553,12 @@
         </li>
         <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li>
+        <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#table-changes" class="md-nav__link">table_changes</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a><nav class="md-nav">
@@ -1373,6 +1379,137 @@ directly or used in conditional statements.</p>
 <span id="delta-lake-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
 <p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
 processing. Read and write operations are both supported with any retry policy.</p>
+</section>
+<section id="table-functions">
+<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<p>The connector provides the following table functions:</p>
+<section id="table-changes">
+<h3 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h3>
+<p>Allows reading Change Data Feed (CDF) entries to expose row-level changes
+between two versions of a Delta Lake table. When the <code class="docutils literal notranslate"><span class="pre">change_data_feed_enabled</span></code>
+table property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> on a specific Delta Lake table,
+the connector records change events for all data changes on the table.
+This is how these changes can be read:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span>
+      <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'test_schema'</span><span class="p">,</span>
+      <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'tableName'</span><span class="p">,</span>
+      <span class="n">since_version</span> <span class="o">=&gt;</span> <span class="mi">0</span>
+    <span class="p">)</span>
+  <span class="p">);</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">schema_name</span></code> - type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, required, name of the schema for which the function is called</p>
+<p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> - type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, required, name of the table for which the function is called</p>
+<p><code class="docutils literal notranslate"><span class="pre">since_version</span></code> - type <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, optional, version from which changes are shown, exclusive</p>
+<p>In addition to returning the columns present in the table, the function
+returns the following values for each change event:</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">_change_type</span></code></dt><dd><p>Gives the type of change that occurred. Possible values are <code class="docutils literal notranslate"><span class="pre">insert</span></code>,
+<code class="docutils literal notranslate"><span class="pre">delete</span></code>, <code class="docutils literal notranslate"><span class="pre">update_preimage</span></code> and <code class="docutils literal notranslate"><span class="pre">update_postimage</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">_commit_version</span></code></dt><dd><p>Shows the table version for which the change occurred.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">_commit_timestamp</span></code></dt><dd><p>Represents the timestamp for the commit in which the specified change happened.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>This is how it would be normally used:</p>
+<p>Create table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span> <span class="p">(</span><span class="n">page_url</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="k">domain</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="n">views</span> <span class="nb">INTEGER</span><span class="p">)</span>
+    <span class="k">WITH</span> <span class="p">(</span><span class="n">change_data_feed_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Insert data:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span>
+    <span class="k">VALUES</span>
+        <span class="p">(</span><span class="s1">'url1'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url2'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url3'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span>
+    <span class="k">VALUES</span>
+        <span class="p">(</span><span class="s1">'url4'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url5'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url6'</span><span class="p">,</span> <span class="s1">'domain3'</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Update data:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span>
+    <span class="k">SET</span> <span class="k">domain</span> <span class="o">=</span> <span class="s1">'domain4'</span>
+    <span class="k">WHERE</span> <span class="n">views</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Select changes:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span>
+      <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'test_schema'</span><span class="p">,</span>
+      <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'pages'</span><span class="p">,</span>
+      <span class="n">since_version</span> <span class="o">=&gt;</span> <span class="mi">1</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">_commit_version</span> <span class="k">ASC</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The preceding sequence of SQL statements returns the following result:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>page_url    |     domain     |    views    |    _change_type     |    _commit_version    |    _commit_timestamp
+url4        |     domain1    |    400      |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url5        |     domain2    |    500      |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url6        |     domain3    |    2        |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url2        |     domain2    |    2        |    update_preimage  |     3                 |    2023-03-10T22:23:24.000+0000
+url2        |     domain4    |    2        |    update_postimage |     3                 |    2023-03-10T22:23:24.000+0000
+url6        |     domain3    |    2        |    update_preimage  |     3                 |    2023-03-10T22:23:24.000+0000
+url6        |     domain4    |    2        |    update_postimage |     3                 |    2023-03-10T22:23:24.000+0000
+</pre></div>
+</div>
+<p>The output shows what changes happen in which version.
+For example in version 3 two rows were modified, first one changed from
+<code class="docutils literal notranslate"><span class="pre">('url2',</span> <span class="pre">'domain2',</span> <span class="pre">2)</span></code> into <code class="docutils literal notranslate"><span class="pre">('url2',</span> <span class="pre">'domain4',</span> <span class="pre">2)</span></code> and the second from
+<code class="docutils literal notranslate"><span class="pre">('url6',</span> <span class="pre">'domain2',</span> <span class="pre">2)</span></code> into <code class="docutils literal notranslate"><span class="pre">('url6',</span> <span class="pre">'domain4',</span> <span class="pre">2)</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">since_version</span></code> is not provided the function produces change events
+starting from when the table was created.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span>
+      <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'test_schema'</span><span class="p">,</span>
+      <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'pages'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">_commit_version</span> <span class="k">ASC</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The preceding SQL statement returns the following result:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>page_url    |     domain     |    views    |    _change_type     |    _commit_version    |    _commit_timestamp
+url1        |     domain1    |    1        |    insert           |     1                 |    2023-03-10T20:21:22.000+0000
+url2        |     domain2    |    2        |    insert           |     1                 |    2023-03-10T20:21:22.000+0000
+url3        |     domain1    |    3        |    insert           |     1                 |    2023-03-10T20:21:22.000+0000
+url4        |     domain1    |    400      |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url5        |     domain2    |    500      |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url6        |     domain3    |    2        |    insert           |     2                 |    2023-03-10T21:22:23.000+0000
+url2        |     domain2    |    2        |    update_preimage  |     3                 |    2023-03-10T22:23:24.000+0000
+url2        |     domain4    |    2        |    update_postimage |     3                 |    2023-03-10T22:23:24.000+0000
+url6        |     domain3    |    2        |    update_preimage  |     3                 |    2023-03-10T22:23:24.000+0000
+url6        |     domain4    |    2        |    update_postimage |     3                 |    2023-03-10T22:23:24.000+0000
+</pre></div>
+</div>
+<p>You can see changes that occurred at version 1 as three inserts. They are
+not visible in the previous statement when <code class="docutils literal notranslate"><span class="pre">since_version</span></code> value was set to 1.</p>
+</section>
 </section>
 <section id="performance">
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this heading">#</a></h2>
