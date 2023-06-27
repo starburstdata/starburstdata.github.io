@@ -626,11 +626,9 @@ You can define security policies that restrict access to data at database,
 table, column, row and cell levels. These policies apply to AWS Identity and
 Access Management (IAM) users and roles, and to users and groups when federating
 through an external identity provider.</p>
-<p>Starburst Enterprise platform (SEP) integration with AWS Lake Formation enforces <a class="reference external" href="https://docs.aws.amazon.com/lake-formation/latest/dg/lake-formation-permissions.html">AWS Lake Formation
-access control policies</a>
-when accessing <a class="reference external" href="https://docs.aws.amazon.com/lake-formation/latest/dg/permitting-third-party-call.html">registered Amazon S3 data lake locations</a>.</p>
-<p>AWS Lake Formation access control support is only available for catalogs, that
-use the Hive connector, since it utilizes the <a class="reference internal" href="../connector/hive-security.html"><span class="doc">security system of the Hive connector</span></a>.</p>
+<p>AWS Lake Formation access control support is only available for catalogs that
+use the Hive connector because it utilizes the <a class="reference internal" href="../connector/hive-security.html"><span class="doc">security system of the Hive
+connector</span></a>.</p>
 </section>
 <section id="configure-aws-lake-formation">
 <h2 id="configure-aws-lake-formation">Configure AWS Lake Formation<a class="headerlink" href="#configure-aws-lake-formation" title="Permalink to this heading">#</a></h2>
@@ -646,8 +644,7 @@ configured to use AWS Lake Formation for authorization with the Hive connector.<
 <span class="na">hive.metastore</span><span class="o">=</span><span class="s">glue</span>
 <span class="na">hive.metastore.glue.region</span><span class="o">=</span><span class="s">us-east-2</span>
 <span class="na">hive.metastore.glue.default-warehouse-dir</span><span class="o">=</span><span class="s">s3://data-lake-bucket</span>
-<span class="na">hive.metastore.glue.iam-role</span><span class="o">=</span><span class="s">arn:aws:iam::&lt;account_id&gt;:role/role_for_glue</span>
-<span class="na">hive.s3.iam-role</span><span class="o">=</span><span class="s">arn:aws:iam::&lt;account_id&gt;:role/role_for_s3</span>
+<span class="na">hive.metastore.glue.iam-role</span><span class="o">=</span><span class="s">arn:aws:iam::&lt;account_id&gt;:role/&lt;admin-role&gt;</span>
 <span class="na">lake-formation.authorized-caller-tag</span><span class="o">=</span><span class="s">starburst-enterprise</span>
 <span class="na">lake-formation.security-mapping.config-file</span><span class="o">=</span><span class="s">etc/lakeformation-security-mapping.json</span>
 </pre></div>
@@ -675,14 +672,21 @@ this topic</span></a>.</p>
 </tr>
 </tbody>
 </table>
+<p>In order for SEP to integrate with AWS Lake Formation, you must add a session
+tag for SEP to AWS Lake Formation external data filtering. The session tag
+value added to AWS Lake Formation is set in the
+<code class="docutils literal notranslate"><span class="pre">lake-formation.authorized-caller-tag</span></code> property. Permission checking for SEP
+fails for AWS Lake Formation if this property is not set. Read the <a class="reference external" href="https://docs.aws.amazon.com/lake-formation/latest/dg/permitting-third-party-call.html">AWS
+documentation</a>
+for details on how to complete this configuration.</p>
 </section>
 <section id="lake-formation-security-mapping">
 <span id="id1"></span><h2 id="lake-formation-security-mapping">Lake formation security mapping<a class="headerlink" href="#lake-formation-security-mapping" title="Permalink to this heading">#</a></h2>
 <p>SEP supports flexible security mapping for lake formation, which associates
 SEP users or groups with AWS security entities like IAM roles according to a
 JSON mappings file. The IAM role for a specific query can be selected from a
-list of allowed roles using <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">ROLE</span> <span class="pre">GRANTS</span> <span class="pre">FROM</span> <span class="pre">&lt;catalog&gt;</span></code> and
-<code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">"..."</span> <span class="pre">IN</span> <span class="pre">&lt;catalog&gt;</span></code>  sql statements.</p>
+list of allowed roles using <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">ROLE</span> <span class="pre">GRANTS</span> <span class="pre">FROM</span> <span class="pre">&lt;catalog&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span>
+<span class="pre">&lt;user-role&gt;</span> <span class="pre">IN</span> <span class="pre">&lt;catalog&gt;</span></code>  sql statements.</p>
 <p>Each security mapping entry may specify one or more match criteria. If multiple
 criteria are specified, all criteria must match. The following match criteria
 are available:</p>
@@ -782,8 +786,8 @@ properties:</p>
 <section id="security-mapping-role-requirements">
 <h3 id="security-mapping-role-requirements">Security mapping role requirements<a class="headerlink" href="#security-mapping-role-requirements" title="Permalink to this heading">#</a></h3>
 <p>AWS Lake Formation permissions are read from AWS using two different sets of
-impersonated role credentials when executing queries against catalogs protected
-by AWS Lake Formation security policies:</p>
+assumed role credentials when executing queries against catalogs protected by
+AWS Lake Formation security policies:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">admin</span></code> - Identified by <code class="docutils literal notranslate"><span class="pre">hive.metastore.glue.iam-role</span></code> configuration
 property.</p></li>
@@ -791,18 +795,29 @@ property.</p></li>
 </ul>
 <p>You must configure the following in AWS IAM:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">admin</span></code> role must be configured to impersonate <code class="docutils literal notranslate"><span class="pre">user</span></code> role in
-<a class="reference external" href="https://docs.aws.amazon.com/mediapackage/latest/ug/setting-up-create-trust-rel-trust.html">AWS Trust Relationships</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">admin</span></code> role must be configured to assume <code class="docutils literal notranslate"><span class="pre">user</span></code> role in AWS trust
+relationships. Read the <a class="reference external" href="https://docs.aws.amazon.com/mediapackage/latest/ug/setting-up-create-trust-rel-trust.html">AWS trust relationship documentation</a>
+for more information.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sts:TagSession</span></code> and <code class="docutils literal notranslate"><span class="pre">sts:AssumeRole</span></code> actions must both be allowed.</p></li>
-<li><p>For read access, <code class="docutils literal notranslate"><span class="pre">glue:GetDatabases</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetDatabase</span></code>,
-<code class="docutils literal notranslate"><span class="pre">glue:GetTables</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartitions</span></code>,
-<code class="docutils literal notranslate"><span class="pre">glue:BatchGetPartition</span></code>
-AWS Glue API permissions must be granted for the <code class="docutils literal notranslate"><span class="pre">user</span></code> role.</p></li>
-<li><p>For read and write access, all permissions for read access and
-<code class="docutils literal notranslate"><span class="pre">glue:CreateTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:DeleteTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:UpdateTable</span></code>,
-<code class="docutils literal notranslate"><span class="pre">glue:BatchCreatePartition</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartition</span></code>,
-<code class="docutils literal notranslate"><span class="pre">glue:DeletePartition</span></code>, <code class="docutils literal notranslate"><span class="pre">lakeformation:GetDataAccess</span></code> AWS Glue and Lake
-Formation API permissions must be granted for the <code class="docutils literal notranslate"><span class="pre">user</span></code> role.</p></li>
+<li><p>For read access:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">glue:GetDatabases</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetDatabase</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTables</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:GetTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartitions</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartition</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:BatchGetPartition</span></code>. AWS Glue API actions must be granted to the
+<code class="docutils literal notranslate"><span class="pre">user</span></code> role.</p></li>
+</ul>
+</li>
+<li><p>For write access:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">glue:GetDatabases</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetDatabase</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetTables</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:GetTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartitions</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:GetPartition</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:BatchGetPartition</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:CreateTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:DeleteTable</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:UpdateTable</span></code>, <code class="docutils literal notranslate"><span class="pre">glue:BatchCreatePartition</span></code>,
+<code class="docutils literal notranslate"><span class="pre">glue:DeletePartition</span></code>, <code class="docutils literal notranslate"><span class="pre">lakeformation:GetDataAccess</span></code>. AWS Glue actions
+and Lake Formation API permissions must be granted to the <code class="docutils literal notranslate"><span class="pre">user</span></code> role
+configured for <code class="docutils literal notranslate"><span class="pre">hive.metastore.glue.iam-role</span></code>.</p></li>
+</ul>
+</li>
 </ul>
 </section>
 <section id="listing-and-selecting-available-user-roles">
