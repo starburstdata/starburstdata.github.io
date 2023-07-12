@@ -473,6 +473,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#migrating-to-snowflake-parallel" class="md-nav__link">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
+        </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li></ul>
             </nav>
@@ -712,6 +714,8 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#migrating-to-snowflake-parallel" class="md-nav__link">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
+        </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li></ul>
             </nav>
@@ -819,10 +823,11 @@ Snowflake instances.</p>
 <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named <code class="docutils literal notranslate"><span class="pre">example.properties</span></code>, to mount the Snowflake connector
 as the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog (replace <code class="docutils literal notranslate"><span class="pre">example</span></code> with your database name or some
 other descriptive name of the catalog).</p>
-<p>There are two connector types for Snowflake:</p>
+<p>There are three connectors for Snowflake:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> uses JDBC for all reads and writes and is more efficient
 when the result set returned from Snowflake is small.</p>
@@ -832,6 +837,10 @@ requesting query results over a JDBC connection, the connector asks Snowflake to
 export them to object storage and SEP reads them from there. Since write and
 read operations are parallelized, this approach scales better for large data
 sets, but has a higher latency.</p>
+<p>We recommend using the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector, which uses the JDBC
+client to execute queries, and requests data in Arrow format. The connector then
+reads each file independently from different nodes, which results in more
+efficient querying.</p>
 <p>A requirement of using the distributed connector is that your Snowflake
 deployment runs on AWS or Azure. The connector automatically creates <a class="reference external" href="https://docs.snowflake.com/en/sql-reference/sql/create-stage.html">temporary
 stages</a> in
@@ -842,7 +851,7 @@ connection properties as appropriate for your setup (for example, replace
 <code class="docutils literal notranslate"><span class="pre">&lt;account_name&gt;</span></code> with the full name of your account, as provided by
 Snowflake).</p>
 <p>For AWS:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_distributed&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_distributed, or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -851,7 +860,7 @@ snowflake.database=&lt;database_name&gt;
 </pre></div>
 </div>
 <p>For Azure:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_distributed&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_distributed, or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.&lt;azure_region&gt;.azure.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -949,6 +958,15 @@ the distributed connector:</p>
 </tr>
 </tbody>
 </table>
+<section id="migrating-to-snowflake-parallel">
+<h3 id="migrating-to-snowflake-parallel">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code><a class="headerlink" href="#migrating-to-snowflake-parallel" title="Permalink to this heading">#</a></h3>
+<p>To configure an existing Snowflake catalog to use the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>
+connector, change the value of <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> in the catalog configuration
+properties to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>. The rest of the configuration is identical
+to the <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> and <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connectors, with the
+exception that the <code class="docutils literal notranslate"><span class="pre">snowflake.stage-schema</span></code> catalog configuration property is
+not supported.</p>
+</section>
 <section id="general-configuration-properties">
 <h3 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Permalink to this heading">#</a></h3>
 <p>The following table describes general catalog configuration properties for the
@@ -1310,8 +1328,8 @@ array of column names. For example:</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to access Snowflake.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector type does not support table
-functions. Only the <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector type supports table
+<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector does not support table functions.
+Only <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> and <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connectors support table
 functions.</p>
 </div>
 <section id="query-varchar-table">
@@ -1357,9 +1375,10 @@ SEP collect statistics from Snowflake, including column statistics.</p>
 </section>
 <section id="managed-statistics">
 <h3 id="managed-statistics">Managed statistics<a class="headerlink" href="#managed-statistics" title="Permalink to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector supports <a class="reference internal" href="../optimizer/managed-statistics.html"><span class="doc">Managed statistics</span></a>
-allowing SEP to collect and store its own table and column statistics that can
-then be used for performance optimizations in query planning.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> and <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connectors support
+<a class="reference internal" href="../optimizer/managed-statistics.html"><span class="doc">Managed statistics</span></a> allowing SEP to collect and store its own
+table and column statistics that can then be used for performance optimizations
+in query planning.</p>
 <p>Statistics must be collected manually using the built-in
 <code class="docutils literal notranslate"><span class="pre">collect_statistics</span></code> command, see
 <a class="reference internal" href="#starburst-snowflake-collect-statistics"><span class="std std-ref">collect_statistics</span></a> for details and examples.</p>
