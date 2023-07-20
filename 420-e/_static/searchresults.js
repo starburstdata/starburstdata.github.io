@@ -45,20 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const pathName = window.location.pathname;
       const pathArray = pathName.split('/');
-      let pathSegment = pathArray[1];
-      //Retrieve all versions supported by Algolia
-      const allDocsIndex = searchClient.initIndex('AllDocs');
-      let versions = [];
-      allDocsIndex
-        .search('', {
-          facets: ['version'],
-        })
-        .then((res) => {
-          versions = Object.keys(res.facets.version);
-          if(!versions.includes(pathSegment)){
-            pathSegment = 'latest'; //Defaults to latest if version is not supported
-          }
-      });
+      const pathSegment = pathArray[1];
 
       if (pathSegment == 'latest') {
         document.querySelector('#toggle-refinement').style.display = 'none';
