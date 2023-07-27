@@ -41,137 +41,135 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then((res) => {
           versions = Object.keys(res.facets.version);
-          if(!versions.includes(pathSegment)){
+          if (!versions.includes(pathSegment)) {
             pathSegment = 'latest'; //Defaults to latest if version is not supported
           }
-      });
 
-      const searchResults = instantsearch({
-        indexName: 'AllDocs',
-        searchClient,
-        searchFunction: function (helper) {
-          helper.state.facetFilters = [
-            [`version:${pathSegment}`, 'type: guides'],
-          ];
-          // if less than 2 character, don't trigger search and hide inner content
-          if (helper.state.query.length < 2) {
-            hitsContainer.style.display = 'none';
-            refinementContainer.style.display = 'none';
-          } else {
-            hitsContainer.style.display = 'block';
-            refinementContainer.style.display = 'flex';
-            helper.search();
-          }
-        },
-        searchParameters: {
-          facetFilters: [
-            [`version:${pathSegment}`, 'type: guides'],
-          ],
-        },
-      });
+          const searchResults = instantsearch({
+            indexName: 'AllDocs',
+            searchClient,
+            searchFunction: function (helper) {
+              helper.state.facetFilters = [
+                [`version:${pathSegment}`, 'type: guides'],
+              ];
+              // if less than 2 character, don't trigger search and hide inner content
+              if (helper.state.query.length < 2) {
+                hitsContainer.style.display = 'none';
+                refinementContainer.style.display = 'none';
+              } else {
+                hitsContainer.style.display = 'block';
+                refinementContainer.style.display = 'flex';
+                helper.search();
+              }
+            },
+            searchParameters: {
+              facetFilters: [
+                [`version:${pathSegment}`, 'type: guides'],
+              ],
+            },
+          });
 
-      const renderHits = (renderOptions) => {
-        const { hits, widgetParams } = renderOptions;
+          const renderHits = (renderOptions) => {
+            const { hits, widgetParams } = renderOptions;
 
-        widgetParams.container.innerHTML = `
-      <ul class="search-hits">
-        ${hits
-          .map(
-            (item) =>
-              `<a href="${item.url}"><li class="hit-item">
-                  <h2>
-                    ${instantsearch.highlight({
+            widgetParams.container.innerHTML = `
+          <ul class="search-hits">
+            ${hits
+                .map(
+                  (item) =>
+                    `<a href="${item.url}"><li class="hit-item">
+                      <h2>
+                        ${instantsearch.highlight({
                       attribute: 'title',
                       hit: item,
                     })}
-                  </h2>
-                  ${
-                    item['categories.lvl2']
+                      </h2>
+                      ${item['categories.lvl2']
                       ? `<p style="color:#000a2c; font-size: 0.7rem; font-weight: 600; margin-top: 0; margin-bottom: -0.5em;">
-                        ${item['categories.lvl2']}
-                      </p>`
+                            ${item['categories.lvl2']}
+                          </p>`
                       : item['categories.lvl1']
-                      ? `<p style="color:#000a2c; font-size: 0.7rem; font-weight: 600; margin-top: 0; margin-bottom: -0.5em;">
-                        ${item['categories.lvl1']}
-                      </p>`
-                      : item['categories.lvl0']
-                      ? `<p style="color:#000a2c; font-size: 0.7rem; font-weight: 600; margin-top: 0; margin-bottom: -0.5em;">
-                        ${item['categories.lvl0']}
-                      </p>`
-                      : null
-                  }
-                  ${
-                    item.content &&
+                        ? `<p style="color:#000a2c; font-size: 0.7rem; font-weight: 600; margin-top: 0; margin-bottom: -0.5em;">
+                            ${item['categories.lvl1']}
+                          </p>`
+                        : item['categories.lvl0']
+                          ? `<p style="color:#000a2c; font-size: 0.7rem; font-weight: 600; margin-top: 0; margin-bottom: -0.5em;">
+                            ${item['categories.lvl0']}
+                          </p>`
+                          : null
+                    }
+                      ${item.content &&
                     `<p>
-                  ${instantsearch.snippet({
-                    attribute: 'content',
-                    hit: item,
-                  })} ...
-                  </p>`
-                  }
-              </li>
-              </a>
-              `
-          )
-          .join('')}
-      </ul>
-    `;
-      };
+                      ${instantsearch.snippet({
+                      attribute: 'content',
+                      hit: item,
+                    })} ...
+                      </p>`
+                    }
+                  </li>
+                  </a>
+                  `
+                )
+                .join('')}
+          </ul>
+        `;
+          };
 
-      const renderStats = (renderOptions) => {
-        const { nbHits } = renderOptions;
+          const renderStats = (renderOptions) => {
+            const { nbHits } = renderOptions;
 
-        document.querySelector('#resultsStats').innerHTML = `
-      <p>Found ${nbHits} results</p>`;
-      };
+            document.querySelector('#resultsStats').innerHTML = `
+          <p>Found ${nbHits} results</p>`;
+          };
 
-      const customHits = instantsearch.connectors.connectHits(renderHits);
-      const customStats = instantsearch.connectors.connectStats(renderStats);
+          const customHits = instantsearch.connectors.connectHits(renderHits);
+          const customStats = instantsearch.connectors.connectStats(renderStats);
 
-      searchResults.addWidgets([
-        instantsearch.widgets.configure({
-          attributesToSnippet: ['content:50'],
-        }),
+          searchResults.addWidgets([
+            instantsearch.widgets.configure({
+              attributesToSnippet: ['content:50'],
+            }),
 
-        instantsearch.widgets.searchBox({
-          container: '#resultsSearchbox',
-          showLoadingIndicator: true,
-          showReset: true,
-          placeholder: 'Search documentation',
-        }),
+            instantsearch.widgets.searchBox({
+              container: '#resultsSearchbox',
+              showLoadingIndicator: true,
+              showReset: true,
+              placeholder: 'Search documentation',
+            }),
 
-        instantsearch.widgets.refinementList({
-          container: '#resultsRefinementList',
-          attribute: 'type',
-          showMore: true,
-          sortBy: ['name:desc', 'count:desc'],
-        }),
+            instantsearch.widgets.refinementList({
+              container: '#resultsRefinementList',
+              attribute: 'type',
+              showMore: true,
+              sortBy: ['name:desc', 'count:desc'],
+            }),
 
-        instantsearch.widgets.pagination({
-          container: '#pagination',
-        }),
+            instantsearch.widgets.pagination({
+              container: '#pagination',
+            }),
 
-        customHits({
-          container: document.querySelector('#resultsHits'),
-        }),
+            customHits({
+              container: document.querySelector('#resultsHits'),
+            }),
 
-        customStats({
-          container: document.querySelector('#resultsStats'),
-        }),
-      ]);
+            customStats({
+              container: document.querySelector('#resultsStats'),
+            }),
+          ]);
 
-      searchResults.start();
+          searchResults.start();
 
-      const queryParameter = new URLSearchParams(window.location.search).get(
-        'q'
-      );
+          const queryParameter = new URLSearchParams(window.location.search).get(
+            'q'
+          );
 
-      // If a query parameter was passed in the url, show results based on query
-      queryParameter &&
-        searchResults.setUiState({
-          AllDocs: {
-            query: queryParameter,
-          },
+          // If a query parameter was passed in the url, show results based on query
+          queryParameter &&
+            searchResults.setUiState({
+              AllDocs: {
+                query: queryParameter,
+              },
+            });
         });
     }
 
