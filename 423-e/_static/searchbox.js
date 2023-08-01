@@ -1,7 +1,16 @@
 document.addEventListener('DOMContentLoaded', function () {
+  const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
+  const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+
+  aa('init', {
+    appId: ALGOLIA_ID,
+    apiKey: ALGOLIA_KEY,
+    useCookie: true,
+  });
+
   const searchClient = algoliasearch(
-    '0X4IAR77M1', // Algolia ID
-    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+    ALGOLIA_ID, // Algolia ID
+    ALGOLIA_KEY // Algolia Key
   );
 
   const hitsContainer = document.querySelector('#hits');
