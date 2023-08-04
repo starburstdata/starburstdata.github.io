@@ -1932,6 +1932,14 @@ needed:</p>
   <span class="k">SELECT</span> <span class="n">name</span><span class="p">,</span> <span class="k">comment</span><span class="p">,</span> <span class="n">regionkey</span>
   <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
 </code></pre></div></div>
+      <h2 id="delta-lake-metadata-table">
+        
+        
+          Delta Lake metadata table <a href="#delta-lake-metadata-table" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
 
 <p>The <code class="language-plaintext highlighter-rouge">$history</code> metadata table provides a log of the metadata changes made to a
 Delta Lake table. Query the metadata table by appending <code class="language-plaintext highlighter-rouge">$history</code> to a table
@@ -1993,16 +2001,61 @@ follows:</p>
 <p>All parameters are required and must be presented in the following order:</p>
 
 <ol>
-  <li>
-    <p>Schema name</p>
-  </li>
-  <li>
-    <p>Table name</p>
-  </li>
-  <li>
-    <p>Retention period</p>
-  </li>
+  <li>Schema name</li>
+  <li>Table name</li>
+  <li>Retention period</li>
 </ol>
+      <h3 id="alter-table-execute">
+        
+        
+          ALTER TABLE EXECUTE <a href="#alter-table-execute" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <a href="./ref/sql/alter-table.html">ALTER TABLE EXECUTE</a> statement followed by a
+command and parameters modifies the table according to the specified procedure
+and parameters. For Delta Lake tables, <code class="language-plaintext highlighter-rouge">ALTER TABLE EXECUTE</code> supports the
+<code class="language-plaintext highlighter-rouge">optimize</code> command.</p>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">=&gt;</code> operator for passing named parameter values. The left side is
+the name of the parameter and the right side is the value being passed:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">galaxy_delta</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">(</span><span class="n">file_size_threshold</span> <span class="o">=&gt;</span> <span class="s1">'10MB'</span><span class="p">);</span>
+</code></pre></div></div>
+      <h4 id="optimize">
+        
+        
+          optimize <a href="#optimize" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">optimize</code> procedure improves read performance by rewriting the content of a
+specific table to reduce the number of files. This process increases file size.
+If the table is partitioned, the data compaction acts separately on each
+partition selected for optimization.</p>
+
+<p>All files with a size below the optional <code class="language-plaintext highlighter-rouge">file_size_threshold</code> parameter are
+merged. The default value is <code class="language-plaintext highlighter-rouge">100MB</code>.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">galaxy_delta</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following statement merges files in a table that are under the <code class="language-plaintext highlighter-rouge">10MB</code> file
+size threshold:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">galaxy_delta</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">(</span><span class="n">file_size_threshold</span> <span class="o">=&gt;</span> <span class="s1">'10MB'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Optimize specific partitions using a <code class="language-plaintext highlighter-rouge">WHERE</code> clause with the columns used as
+<code class="language-plaintext highlighter-rouge">partition_key</code> value.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">galaxy_delta</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span>
+<span class="k">WHERE</span> <span class="n">partition_key</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
       <h2 id="delta-lake-sql-support">
         
         
@@ -2118,7 +2171,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a></li><li><a href="#delta-lake-metadata-table">Delta Lake metadata table</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li></ul></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">

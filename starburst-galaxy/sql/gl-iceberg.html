@@ -1957,6 +1957,14 @@ properties as needed:</p>
     </tr>
   </tbody>
 </table>
+      <h2 id="iceberg-metadata-tables">
+        
+        
+          Iceberg metadata tables <a href="#iceberg-metadata-tables" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
 
 <p>Metadata tables reveal information about the internal structure of an Iceberg
 table. Each Iceberg table has the following metadata tables:</p>
@@ -2037,6 +2045,129 @@ named <code class="language-plaintext highlighter-rouge">examplecatalog</code>:<
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">system</span><span class="p">.</span><span class="n">rollback_to_snapshot</span><span class="p">(</span><span class="s1">'schema_name'</span><span class="p">,</span> <span class="s1">'table_name'</span><span class="p">,</span> <span class="mi">8954597067493422955</span><span class="p">)</span>
 </code></pre></div></div>
 <p>Allows the caller to roll back the state of the table to a previous snapshot ID.</p>
+      <h3 id="alter-table-execute">
+        
+        
+          ALTER TABLE EXECUTE <a href="#alter-table-execute" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <a href="./ref/sql/alter-table.html">ALTER TABLE EXECUTE</a> statement followed by a
+command and parameters modifies the table according to the specified procedure
+and parameters. For Iceberg tables, <code class="language-plaintext highlighter-rouge">ALTER TABLE EXECUTE</code> supports the
+following commands:</p>
+
+<ul>
+  <li><a href="#optimize">optimize</a></li>
+  <li><a href="#drop_extended_stats">drop_extended_stats</a></li>
+  <li><a href="#expire_snapshots">expire_snapshots</a></li>
+  <li><a href="#remove_orphan_files">remove_orphan_files</a></li>
+</ul>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">=&gt;</code> operator for passing named parameter values. The left side is
+the name of the parameter and the right side is the value being passed:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">(</span><span class="n">file_size_threshold</span> <span class="o">=&gt;</span> <span class="s1">'10MB'</span><span class="p">);</span>
+</code></pre></div></div>
+      <h4 id="optimize">
+        
+        
+          optimize <a href="#optimize" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">optimize</code> procedure improves read performance by rewriting the content of a
+specific table to reduce the number of files. This process increases file size.
+If the table is partitioned, the data compaction acts separately on each
+partition selected for optimization.</p>
+
+<p>All files with a size below the optional <code class="language-plaintext highlighter-rouge">file_size_threshold</code> parameter are
+merged. The default value is <code class="language-plaintext highlighter-rouge">100MB</code>.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following statement merges files in a table that are under the <code class="language-plaintext highlighter-rouge">10MB</code> file
+size threshold:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span><span class="p">(</span><span class="n">file_size_threshold</span> <span class="o">=&gt;</span> <span class="s1">'10MB'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Optimize specific partitions using a <code class="language-plaintext highlighter-rouge">WHERE</code> clause with the columns used as
+<code class="language-plaintext highlighter-rouge">partition_key</code> value.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">partitioned_table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span>
+<span class="k">WHERE</span> <span class="n">partition_key</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
+      <h4 id="drop_extended_stats">
+        
+        
+          drop_extended_stats <a href="#drop_extended_stats" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">drop_extended_stats</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Removes all extended statistics information from the table.</p>
+      <h4 id="expire_snapshots">
+        
+        
+          expire_snapshots <a href="#expire_snapshots" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">expire_snapshots</code> procedure removes all snapshots and all related metadata
+and data files. Regularly expiring snapshots is recommended to delete data files
+that are no longer needed, and to keep the size of table metadata small. The
+procedure affects all snapshots that are older than the time period configured
+with the <code class="language-plaintext highlighter-rouge">retention_threshold</code> parameter. The following example changes the
+threshold to a value of nine days:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">expire_snapshots</span><span class="p">(</span><span class="n">retention_threshold</span> <span class="o">=&gt;</span> <span class="s1">'9d'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The value for <code class="language-plaintext highlighter-rouge">retention_threshold</code> must be higher than or equal to the default
+value of <code class="language-plaintext highlighter-rouge">7d</code>. Otherwise, the procedure fails with a message similar to:</p>
+
+<blockquote>
+  <p>Retention specified (1d) is shorter than the minimum retention configured in
+  the system (7d). The default value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
+</blockquote>
+      <h4 id="remove_orphan_files">
+        
+        
+          remove_orphan_files <a href="#remove_orphan_files" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">remove_orphan_files</code> procedure removes all files from a table’s data
+directory that are not associated with metadata files. It also removes files
+that are older than the value of the <code class="language-plaintext highlighter-rouge">retention_threshold</code> parameter. Deleting
+orphaned files periodically is recommended to keep the size of a table’s data
+directory under control. The following example changes the <code class="language-plaintext highlighter-rouge">retention_threshold</code>
+to nine days:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">remove_orphan_files</span><span class="p">(</span><span class="n">retention_threshold</span> <span class="o">=&gt;</span> <span class="s1">'9d'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The value for <code class="language-plaintext highlighter-rouge">retention_threshold</code> must be higher than or equal to the default
+value of <code class="language-plaintext highlighter-rouge">7d</code>. Otherwise, the procedure fails with a message similar to:</p>
+
+<blockquote>
+  <p>Retention specified (1d) is shorter than the minimum retention configured in
+  the system (7d). The default value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
+</blockquote>
       <h2 id="migrate-hive-to-iceberg">
         
         
@@ -2046,7 +2177,7 @@ named <code class="language-plaintext highlighter-rouge">examplecatalog</code>:<
       </h2>
     
 
-<p>Only migration from <a href="gl-hive.html">Hive</a> to <a href="gl-iceberg.html">Iceberg</a> table
+<p>Migration from <a href="./gl-hive.html">Hive</a> to <a href="./gl-iceberg.html">Iceberg</a> table
 format is supported.</p>
 
 <p>The migration process uses the <code class="language-plaintext highlighter-rouge">ALTER TABLE SET PROPERTIES</code> syntax. See more
@@ -2166,7 +2297,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
