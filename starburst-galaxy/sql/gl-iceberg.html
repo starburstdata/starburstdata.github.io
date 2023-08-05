@@ -2182,6 +2182,623 @@ format is supported.</p>
 
 <p>The migration process uses the <code class="language-plaintext highlighter-rouge">ALTER TABLE SET PROPERTIES</code> syntax. See more
 information on the <a href="./gl-hive.html#migrate-to-iceberg">Hive table format</a> page.</p>
+      <h2 id="session-properties">
+        
+        
+          Session properties <a href="#session-properties" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>A <a href="./ref/sql/set-session.html">session property</a> temporarily modifies an
+internal Starburst Galaxy setting for the duration of the current connection
+session to the cluster. Use the <code class="language-plaintext highlighter-rouge">SET SESSION</code> statement followed by the property
+name, then a value such as <code class="language-plaintext highlighter-rouge">true</code> or <code class="language-plaintext highlighter-rouge">false</code> to modify the property:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">session_property</span> <span class="o">=</span> <span class="n">expression</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Use the <a href="./ref/sql/show-session.html">SHOW SESSION</a> statement to view all
+current session properties. For additional information, read about the <a href="./ref/sql/set-session.html">SET
+SESSION</a>, and <a href="./ref/sql/reset-session.html">RESET
+SESSION</a> SQL statements.</p>
+
+<p><strong>Catalog session properties</strong> are internal session properties that can be set
+on a per-catalog basis. These properties must be set separately for each catalog
+by including the catalog name before the property name, for example,
+<code class="language-plaintext highlighter-rouge">catalog_name.property_name</code>.</p>
+
+<p>Session properties are linked to the current session, which lets you have
+multiple connections to a cluster that each have different values for the same
+session properties. Once a session ends, either by disconnecting or creating a
+new session, any changes made to session properties during the previous session
+are lost.</p>
+
+<p>The following sections describe the session properties supported by <strong>Iceberg</strong>
+table type:</p>
+      <h3 id="collect_extended_statistics_on_write">
+        
+        
+          collect_extended_statistics_on_write <a href="#collect_extended_statistics_on_write" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">collect_extended_statistics_on_write</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Collect extended statistics while writing files. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="compression_codec">
+        
+        
+          compression_codec <a href="#compression_codec" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">compression_codec</span> <span class="o">=</span> <span class="s1">'DEFAULT'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The compression codec is used when writing new data files. The possible values
+are:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">NONE</code></li>
+  <li><code class="language-plaintext highlighter-rouge">DEFAULT</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SNAPPY</code></li>
+  <li><code class="language-plaintext highlighter-rouge">LZ4</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ZSTD</code></li>
+  <li><code class="language-plaintext highlighter-rouge">GZIP</code></li>
+</ul>
+
+<p>The default value is <code class="language-plaintext highlighter-rouge">DEFAULT</code>.</p>
+      <h3 id="dynamic_filtering_wait_timeout">
+        
+        
+          dynamic_filtering_wait_timeout <a href="#dynamic_filtering_wait_timeout" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">dynamic_filtering_wait_timeout</span> <span class="o">=</span> <span class="s1">'10s'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The duration to wait for completion of dynamic filtering during split
+generation. Dynamic filtering optimizations significantly improve the
+performance of queries with selective joins by avoiding reading of data that
+would be filtered by join conditions.</p>
+
+<p>This extra wait time can potentially result in significant overall savings in
+query and CPU time, if dynamic filtering is able to reduce the amount of scanned
+data. In the previous example, the <code class="language-plaintext highlighter-rouge">dynamic_filtering_wait_timeout</code> is set to
+<code class="language-plaintext highlighter-rouge">10</code> seconds.</p>
+      <h3 id="expire_snapshots_min_retention">
+        
+        
+          expire_snapshots_min_retention <a href="#expire_snapshots_min_retention" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">expire_snapshots_min_retention</span> <span class="o">=</span> <span class="s1">'7d'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The minimum retention period for the <code class="language-plaintext highlighter-rouge">expire_snapshot</code> procedure. The default
+value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
+      <h3 id="extended_statistics_enabled">
+        
+        
+          extended_statistics_enabled <a href="#extended_statistics_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">extended_statistics_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enables statistics collection with the <a href="./ref/sql/analyze.html">ANALYZE</a>
+statement and the use of extended statistics. The default value is <code class="language-plaintext highlighter-rouge">true</code>. The
+<a href="#statistics_enabled">statistics_enabled</a> session property must be set to
+<code class="language-plaintext highlighter-rouge">true</code>. Otherwise, the collection of any statistics is disabled.</p>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">ANALYZE</code> statement to populate data size and number of distinct values
+(NDV) extended table statistics in Iceberg. The minimum value, maximum value,
+value count, and null value count statistics are computed on the fly out of the
+transaction log of the Iceberg table.</p>
+      <h3 id="merge_manifests_on_write">
+        
+        
+          merge_manifests_on_write <a href="#merge_manifests_on_write" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">merge_manifests_on_write</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Compact the manifest files when performing write operations. The default value
+is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="minimum_assigned_split_weight">
+        
+        
+          minimum_assigned_split_weight <a href="#minimum_assigned_split_weight" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">minimum_assigned_split_weight</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">05</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The minimum assigned split weight when size based split weighting is enabled.
+The default value is <code class="language-plaintext highlighter-rouge">0.05</code>.</p>
+      <h3 id="orc_bloom_filters_enabled">
+        
+        
+          orc_bloom_filters_enabled <a href="#orc_bloom_filters_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_bloom_filters_enabled</span> <span class="o">=</span> <span class="nv">`false`</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable bloom filters for predicate pushdown. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
+      <h3 id="orc_lazy_read_small_ranges">
+        
+        
+          orc_lazy_read_small_ranges <a href="#orc_lazy_read_small_ranges" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_lazy_read_small_ranges</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Read small file segments lazily. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="orc_max_buffer_size">
+        
+        
+          orc_max_buffer_size <a href="#orc_max_buffer_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_buffer_size</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Maximum size of a single read. The default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
+      <h3 id="orc_max_merge_distance">
+        
+        
+          orc_max_merge_distance <a href="#orc_max_merge_distance" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_merge_distance</span> <span class="o">=</span> <span class="s1">'1MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Maximum size of the gap between two reads to merge into a single read. The
+default value is <code class="language-plaintext highlighter-rouge">1MB</code>.</p>
+      <h3 id="orc_max_read_block_size">
+        
+        
+          orc_max_read_block_size <a href="#orc_max_read_block_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_read_block_size</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Soft maximum size of Trino blocks produced by the ORC reader. The default value
+is <code class="language-plaintext highlighter-rouge">16MB</code>.</p>
+      <h3 id="orc_native_zstd_decompressor_enabled">
+        
+        
+          orc_native_zstd_decompressor_enabled <a href="#orc_native_zstd_decompressor_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_native_zstd_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using native <code class="language-plaintext highlighter-rouge">zstd</code> library for faster decompression of ORC files. The
+default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="orc_nested_lazy_enabled">
+        
+        
+          orc_nested_lazy_enabled <a href="#orc_nested_lazy_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_nested_lazy_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Lazily read nested data. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="orc_stream_buffer_size">
+        
+        
+          orc_stream_buffer_size <a href="#orc_stream_buffer_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_stream_buffer_size</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Size of buffer for streaming reads. The default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
+      <h3 id="orc_string_statistics_limit">
+        
+        
+          orc_string_statistics_limit <a href="#orc_string_statistics_limit" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_string_statistics_limit</span> <span class="o">=</span> <span class="s1">'64B'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Maximum size of the string statistics. The default value is <code class="language-plaintext highlighter-rouge">64B</code>.</p>
+      <h3 id="orc_tiny_stripe_threshold">
+        
+        
+          orc_tiny_stripe_threshold <a href="#orc_tiny_stripe_threshold" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_tiny_stripe_threshold</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The threshold below which an ORC stripe or file will read in its entirety. The
+default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
+      <h3 id="orc_writer_max_dictionary_memory">
+        
+        
+          orc_writer_max_dictionary_memory <a href="#orc_writer_max_dictionary_memory" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_max_dictionary_memory</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum dictionary memory. The default value is <code class="language-plaintext highlighter-rouge">16MB</code>.</p>
+      <h3 id="orc_writer_max_stripe_rows">
+        
+        
+          orc_writer_max_stripe_rows <a href="#orc_writer_max_stripe_rows" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_max_stripe_rows</span> <span class="o">=</span> <span class="mi">10000000</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum stripe row count. The default value is <code class="language-plaintext highlighter-rouge">10000000</code>.</p>
+      <h3 id="orc_writer_max_stripe_size">
+        
+        
+          orc_writer_max_stripe_size <a href="#orc_writer_max_stripe_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_max_stripe_size</span> <span class="o">=</span> <span class="s1">'64MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum stripe size. The default is <code class="language-plaintext highlighter-rouge">64MB</code>.</p>
+      <h3 id="orc_writer_min_stripe_size">
+        
+        
+          orc_writer_min_stripe_size <a href="#orc_writer_min_stripe_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_min_stripe_size</span> <span class="o">=</span> <span class="s1">'32MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The minimum stripe size. The default is <code class="language-plaintext highlighter-rouge">32MB</code>.</p>
+      <h3 id="orc_writer_validate_mode">
+        
+        
+          orc_writer_validate_mode <a href="#orc_writer_validate_mode" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_validate_mode</span> <span class="o">=</span> <span class="s1">'BOTH'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The level of detail in <code class="language-plaintext highlighter-rouge">ORC</code> validation. The possible values are:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">HASHED</code></li>
+  <li><code class="language-plaintext highlighter-rouge">DETAILED</code></li>
+  <li><code class="language-plaintext highlighter-rouge">BOTH</code></li>
+</ul>
+
+<p>The default value is <code class="language-plaintext highlighter-rouge">BOTH</code>.</p>
+      <h3 id="orc_writer_validate_percentage">
+        
+        
+          orc_writer_validate_percentage <a href="#orc_writer_validate_percentage" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_writer_validate_percentage</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The percentage of written files to validate by rereading them. The default value
+is <code class="language-plaintext highlighter-rouge">0</code>.</p>
+      <h3 id="parquet_max_read_block_row_count">
+        
+        
+          parquet_max_read_block_row_count <a href="#parquet_max_read_block_row_count" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_row_count</span> <span class="o">=</span> <span class="mi">8192</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Sets the maximum number of rows read in a batch. The default value is <code class="language-plaintext highlighter-rouge">8192</code>.</p>
+      <h3 id="parquet_max_read_block_size">
+        
+        
+          parquet_max_read_block_size <a href="#parquet_max_read_block_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_size</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum block size used when reading Parquet files. The default value is
+<code class="language-plaintext highlighter-rouge">16MB</code>.</p>
+      <h3 id="parquet_native_snappy_decompressor_enabled">
+        
+        
+          parquet_native_snappy_decompressor_enabled <a href="#parquet_native_snappy_decompressor_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_snappy_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using native <code class="language-plaintext highlighter-rouge">SNAPPY</code> library for faster decompression of Parquet files.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>;</p>
+      <h3 id="parquet_optimized_reader_enabled">
+        
+        
+          parquet_optimized_reader_enabled <a href="#parquet_optimized_reader_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies whether batched column readers are used when reading Parquet files for
+improved performance. Set this property to <code class="language-plaintext highlighter-rouge">false</code> to disable the optimized
+Parquet reader The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_native_zstd_decompressor_enabled">
+        
+        
+          parquet_native_zstd_decompressor_enabled <a href="#parquet_native_zstd_decompressor_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_zstd_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using native <code class="language-plaintext highlighter-rouge">ZSTD</code> library for faster decompression of Parquet files.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_optimized_nested_reader_enabled">
+        
+        
+          parquet_optimized_nested_reader_enabled <a href="#parquet_optimized_nested_reader_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_nested_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies whether batched column readers are used when reading <code class="language-plaintext highlighter-rouge">ARRAY</code>, <code class="language-plaintext highlighter-rouge">MAP</code>,
+and <code class="language-plaintext highlighter-rouge">ROW</code> types from Parquet files for improved performance. Set this property
+to <code class="language-plaintext highlighter-rouge">false</code> to disable the optimized Parquet reader for structural data types.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_use_bloom_filter">
+        
+        
+          parquet_use_bloom_filter <a href="#parquet_use_bloom_filter" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_bloom_filter</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies whether Bloom filters are used for predicate pushdown when reading
+Parquet files. The default value is <code class="language-plaintext highlighter-rouge">true</code>;</p>
+      <h3 id="parquet_vectorized_decoding_enabled">
+        
+        
+          parquet_vectorized_decoding_enabled <a href="#parquet_vectorized_decoding_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_names</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable the use of the Java Vector API for faster decoding of Parquet files. The
+default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_writer_batch_size">
+        
+        
+          parquet_writer_batch_size <a href="#parquet_writer_batch_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_batch_size</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Maximum number of rows processed by the Parquet writer in a batch. The default
+value is <code class="language-plaintext highlighter-rouge">10000</code>.</p>
+      <h3 id="parquet_writer_block_size">
+        
+        
+          parquet_writer_block_size <a href="#parquet_writer_block_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_block_size</span> <span class="o">=</span> <span class="s1">'128MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum block size created by the Parquet writer. The default value is
+<code class="language-plaintext highlighter-rouge">128MB</code>.</p>
+      <h3 id="parquet_writer_page_size">
+        
+        
+          parquet_writer_page_size <a href="#parquet_writer_page_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_page_size</span> <span class="o">=</span> <span class="s1">'1MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum page size created by the Parquet writer. The default value is <code class="language-plaintext highlighter-rouge">1MB</code>.</p>
+      <h3 id="projection_pushdown_enabled">
+        
+        
+          projection_pushdown_enabled <a href="#projection_pushdown_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">projection_pushdown_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable projection pushdown. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="remove_orphan_files_min_retention">
+        
+        
+          remove_orphan_files_min_retention <a href="#remove_orphan_files_min_retention" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">remove_orphan_files_min_retention</span> <span class="o">=</span> <span class="s1">'7d'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The minimum retention for the files taken into account for removal by
+the <code class="language-plaintext highlighter-rouge">remove_orphan</code> procedure. The default value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
+      <h3 id="sorted_writing_enabled">
+        
+        
+          sorted_writing_enabled <a href="#sorted_writing_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">sorted_writing_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable sorted writes. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="statistics_enabled">
+        
+        
+          statistics_enabled <a href="#statistics_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">statistics_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enables table statistics for performance improvements. The default value is
+<code class="language-plaintext highlighter-rouge">true</code>. If the value is set to <code class="language-plaintext highlighter-rouge">false</code> the following session property is
+disabled:</p>
+
+<ul>
+  <li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li>
+</ul>
+      <h3 id="target_max_file_size">
+        
+        
+          target_max_file_size <a href="#target_max_file_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">target_max_file_size</span> <span class="o">=</span> <span class="s1">'1GB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Target maximum size of written files. The default value is <code class="language-plaintext highlighter-rouge">1GB</code>.</p>
+      <h3 id="use_file_size_from_metadata">
+        
+        
+          use_file_size_from_metadata <a href="#use_file_size_from_metadata" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">use_file_size_from_metadata</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Use the file size stored in Iceberg metadata. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
       <h2 id="iceberg-sql-support">
         
         
@@ -2297,7 +2914,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#collect_extended_statistics_on_write">collect_extended_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#expire_snapshots_min_retention">expire_snapshots_min_retention</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#merge_manifests_on_write">merge_manifests_on_write</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_writer_max_dictionary_memory">orc_writer_max_dictionary_memory</a></li><li><a href="#orc_writer_max_stripe_rows">orc_writer_max_stripe_rows</a></li><li><a href="#orc_writer_max_stripe_size">orc_writer_max_stripe_size</a></li><li><a href="#orc_writer_min_stripe_size">orc_writer_min_stripe_size</a></li><li><a href="#orc_writer_validate_mode">orc_writer_validate_mode</a></li><li><a href="#orc_writer_validate_percentage">orc_writer_validate_percentage</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#remove_orphan_files_min_retention">remove_orphan_files_min_retention</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#use_file_size_from_metadata">use_file_size_from_metadata</a></li></ul></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">

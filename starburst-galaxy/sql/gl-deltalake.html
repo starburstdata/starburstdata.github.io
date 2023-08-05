@@ -2005,6 +2005,398 @@ follows:</p>
   <li>Table name</li>
   <li>Retention period</li>
 </ol>
+      <h2 id="session-properties">
+        
+        
+          Session properties <a href="#session-properties" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>A <a href="./ref/sql/set-session.html">session property</a> temporarily modifies an
+internal Starburst Galaxy setting for the duration of the current connection
+session to the cluster. Use the <code class="language-plaintext highlighter-rouge">SET SESSION</code> statement followed by the property
+name, then a value such as <code class="language-plaintext highlighter-rouge">true</code> or <code class="language-plaintext highlighter-rouge">false</code> to modify the property:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">session_property</span> <span class="o">=</span> <span class="n">expression</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Use the <a href="./ref/sql/show-session.html">SHOW SESSION</a> statement to view all
+current session properties. For additional information, read about the <a href="./ref/sql/set-session.html">SET
+SESSION</a>, and <a href="./ref/sql/reset-session.html">RESET
+SESSION</a> SQL statements.</p>
+
+<p><strong>Catalog session properties</strong> are internal session properties that can
+be set on a per-catalog basis. These properties must be set separately for each
+catalog by including the catalog name before the property name, for example,
+<code class="language-plaintext highlighter-rouge">catalog_name.property_name</code>.</p>
+
+<p>Session properties are linked to the current session, which lets you have
+multiple connections to a cluster that each have different values for the same
+session properties. Once a session ends, either by disconnecting or creating a
+new session, any changes made to session properties during the previous session
+are lost.</p>
+
+<p>The following sections describe the session properties supported by <strong>Delta
+Lake</strong> table type:</p>
+      <h3 id="compression_codec">
+        
+        
+          compression_codec <a href="#compression_codec" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">compression_codec</span> <span class="o">=</span> <span class="s1">'SNAPPY'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The compression codec is used when writing new data files. The possible values
+are:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">NONE</code></li>
+  <li><code class="language-plaintext highlighter-rouge">SNAPPY</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ZSTD</code></li>
+  <li><code class="language-plaintext highlighter-rouge">GZIP</code></li>
+</ul>
+
+<p>The default value is <code class="language-plaintext highlighter-rouge">SNAPPY</code>.</p>
+      <h3 id="dynamic_filtering_wait_timeout">
+        
+        
+          dynamic_filtering_wait_timeout <a href="#dynamic_filtering_wait_timeout" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">dynamic_filtering_wait_timeout</span> <span class="o">=</span> <span class="s1">'10s'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The duration to wait for completion of dynamic filtering during split
+generation. Dynamic filtering optimizations significantly improve the
+performance of queries with selective joins by avoiding reading of data that
+would be filtered by the join conditions. In the previous example, the
+<code class="language-plaintext highlighter-rouge">dynamic_filtering_wait_timeout</code> is set to <code class="language-plaintext highlighter-rouge">10</code> seconds.</p>
+      <h3 id="extended_statistics_enabled">
+        
+        
+          extended_statistics_enabled <a href="#extended_statistics_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">extended_statistics_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enables statistics collection with the <a href="./ref/sql/analyze.html">ANALYZE</a>
+statement and the use of extended statistics. The default value is <code class="language-plaintext highlighter-rouge">true</code>. The
+<a href="#statistics_enabled">statistics_enabled</a> session property must be set to
+<code class="language-plaintext highlighter-rouge">true</code>. Otherwise, the collection of any statistics is disabled.</p>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">ANALYZE</code> statement to populate data size and number of distinct values
+(NDV) extended table statistics in Delta Lake. The minimum value, maximum value,
+value count, and null value count statistics are computed on the fly out of the
+transaction log of the Delta Lake table.</p>
+      <h3 id="extended_statistics_collect_on_write">
+        
+        
+          extended_statistics_collect_on_write <a href="#extended_statistics_collect_on_write" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">extended_statistics_collect_on_write</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable collection of extended statistics for write operations. The default value
+is <code class="language-plaintext highlighter-rouge">true</code>. The <a href="#statistics_enabled">statistics_enabled</a> session property must
+be set to <code class="language-plaintext highlighter-rouge">true</code>. Otherwise, the collection of any statistics is disabled.</p>
+      <h3 id="legacy_create_table_with_existing_location_enabled">
+        
+        
+          legacy_create_table_with_existing_location_enabled <a href="#legacy_create_table_with_existing_location_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">legacy_create_table_with_existing_location_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using the <a href="./ref/sql/create-table.html">CREATE TABLE</a> statement to
+register an existing table. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="max_initial_split_size">
+        
+        
+          max_initial_split_size <a href="#max_initial_split_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">max_initial_split_size</span> <span class="o">=</span> <span class="s1">'32MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Sets the initial data size for a single read section assigned to a worker. The
+default value is <code class="language-plaintext highlighter-rouge">32MB</code>.</p>
+      <h3 id="max_split_size">
+        
+        
+          max_split_size <a href="#max_split_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">max_split_size</span> <span class="o">=</span> <span class="s1">'64MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Sets the largest data size for a single read section assigned to a worker. The
+default value is <code class="language-plaintext highlighter-rouge">64MB</code>.</p>
+      <h3 id="parquet_max_read_block_size">
+        
+        
+          parquet_max_read_block_size <a href="#parquet_max_read_block_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_size</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum block size used when reading Parquet files. The default value is
+<code class="language-plaintext highlighter-rouge">16MB</code>.</p>
+      <h3 id="parquet_max_read_block_row_count">
+        
+        
+          parquet_max_read_block_row_count <a href="#parquet_max_read_block_row_count" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_row_count</span> <span class="o">=</span> <span class="mi">8192</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Sets the maximum number of rows read in a batch. The default value is <code class="language-plaintext highlighter-rouge">8192</code>.</p>
+      <h3 id="parquet_native_snappy_decompressor_enabled">
+        
+        
+          parquet_native_snappy_decompressor_enabled <a href="#parquet_native_snappy_decompressor_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_snappy_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using native <code class="language-plaintext highlighter-rouge">SNAPPY</code> library for faster decompression of Parquet files.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_native_zstd_decompressor_enabled">
+        
+        
+          parquet_native_zstd_decompressor_enabled <a href="#parquet_native_zstd_decompressor_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_zstd_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable using native <code class="language-plaintext highlighter-rouge">ZSTD</code> library for faster decompression of Parquet files.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_optimized_nested_reader_enabled">
+        
+        
+          parquet_optimized_nested_reader_enabled <a href="#parquet_optimized_nested_reader_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_nested_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies whether batched column readers are used when reading <code class="language-plaintext highlighter-rouge">ARRAY</code>, <code class="language-plaintext highlighter-rouge">MAP</code>,
+and <code class="language-plaintext highlighter-rouge">ROW</code> types from Parquet files for improved performance. Set this property
+to <code class="language-plaintext highlighter-rouge">false</code> to disable the optimized Parquet reader for structural data types.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_optimized_reader_enabled">
+        
+        
+          parquet_optimized_reader_enabled <a href="#parquet_optimized_reader_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies whether batched column readers are used when reading Parquet files for
+improved performance. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_use_column_index">
+        
+        
+          parquet_use_column_index <a href="#parquet_use_column_index" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_index</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Skip reading Parquet pages by using Parquet column indices. The default value is
+<code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_vectorized_decoding_enabled">
+        
+        
+          parquet_vectorized_decoding_enabled <a href="#parquet_vectorized_decoding_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_names</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enable the use of the Java Vector API for faster decoding of Parquet files. The
+default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="parquet_writer_block_size">
+        
+        
+          parquet_writer_block_size <a href="#parquet_writer_block_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_block_size</span> <span class="o">=</span> <span class="s1">'128MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum block size created by the Parquet writer. The default value is
+<code class="language-plaintext highlighter-rouge">128MB</code>.</p>
+      <h3 id="parquet_writer_page_size">
+        
+        
+          parquet_writer_page_size <a href="#parquet_writer_page_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_page_size</span> <span class="o">=</span> <span class="s1">'1MB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The maximum page size created by the Parquet writer. The default value is <code class="language-plaintext highlighter-rouge">1MB</code>.</p>
+      <h3 id="parquet_writer_batch_size">
+        
+        
+          parquet_writer_batch_size <a href="#parquet_writer_batch_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_batch_size</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Maximum number of rows processed by the Parquet writer in a batch. The default
+value is <code class="language-plaintext highlighter-rouge">10000</code>.</p>
+      <h3 id="projection_pushdown_enabled">
+        
+        
+          projection_pushdown_enabled <a href="#projection_pushdown_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">projection_pushdown_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Read only projected fields, from row columns while performing <code class="language-plaintext highlighter-rouge">SELECT</code> queries.
+The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
+      <h3 id="statistics_enabled">
+        
+        
+          statistics_enabled <a href="#statistics_enabled" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">statistics_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Enables table statistics for performance improvements. The default value is
+<code class="language-plaintext highlighter-rouge">true</code>. If the value is set to <code class="language-plaintext highlighter-rouge">false</code> the following session properties are
+disabled:</p>
+
+<ul>
+  <li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li>
+  <li><a href="#extended_statistics_collect_on_write">extended_statistics_collect_on_write</a></li>
+</ul>
+      <h3 id="target_max_file_size">
+        
+        
+          target_max_file_size <a href="#target_max_file_size" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">target_max_file_size</span> <span class="o">=</span> <span class="s1">'1GB'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Target maximum size of written files. The default value is <code class="language-plaintext highlighter-rouge">1GB</code>.</p>
+      <h3 id="timestamp_precision">
+        
+        
+          timestamp_precision <a href="#timestamp_precision" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">timestamp_precision</span> <span class="o">=</span> <span class="s1">'MILLISECONDS'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Specifies the precision for the timestamp columns in Hive tables. The possible
+values are:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">MILLISECONDS</code></li>
+  <li><code class="language-plaintext highlighter-rouge">MICROSECONDS</code></li>
+  <li><code class="language-plaintext highlighter-rouge">NANOSECONDS</code></li>
+</ul>
+
+<p>The default value is <code class="language-plaintext highlighter-rouge">MILLISECONDS</code>.</p>
+      <h3 id="vacuum_min_retention">
+        
+        
+          vacuum_min_retention <a href="#vacuum_min_retention" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">vacuum_min_retention</span> <span class="o">=</span> <span class="s1">'7d'</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The minimum retention threshold for the files taken into account for removal by
+the <a href="#vacuum">vacuum</a> procedure. The default value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
+
+<p>=======</p>
       <h3 id="alter-table-execute">
         
         
@@ -2171,7 +2563,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a></li><li><a href="#delta-lake-metadata-table">Delta Lake metadata table</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li></ul></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a></li><li><a href="#delta-lake-metadata-table">Delta Lake metadata table</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li></ul></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#extended_statistics_collect_on_write">extended_statistics_collect_on_write</a></li><li><a href="#legacy_create_table_with_existing_location_enabled">legacy_create_table_with_existing_location_enabled</a></li><li><a href="#max_initial_split_size">max_initial_split_size</a></li><li><a href="#max_split_size">max_split_size</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#vacuum_min_retention">vacuum_min_retention</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li></ul></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
