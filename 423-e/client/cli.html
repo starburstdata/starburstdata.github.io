@@ -725,7 +725,7 @@ Versions before 350 are not supported.</p>
 </section>
 <section id="installation">
 <span id="cli-installation"></span><h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h2>
-<p>Download <a class="reference external" href="https://repo.maven.apache.org/maven2/io/trino/trino-cli/422/trino-cli-422-executable.jar">trino-cli-422-executable.jar</a>, rename it to <code class="docutils literal notranslate"><span class="pre">trino</span></code>, make it executable with
+<p>Download <a class="reference external" href="https://repo.maven.apache.org/maven2/io/trino/trino-cli/423/trino-cli-423-executable.jar">trino-cli-423-executable.jar</a>, rename it to <code class="docutils literal notranslate"><span class="pre">trino</span></code>, make it executable with
 <code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">+x</span></code>, and run it to show the version of the CLI:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --version
 </pre></div>
@@ -746,7 +746,7 @@ troubleshooting, such as when <a class="reference internal" href="#cli-kerberos-
 <h2 id="running-the-cli">Running the CLI<a class="headerlink" href="#running-the-cli" title="Permalink to this heading">#</a></h2>
 <p>The minimal command to start the CLI in interactive mode specifies the URL of
 the coordinator in the Trino cluster:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --server http://trino.example.com:8080
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino http://trino.example.com:8080
 </pre></div>
 </div>
 <p>If successful, you will get a prompt to execute commands. Use the <code class="docutils literal notranslate"><span class="pre">help</span></code>
@@ -786,7 +786,7 @@ Splits: 13 total, 13 done (100.00%)
 </div>
 <p>As part of starting the CLI, you can set the default catalog and schema. This
 allows you to query tables directly without specifying catalog and schema.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --server http://trino.example.com:8080 --catalog tpch --schema tiny
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino http://trino.example.com:8080/tpch/tiny
 
 trino:tiny&gt; SHOW TABLES;
 
@@ -889,7 +889,8 @@ with <a class="reference internal" href="../sql/use.html"><span class="doc">USE<
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--server</span></code></p></td>
 <td><p>The HTTP/HTTPS address and port of the Trino coordinator. The port must be
 set to the port the Trino coordinator is listening for connections on.
-Trino server location defaults to <code class="docutils literal notranslate"><span class="pre">http://localhost:8080</span></code>.</p></td>
+Trino server location defaults to <code class="docutils literal notranslate"><span class="pre">http://localhost:8080</span></code>.
+Can only be set if URL is not specified.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--session</span></code></p></td>
 <td><p>Sets one or more <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session properties</span></a>. Property can be used multiple times with
@@ -914,14 +915,21 @@ if your cluster uses a different username or authentication mechanism.</p></td>
 </tr>
 </tbody>
 </table>
+<p>Most of the options can also be set as parameters in the URL. This means
+a JDBC URL can be used in the CLI after removing the <code class="docutils literal notranslate"><span class="pre">jdbc:</span></code> prefix.
+However, the same parameter may not be specified using both methods.
+See <a class="reference internal" href="jdbc.html"><span class="doc">the JDBC driver parameter reference</span></a>
+to find out URL parameter names. For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino 'https://trino.example.com?SSL=true&amp;SSLVerification=FULL&amp;clientInfo=extra'
+</pre></div>
+</div>
 </section>
 <section id="tls-https">
 <span id="cli-tls"></span><h2 id="tls-https">TLS/HTTPS<a class="headerlink" href="#tls-https" title="Permalink to this heading">#</a></h2>
 <p>Trino is typically available with an HTTPS URL. This means that all network
-traffic between the CLI and Trino uses TLS. <a class="reference internal" href="../security/tls.html"><span class="doc">TLS configuration</span></a> is common, since it is a requirement for <a class="reference internal" href="#cli-authentication"><span class="std std-ref">any
-authentication</span></a>.</p>
+traffic between the CLI and Trino uses TLS. <a class="reference internal" href="../security/tls.html"><span class="doc">TLS configuration</span></a> is common, since it is a requirement for <a class="reference internal" href="#cli-authentication"><span class="std std-ref">any authentication</span></a>.</p>
 <p>Use the HTTPS URL to connect to the server:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --server https://trino.example.com
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino https://trino.example.com
 </pre></div>
 </div>
 <p>The recommended TLS implementation is to use a globally trusted certificate. In
@@ -989,7 +997,7 @@ the <code class="docutils literal notranslate"><span class="pre">PASSWORD</span>
 for example with <a class="reference internal" href="../security/ldap.html"><span class="doc">LDAP authentication</span></a> or <a class="reference internal" href="../security/password-file.html"><span class="doc">Password file authentication</span></a>.</p>
 <p>The following code example connects to the server, establishes your user name,
 and prompts the CLI for your password:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --server https://trino.example.com --user=exampleusername --password
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino https://trino.example.com --user=exampleusername --password
 </pre></div>
 </div>
 <p>Alternatively, set the password as the value of the <code class="docutils literal notranslate"><span class="pre">TRINO_PASSWORD</span></code>
@@ -1000,7 +1008,7 @@ special characters such as <code class="docutils literal notranslate"><span clas
 </div>
 <p>If the <code class="docutils literal notranslate"><span class="pre">TRINO_PASSWORD</span></code> environment variable is set, you are not prompted
 to provide a password to connect with the CLI.</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino --server https://trino.example.com --user=exampleusername --password
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino https://trino.example.com --user=exampleusername --password
 </pre></div>
 </div>
 </section>
@@ -1137,8 +1145,7 @@ as a JVM argument when <a class="reference internal" href="#cli-installation"><s
   --krb5-remote-service-name trino
 </pre></div>
 </div>
-<p>For help with interpreting Kerberos debugging messages, see <a class="reference internal" href="../security/kerberos.html#kerberos-debug"><span class="std std-ref">additional
-resources</span></a>.</p>
+<p>For help with interpreting Kerberos debugging messages, see <a class="reference internal" href="../security/kerberos.html#kerberos-debug"><span class="std std-ref">additional resources</span></a>.</p>
 </section>
 </section>
 </section>
@@ -1182,8 +1189,8 @@ authentication options, like <code class="docutils literal notranslate"><span cl
 Assuming they’re located in the current directory, you can set the
 <code class="docutils literal notranslate"><span class="pre">TRINO_CONFIG</span></code> environment variable for a single invocation of the CLI by
 adding it before the <code class="docutils literal notranslate"><span class="pre">trino</span></code> command:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TRINO_CONFIG=kerberos-cli.properties trino --server https://first-cluster.example.com:8443
-TRINO_CONFIG=ldap-cli.properties trino --server https://second-cluster.example.com:8443
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>TRINO_CONFIG=kerberos-cli.properties trino https://first-cluster.example.com:8443
+TRINO_CONFIG=ldap-cli.properties trino https://second-cluster.example.com:8443
 </pre></div>
 </div>
 <p>In the preceding example, the default configuration files are not used.</p>
