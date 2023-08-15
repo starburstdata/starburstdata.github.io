@@ -84,6 +84,31 @@ document.addEventListener('keydown', event => {
   }
 })
 
+document.addEventListener('DOMContentLoaded', function() {
+  const activeLink = document.querySelector('.left-nav .active');
+
+  if(activeLink) {
+    const menu = document.querySelector('.left-nav');
+    const menuRect= menu.getBoundingClientRect();
+    const linkRect = activeLink.getBoundingClientRect();
+    //check if active link is in view window
+    if(linkRect.top < menuRect.top || linkRect.bottom > menuRect.bottom) {
+      const scrollOffset = linkRect.top - menuRect.top - (menuRect.height - linkRect.height) / 2;
+      menu.scrollTop += scrollOffset;
+    }
+  }
+})
+//preserves scrollbar for left-nav
+let sidebar = document.querySelector('.left-nav');
+let prevScroll = localStorage.getItem('leftnav-scroll');
+if (prevScroll !== null) {
+  sidebar.scrollTop = parseInt(prevScroll, 10);
+}
+
+window.addEventListener('beforeunload', () => {
+  localStorage.setItem('leftnav-scroll', sidebar.scrollTop);
+});
+
 function getVideoLength(time) {
   const videoLength = time;
   let [hours, minutes, seconds] = videoLength.split(':');
