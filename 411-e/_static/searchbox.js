@@ -1,7 +1,19 @@
+// get script tag data attribute outside of event listener
+var theversions = document.currentScript.getAttribute('data-versions');
+
 document.addEventListener('DOMContentLoaded', function () {
+  const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
+  const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+
+  aa('init', {
+    appId: ALGOLIA_ID,
+    apiKey: ALGOLIA_KEY,
+    useCookie: true,
+  });
+
   const searchClient = algoliasearch(
-    '0X4IAR77M1', // Algolia ID
-    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+    ALGOLIA_ID, // Algolia ID
+    ALGOLIA_KEY // Algolia Key
   );
 
   const hitsContainer = document.querySelector('#hits');
@@ -10,7 +22,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const pathName = window.location.pathname;
   const pathArray = pathName.split('/');
-  const pathSegment = pathArray[1];
+  const searchSegment = pathArray[1];
+  let pathSegment = pathArray[1];
+
+  // clean up data attribute string
+  theversions = theversions
+    .replace(/'/g, '"') // change quotes from single to double for JSON
+    .replace(/\//g, ''); // remove forward slashes
+
+  // turn string to object
+  theversions = JSON.parse(theversions);
+
+  // get object values
+  var versions = Object.values(theversions).sort();
+
+  // check if version is a STS
+  var isSTS = Object.keys(theversions)
+  .find((key) => theversions[key] === pathSegment)
+  .includes('STS');
+
+  if (
+    !versions.includes(pathSegment) ||
+    pathSegment === versions[versions.length - 1] ||
+    isSTS
+  ) {
+    pathSegment = 'latest'; //Defaults to latest if version is not supported or is most recent version
+  }
 
   const search = instantsearch({
     indexName: 'AllDocs',
@@ -18,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
     searchFunction: function (helper) {
       helper.state.facetFilters = [[`version:${pathSegment}`, 'type: guides']];
       // if less than 2 character, don't trigger search and hide inner content
-      if (helper.state.query.length < 2) {
+      if (helper.state.query.length < 3) {
         hitsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
         refinementContainer.style.display = 'none';
@@ -39,8 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (nbHits > 5) {
       document.querySelector('#stats').innerHTML = `
-      <a href='/${pathSegment}/search.html?q=${query}' class="view-more-button">View more results</a>
-    `;
+          <a href='/${searchSegment}/search.html?q=${query}' class="view-more-button">View more results</a>
+        `;
     } else {
       document.querySelector('#stats').innerHTML = ``;
     }
@@ -69,56 +106,67 @@ document.addEventListener('DOMContentLoaded', function () {
       sortBy: ['name:desc', 'count:desc'],
     }),
 
+    instantsearch.widgets.refinementList({
+      container: '#version-list',
+      attribute: 'version',
+      sortBy: ['name:desc', 'count:desc'],
+    }),
+
     instantsearch.widgets.hits({
       container: '#hits',
       templates: {
         item: (hit, bindEvent) => {
           return (
             `<li class="hit-item">
-          <a ${bindEvent('click', hit, 'hit clicked')} href="` +
+              <a ${bindEvent('click', hit, 'hit clicked')} href="` +
             hit.url +
             `">
-            <h2>
-              ${instantsearch.highlight({ attribute: 'title', hit: hit })}
-            </h2>
-            <p>
-              ${instantsearch.snippet({ attribute: 'content', hit: hit })}
-            </p>
-            ${
-              hit['categories.lvl2']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl2']}
-                </p>`
-                : hit['categories.lvl1']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl1']}
-                </p>`
-                : hit['categories.lvl0']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl0']}
-                </p>`
-                : null
-            }
-          </a>
-          </li>
-          `
+                <h2>
+                  ${instantsearch.highlight({ attribute: 'title', hit: hit })}
+                </h2>
+                <p>
+                  ${instantsearch.snippet({ attribute: 'content', hit: hit })}
+                </p>
+                ${
+                  hit['categories.lvl2']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl2']}
+                    </p>`
+                    : hit['categories.lvl1']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl1']}
+                    </p>`
+                    : hit['categories.lvl0']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl0']}
+                    </p>`
+                    : null
+                }
+              </a>
+              </li>
+              `
           );
         },
         empty: (results) => {
           refinementContainer.style.display = 'none';
           return `<div id="noResults">
-                <h2>We're sorry!</h2>
-                <p>We couldn't find any results for: "${
-                  results && results.query
-                }"</p>
-              </div>`;
+                    <h2>We're sorry!</h2>
+                    <p>We couldn't find any results for: "${
+                      results && results.query
+                    }"</p>
+                  </div>`;
         },
       },
     }),
-
     customStats({
       container: document.querySelector('#stats'),
     }),
+    {
+      init: function (options) {
+        // default version for refinement, ensures option is checked when switching type
+        options.helper.toggleRefinement('version', `${pathSegment}`);
+      },
+    },
   ]);
 
   search.use(
@@ -129,13 +177,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   search.start();
 
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     const searchInput = document.querySelector('.ais-SearchBox-input').value;
 
-    if (searchInput && event.key == 'Enter'){
-      if (document.activeElement == document.querySelector('.ais-SearchBox-input')){
-        window.location.href =  "/" + pathSegment + "/search.html?q=" + searchInput;
+    if (searchInput && event.key == 'Enter') {
+      if (
+        document.activeElement == document.querySelector('.ais-SearchBox-input')
+      ) {
+        window.location.href =
+          '/' + searchSegment + '/search.html?q=' + searchInput;
       }
     }
-  })
+  });
 });
