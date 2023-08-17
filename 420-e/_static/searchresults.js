@@ -1,3 +1,6 @@
+// get script tag data attribute outside of event listener
+var docsversions = document.currentScript.getAttribute('data-versions');
+
 document.addEventListener('DOMContentLoaded', function () {
   const resultsContainer = document.querySelector('#search-results');
 
@@ -45,7 +48,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const pathName = window.location.pathname;
       const pathArray = pathName.split('/');
-      const pathSegment = pathArray[1];
+      let pathSegment = pathArray[1];
+
+      // clean up data attribute string
+      docsversions = docsversions
+        .replace(/'/g, '"') // change quotes from single to double for JSON
+        .replace(/\//g, ''); // remove forward slashes
+
+      // turn string to object
+      docsversions = JSON.parse(docsversions);
+
+      // get object values
+      var versions = Object.values(docsversions);
+
+      if (!versions.includes(pathSegment)) {
+        pathSegment = 'latest'; //Defaults to latest if version is not supported
+      }
 
       if (pathSegment == 'latest') {
         document.querySelector('#toggle-refinement').style.display = 'none';
@@ -59,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
             [`version: ${pathSegment}`, 'type: guides'],
           ];
           // if less than 2 character, don't trigger search and hide inner content
-          if (helper.state.query.length < 2) {
+          if (helper.state.query.length < 3) {
             hitsContainer.style.display = 'none';
             refinementContainer.style.display = 'none';
             filterOptions.style.display = 'none';
