@@ -1,3 +1,6 @@
+// get script tag data attribute outside of event listener
+var docsversions = document.currentScript.getAttribute('data-versions');
+
 document.addEventListener('DOMContentLoaded', function () {
   const resultsContainer = document.querySelector('#search-results');
 
@@ -46,161 +49,166 @@ document.addEventListener('DOMContentLoaded', function () {
       const pathName = window.location.pathname;
       const pathArray = pathName.split('/');
       let pathSegment = pathArray[1];
-      //Retrieve all versions supported by Algolia
-      const allDocsIndex = searchClient.initIndex('AllDocs');
-      let versions = [];
-      allDocsIndex
-        .search('', {
-          facets: ['version'],
-        })
-        .then((res) => {
-          versions = Object.keys(res.facets.version);
-          if (!versions.includes(pathSegment)) {
-            pathSegment = 'latest'; //Defaults to latest if version is not supported
+
+      // clean up data attribute string
+      docsversions = docsversions
+        .replace(/'/g, '"') // change quotes from single to double for JSON
+        .replace(/\//g, ''); // remove forward slashes
+
+      // turn string to object
+      docsversions = JSON.parse(docsversions);
+
+      // get object values
+      var versions = Object.values(docsversions);
+
+      if (!versions.includes(pathSegment)) {
+        pathSegment = 'latest'; //Defaults to latest if version is not supported
+      }
+
+      if (pathSegment == 'latest') {
+        document.querySelector('#toggle-refinement').style.display = 'none';
+      }
+
+      const searchResults = instantsearch({
+        indexName: 'AllDocs',
+        searchClient,
+        searchFunction: function (helper) {
+          helper.state.facetFilters = [
+            [`version: ${pathSegment}`, 'type: guides'],
+          ];
+          // if less than 2 character, don't trigger search and hide inner content
+          if (helper.state.query.length < 3) {
+            hitsContainer.style.display = 'none';
+            refinementContainer.style.display = 'none';
+            filterOptions.style.display = 'none';
+          } else {
+            hitsContainer.style.display = 'block';
+            refinementContainer.style.display = 'flex';
+            filterOptions.style.display = 'flex';
+            helper.search();
           }
+        },
+        searchParameters: {
+          facetFilters: [[`version: ${pathSegment}`, 'type: guides']],
+        },
+      });
 
-          if (pathSegment == 'latest') {
-            document.querySelector('#toggle-refinement').style.display = 'none';
-          }
+      const renderStats = (renderOptions) => {
+        const { nbHits } = renderOptions;
 
-          const searchResults = instantsearch({
-            indexName: 'AllDocs',
-            searchClient,
-            searchFunction: function (helper) {
-              helper.state.facetFilters = [
-                [`version: ${pathSegment}`, 'type: guides'],
-              ];
-              // if less than 2 character, don't trigger search and hide inner content
-              if (helper.state.query.length < 2) {
-                hitsContainer.style.display = 'none';
-                refinementContainer.style.display = 'none';
-                filterOptions.style.display = 'none';
-              } else {
-                hitsContainer.style.display = 'block';
-                refinementContainer.style.display = 'flex';
-                filterOptions.style.display = 'flex';
-                helper.search();
-              }
-            },
-            searchParameters: {
-              facetFilters: [[`version: ${pathSegment}`, 'type: guides']],
-            },
-          });
-
-          const renderStats = (renderOptions) => {
-            const { nbHits } = renderOptions;
-
-            document.querySelector('#resultsStats').innerHTML = `
+        document.querySelector('#resultsStats').innerHTML = `
       <p>Found ${nbHits} results</p>`;
-          };
+      };
 
-          const customStats = instantsearch.connectors.connectStats(renderStats);
+      const customStats = instantsearch.connectors.connectStats(renderStats);
 
-          searchResults.addWidgets([
-            instantsearch.widgets.configure({
-              attributesToSnippet: ['content:50'],
-              clickAnalytics: true,
-            }),
+      searchResults.addWidgets([
+        instantsearch.widgets.configure({
+          attributesToSnippet: ['content:50'],
+          clickAnalytics: true,
+        }),
 
-            instantsearch.widgets.searchBox({
-              container: '#resultsSearchbox',
-              showLoadingIndicator: true,
-              showReset: true,
-              placeholder: 'Search documentation',
-            }),
+        instantsearch.widgets.searchBox({
+          container: '#resultsSearchbox',
+          showLoadingIndicator: true,
+          showReset: true,
+          placeholder: 'Search documentation',
+        }),
 
-            instantsearch.widgets.refinementList({
-              container: '#resultsRefinementList',
-              attribute: 'type',
-              sortBy: ['name:desc', 'count:desc'],
-            }),
+        instantsearch.widgets.refinementList({
+          container: '#resultsRefinementList',
+          attribute: 'type',
+          sortBy: ['name:desc', 'count:desc'],
+        }),
 
-            instantsearch.widgets.pagination({
-              container: '#pagination',
-            }),
+        instantsearch.widgets.pagination({
+          container: '#pagination',
+        }),
 
-            instantsearch.widgets.toggleRefinement({
-              container: '#toggle-refinement',
-              attribute: 'version',
-              on: ['latest'],
-              off: [`${pathSegment}`],
-              templates: {
-                labelText: 'Search latest version',
-              },
-            }),
+        instantsearch.widgets.toggleRefinement({
+          container: '#toggle-refinement',
+          attribute: 'version',
+          on: ['latest'],
+          off: [`${pathSegment}`],
+          templates: {
+            labelText: 'Search latest version',
+          },
+        }),
 
-            instantsearch.widgets.hits({
-              container: '#resultsHits',
-              templates: {
-                item: (hit, bindEvent) => {
-                  return (
-                    `<a ${bindEvent('click', hit, 'Item clicked')} href="` +
-                    hit.url +
-                    `"><li class="hit-item">
+        instantsearch.widgets.hits({
+          container: '#resultsHits',
+          templates: {
+            item: (hit, bindEvent) => {
+              return (
+                `<a ${bindEvent('click', hit, 'Item clicked')} href="` +
+                hit.url +
+                `"><li class="hit-item">
                       <h2 style="margin-top:0;">
                         ${instantsearch.highlight({
-                      attribute: 'title',
-                      hit: hit,
-                    })}
+                          attribute: 'title',
+                          hit: hit,
+                        })}
                       </h2>
-                      ${hit['categories.lvl2']
-                      ? `<p style="color:#000a2c;">
+                      ${
+                        hit['categories.lvl2']
+                          ? `<p style="color:#000a2c;">
                             ${hit['categories.lvl2']}
                           </p>`
-                      : hit['categories.lvl1']
-                        ? `<p style="color:#000a2c;">
+                          : hit['categories.lvl1']
+                          ? `<p style="color:#000a2c;">
                             ${hit['categories.lvl1']}
                           </p>`
-                        : hit['categories.lvl0']
+                          : hit['categories.lvl0']
                           ? `<p style="color:#000a2c;">
                             ${hit['categories.lvl0']}
                           </p>`
                           : null
-                    }
-                      ${hit.content &&
-                    `<p>
+                      }
+                      ${
+                        hit.content &&
+                        `<p>
                       ${instantsearch.snippet({
-                      attribute: 'content',
-                      hit: hit,
-                    })} ...
+                        attribute: 'content',
+                        hit: hit,
+                      })} ...
                       </p>`
-                    }
+                      }
                   </li>
                   </a>`
-                  );
-                },
-                empty: (results) => {
-                  refinementContainer.style.display = 'none';
-                  return `<div id="noResults">
+              );
+            },
+            empty: (results) => {
+              refinementContainer.style.display = 'none';
+              return `<div id="noResults">
                       <h2>We're sorry!</h2>
-                      <p>We couldn't find any results for: "${results && results.query
-                    }"</p>
+                      <p>We couldn't find any results for: "${
+                        results && results.query
+                      }"</p>
                     </div>`;
-                },
-              },
-            }),
+            },
+          },
+        }),
 
-            customStats({
-              container: document.querySelector('#resultsStats'),
-            }),
-          ]);
+        customStats({
+          container: document.querySelector('#resultsStats'),
+        }),
+      ]);
 
-          searchResults.use(
-            instantsearch.middlewares.createInsightsMiddleware({
-              insightsClient: window.aa,
-            })
-          );
+      searchResults.use(
+        instantsearch.middlewares.createInsightsMiddleware({
+          insightsClient: window.aa,
+        })
+      );
 
-          searchResults.start();
+      searchResults.start();
 
-          // If a query parameter was passed in the url, show results based on query
-          queryParameter &&
-            searchResults.setUiState({
-              AllDocs: {
-                // should match indexName in searchResults()
-                query: queryParameter,
-              },
-            });
+      // If a query parameter was passed in the url, show results based on query
+      queryParameter &&
+        searchResults.setUiState({
+          AllDocs: {
+            // should match indexName in searchResults()
+            query: queryParameter,
+          },
         });
     }
 
