@@ -36,10 +36,14 @@ document.addEventListener('DOMContentLoaded', function () {
   // get object values
   var versions = Object.values(theversions).sort();
 
+  var isSTS = false;
+
   // check if version is a STS
-  var isSTS = Object.keys(theversions)
-  .find((key) => theversions[key] === pathSegment)
-  .includes('STS');
+  if (pathSegment !== 'latest') {
+    isSTS = Object.keys(theversions)
+      .find((key) => theversions[key] === pathSegment)
+      .includes('STS');
+  }
 
   if (
     !versions.includes(pathSegment) ||
