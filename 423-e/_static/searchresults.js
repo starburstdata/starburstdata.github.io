@@ -61,12 +61,21 @@ document.addEventListener('DOMContentLoaded', function () {
       // get object values
       var versions = Object.values(docsversions);
 
-      if (!versions.includes(pathSegment)) {
-        pathSegment = 'latest'; //Defaults to latest if version is not supported
+      var isSTS = false;
+
+      // check if version is a STS
+      if (pathSegment !== 'latest') {
+        isSTS = Object.keys(theversions)
+          .find((key) => theversions[key] === pathSegment)
+          .includes('STS');
       }
 
-      if (pathSegment == 'latest') {
-        document.querySelector('#toggle-refinement').style.display = 'none';
+      if (
+        !versions.includes(pathSegment) ||
+        pathSegment === versions[versions.length - 1] ||
+        isSTS
+      ) {
+        pathSegment = 'latest'; //Defaults to latest if version is not supported or is most recent version
       }
 
       const searchResults = instantsearch({
