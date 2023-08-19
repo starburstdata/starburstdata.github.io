@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var isSTS = false;
 
   // check if version is a STS
-  if (pathSegment !== 'latest') {
+  if (pathSegment !== 'latest' || !pathSegment.includes('.html')) {
     isSTS = Object.keys(theversions)
       .find((key) => theversions[key] === pathSegment)
       .includes('STS');
