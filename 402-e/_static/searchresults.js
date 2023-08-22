@@ -64,14 +64,18 @@ document.addEventListener('DOMContentLoaded', function () {
       var isSTS = false;
 
       // check if version is a STS
-      if (pathSegment !== 'latest' || !pathSegment.includes('.html')) {
+      if (versions.includes(pathSegment)) {
         isSTS = Object.keys(theversions)
           .find((key) => theversions[key] === pathSegment)
           .includes('STS');
       }
 
-      if (pathSegment == 'latest') {
-        document.querySelector('#toggle-refinement').style.display = 'none';
+      if (
+        !versions.includes(pathSegment) ||
+        pathSegment === versions[versions.length - 1] ||
+        isSTS
+      ) {
+        pathSegment = 'latest'; //Defaults to latest if version is not supported or is most recent version
       }
 
       const searchResults = instantsearch({
