@@ -61,8 +61,13 @@ document.addEventListener('DOMContentLoaded', function () {
       // get object values
       var versions = Object.values(docsversions);
 
-      if (!versions.includes(pathSegment)) {
-        pathSegment = 'latest'; //Defaults to latest if version is not supported
+      var isSTS = false;
+
+      // check if version is a STS
+      if (pathSegment !== 'latest' || !pathSegment.includes('.html')) {
+        isSTS = Object.keys(theversions)
+          .find((key) => theversions[key] === pathSegment)
+          .includes('STS');
       }
 
       if (pathSegment == 'latest') {
