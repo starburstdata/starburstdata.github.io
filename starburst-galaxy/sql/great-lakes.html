@@ -1975,6 +1975,97 @@ TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">
 its argument. A table created this way can override the catalog’s overall
 default table format. Examples are shown in the individual table format pages
 listed above.</p>
+      <h2 id="create-view">
+        
+        
+          CREATE VIEW <a href="#create-view" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">CREATE VIEW</code> statement creates a new view based on a
+<a href="./ref/sql/select.html">SELECT</a> query. The view is a logical table that can be
+referenced by future queries. Views do not contain any data. Instead, the query
+stored by the view is executed every time the view is referenced by another
+query.</p>
+
+<p>Views in Starburst Galaxy can be used to pull together federated data across
+any catalog. Read more about <a href="../tutorials/query-federation.html">federating multiple data
+sources</a> in Starburst Galaxy.</p>
+
+<p>The use of an <code class="language-plaintext highlighter-rouge">OR REPLACE</code> clause is optional and causes the view to be replaced
+if it already exists, rather than raising an error.</p>
+
+<p>The following examples show how to create a simple view:</p>
+
+<p>Create a simple view:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">view_name</span> <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">,</span> <span class="n">col3</span>
+<span class="k">FROM</span> <span class="k">table_name</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Create a view with a view comment:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">view_with_comment</span>
+<span class="k">COMMENT</span> <span class="s1">'This is a comment'</span>
+<span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">,</span> <span class="n">col3</span>
+<span class="k">FROM</span> <span class="k">table_name</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Create a view that summarizes the <code class="language-plaintext highlighter-rouge">table_name</code> table:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">view_summary</span> <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">col2</span><span class="p">,</span> <span class="k">sum</span><span class="p">(</span><span class="n">col3</span><span class="p">)</span> <span class="k">AS</span> <span class="n">col_total</span>
+<span class="k">FROM</span> <span class="k">table_name</span>
+<span class="k">GROUP</span> <span class="k">BY</span> <span class="n">col2</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Create a view replacing an existing view:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">VIEW</span> <span class="n">view_name</span> <span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span><span class="p">,</span> <span class="n">col3</span>
+<span class="k">FROM</span> <span class="k">table_name</span>
+</code></pre></div></div>
+
+<p>In addition, the Great Lakes connectivity also supports the
+following SQL statements for views:</p>
+
+<ul>
+  <li><a href="./ref/sql/drop-view.html">DROP VIEW</a></li>
+  <li><a href="./ref/sql/alter-view.html">ALTER VIEW</a></li>
+  <li><a href="./ref/sql/show-create-view.html">SHOW CREATE VIEW</a></li>
+</ul>
+      <h3 id="security">
+        
+        
+          Security <a href="#security" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>There are two different security modes for table views, <code class="language-plaintext highlighter-rouge">DEFINER</code> and <code class="language-plaintext highlighter-rouge">INVOKER</code>.
+The default security mode is <code class="language-plaintext highlighter-rouge">DEFINER</code>.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">VIEW</span> <span class="n">view_name</span>
+<span class="k">COMMENT</span> <span class="s1">'this is a comment'</span>
+<span class="k">SECURITY</span> <span class="k">DEFINER</span>
+<span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">col1</span><span class="p">,</span> <span class="n">col2</span>
+<span class="k">FROM</span> <span class="k">table_name</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">DEFINER</code> security mode allows the ability to restrict access to the
+underlying tables, for which the user may not be allowed to access. Tables
+referenced in the view are accessed using the permissions of the view owner (the
+creator or definer of the view) rather than the user executing the query.</p>
+
+<p>A view created in <code class="language-plaintext highlighter-rouge">INVOKER</code> security mode is a stored query. Tables referenced
+in the view are accessed using the permissions of the user executing the query
+(the invoker of the view).</p>
       <h2 id="table-properties">
         
         
@@ -2104,7 +2195,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a></li><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#table-properties">Table properties</a></li></ul></li></ul>
+          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a></li><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#create-view">CREATE VIEW</a><ul><li><a href="#security">Security</a></li></ul></li><li><a href="#table-properties">Table properties</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
