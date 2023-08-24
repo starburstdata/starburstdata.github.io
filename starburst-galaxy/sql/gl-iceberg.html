@@ -1925,119 +1925,494 @@ with value either <code class="language-plaintext highlighter-rouge">parquet</co
 <span class="k">WITH</span> <span class="p">(</span><span class="k">type</span><span class="o">=</span><span class="s1">'iceberg'</span><span class="p">,</span>
       <span class="n">format</span><span class="o">=</span><span class="s1">'parquet'</span><span class="p">);</span>
 </code></pre></div></div>
-      <h2 id="iceberg-table-properties">
+      <h2 id="metadata-tables">
         
         
-          Iceberg table properties <a href="#iceberg-table-properties" class="titleAnchor">#</a>
-        
-        
-      </h2>
-    
-
-<p>In your <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> statements, append further comma-separated table
-properties as needed:</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>Table property</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>format</code></td>
-      <td>Specifies the format of table data files: either <code>PARQUET</code>,
-      <code>ORC</code>, or <code>AVRO</code>. Defaults to <code>ORC</code>.</td>
-    </tr>
-    <tr>
-      <td><code>partitioning</code></td>
-      <td>Specifies table partitioning. If a table is partitioned by
-      columns <code>c1</code> and <code>c2</code>, this property setting is
-      <code>partitioning=ARRAY['c1', 'c2']</code>.</td>
-    </tr>
-    <tr>
-      <td><code>location</code></td>
-      <td>Specifies the file system location URI for the table.</td>
-    </tr>
-    <tr>
-      <td><code>format_version</code></td>
-      <td>Specifies the format version of the Iceberg specification,
-      either <code>1</code> or <code>2</code>. For example
-      <code>format_version=1</code>.</td>
-    </tr>
-    <tr>
-      <td><code>orc_bloom_filter_columns</code></td>
-      <td>Comma-separated list of columns to use for ORC bloom filter. Improves
-      the performance of queries using equality and IN predicates when reading
-      ORC files. Requires ORC format. Defaults to <code>[]</code>.</td>
-    </tr>
-    <tr>
-      <td><code>orc_bloom_filter_fpp</code></td>
-      <td>The ORC bloom filters false positive probability. Requires ORC format.
-      Defaults to <code>0.05</code>.</td>
-    </tr>
-  </tbody>
-</table>
-      <h2 id="iceberg-metadata-tables">
-        
-        
-          Iceberg metadata tables <a href="#iceberg-metadata-tables" class="titleAnchor">#</a>
+          Metadata tables <a href="#metadata-tables" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Metadata tables reveal information about the internal structure of an Iceberg
-table. Each Iceberg table has the following metadata tables:</p>
+<p><a href="./great-lakes.html">Great Lakes connectivity</a> exposes several metadata tables
+for the Iceberg table format. These metadata tables contain information about
+the internal structure of the Iceberg table. Query each metadata table by
+appending the metadata table name to the <code class="language-plaintext highlighter-rouge">table_name</code> with a <code class="language-plaintext highlighter-rouge">$</code> separator:</p>
 
-<table>
-  <thead>
-    <tr>
-      <th>Metadata table</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><code>$properties</code></td>
-      <td>Provides general configuration information including key-value tags.</td>
-    </tr>
-    <tr>
-      <td><code>$history</code></td>
-      <td>Provides a log of the metadata changes made to the table.</td>
-    </tr>
-    <tr>
-      <td><code>$snapshots</code></td>
-      <td>Provides a detailed view of snapshots of the table.</td>
-    </tr>
-    <tr>
-      <td><code>$manifests</code></td>
-      <td>Provides a detailed view of the manifests corresponding to the
-      snapshots of the table.</td>
-    </tr>
-    <tr>
-      <td><code>$partitions</code></td>
-      <td>Provides a detailed view of the partitions of the table.</td>
-    </tr>
-    <tr>
-      <td><code>$files</code></td>
-      <td>Provides a detailed view of the data files in current snapshot of
-      the table.</td>
-    </tr>
-    <tr>
-      <td><code>$refs</code></td>
-      <td>Provides information about the references of a table, including
-      branches and tags.</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>Query a metadata table by appending the metadata table name to a table
-name with a <code class="language-plaintext highlighter-rouge">$</code> separator:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"customer$history"</span><span class="p">;</span>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$properties"</span><span class="p">;</span>
 </code></pre></div></div>
+      <h3 id="properties">
+        
+        
+          $properties <a href="#properties" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$properties</code> table provides access to general information about the Iceberg
+table configuration and any additional metadata key-value tags.</p>
+
+<p>Retrieve the snapshot of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using the
+following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$properties"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code> key                   | value    |
+-----------------------+----------+
+write.format.default   | PARQUET  |
+</code></pre></div></div>
+      <h3 id="history">
+        
+        
+          $history <a href="#history" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$history</code> table provides a log of the metadata changes made to the table.</p>
+
+<p>Retrieve the changelog of the Delta Lake table <code class="language-plaintext highlighter-rouge">table_name</code> by using the
+following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$history"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$history</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$history columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>made_current_at</code></td>
+      <td>TIMESTAMP(3) WITH TIME ZONE</td>
+      <td>The time when the snapshot became active.</td>
+    </tr>
+    <tr>
+      <td><code>snapshot_id</code></td>
+      <td>BIGINT</td>
+      <td>The identifier of the snapshot.</td>
+    </tr>
+    <tr>
+      <td><code>parent_id</code></td>
+      <td>BIGINT</td>
+      <td>The identifier of the parent snapshot.</td>
+    </tr>
+    <tr>
+      <td><code>is_current_ancestor</code></td>
+      <td>BOOLEAN</td>
+      <td>Whether or not this snapshot is an ancestor of the current snapshot.
+      </td>
+    </tr>
+  </tbody>
+</table>
+      <h3 id="snapshots">
+        
+        
+          $snapshots <a href="#snapshots" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$snapshots</code> table provides a detailed view of snapshots of the Iceberg
+table. A snapshot consists of one or more file manifests, and the complete table
+contents are represented by the union of all the data files in those manifests.</p>
+
+<p>Retrieve the snapshot information of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using the
+following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$snapshots"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$snapshot</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$snapshots columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>committed_at</code></td>
+      <td>TIMESTAMP(3) WITH TIME ZONE</td>
+      <td>The time when the snapshot became active.</td>
+    </tr>
+    <tr>
+      <td><code>snapshot_id</code></td>
+      <td>BIGINT</td>
+      <td>The identifier of the snapshot.</td>
+    </tr>
+    <tr>
+      <td><code>parent_id</code></td>
+      <td>BIGINT</td>
+      <td>The identifier of the parent snapshot.</td>
+    </tr>
+    <tr>
+      <td><code>operation</code></td>
+      <td>VARCHAR</td>
+      <td>The type of operation performed on the Iceberg table. The supported
+      operation types in Iceberg are append, replace, overwrite, and
+      delete.</td>
+    </tr>
+    <tr>
+      <td><code>manifest_list</code></td>
+      <td>VARCHAR</td>
+      <td>The list of Avro manifest files containing the detailed information
+      about the snapshot changes.</td>
+    </tr>
+    <tr>
+      <td><code>summary</code></td>
+      <td>map(VARCHAR, VARCHAR)</td>
+      <td>A summary of the changes made from the previous snapshot to the
+      current snapshot.</td>
+    </tr>
+  </tbody>
+</table>
+      <h3 id="manifests">
+        
+        
+          $manifests <a href="#manifests" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$manifests</code> table provides a detailed overview of the manifests
+corresponding to the snapshots performed in the log of the Iceberg table.</p>
+
+<p>Retrieve the manifest information of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using the
+following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$manifests"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$manifests</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$manifests columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>path</code></td>
+      <td>VARCHAR</td>
+      <td>The manifest file location.</td>
+    </tr>
+    <tr>
+      <td><code>length</code></td>
+      <td>BIGINT</td>
+      <td>The manifest file length.</td>
+    </tr>
+    <tr>
+      <td><code>partition_spec_id</code></td>
+      <td>INTEGER</td>
+      <td>The identifier for the partition specification used to write the
+      manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>added_snapshot_id</code></td>
+      <td>BIGINT</td>
+      <td>The identifier of the snapshot during which this manifest entry has
+           been added.</td>
+    </tr>
+    <tr>
+      <td><code>added_data_files_count</code></td>
+      <td>INTEGER</td>
+      <td>The number of data files with status <code>ADDED</code> in the
+      manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>added_rows_count</code></td>
+      <td>BIGINT</td>
+      <td>The total number of rows in all data files with status
+          <code>ADDED</code> in the manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>existing_data_files_count</code></td>
+      <td>INTEGER</td>
+      <td>The number of data files with status <code>EXISTING</code> in the
+          manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>existing_rows_count</code></td>
+      <td>BIGINT</td>
+      <td>The total number of rows in all data files with status
+          <code>EXISTING</code> in the manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>deleted_data_files_count</code></td>
+      <td>INTEGER</td>
+      <td>The number of data files with status <code>DELETED</code> in the
+          manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>deleted_rows_count</code></td>
+      <td>BIGINT</td>
+      <td>The total number of rows in all data files with status
+          <code>DELETED</code> in the manifest file.</td>
+    </tr>
+    <tr>
+      <td><code>partitions</code></td>
+      <td>ARRAY(row(contains_null BOOLEAN, contains_nan BOOLEAN, lower_bound
+          VARCHAR, upper_bound VARCHAR))</td>
+      <td>Partition range metadata.</td>
+    </tr>
+  </tbody>
+</table>
+      <h3 id="partitions">
+        
+        
+          $partitions <a href="#partitions" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$partitions</code> table provides a detailed overview of the partitions of the
+Iceberg table.</p>
+
+<p>Retrieve the partitions information of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using
+the following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$partitions"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$partitions</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$partitions columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>partition</code></td>
+      <td>ROW(...)</td>
+      <td>A row that contains the mapping of the partition column names to the
+      partition column values.</td>
+    </tr>
+    <tr>
+      <td><code>record_count</code></td>
+      <td>BIGINT</td>
+      <td>The number of records in the partition. </td>
+    </tr>
+    <tr>
+      <td><code>file_count</code></td>
+      <td>BIGINT</td>
+      <td>The number of files mapped in the partition.</td>
+    </tr>
+    <tr>
+      <td><code>total_size</code></td>
+      <td>BIGINT</td>
+      <td> The size of all the files in the partition. </td>
+    </tr>
+    <tr>
+      <td><code>data</code></td>
+      <td>ROW(... ROW (min ..., max ... , null_count BIGINT, nan_count BIGINT))
+      </td>
+      <td>Partition range metadata.</td>
+    </tr>
+  </tbody>
+</table>
+      <h3 id="files">
+        
+        
+          $files <a href="#files" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$files</code> table provides a detailed overview of the data files in current
+snapshot of the Iceberg table.</p>
+
+<p>Retrieve the files information of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using
+the following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$files"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$files</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$files columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>content</code></td>
+      <td>INTEGER</td>
+      <td>Type of content stored in the file. The supported content types in
+          Iceberg are <code>DATA(0)</code>, <code>POSITION_DELETES(1)</code>, and
+          <code>EQUALITY_DELETES(2)</code>.</td>
+    </tr>
+    <tr>
+      <td><code>file_path</code></td>
+      <td>VARCHAR</td>
+      <td>Type of the reference <code>BRANCH</code> or <code>TAG</code>.</td>
+    </tr>
+    <tr>
+      <td><code>file_format</code></td>
+      <td>VARCHAR</td>
+      <td>The format of the data file.</td>
+    </tr>
+    <tr>
+      <td><code>record_count</code></td>
+      <td>BIGINT</td>
+      <td>The number of entries contained in the data file.</td>
+    </tr>
+    <tr>
+      <td><code>file_size_in_bytes</code></td>
+      <td> BIGINT</td>
+      <td>The data file size.</td>
+    </tr>
+    <tr>
+      <td><code>column_sizes</code></td>
+      <td>map(INTEGER, BIGINT)</td>
+      <td>Mapping between the Iceberg column ID and its corresponding size in
+          the file.</td>
+    </tr>
+    <tr>
+      <td><code>value_counts</code></td>
+      <td>map(INTEGER, BIGINT)</td>
+      <td>Mapping between the Iceberg column ID and its corresponding count of
+          entries in the file. </td>
+    </tr>
+    <tr>
+      <td><code>null_value_counts</code></td>
+      <td>map(INTEGER, BIGINT)</td>
+      <td>Mapping between the Iceberg column ID and its corresponding count of
+          <code>NULL</code> values in the file.</td>
+    </tr>
+    <tr>
+      <td><code>lower_bounds</code></td>
+      <td>map(INTEGER, BIGINT)</td>
+      <td>Mapping between the Iceberg column ID and its corresponding lower
+          bound in the file.</td>
+    </tr>
+    <tr>
+      <td><code>upper_bounds</code></td>
+      <td>map(INTEGER, BIGINT)</td>
+      <td>Mapping between the Iceberg column ID and its corresponding upper
+          bound in the file.</td>
+    </tr>
+    <tr>
+      <td><code>key_metadata</code></td>
+      <td>VARBINARY</td>
+      <td>Metadata about the encryption key used to encrypt the file, if
+          applicable.</td>
+    </tr>
+    <tr>
+      <td><code>split_offsets</code></td>
+      <td>array(BIGINT)</td>
+      <td>List of recommended slit locations.</td>
+    </tr>
+    <tr>
+      <td><code>equality_ids</code></td>
+      <td>array(INTEGER)</td>
+      <td>The set of field IDs used for equality comparison in equality delete
+          files.</td>
+    </tr>
+  </tbody>
+</table>
+      <h3 id="refs">
+        
+        
+          $refs <a href="#refs" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">$refs</code> table provides information about Iceberg references including
+branches and tags.</p>
+
+<p>Retrieve the refs information of the Iceberg table <code class="language-plaintext highlighter-rouge">table_name</code> by using
+the following query statement:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$refs"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following table describes the table columns of the <code class="language-plaintext highlighter-rouge">$refs</code> table query
+output:</p>
+
+<table>
+  <caption class="caption text-center">$refs columns</caption>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Type</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>name</code></td>
+      <td>VARCHAR</td>
+      <td>Name of the reference.</td>
+    </tr>
+    <tr>
+      <td><code>type</code></td>
+      <td>VARCHAR</td>
+      <td>Type of the reference <code>BRANCH</code> or <code>TAG</code>.</td>
+    </tr>
+    <tr>
+      <td><code>snapshot_id</code></td>
+      <td>BIGINT</td>
+      <td>The snapshot ID of the reference.</td>
+    </tr>
+    <tr>
+      <td><code>max_reference_age_in_ms</code></td>
+      <td>BIGINT</td>
+      <td>The maximum age of the reference before it could be expired. </td>
+    </tr>
+    <tr>
+      <td><code>min_snapshots_to_keep</code></td>
+      <td>INTEGER</td>
+      <td>For branch only, the minimum number of snapshots to keep in a branch.
+      </td>
+    </tr>
+    <tr>
+      <td><code>max_snapshot_age_in_ms</code></td>
+      <td>BIGINT</td>
+      <td>For branch only, the max snapshot age allowed in a branch. Older
+          snapshots in the branch will be expired.</td>
+    </tr>
+  </tbody>
+</table>
       <h2 id="table-procedures">
         
         
@@ -2936,7 +3311,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#collect_extended_statistics_on_write">collect_extended_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#expire_snapshots_min_retention">expire_snapshots_min_retention</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#merge_manifests_on_write">merge_manifests_on_write</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_writer_max_dictionary_memory">orc_writer_max_dictionary_memory</a></li><li><a href="#orc_writer_max_stripe_rows">orc_writer_max_stripe_rows</a></li><li><a href="#orc_writer_max_stripe_size">orc_writer_max_stripe_size</a></li><li><a href="#orc_writer_min_stripe_size">orc_writer_min_stripe_size</a></li><li><a href="#orc_writer_validate_mode">orc_writer_validate_mode</a></li><li><a href="#orc_writer_validate_percentage">orc_writer_validate_percentage</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#remove_orphan_files_min_retention">remove_orphan_files_min_retention</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#use_file_size_from_metadata">use_file_size_from_metadata</a></li></ul></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#metadata-tables">Metadata tables</a><ul><li><a href="#properties">$properties</a></li><li><a href="#history">$history</a></li><li><a href="#snapshots">$snapshots</a></li><li><a href="#manifests">$manifests</a></li><li><a href="#partitions">$partitions</a></li><li><a href="#files">$files</a></li><li><a href="#refs">$refs</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#collect_extended_statistics_on_write">collect_extended_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#expire_snapshots_min_retention">expire_snapshots_min_retention</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#merge_manifests_on_write">merge_manifests_on_write</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_writer_max_dictionary_memory">orc_writer_max_dictionary_memory</a></li><li><a href="#orc_writer_max_stripe_rows">orc_writer_max_stripe_rows</a></li><li><a href="#orc_writer_max_stripe_size">orc_writer_max_stripe_size</a></li><li><a href="#orc_writer_min_stripe_size">orc_writer_min_stripe_size</a></li><li><a href="#orc_writer_validate_mode">orc_writer_validate_mode</a></li><li><a href="#orc_writer_validate_percentage">orc_writer_validate_percentage</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#remove_orphan_files_min_retention">remove_orphan_files_min_retention</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#use_file_size_from_metadata">use_file_size_from_metadata</a></li></ul></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
