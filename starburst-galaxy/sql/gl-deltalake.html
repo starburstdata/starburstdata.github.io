@@ -1922,17 +1922,17 @@ your <code class="language-plaintext highlighter-rouge">CREATE</code> statement.
   <span class="k">SELECT</span> <span class="n">name</span><span class="p">,</span> <span class="k">comment</span><span class="p">,</span> <span class="n">regionkey</span>
   <span class="k">FROM</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
 </code></pre></div></div>
-      <h2 id="table-properties">
+      <h3 id="table-properties">
         
         
           Table properties <a href="#table-properties" class="titleAnchor">#</a>
         
         
-      </h2>
+      </h3>
     
 
-<p>Specify additional table properties and append further comma-separated
-table properties as needed:</p>
+<p>As part of a <code class="language-plaintext highlighter-rouge">CREATE TABLE</code>` statement, specify additional table properties and
+append further comma-separated table properties as needed.</p>
 
 <table>
   <thead>
@@ -2170,6 +2170,213 @@ size threshold:</p>
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">galaxy_delta</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">EXECUTE</span> <span class="n">optimize</span>
 <span class="k">WHERE</span> <span class="n">partition_key</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </code></pre></div></div>
+      <h2 id="table-functions">
+        
+        
+          Table functions <a href="#table-functions" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Your current active role must have the following privileges:</p>
+
+<ul>
+  <li>Create a table <a href="../security/privileges.html#schema-privileges-">for a schema</a>.</li>
+  <li>Execute the <code class="language-plaintext highlighter-rouge">table_changes</code> <a href="../security/privileges.html#function-privileges-">table
+function</a>.</li>
+</ul>
+
+<p>In the navigation menu, assign the following privileges:</p>
+
+<p>Create table privileges:</p>
+
+<p>If some of the following steps are not possible after you select the role to
+change, that role may already have the <strong>Create table</strong> privilege.</p>
+
+<ol>
+  <li>Click <strong>Access control &gt; Roles and privileges</strong>.</li>
+  <li>Click the name of the role you want to change.</li>
+  <li>Click <strong>Privileges &gt; Add privilege &gt; Table</strong>.</li>
+  <li>Click <strong>Schema</strong>.</li>
+  <li>From the drop-down menu, select the catalog of interest.</li>
+  <li>In the next section, either select <strong>All schemas</strong> or from the drop-down
+menu, select the name of the schema of interest.</li>
+  <li>Select <strong>Allow</strong>.</li>
+  <li>In <em>What can they do</em>, select <strong>Create table</strong>.</li>
+  <li>Click <strong>Add privilege</strong>.</li>
+</ol>
+
+<p><img src="../../assets/img/galaxy/privilege-create-table.png" alt="Select create table privilege" class="img-fluid img-screenshot" description="" width="463px" style="" /></p>
+
+<p><code class="language-plaintext highlighter-rouge">table_changes</code> function privilege:</p>
+
+<ol>
+  <li>Click <strong>Access control &gt; Roles and privileges</strong>.</li>
+  <li>Click the name of the role you want to change.</li>
+  <li>Click <strong>Privileges &gt; Add privilege &gt; Function</strong>.</li>
+  <li>From the drop-down menu, select the catalog of interest.</li>
+  <li>Select <strong>Execute table_changes table function</strong>.</li>
+  <li>Click <strong>Add privilege</strong>.</li>
+</ol>
+
+<p><img src="../../assets/img/galaxy/privilege-table-changes.png" alt="Select create table privilege" class="img-fluid img-screenshot" description="" width="463px" style="" /></p>
+
+<p>For more details, read about <a href="../security/privileges.html">assigning privileges to
+roles</a>.</p>
+      <h3 id="table_changes">
+        
+        
+          table_changes <a href="#table_changes" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">table_changes</code> function allows reading Change Data Feed (CDF) entries to
+expose row-level changes between two versions of a Delta Lake table.</p>
+
+<p>When the <code class="language-plaintext highlighter-rouge">change_data_feed_enabled</code> table property is set to <code class="language-plaintext highlighter-rouge">true</code> on a
+specific Delta Lake table, Great Lakes connectivity records change
+events for all data changes made on the table after <code class="language-plaintext highlighter-rouge">change_data_feed_enabled</code>
+was enabled. This includes the row data and metadata, which indicates whether
+the specified row was inserted, deleted, or updated.</p>
+
+<p>The following example displays the changes made on the table:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span> <span class="s1">'schema_name'</span><span class="p">,</span><span class="s1">'table_name'</span><span class="p">,</span> <span class="n">since_version</span> <span class="o">=&gt;</span> <span class="mi">0</span> <span class="p">));</span>
+</code></pre></div></div>
+
+<p>The optional <code class="language-plaintext highlighter-rouge">since_version</code> value is the version from which changes are shown.
+If a value is not provided, the function produces change events starting from
+when the table was created. The default value is <code class="language-plaintext highlighter-rouge">0</code>.</p>
+
+<p>In addition to returning the columns present in the table, the
+<code class="language-plaintext highlighter-rouge">table_changes</code>function returns the following values for each change event:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>_change_type</code></td>
+      <td>Gives the type of change that occurred. Possible values are
+          <code>insert</code>, <code>delete</code>, <code>update_preimage</code>
+          , and <code>update_postimage</code>.</td>
+    </tr>
+    <tr>
+      <td><code>_commit_version</code></td>
+      <td>Shows the table version for which the change occurred.</td>
+    </tr>
+    <tr>
+      <td><code>_commit_timestamp</code></td>
+      <td>Represents the timestamp for the commit in which the specified change
+          happened.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The commit versions can also be retrieved from the <code class="language-plaintext highlighter-rouge">$history</code> metadata table.</p>
+
+<p>The following SQL statements are examples of using the <code class="language-plaintext highlighter-rouge">table_change</code> function:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- CREATE TABLE with type Delta and Change Data Feed enabled:</span>
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="p">(</span><span class="n">page_url</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="k">domain</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="n">views</span> <span class="nb">INTEGER</span><span class="p">)</span>
+  <span class="k">WITH</span> <span class="p">(</span><span class="k">type</span><span class="o">=</span><span class="s1">'delta'</span><span class="p">,</span> <span class="n">change_data_feed_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">);</span>
+
+<span class="c1">-- INSERT data:</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'url1'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s1">'url2'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="s1">'url3'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span>
+  <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'url4'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span> <span class="p">(</span><span class="s1">'url5'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span> <span class="p">(</span><span class="s1">'url6'</span><span class="p">,</span> <span class="s1">'domain3'</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+
+<span class="c1">-- UPDATE and modify data:</span>
+<span class="k">UPDATE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span> <span class="k">SET</span> <span class="k">domain</span> <span class="o">=</span> <span class="s1">'domain4'</span>
+  <span class="k">WHERE</span> <span class="n">views</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+
+<span class="c1">-- SELECT and view table changes:</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span> <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span><span class="s1">'test_schema'</span><span class="p">,</span> <span class="s1">'pages'</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+  <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">_commit_version</span> <span class="k">ASC</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The following output from the previous SQL statements shows what changes
+happened in which version:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>page_url</th>
+      <th>domain</th>
+      <th>views</th>
+      <th>_commit_type</th>
+      <th>_commit_version</th>
+      <th>_commit_timestamp</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>url4</td>
+      <td>domain1</td>
+      <td>400</td>
+      <td>insert</td>
+      <td>2</td>
+      <td>2023-03-10T21:22:23.000+0000</td>
+    </tr>
+    <tr>
+      <td>url5</td>
+      <td>domain2</td>
+      <td>500</td>
+      <td>insert</td>
+      <td>2</td>
+      <td>2023-03-10T21:22:23.000+0000</td>
+    </tr>
+    <tr>
+      <td>url6</td>
+      <td>domain3</td>
+      <td>2</td>
+      <td>insert</td>
+      <td>2</td>
+      <td>2023-03-10T21:22:23.000+0000</td>
+    </tr>
+    <tr>
+      <td>url2</td>
+      <td>domain2</td>
+      <td>2</td>
+      <td>update_preimage</td>
+      <td>3</td>
+      <td>2023-03-10T22:23:24.000+0000</td>
+    </tr>
+    <tr>
+      <td>url2</td>
+      <td>domain4</td>
+      <td>2</td>
+      <td>update_postimage</td>
+      <td>3</td>
+      <td>2023-03-10T22:23:24.000+0000</td>
+    </tr>
+    <tr>
+      <td>url6</td>
+      <td>domain3</td>
+      <td>2</td>
+      <td>update_preimage</td>
+      <td>3</td>
+      <td>2023-03-10T22:23:24.000+0000</td>
+    </tr>
+    <tr>
+      <td>url6</td>
+      <td>domain4</td>
+      <td>2</td>
+      <td>update_postimage</td>
+      <td>3</td>
+      <td>2023-03-10T22:23:24.000+0000</td>
+    </tr>
+  </tbody>
+</table>
       <h2 id="session-properties">
         
         
@@ -2675,7 +2882,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a></li><li><a href="#table-properties">Table properties</a></li><li><a href="#delta-lake-metadata-table">Delta Lake metadata table</a><ul><li><a href="#history">$history</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li></ul></li></ul></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#extended_statistics_collect_on_write">extended_statistics_collect_on_write</a></li><li><a href="#legacy_create_table_with_existing_location_enabled">legacy_create_table_with_existing_location_enabled</a></li><li><a href="#max_initial_split_size">max_initial_split_size</a></li><li><a href="#max_split_size">max_split_size</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#vacuum_min_retention">vacuum_min_retention</a></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#delta-lake-table-format">Delta Lake table format</a><ul><li><a href="#specify-delta-lake-format">Specify Delta Lake format</a><ul><li><a href="#table-properties">Table properties</a></li></ul></li><li><a href="#delta-lake-metadata-table">Delta Lake metadata table</a><ul><li><a href="#history">$history</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#vacuum">vacuum</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li></ul></li></ul></li><li><a href="#table-functions">Table functions</a><ul><li><a href="#table_changes">table_changes</a></li></ul></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#compression_codec">compression_codec</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li><li><a href="#extended_statistics_collect_on_write">extended_statistics_collect_on_write</a></li><li><a href="#legacy_create_table_with_existing_location_enabled">legacy_create_table_with_existing_location_enabled</a></li><li><a href="#max_initial_split_size">max_initial_split_size</a></li><li><a href="#max_split_size">max_split_size</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#vacuum_min_retention">vacuum_min_retention</a></li></ul></li><li><a href="#delta-lake-sql-support">Delta Lake SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
