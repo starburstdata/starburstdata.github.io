@@ -1969,12 +1969,36 @@ newly created tables, and does not convert any existing tables.</p>
 
 <p><img src="../../assets/img/galaxy/default-table-format.png" alt="Select default table format" class="img-fluid img-screenshot" description="" width="463px" style="" /></p>
 
-<p>You can also use a SQL statement to specify an individual table’s default format
+<p>You can also use a SQL statement to specify an individual table’s format
 when creating that table. With a statement such as <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> or <code class="language-plaintext highlighter-rouge">CREATE
 TABLE AS</code>, specify the <code class="language-plaintext highlighter-rouge">type</code> parameter with <code class="language-plaintext highlighter-rouge">iceberg</code>, <code class="language-plaintext highlighter-rouge">delta</code>, or <code class="language-plaintext highlighter-rouge">hive</code> as
 its argument. A table created this way can override the catalog’s overall
 default table format. Examples are shown in the individual table format pages
 listed above.</p>
+      <h2 id="table-properties">
+        
+        
+          Table properties <a href="#table-properties" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Each table format has its own set of properties that are supported by
+Great Lakes connectivity.</p>
+
+<p>The following query lists the Starburst Galaxy table properties supported by
+Great Lakes connectivity:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">table_properties</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Read more about the available table properties for each table format:</p>
+
+<ul>
+  <li><a href="./gl-deltalake.html#table-properties">Delta Lake table properties</a></li>
+  <li><a href="./gl-hive.html#hive-table-properties">Hive table properties</a></li>
+</ul>
       <h2 id="create-view">
         
         
@@ -2130,29 +2154,44 @@ Lakes connectivity also supports the following SQL statements for schemas:</p>
   <li><a href="./ref/sql/drop-schema.html">DROP SCHEMA</a></li>
   <li><a href="./ref/sql/show-schemas.html">SHOW SCHEMA</a></li>
 </ul>
-      <h2 id="table-properties">
+      <h2 id="create-materialized-view">
         
         
-          Table properties <a href="#table-properties" class="titleAnchor">#</a>
+          CREATE MATERIALIZED VIEW <a href="#create-materialized-view" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Each table format has its own set of properties that are supported by
-Great Lakes connectivity.</p>
+<p>Create and validate the definition of a new materialized view <code class="language-plaintext highlighter-rouge">view_name</code> of a
+<a href="./ref/sql/select.html">SELECT</a> query. Run the <a href="./ref/sql/refresh-materialized-view.html">REFRESH MATERIALIZED
+VIEW</a> statement after the creation to
+repopulate the materialized view with data. This materialized view is a physical
+representation of the query results at the time of refresh. The data is stored
+and can be referenced by future queries.</p>
 
-<p>The following query lists the Starburst Galaxy table properties supported by
-Great Lakes connectivity:</p>
+<p>If the materialized view is made from an Iceberg table, it will only get
+refreshed if there are new snapshots in the underlying tables.</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">table_properties</span><span class="p">;</span>
+<p>Create a simple materialized view <code class="language-plaintext highlighter-rouge">view_name</code> over the <code class="language-plaintext highlighter-rouge">table_name</code> that
+only includes <code class="language-plaintext highlighter-rouge">column_data_1</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="n">MATERIALIZED</span> <span class="k">VIEW</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="n">view_name</span>
+<span class="k">AS</span>
+<span class="k">SELECT</span> <span class="n">column_data_1</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span><span class="p">;</span>
 </code></pre></div></div>
 
-<p>Read more about the available table properties for each table format:</p>
+<p>Read about the optional clauses and view additional usage examples for the
+<a href="./ref/sql/create-materialized-view.html">CREATE MATERIALIZED VIEW</a> SQL
+statement.</p>
+
+<p>In addition, the Great Lakes connectivity also supports the following SQL
+statements for materialized views:</p>
 
 <ul>
-  <li><a href="./gl-deltalake.html#table-properties">Delta Lake table properties</a></li>
-  <li><a href="./gl-hive.html#hive-table-properties">Hive table properties</a></li>
+  <li><a href="./ref/sql/drop-materialized-view.html">DROP MATERIALIZED VIEW</a></li>
+  <li><a href="./ref/sql/show-create-materialized-view.html">SHOW CREATE MATERIALIZED VIEW</a></li>
+  <li><a href="./ref/sql/refresh-materialized-view.html">REFRESH MATERIALIZED VIEW</a></li>
 </ul>
 
         <div class="d-lg-none">
@@ -2258,7 +2297,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a></li><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#create-view">CREATE VIEW</a><ul><li><a href="#security">Security</a></li></ul></li><li><a href="#create-schema">CREATE SCHEMA</a></li><li><a href="#table-properties">Table properties</a></li></ul></li></ul>
+          <ul><li><a href="#great-lakes-connectivity">Great Lakes connectivity</a><ul><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a></li><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#table-properties">Table properties</a></li><li><a href="#create-view">CREATE VIEW</a><ul><li><a href="#security">Security</a></li></ul></li><li><a href="#create-schema">CREATE SCHEMA</a></li><li><a href="#create-materialized-view">CREATE MATERIALIZED VIEW</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
