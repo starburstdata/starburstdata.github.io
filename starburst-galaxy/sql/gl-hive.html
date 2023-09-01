@@ -1914,17 +1914,18 @@ a table property in your <code class="language-plaintext highlighter-rouge">CREA
   <span class="n">address</span> <span class="nb">varchar</span><span class="p">)</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="k">type</span><span class="o">=</span><span class="s1">'hive'</span><span class="p">);</span>
 </code></pre></div></div>
-      <h2 id="hive-table-format-properties">
+      <h3 id="hive-table-format-properties">
         
         
           Hive table format properties <a href="#hive-table-format-properties" class="titleAnchor">#</a>
         
         
-      </h2>
+      </h3>
     
 
-<p>Specify the format of table data files with an additional <code class="language-plaintext highlighter-rouge">format</code> property
-with one of the values shown in the following table:</p>
+<p>As part of a <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> statement, specify the format of table data files
+with an additional <code class="language-plaintext highlighter-rouge">format</code> property with one of the values shown in the
+following:</p>
 
 <table>
   <thead>
@@ -1976,17 +1977,19 @@ with one of the values shown in the following table:</p>
     </tr>
   </tbody>
 </table>
-      <h2 id="hive-table-properties">
+      <h3 id="hive-table-properties">
         
         
           Hive table properties <a href="#hive-table-properties" class="titleAnchor">#</a>
         
         
-      </h2>
+      </h3>
     
 
-<p>Specify additional table properties as needed. Note that many of the available
-table properties must be used in conjunction with a particular Hive file format.</p>
+<p>As part of a <code class="language-plaintext highlighter-rouge">CREATE TABLE</code> statement, specify additional table properties and
+append further comma-separated table properties as needed: Note that many of the
+available table properties must be used in conjunction with a particular Hive
+file format.</p>
 
 <table>
   <thead>
@@ -2042,10 +2045,12 @@ table properties must be used in conjunction with a particular Hive file format.
     </tr>
     <tr>
       <td><code>format</code></td>
-      <td>The table file format. Valid values are <code>ORC</code>,
-          <code>PARQUET</code>, <code>AVRO</code>, <code>RCBINARY</code>,
-          <code>RCTEXT</code>, <code>SEQUENCEFILE</code>, <code>JSON</code>,
-          <code>TEXTFILE</code>, <code>CSV</code>, and <code>REGEX</code>.</td>
+      <td>The <a href="#hive-table-format-properties">table file format</a>.
+          Valid
+          values are <code>ORC</code>, <code>PARQUET</code>, <code>AVRO</code>,
+          <code>RCBINARY</code>, <code>RCTEXT</code>, <code>SEQUENCEFILE</code>,
+          <code>JSON</code>, <code>TEXTFILE</code>, <code>CSV</code>, and
+          <code>REGEX</code>.</td>
     </tr>
     <tr>
       <td><code>null_format</code></td>
@@ -2069,6 +2074,18 @@ table properties must be used in conjunction with a particular Hive file format.
       <td>The partitioning column for the storage table. The columns listed in
           the <code>partitioned_by</code> clause must be the last columns as
           defined in the DDL. Defaults to <code>[]</code>.</td>
+    </tr>
+    <tr>
+      <td><code>partition_projection_ignore</code></td>
+      <td>Ignore any partition projection properties stored in the metastore for
+          the selected table. This bypasses compatibility issues on a specific
+          table.</td>
+    </tr>
+    <tr>
+      <td><code>partition_projection_type</code></td>
+      <td>Defines the type of partition projection to use on a specific column.
+          May be used only on partition columns. Available types include:
+          <code>ENUM</code>, <code>INTEGER</code>, <code>DATE</code>.</td>
     </tr>
     <tr>
       <td><code>skip_footer_line_count</code></td>
@@ -2119,7 +2136,7 @@ table properties must be used in conjunction with a particular Hive file format.
     <tr>
       <td><code>partition_projection _location_template</code></td>
       <td>Projected partition location template, such as
-          <code>s3a://test/name=${name}/</code>. Mapped from the AWS Athena table
+          <code>s3://test/name=${name}/</code>. Mapped from the AWS Athena table
           property <a href="https://docs.aws.amazon.com/athena/latest/ug/partition-projection-setting-up.html#partition-projection-specifying-custom-s3-storage-locations">
           storage.location.template</a>. Defaults to
           <code>${table_location}/${partition_name}</code>.</td>
@@ -2366,6 +2383,284 @@ confirm that the table type has changed:</p>
 </code></pre></div></div>
 
 <p>Successful migration displays <code class="language-plaintext highlighter-rouge">type='ICEBERG'</code>.</p>
+      <h2 id="partition-projection">
+        
+        
+          Partition projection <a href="#partition-projection" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<p>Partition projection is a feature used to speed up query processing. This
+feature computes partition values and locations statically from the partition
+projection definition of the table properties and does not rely on the metastore
+for retrieving them.</p>
+
+<p>Great Lakes connectivity supports partition projection table properties stored
+in the metastore, and it reimplements this functionality. Currently, date
+projection only supports intervals of <code class="language-plaintext highlighter-rouge">DAYS</code>, <code class="language-plaintext highlighter-rouge">HOURS</code>, <code class="language-plaintext highlighter-rouge">MINUTES</code>, and <code class="language-plaintext highlighter-rouge">SECONDS</code>.</p>
+
+<p>If there are any compatibility issues blocking access to a requested table when
+partition projection is enabled, set the <code class="language-plaintext highlighter-rouge">partition_projection_ignore</code> table
+property to <code class="language-plaintext highlighter-rouge">true</code> for a table to bypass any errors.</p>
+
+<p>In addition, Great Lakes connectivity supports the
+<a href="#hive-table-properties">partition_projection_type</a> table property.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">partition_projection_type</code> defines the type of partition projection to use
+on a specific column. It can be set as either <code class="language-plaintext highlighter-rouge">enum</code> or <code class="language-plaintext highlighter-rouge">integer</code> and <code class="language-plaintext highlighter-rouge">date</code>:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>enum</code></td>
+      <td> When there are a predefined set of values for the partitions to be
+           used such as, country or region names.</td>
+    </tr>
+    <tr>
+      <td><code>integer</code></td>
+      <td>Specifies a range, providing a more concise way to predefine the
+          partition values. For example,<code>[1, 2, 3, 4, ..., 1000]</code> or
+          <code>[0500, 0550, 0600, ..., 2500]</code>.</td>
+    </tr>
+    <tr>
+      <td><code>date</code></td>
+      <td>Specifies a range, providing a more concise way to predefine the
+          partition values. For example, <code>[20200101, 20200102, ...,
+          20201231]</code> or <code>[1-1-2020 00:00:00, 1-1-2020 01:00:00, ...,
+          12-31-2020 23:00:00]</code> </td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Read more about <a href="#hive-table-properties">Hive table properties</a>.</p>
+      <h3 id="using-partition-projection">
+        
+        
+          Using partition projection <a href="#using-partition-projection" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>To use partition projection, specify the ranges of partition values and
+projection types for each partition column in the table properties in the AWS
+Glue Data Catalog or in an external Hive metastore.</p>
+
+<p>Create a projection with the <code class="language-plaintext highlighter-rouge">enum</code> projection type:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">SCHEMA</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">;</span>
+<span class="n">use</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">test_schema</span><span class="p">;</span>
+
+<span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">enum_table_name</span> <span class="p">(</span>
+    <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="k">comment</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="n">nationkey</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">regionkey</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">short_name</span> <span class="nb">varchar</span> <span class="k">WITH</span> <span class="p">(</span>
+        <span class="n">partition_projection_type</span> <span class="o">=</span> <span class="s1">'enum'</span><span class="p">,</span>
+        <span class="n">partition_projection_values</span> <span class="o">=</span> <span class="n">array</span> <span class="p">[</span><span class="s1">'POL'</span><span class="p">,</span> <span class="s1">'CZE'</span><span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitioned_by</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'short_name'</span><span class="p">],</span>
+    <span class="n">partition_projection_enabled</span> <span class="o">=</span> <span class="k">true</span>
+<span class="p">);</span>
+
+<span class="k">SHOW</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">enum_table_name</span><span class="p">;</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">enum_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_1'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">'POL'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">enum_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_2'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">'POL'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">enum_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_1'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">'CZE'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">enum_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_2'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="s1">'CZE'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">INSERT INTO</code> statements adds the data corresponding to the POL and CZE
+partitions.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"enum_table_name$partitions"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">SELECT</code> only displays the partitions POL and CZE corresponding
+to the partition projection defined while creating the table, not the metastore.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>| short_name |
++------------+
+| POL        |
++------------+
+| CZE        |
++------------+
+</code></pre></div></div>
+
+<p>Create a projection with the <code class="language-plaintext highlighter-rouge">integer</code> projection range:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">integer_table_name</span> <span class="p">(</span>
+    <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="k">comment</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="n">nationkey</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">regionkey</span> <span class="nb">integer</span> <span class="k">WITH</span> <span class="p">(</span>
+        <span class="n">partition_projection_type</span> <span class="o">=</span> <span class="s1">'integer'</span><span class="p">,</span>
+        <span class="n">partition_projection_range</span> <span class="o">=</span> <span class="n">array</span> <span class="p">[</span><span class="s1">'0'</span><span class="p">,</span> <span class="s1">'10'</span><span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitioned_by</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
+    <span class="n">partition_projection_enabled</span> <span class="o">=</span> <span class="k">true</span>
+<span class="p">);</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_1'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_2'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_1'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_2'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_1'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_2'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">8</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">integer_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'MEXICO_1'</span><span class="p">,</span> <span class="s1">'Hola'</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">18</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">INSERT INTO</code> statements adds the data corresponding to the defined
+partitions.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"integer_table_name$partitions"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">SELECT * FROM</code> statement returns only the partitions corresponding to the
+partition projection defined while creating the table, not the metastore.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>| regionkey |
++-----------+
+| 0         |
++-----------+
+| 1         |
++-----------+
+| 2         |
++-----------+
+| 3         |
++-----------+
+| 4         |
++-----------+
+| 5         |
++-----------+
+| 6         |
++-----------+
+| 7         |
++-----------+
+| 8         |
++-----------+
+| 9         |
++-----------+
+| 10        |
++-----------+
+</code></pre></div></div>
+
+<p>Create a projection with the <code class="language-plaintext highlighter-rouge">integer</code> projection range using
+<code class="language-plaintext highlighter-rouge">partition_projection_interval</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">interval_table_name</span> <span class="p">(</span>
+    <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="k">comment</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="n">nationkey</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">regionkey</span> <span class="nb">integer</span> <span class="k">WITH</span> <span class="p">(</span>
+        <span class="n">partition_projection_type</span> <span class="o">=</span> <span class="s1">'integer'</span><span class="p">,</span>
+        <span class="n">partition_projection_range</span> <span class="o">=</span> <span class="n">array</span> <span class="p">[</span><span class="s1">'0'</span><span class="p">,</span> <span class="s1">'10'</span><span class="p">],</span>
+        <span class="n">partition_projection_interval</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitioned_by</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'regionkey'</span><span class="p">],</span>
+    <span class="n">partition_projection_enabled</span> <span class="o">=</span> <span class="k">true</span>
+<span class="p">);</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_1'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_2'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_1'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_2'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_1'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_2'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">9</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">interval_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'MEXICO_1'</span><span class="p">,</span> <span class="s1">'Hola'</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="mi">18</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">INSERT INTO</code> statements adds the data corresponding to the defined
+partitions.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"interval_table_name$partitions"</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">SELECT * FROM</code> statement returns only the partitions corresponding to the
+partition projection defined while creating the table, not the metastore.</p>
+
+<p>In the following example output, only <code class="language-plaintext highlighter-rouge">0</code>, <code class="language-plaintext highlighter-rouge">3</code>, <code class="language-plaintext highlighter-rouge">6</code>, and <code class="language-plaintext highlighter-rouge">9</code> are displayed
+because of the chosen <code class="language-plaintext highlighter-rouge">partition_projection_interval</code> value of <code class="language-plaintext highlighter-rouge">3</code>.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>| regionkey |
++-----------+
+| 0         |
++-----------+
+| 3         |
++-----------+
+| 6         |
++-----------+
+| 9         |
++-----------+
+</code></pre></div></div>
+
+<p>Create a projection with the <code class="language-plaintext highlighter-rouge">date</code> projection range:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">date_table_name</span> <span class="p">(</span>
+    <span class="n">name</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="k">comment</span> <span class="nb">varchar</span><span class="p">,</span>
+    <span class="n">nationkey</span> <span class="nb">integer</span><span class="p">,</span>
+    <span class="n">dt</span> <span class="nb">varchar</span> <span class="k">WITH</span> <span class="p">(</span>
+        <span class="n">partition_projection_type</span> <span class="o">=</span> <span class="s1">'date'</span><span class="p">,</span>
+        <span class="n">partition_projection_format</span> <span class="o">=</span> <span class="s1">'yyyy-MM-dd'</span><span class="p">,</span>
+        <span class="n">partition_projection_range</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'NOW-5DAYS'</span><span class="p">,</span> <span class="s1">'NOW'</span><span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">partitioned_by</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'dt'</span><span class="p">],</span>
+    <span class="n">partition_projection_enabled</span> <span class="o">=</span> <span class="k">true</span>
+<span class="p">);</span>
+
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_1'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">'2023-06-01'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'POLAND_2'</span><span class="p">,</span> <span class="s1">'Czesc'</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">'2023-06-01'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_1'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="s1">'2023-06-29'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'CZECH_2'</span><span class="p">,</span> <span class="s1">'Ahoj'</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="s1">'2023-06-01'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_1'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="s1">'2023-06-01'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'GERMANY_2'</span><span class="p">,</span> <span class="s1">'Hallo'</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="s1">'2023-07-02'</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">date_table_name</span> <span class="k">VALUES</span> <span class="p">(</span><span class="s1">'MEXICO_1'</span><span class="p">,</span> <span class="s1">'Hola'</span><span class="p">,</span> <span class="mi">22</span><span class="p">,</span> <span class="s1">'2023-07-01'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">INSERT INTO</code> statements adds the data corresponding to the defined
+partitions.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"date_table_name$partitions"</span><span class="p">;</span>
+</code></pre></div></div>
+<p>The <code class="language-plaintext highlighter-rouge">SELECT * FROM</code> statement returns only the partitions corresponding to the
+partition projection defined while creating the table, not the metastore.</p>
+
+<p>The following <code class="language-plaintext highlighter-rouge">SELECT * FROM</code> statement example returns the partition, <code class="language-plaintext highlighter-rouge">dt</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>| dt         |
++------------+
+| 2023-08-26 |
++------------+
+| 2023-08-27 |
++------------+
+| 2023-08-28 |
++------------+
+| 2023-08-29 |
++------------+
+| 2023-08-30 |
++------------+
+| 2023-08-31 |
++------------+
+</code></pre></div></div>
       <h2 id="session-properties">
         
         
@@ -3609,7 +3904,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#hive-table-format">Hive table format</a><ul><li><a href="#specify-hive-format">Specify Hive format</a></li><li><a href="#hive-table-format-properties">Hive table format properties</a></li><li><a href="#hive-table-properties">Hive table properties</a></li><li><a href="#metadata-tables">Metadata tables</a><ul><li><a href="#properties">$properties</a></li><li><a href="#partitions">$partitions</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#create_empty_partition">create_empty_partition</a></li><li><a href="#drop_stats">drop_stats</a></li><li><a href="#register_partition">register_partition</a></li><li><a href="#sync_partition_metadata">sync_partition_metadata</a></li><li><a href="#unregister_partition">unregister_partition</a></li></ul></li><li><a href="#migrate-to-iceberg">Migrate to Iceberg</a></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#avro_native_reader_enabled">avro_native_reader_enabled</a></li><li><a href="#avro_native_writer_enabled">avro_native_writer_enabled</a></li><li><a href="#bucket_execution_enabled">bucket_execution_enabled</a></li><li><a href="#collect_column_statistics_on_write">collect_column_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#create_empty_bucket_files">create_empty_bucket_files</a></li><li><a href="#csv_native_reader_enabled">csv_native_reader_enabled</a></li><li><a href="#csv_native_writer_enabled">csv_native_writer_enabled</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#force_local_scheduling">force_local_scheduling</a></li><li><a href="#hive_storage_format">hive_storage_format</a></li><li><a href="#hive_views_legacy_translation">hive_views_legacy_translation</a></li><li><a href="#ignore_absent_partitions">ignore_absent_partitions</a></li><li><a href="#ignore_corrupted_statistics">ignore_corrupted_statistics</a></li><li><a href="#insert_existing_partitions_behavior">insert_existing_partitions_behavior</a></li><li><a href="#json_native_reader_enabled">json_native_reader_enabled</a></li><li><a href="#json_native_writer_enabled">json_native_writer_enabled</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#openx_json_native_reader_enabled">openx_json_native_reader_enabled</a></li><li><a href="#openx_json_native_writer_enabled">openx_json_native_writer_enabled</a></li><li><a href="#optimize_mismatched_bucket_count">optimize_mismatched_bucket_count</a></li><li><a href="#optimize_symlink_listing">optimize_symlink_listing</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_optimized_writer_max_dictionary_memory">orc_optimized_writer_max_dictionary_memory</a></li><li><a href="#orc_optimized_writer_max_stripe_rows">orc_optimized_writer_max_stripe_rows</a></li><li><a href="#orc_optimized_writer_max_stripe_size">orc_optimized_writer_max_stripe_size</a></li><li><a href="#orc_optimized_writer_min_stripe_size">orc_optimized_writer_min_stripe_size</a></li><li><a href="#orc_optimized_writer_validate">orc_optimized_writer_validate</a></li><li><a href="#orc_optimized_writer_validate_mode">orc_optimized_writer_validate_mode</a></li><li><a href="#orc_optimized_writer_validate_percentage">orc_optimized_writer_validate_percentage</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_use_column_names">orc_use_column_names</a></li><li><a href="#parallel_partitioned_bucketed_writes">parallel_partitioned_bucketed_writes</a></li><li><a href="#parquet_ignore_statistics">parquet_ignore_statistics</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_optimized_writer_enabled">parquet_optimized_writer_enabled</a></li><li><a href="#parquet_optimized_writer_validation_percentage">parquet_optimized_writer_validation_percentage</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_use_column_names">parquet_use_column_names</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#partition_statistics_sample_size">partition_statistics_sample_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#propagate_table_scan_sorting_properties">propagate_table_scan_sorting_properties</a></li><li><a href="#query_partition_filter_required">query_partition_filter_required</a></li><li><a href="#query_partition_filter_required_schemas">query_partition_filter_required_schemas</a></li><li><a href="#rcfile_optimized_writer_validate">rcfile_optimized_writer_validate</a></li><li><a href="#regex_native_reader_enabled">regex_native_reader_enabled</a></li><li><a href="#respect_table_format">respect_table_format</a></li><li><a href="#s3_select_pushdown_enabled">s3_select_pushdown_enabled</a></li><li><a href="#sequence_file_native_reader_enabled">sequence_file_native_reader_enabled</a></li><li><a href="#sequence_file_native_writer_enabled">sequence_file_native_writer_enabled</a></li><li><a href="#size_based_split_weights_enabled">size_based_split_weights_enabled</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#text_file_native_reader_enabled">text_file_native_reader_enabled</a></li><li><a href="#text_file__writer_enabled">text_file__writer_enabled</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#validate_bucketing">validate_bucketing</a></li></ul></li><li><a href="#hive-sql-support">Hive SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#hive-table-format">Hive table format</a><ul><li><a href="#specify-hive-format">Specify Hive format</a><ul><li><a href="#hive-table-format-properties">Hive table format properties</a></li><li><a href="#hive-table-properties">Hive table properties</a></li></ul></li><li><a href="#metadata-tables">Metadata tables</a><ul><li><a href="#properties">$properties</a></li><li><a href="#partitions">$partitions</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#create_empty_partition">create_empty_partition</a></li><li><a href="#drop_stats">drop_stats</a></li><li><a href="#register_partition">register_partition</a></li><li><a href="#sync_partition_metadata">sync_partition_metadata</a></li><li><a href="#unregister_partition">unregister_partition</a></li></ul></li><li><a href="#migrate-to-iceberg">Migrate to Iceberg</a></li><li><a href="#partition-projection">Partition projection</a><ul><li><a href="#using-partition-projection">Using partition projection</a></li></ul></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#avro_native_reader_enabled">avro_native_reader_enabled</a></li><li><a href="#avro_native_writer_enabled">avro_native_writer_enabled</a></li><li><a href="#bucket_execution_enabled">bucket_execution_enabled</a></li><li><a href="#collect_column_statistics_on_write">collect_column_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#create_empty_bucket_files">create_empty_bucket_files</a></li><li><a href="#csv_native_reader_enabled">csv_native_reader_enabled</a></li><li><a href="#csv_native_writer_enabled">csv_native_writer_enabled</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#force_local_scheduling">force_local_scheduling</a></li><li><a href="#hive_storage_format">hive_storage_format</a></li><li><a href="#hive_views_legacy_translation">hive_views_legacy_translation</a></li><li><a href="#ignore_absent_partitions">ignore_absent_partitions</a></li><li><a href="#ignore_corrupted_statistics">ignore_corrupted_statistics</a></li><li><a href="#insert_existing_partitions_behavior">insert_existing_partitions_behavior</a></li><li><a href="#json_native_reader_enabled">json_native_reader_enabled</a></li><li><a href="#json_native_writer_enabled">json_native_writer_enabled</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#openx_json_native_reader_enabled">openx_json_native_reader_enabled</a></li><li><a href="#openx_json_native_writer_enabled">openx_json_native_writer_enabled</a></li><li><a href="#optimize_mismatched_bucket_count">optimize_mismatched_bucket_count</a></li><li><a href="#optimize_symlink_listing">optimize_symlink_listing</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_optimized_writer_max_dictionary_memory">orc_optimized_writer_max_dictionary_memory</a></li><li><a href="#orc_optimized_writer_max_stripe_rows">orc_optimized_writer_max_stripe_rows</a></li><li><a href="#orc_optimized_writer_max_stripe_size">orc_optimized_writer_max_stripe_size</a></li><li><a href="#orc_optimized_writer_min_stripe_size">orc_optimized_writer_min_stripe_size</a></li><li><a href="#orc_optimized_writer_validate">orc_optimized_writer_validate</a></li><li><a href="#orc_optimized_writer_validate_mode">orc_optimized_writer_validate_mode</a></li><li><a href="#orc_optimized_writer_validate_percentage">orc_optimized_writer_validate_percentage</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_use_column_names">orc_use_column_names</a></li><li><a href="#parallel_partitioned_bucketed_writes">parallel_partitioned_bucketed_writes</a></li><li><a href="#parquet_ignore_statistics">parquet_ignore_statistics</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_optimized_writer_enabled">parquet_optimized_writer_enabled</a></li><li><a href="#parquet_optimized_writer_validation_percentage">parquet_optimized_writer_validation_percentage</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_use_column_names">parquet_use_column_names</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#partition_statistics_sample_size">partition_statistics_sample_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#propagate_table_scan_sorting_properties">propagate_table_scan_sorting_properties</a></li><li><a href="#query_partition_filter_required">query_partition_filter_required</a></li><li><a href="#query_partition_filter_required_schemas">query_partition_filter_required_schemas</a></li><li><a href="#rcfile_optimized_writer_validate">rcfile_optimized_writer_validate</a></li><li><a href="#regex_native_reader_enabled">regex_native_reader_enabled</a></li><li><a href="#respect_table_format">respect_table_format</a></li><li><a href="#s3_select_pushdown_enabled">s3_select_pushdown_enabled</a></li><li><a href="#sequence_file_native_reader_enabled">sequence_file_native_reader_enabled</a></li><li><a href="#sequence_file_native_writer_enabled">sequence_file_native_writer_enabled</a></li><li><a href="#size_based_split_weights_enabled">size_based_split_weights_enabled</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#text_file_native_reader_enabled">text_file_native_reader_enabled</a></li><li><a href="#text_file__writer_enabled">text_file__writer_enabled</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#validate_bucketing">validate_bucketing</a></li></ul></li><li><a href="#hive-sql-support">Hive SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
