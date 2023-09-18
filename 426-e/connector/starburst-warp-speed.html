@@ -714,20 +714,52 @@ on all nodes, and exclusively used by SEP.</p>
 </ul>
 <p>Create an EKS Managed Node Group with a specific size, and use it for
 all nodes in the cluster.</p>
+<p>Include a bootstrap script when creating the node groups for creating an
+<code class="docutils literal notranslate"><span class="pre">/opt/data</span></code> directory to serve as a mount point for the SSD disks where the
+index and cache elements are stored. The <code class="docutils literal notranslate"><span class="pre">/opt/data</span></code> directory value can be
+edited based on preference and should match the value of
+<code class="docutils literal notranslate"><span class="pre">localStorageMountPath</span></code> in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file.</p>
+<p>If you are using <code class="docutils literal notranslate"><span class="pre">eksctl</span></code> to create the cluster, you must embed the following
+script in the <code class="docutils literal notranslate"><span class="pre">managedNodeGroups.preBootstrapCommands</span></code> section:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">yum install -y mdadm</span>
+<span class="l l-Scalar l-Scalar-Plain">sysctl -w fs.aio-max-nr=8388608 &gt;&gt; /etc/sysctl.conf</span>
+<span class="l l-Scalar l-Scalar-Plain">devices=; for device in $(ls /sys/block/); do if [[ $(grep -e Amazon EC2 NVMe Instance Storage -e ec2-nvme-instance /sys/block/${device}/device/subsysnqn -c 2&gt; /dev/null) -gt 0 ]]; then devices=${devices} /dev/${device}; fi; done; echo ${devices} &gt; /tmp/devices</span>
+<span class="l l-Scalar l-Scalar-Plain">mdadm --create /dev/md0 $(cat /tmp/devices) --level=0 --force --raid-devices=$(cat /tmp/devices | wc -w)</span>
+<span class="l l-Scalar l-Scalar-Plain">mkfs.ext4 /dev/md0 -O ^has_journal</span>
+<span class="l l-Scalar l-Scalar-Plain">mkdir -p /opt/data</span>
+<span class="l l-Scalar l-Scalar-Plain">mount /dev/md0 /opt/data</span>
+<span class="l l-Scalar l-Scalar-Plain">chmod 777 -R /opt/data</span>
+</pre></div>
+</div>
 <p><strong>AKS</strong></p>
 <p>Suitable node sizes:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Standard_L16s_v2</span></code> or larger with SSDs attached</p></li>
+<li><p>In the Starburst Warp Speed section of <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code>, set the following configuration:</p></li>
 </ul>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warpSpeed</span><span class="o">:</span>
+<span class="na">  image</span><span class="o">:</span>
+<span class="na">    tag</span><span class="o">:</span> <span class="s">"a.b.c-azure"</span>
+</pre></div>
+</div>
 <p><strong>GKE</strong></p>
+<p>Suitable node sizes:</p>
 <ul class="simple">
-<li><p>Suitable node size of <code class="docutils literal notranslate"><span class="pre">n2-highmem-16</span></code> or larger with a <a class="external reference" href="https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd#raw-block">minimum of two local
+<li><p><code class="docutils literal notranslate"><span class="pre">n2-highmem-16</span></code> or larger with a <a class="external reference" href="https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd#raw-block">minimum of two local
 NVME SSDs</a>
 attached</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n2d-standard-16</span></code> or larger</p></li>
 <li><p>GKE version <code class="docutils literal notranslate"><span class="pre">1.25.3-gke.1800</span></code> or higher</p></li>
 </ul>
 <p>Attach the SSDs during node pool creation, and use the pool for the cluster
 creation.</p>
+<p>Your <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> must set the <code class="docutils literal notranslate"><span class="pre">localStorageMountPath</span></code> property to <code class="docutils literal notranslate"><span class="pre">/mnt/stateful_partition/kube-ephemeral-ssd</span></code>.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">ephemeral-storage-local-ssd</span></code> gcloud CLI command to provision local SSDs on the cluster. Select an even number of workers.</p>
+<p>Starburst Warp Speed catalogs using GCS must include the following catalog configuration
+property to update the SSD utilization threshold to 80%:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.file-system-reserve-percentage</span><span class="o">=</span><span class="s">80</span>
+</pre></div>
+</div>
 <p><strong>All platforms</strong></p>
 <p>Configuration considerations:</p>
 <ul class="simple">
@@ -753,20 +785,6 @@ configured.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">warpSpeed</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
   <span class="nt">additionalHeapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
-</pre></div>
-</div>
-<p>Starburst Warp Speed requires privileged access to the attached storage on the nodes. Configure
-this for the coordinator and all workers.</p>
-<p>Coordinator configuration for privileged access:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
-  <span class="nt">securityContext</span><span class="p">:</span>
-    <span class="nt">privileged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-</pre></div>
-</div>
-<p>Worker configuration for privileged access:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">worker</span><span class="p">:</span>
-  <span class="nt">securityContext</span><span class="p">:</span>
-    <span class="nt">privileged</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 <p>You need to ensure that you use a dedicated coordinator that is
@@ -935,6 +953,10 @@ currently using k8s-native logging tools for troubleshooting, be sure to
 set the <code class="docutils literal notranslate"><span class="pre">log.path=&lt;path&gt;</span></code>. The <code class="docutils literal notranslate"><span class="pre">server.log</span></code> must be set in the
 <code class="docutils literal notranslate"><span class="pre">log.path</span></code> so that the call home feature can upload the <code class="docutils literal notranslate"><span class="pre">server.log</span></code>
 to the <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code>.  For details, see <a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-etcfiles-log"><span class="std std-ref">logging</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.file-system-reserve-percentage</span></code></p></td>
+<td><p>The percentage of the total SSD disk space held in reserve. Defaults to
+<code class="docutils literal notranslate"><span class="pre">90</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
