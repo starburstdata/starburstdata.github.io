@@ -698,8 +698,8 @@ S3-compatible storage such as MinIO, and any others are supported.</p>
 <span id="warp-speed-cluster-configuration"></span><h2 id="cluster-configuration">Cluster configuration<a class="headerlink" href="#cluster-configuration" title="Permalink to this heading">#</a></h2>
 <p>Starburst Warp Speed requires your cluster to operate on a Kubernetes-based platform.
 Specifically the <a class="reference internal" href="../k8s/requirements.html"><span class="doc">Starburst Enterprise with Kubernetes requirements</span></a> apply.</p>
-<p>In addition, Starburst Warp Speed requires specific nodes in terms of CPU and memory. The most
-important additional requirement is that sufficiently performant and sized
+<p>In addition, Starburst Warp Speed requires specific nodes in terms of CPU and memory. The
+most important additional requirement is that sufficiently performant and sized
 Non-Volatile Memory Express (NVMe) solid-state drive (SSD) storage is available
 on all nodes, and exclusively used by SEP.</p>
 <p>The following specific details apply for the supported platforms:</p>
@@ -718,7 +718,8 @@ all nodes in the cluster.</p>
 <code class="docutils literal notranslate"><span class="pre">/opt/data</span></code> directory to serve as a mount point for the SSD disks where the
 index and cache elements are stored. The <code class="docutils literal notranslate"><span class="pre">/opt/data</span></code> directory value can be
 edited based on preference and should match the value of
-<code class="docutils literal notranslate"><span class="pre">localStorageMountPath</span></code> in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file.</p>
+<code class="docutils literal notranslate"><span class="pre">localStorageMountPath</span></code> in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file as described in the
+<strong>All platforms</strong> section.</p>
 <p>If you are using <code class="docutils literal notranslate"><span class="pre">eksctl</span></code> to create the cluster, you must embed the following
 script in the <code class="docutils literal notranslate"><span class="pre">managedNodeGroups.preBootstrapCommands</span></code> section:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">preBoostrapCommands</span><span class="p">:</span>
@@ -754,8 +755,8 @@ attached</p></li>
 </ul>
 <p>Attach the SSDs during node pool creation, and use the pool for the cluster
 creation.</p>
-<p>Your <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> must set the <code class="docutils literal notranslate"><span class="pre">localStorageMountPath</span></code> property to <code class="docutils literal notranslate"><span class="pre">/mnt/stateful_partition/kube-ephemeral-ssd</span></code>.</p>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">ephemeral-storage-local-ssd</span></code> gcloud CLI command to provision local SSDs on the cluster. Select an even number of workers.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">ephemeral-storage-local-ssd</span></code> gcloud CLI command to provision local
+SSDs on the cluster. Select an even number of workers.</p>
 <p>Starburst Warp Speed catalogs using GCS must include the following catalog configuration
 property to update the SSD utilization threshold to 80%:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.file-system-reserve-percentage</span><span class="o">=</span><span class="s">80</span>
@@ -786,6 +787,28 @@ configured.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">warpSpeed</span><span class="p">:</span>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
   <span class="nt">additionalHeapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
+</pre></div>
+</div>
+<p>Starburst Warp Speed uses a filesystem on top of the underlying storage in order to not
+require privileged mode. Add the following filesystem and image configuration to
+your values file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">warpSpeed</span><span class="p">:</span>
+  <span class="nt">fileSystem</span><span class="p">:</span>
+    <span class="c1"># The path for the mount point used to mount the local SSDs. Value differs</span>
+    <span class="c1"># between clouds:</span>
+    <span class="c1"># AWS, Azure - Defined by the user</span>
+    <span class="c1"># GCP - Must be set to /mnt/stateful_partition/kube-ephemeral-ssd</span>
+    <span class="nt">localStorageMountPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/opt/data</span>
+  <span class="nt">image</span><span class="p">:</span>
+    <span class="c1"># Image that prepares the filesystem for Starburst Warp Speed.</span>
+    <span class="c1"># Due to system limitations, this must be done by an init container running</span>
+    <span class="c1"># in privileged mode.</span>
+    <span class="nt">repository</span><span class="p">:</span> <span class="s">"harbor.starburstdata.net/starburstdata/starburst-warpspeed-init"</span>
+    <span class="c1"># Tag value differs between clouds:</span>
+    <span class="c1"># AWS, GCP - Use default tag</span>
+    <span class="c1"># Azure - Append the "azure" suffix, for example "1.0.0-azure"</span>
+    <span class="nt">tag</span><span class="p">:</span> <span class="s">"1.0.7"</span>
+    <span class="nt">pullPolicy</span><span class="p">:</span> <span class="s">"IfNotPresent"</span>
 </pre></div>
 </div>
 <p>You need to ensure that you use a dedicated coordinator that is
