@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="filter-stats-container">
         <div class="filter-options">
           <div class="filter-type-container">
-            <h4 style="margin-right: 0.5rem;">Filter:</h4>
-            <div id="resultsRefinementList"></div>
+            <h4 style="margin-right: 0.5rem;">Product:</h4>
+            <div id="productsRefinementList"></div>
           </div>
           <div id="toggle-refinement"></div>
         </div>
@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       const hitsContainer = document.querySelector('#resultsHits');
-      const filterOptions = document.querySelector('.filter-options');
-      const refinementContainer = document.querySelector(
+      const statsContainer = document.querySelector('#resultsStats');
+      const refinementsContainer = document.querySelector(
         '.filter-stats-container'
       );
 
@@ -79,26 +79,38 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const searchResults = instantsearch({
-        indexName: 'AllDocs',
+        indexName: 'DocsAll',
         searchClient,
         searchFunction: function (helper) {
-          helper.state.facetFilters = [
-            [`version: ${pathSegment}`, 'type: guides'],
-          ];
+          helper.state.facetFilters = [[`version:${pathSegment}`]];
           // if less than 2 character, don't trigger search and hide inner content
-          if (helper.state.query.length < 3) {
+          if (helper.state.query.length < 2) {
             hitsContainer.style.display = 'none';
-            refinementContainer.style.display = 'none';
-            filterOptions.style.display = 'none';
+            statsContainer.style.display = 'none';
+            refinementsContainer.style.display = 'none';
           } else {
             hitsContainer.style.display = 'block';
-            refinementContainer.style.display = 'flex';
-            filterOptions.style.display = 'flex';
+            statsContainer.style.display = 'flex';
+            refinementsContainer.style.display = 'flex';
+            if (
+              helper
+                .getRefinements('product')
+                .find(
+                  (refinement) =>
+                    refinement.value === 'sep' || refinement.value === 'galaxy'
+                )
+            ) {
+              helper
+                .addDisjunctiveFacetRefinement('product', 'all')
+                .addDisjunctiveFacetRefinement('version', `${pathSegment}`);
+            } else {
+              helper.clearRefinements('product');
+            }
             helper.search();
           }
         },
         searchParameters: {
-          facetFilters: [[`version: ${pathSegment}`, 'type: guides']],
+          facetFilters: [[`version:${pathSegment}`]],
         },
       });
 
@@ -113,8 +125,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       searchResults.addWidgets([
         instantsearch.widgets.configure({
-          attributesToSnippet: ['content:50'],
+          attributesToSnippet: ['content'],
           clickAnalytics: true,
+          getRankingInfo: true,
+          filters:
+            '(product:sep<score=1> OR product:galaxy<score=1> OR product:all<score=0>)',
         }),
 
         instantsearch.widgets.searchBox({
@@ -122,12 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
           showLoadingIndicator: true,
           showReset: true,
           placeholder: 'Search documentation',
-        }),
-
-        instantsearch.widgets.refinementList({
-          container: '#resultsRefinementList',
-          attribute: 'type',
-          sortBy: ['name:desc', 'count:desc'],
         }),
 
         instantsearch.widgets.pagination({
@@ -144,13 +153,45 @@ document.addEventListener('DOMContentLoaded', function () {
           },
         }),
 
+        instantsearch.widgets.refinementList({
+          container: '#productsRefinementList',
+          attribute: 'product',
+          sortBy: ['name:desc', 'count:desc'],
+          templates: {
+            item(item) {
+              const { url, label, isRefined } = item;
+
+              return (
+                label != 'all' &&
+                `<a href="${url}" style="display:flex;gap:0.5rem;align-items:center; ${
+                  isRefined ? 'font-weight: bold' : ''
+                }">
+                  <input type="checkbox" ${isRefined ? 'checked' : ''} />
+                  <span>
+                  ${
+                    label == 'sep'
+                      ? 'Starburst Enterprise'
+                      : label == 'galaxy'
+                      ? 'Starburst Galaxy'
+                      : ''
+                  }
+                  </span>
+                </a>`
+              );
+            },
+          },
+        }),
+
         instantsearch.widgets.hits({
           container: '#resultsHits',
           templates: {
             item: (hit, bindEvent) => {
+              console.log(hit);
+              let score = hit._rankingInfo.firstMatchedWord / 1000;
+              let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
               return (
                 `<a ${bindEvent('click', hit, 'Item clicked')} href="` +
-                hit.url +
+                url +
                 `"><li class="hit-item">
                       <h2 style="margin-top:0;">
                         ${instantsearch.highlight({
@@ -188,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             empty: (results) => {
               refinementContainer.style.display = 'none';
-              return `<div id="noResults">
+              return `<div id="noResults" style="padding: 0.5rem;">
                       <h2>We're sorry!</h2>
                       <p>We couldn't find any results for: "${
                         results && results.query
@@ -214,7 +255,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // If a query parameter was passed in the url, show results based on query
       queryParameter &&
         searchResults.setUiState({
-          AllDocs: {
+          DocsAll: {
             // should match indexName in searchResults()
             query: queryParameter,
           },
