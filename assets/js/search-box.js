@@ -13,28 +13,39 @@ const searchClient = algoliasearch(ALGOLIA_ID, ALGOLIA_KEY);
 
 const hitsContainer = document.querySelector('#hits');
 const statsContainer = document.querySelector('#stats');
-const refinementContainer = document.querySelector('#refinement-list');
+const productRefinementContainer = document.querySelector('#product-list');
 const noResultsContainer = document.querySelector('#noResults');
 
 const search = instantsearch({
-  indexName: 'AllDocs',
+  indexName: 'DocsAll',
   searchClient,
   searchFunction: function (helper) {
-    helper.state.facetFilters = [['version: latest', 'type: guides']];
+    helper.state.facetFilters = [['version: latest']];
     // if less than 2 character, don't trigger search and hide inner content
     if (helper.state.query.length < 2) {
       hitsContainer.style.display = 'none';
       statsContainer.style.display = 'none';
-      refinementContainer.style.display = 'none';
+      productRefinementContainer.style.display = 'none';
     } else {
       hitsContainer.style.display = 'block';
       statsContainer.style.display = 'flex';
-      refinementContainer.style.display = 'flex';
-      helper.search(); // trigger search
+      productRefinementContainer.style.display = 'flex';
+      if (
+        helper
+          .getRefinements('product')
+          .find(
+            (refinement) =>
+              refinement.value === 'sep' || refinement.value === 'galaxy'
+          )
+      ) {
+        helper
+          .addDisjunctiveFacetRefinement('product', 'all')
+          .addDisjunctiveFacetRefinement('version', 'latest');
+      } else {
+        helper.clearRefinements('product');
+      }
+      helper.search();
     }
-  },
-  searchParameters: {
-    facetFilters: [['version: latest', 'type: guides']],
   },
 });
 
@@ -56,6 +67,9 @@ search.addWidgets([
     attributesToSnippet: ['content'],
     clickAnalytics: true,
     hitsPerPage: 5,
+    getRankingInfo: true,
+    filters:
+      '(product:sep<score=1> OR product:galaxy<score=1> OR product:all<score=0>)',
   }),
 
   instantsearch.widgets.searchBox({
@@ -66,27 +80,67 @@ search.addWidgets([
   }),
 
   instantsearch.widgets.refinementList({
-    container: '#refinement-list',
-    attribute: 'type',
-    showMore: true,
+    container: '#versionsRefinementList',
+    attribute: 'version',
     sortBy: ['name:desc', 'count:desc'],
   }),
+
+  instantsearch.widgets.refinementList({
+    container: '#product-list',
+    attribute: 'product',
+    sortBy: ['name:desc', 'count:desc'],
+    templates: {
+      item(item) {
+        const { url, label, isRefined } = item;
+
+        return (
+          label != 'all' &&
+          `<a href="${url}" style="display:flex;gap:0.5rem;align-items:center; ${
+            isRefined ? 'font-weight: bold' : ''
+          }">
+            <input type="checkbox" ${isRefined ? 'checked' : ''} />
+            <span>
+            ${
+              label == 'sep'
+                ? 'Starburst Enterprise'
+                : label == 'galaxy'
+                ? 'Starburst Galaxy'
+                : ''
+            }
+            </span>
+          </a>`
+        );
+      },
+    },
+  }),
+
+  // 0 = title
+  // 1 = section
+  // 2 = url
+  // 3 = content
+
+  // hit._rankingInfo.firstMatchedWord / 1000
 
   instantsearch.widgets.hits({
     container: '#hits',
     templates: {
       item: (hit, bindEvent) => {
+        let score = hit._rankingInfo.firstMatchedWord / 1000;
+        let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
+
         return (
           `
         <a ${bindEvent('click', hit, 'hit clicked')} href="` +
-          hit.url +
+          url +
           `">
           <h2>
             ${instantsearch.highlight({ attribute: 'title', hit: hit })}
           </h2>
-          <p>
-            ${instantsearch.snippet({ attribute: 'content', hit: hit })}
-          </p>
+          ${
+            '<p>' +
+            instantsearch.snippet({ attribute: 'content', hit: hit }) +
+            '</p>'
+          }
           ${
             hit['categories.lvl2']
               ? `<p class="search-breadcrumb">
@@ -107,7 +161,7 @@ search.addWidgets([
         );
       },
       empty: (results) => {
-        refinementContainer.style.display = 'none';
+        productRefinementContainer.style.display = 'none';
         return `<div id="noResults">
               <h2>We're sorry!</h2>
               <p>We couldn't find any results for: "${

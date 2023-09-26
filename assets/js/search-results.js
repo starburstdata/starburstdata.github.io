@@ -15,31 +15,46 @@ function searchResults() {
 
     const hitsContainer = document.querySelector('#resultsHits');
     const statsContainer = document.querySelector('#resultsStats');
-    const refinementContainer = document.querySelector(
+    const refinementsContainer = document.querySelector(
       '.filter-stats-container'
     );
 
     const queryParameter = new URLSearchParams(window.location.search).get('q');
 
     const searchResults = instantsearch({
-      indexName: 'AllDocs',
+      indexName: 'DocsAll',
       searchClient,
       searchFunction: function (helper) {
-        helper.state.facetFilters = [['version:latest', 'type: guides']];
+        const page = helper.state.page;
+        helper.state.facetFilters = [['version:latest']];
         // if less than 2 character, don't trigger search and hide inner content
         if (helper.state.query.length < 2) {
           hitsContainer.style.display = 'none';
           statsContainer.style.display = 'none';
-          refinementContainer.style.display = 'none';
+          refinementsContainer.style.display = 'none';
         } else {
           hitsContainer.style.display = 'block';
           statsContainer.style.display = 'flex';
-          refinementContainer.style.display = 'flex';
-          helper.search(); // trigger search
+          refinementsContainer.style.display = 'flex';
+
+          if (
+            helper
+              .getRefinements('product')
+              .find(
+                (refinement) =>
+                  refinement.value === 'sep' || refinement.value === 'galaxy'
+              )
+          ) {
+            helper
+              .addDisjunctiveFacetRefinement('product', 'all')
+              .addDisjunctiveFacetRefinement('version', 'latest');
+          } else {
+            helper.clearRefinements('product');
+          }
+
+          helper.state.page = page;
+          helper.search();
         }
-      },
-      searchParameters: {
-        facetFilters: [['version: latest', 'type: guides']],
       },
     });
 
@@ -56,6 +71,9 @@ function searchResults() {
       instantsearch.widgets.configure({
         attributesToSnippet: ['content:50'],
         clickAnalytics: true,
+        getRankingInfo: true,
+        filters:
+          '(product:sep<score=1> OR product:galaxy<score=1> OR product:all<score=0>)',
       }),
 
       instantsearch.widgets.searchBox({
@@ -66,9 +84,38 @@ function searchResults() {
       }),
 
       instantsearch.widgets.refinementList({
-        container: '#resultsRefinementList',
-        attribute: 'type',
+        container: '#versionsRefinementList',
+        attribute: 'version',
         sortBy: ['name:desc', 'count:desc'],
+      }),
+
+      instantsearch.widgets.refinementList({
+        container: '#productsRefinementList',
+        attribute: 'product',
+        sortBy: ['name:desc', 'count:desc'],
+        templates: {
+          item(item) {
+            const { url, label, isRefined } = item;
+
+            return (
+              label != 'all' &&
+              `<a href="${url}" style="display:flex;gap:0.5rem;align-items:center; ${
+                isRefined ? 'font-weight: bold' : ''
+              }">
+                <input type="checkbox" ${isRefined ? 'checked' : ''} />
+                <span>
+                ${
+                  label == 'sep'
+                    ? 'Starburst Enterprise'
+                    : label == 'galaxy'
+                    ? 'Starburst Galaxy'
+                    : ''
+                }
+                </span>
+              </a>`
+            );
+          },
+        },
       }),
 
       instantsearch.widgets.pagination({
@@ -79,9 +126,12 @@ function searchResults() {
         container: '#resultsHits',
         templates: {
           item: (hit, bindEvent) => {
+            let score = hit._rankingInfo.firstMatchedWord / 1000;
+            let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
+
             return (
               `<a ${bindEvent('click', hit, 'Item clicked')} href="` +
-              hit.url +
+              url +
               `"><li>
                   <h2>
                     ${instantsearch.highlight({
@@ -104,21 +154,18 @@ function searchResults() {
                       </p>`
                       : null
                   }
-                  ${
-                    hit.content &&
-                    `<p>
+                  ${`<p>
                   ${instantsearch.snippet({
                     attribute: 'content',
                     hit: hit,
-                  })} ...
-                  </p>`
-                  }
+                  })}
+                  </p>`}
               </li>
               </a>`
             );
           },
           empty: (results) => {
-            refinementContainer.style.display = 'none';
+            refinementsContainer.style.display = 'none';
             return `<div id="noResults">
                   <h2>We're sorry!</h2>
                   <p>We couldn't find any results for: "${
@@ -144,7 +191,7 @@ function searchResults() {
 
     queryParameter &&
       searchResults.setUiState({
-        AllDocs: {
+        DocsAll: {
           query: queryParameter,
         },
       });
