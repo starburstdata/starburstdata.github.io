@@ -78,10 +78,15 @@ document.addEventListener('DOMContentLoaded', function () {
         pathSegment = 'latest'; //Defaults to latest if version is not supported or is most recent version
       }
 
+      if(pathSegment == 'latest') {
+        document.querySelector('#toggle-refinement').style.display = 'none';
+      }
+
       const searchResults = instantsearch({
         indexName: 'DocsAll',
         searchClient,
         searchFunction: function (helper) {
+          const page = helper.state.page;
           helper.state.facetFilters = [[`version:${pathSegment}`]];
           // if less than 2 character, don't trigger search and hide inner content
           if (helper.state.query.length < 2) {
@@ -106,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
               helper.clearRefinements('product');
             }
+            helper.state.page = page;
             helper.search();
           }
         },
@@ -186,7 +192,6 @@ document.addEventListener('DOMContentLoaded', function () {
           container: '#resultsHits',
           templates: {
             item: (hit, bindEvent) => {
-              console.log(hit);
               let score = hit._rankingInfo.firstMatchedWord / 1000;
               let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
               return (
