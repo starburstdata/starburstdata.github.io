@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
           return (
             label != 'all' &&
-            `<a href="${url}" style="display:flex;gap:0.25rem;font-size:16px;color:#000;align-items:center; ${
+            `<a href="${url}" style="display:flex;gap:0.25rem;font-size:16px;color:#000;line-height:1;align-items:center; ${
               isRefined ? 'font-weight: bold' : ''
             }">
               <input type="checkbox" ${isRefined ? 'checked' : ''} />
