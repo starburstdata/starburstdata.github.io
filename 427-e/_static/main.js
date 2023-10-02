@@ -11,11 +11,10 @@ document.addEventListener('DOMContentLoaded', function(){
   copyToClipboard();
 });
 
-function setupSearch(){
+function toggleDropdown(){
   document.addEventListener('click', event => {
     const searchClass = document.getElementById('algolia-search');
-
-    if ((searchClass.contains(event.target) || event.target.classList.contains('ais-RefinementList-checkbox'))
+    if ((searchClass.contains(event.target) || event.target.classList.contains('refinement-list-checkbox'))
     && document.querySelector('.ais-SearchBox-input').value) {
       document.getElementById('product-list').style.display = 'flex';
       document.getElementById('hits').style.display = 'block';
@@ -29,4 +28,4 @@ function setupSearch(){
   })
 }
 
-setupSearch();
+toggleDropdown();
