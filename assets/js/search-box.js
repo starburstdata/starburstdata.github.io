@@ -98,7 +98,7 @@ search.addWidgets([
           `<a href="${url}" style="display:flex;gap:0.5rem;align-items:center; ${
             isRefined ? 'font-weight: bold' : ''
           }">
-            <input type="checkbox" ${isRefined ? 'checked' : ''} />
+            <input type="checkbox" class="refinement-list-checkbox" ${isRefined ? 'checked' : ''} />
             <span>
             ${
               label == 'sep'

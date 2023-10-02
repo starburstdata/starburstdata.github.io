@@ -54,25 +54,24 @@ function copyCode() {
 
 copyCode();
 
-function setupSearch() {
+function toggleDropdown() {
   document.addEventListener('click', event => {
     const searchClass = document.getElementById('site-search');
-
-    if ((searchClass.contains(event.target) || event.target.classList.contains('ais-RefinementList-checkbox'))
+    if ((searchClass.contains(event.target) || event.target.classList.contains('refinement-list-checkbox'))
     && document.querySelector('.ais-SearchBox-input').value) {
-      document.getElementById('refinement-list').style.display = 'flex';
+      document.getElementById('product-list').style.display = 'flex';
       document.getElementById('hits').style.display = 'block';
       document.getElementById('stats').style.display = 'flex';
     }
     else {
-      document.getElementById('refinement-list').style.display = 'none';
+      document.getElementById('product-list').style.display = 'none';
       document.getElementById('hits').style.display = 'none';
       document.getElementById('stats').style.display = 'none';
     }
   })
 }
 
-setupSearch();
+toggleDropdown();
 
 document.addEventListener('keydown', event => {
   const searchInput = document.querySelector('.ais-SearchBox-input').value;
