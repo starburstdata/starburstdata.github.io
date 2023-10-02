@@ -1,36 +1,55 @@
 document.addEventListener('DOMContentLoaded', function () {
+  const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
+  const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+
+  aa('init', {
+    appId: ALGOLIA_ID,
+    apiKey: ALGOLIA_KEY,
+    useCookie: true,
+  });
+
   const searchClient = algoliasearch(
-    '0X4IAR77M1', // Algolia ID
-    'b4ad1fa9a2f4742b5c610060b34e87f8' // Algolia Key
+    ALGOLIA_ID,
+    ALGOLIA_KEY
   );
 
   const hitsContainer = document.querySelector('#hits');
   const statsContainer = document.querySelector('#stats');
-  const refinementContainer = document.querySelector('#refinement-list');
-
-  const pathName = window.location.pathname;
-  const pathArray = pathName.split('/');
-  const pathSegment = pathArray[1];
+  const productRefinementContainer = document.querySelector('#product-list');
 
   const search = instantsearch({
-    indexName: 'AllDocs',
+    indexName: 'DocsAll',
     searchClient,
     searchFunction: function (helper) {
-      helper.state.facetFilters = [[`version:${pathSegment}`, 'type: guides']];
+      helper.state.facetFilters = [['version:latest']];
       // if less than 2 character, don't trigger search and hide inner content
       if (helper.state.query.length < 2) {
         hitsContainer.style.display = 'none';
         statsContainer.style.display = 'none';
-        refinementContainer.style.display = 'none';
+        productRefinementContainer.style.display = 'none';
       } else {
         hitsContainer.style.display = 'block';
         statsContainer.style.display = 'flex';
-        refinementContainer.style.display = 'flex';
+        productRefinementContainer.style.display = 'flex';
+        if (
+          helper
+            .getRefinements('product')
+            .find(
+              (refinement) =>
+                refinement.value === 'sep' || refinement.value === 'galaxy'
+            )
+        ) {
+          helper
+            .addDisjunctiveFacetRefinement('product', 'all')
+            .addDisjunctiveFacetRefinement('version', 'latest');
+        } else {
+          helper.clearRefinements('product');
+        }
         helper.search();
       }
     },
     searchParameters: {
-      facetFilters: [[`version:${pathSegment}`, 'type: guides']],
+      facetFilters: [['version:latest']],
     },
   });
 
@@ -39,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (nbHits > 5) {
       document.querySelector('#stats').innerHTML = `
-      <a href='/${pathSegment}/search.html?q=${query}' class="view-more-button">View more results</a>
+      <a href='/starburst-galaxy/sql/ref/search.html?q=${query}' class="view-more-button">View more results</a>
     `;
     } else {
       document.querySelector('#stats').innerHTML = ``;
@@ -53,6 +72,9 @@ document.addEventListener('DOMContentLoaded', function () {
       attributesToSnippet: ['content'],
       clickAnalytics: true,
       hitsPerPage: 5,
+      getRankingInfo: true,
+      filters:
+        '(product:sep<score=0> OR product:galaxy<score=1> OR product:all<score=0>)',
     }),
 
     instantsearch.widgets.searchBox({
@@ -63,55 +85,88 @@ document.addEventListener('DOMContentLoaded', function () {
     }),
 
     instantsearch.widgets.refinementList({
-      container: '#refinement-list',
-      attribute: 'type',
-      showMore: true,
+      container: '#versionsRefinementList',
+      attribute: 'version',
       sortBy: ['name:desc', 'count:desc'],
+    }),
+
+    instantsearch.widgets.refinementList({
+      container: '#product-list',
+      attribute: 'product',
+      sortBy: ['name:desc', 'count:desc'],
+      templates: {
+        item(item) {
+          const { url, label, isRefined } = item;
+
+          return (
+            label != 'all' &&
+            `<a href="${url}" style="display:flex;gap:0.25rem;font-size:16px;color:#000;line-height:1;align-items:center; ${
+              isRefined ? 'font-weight: bold' : ''
+            }">
+              <input type="checkbox" class="refinement-list-checkbox" ${isRefined ? 'checked' : ''} />
+              <span>
+              ${
+                label == 'sep'
+                  ? 'Starburst Enterprise'
+                  : label == 'galaxy'
+                  ? 'Starburst Galaxy'
+                  : ''
+              }
+              </span>
+            </a>`
+          );
+        },
+      },
     }),
 
     instantsearch.widgets.hits({
       container: '#hits',
       templates: {
         item: (hit, bindEvent) => {
+          let score = hit._rankingInfo.firstMatchedWord / 1000;
+          let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
+
           return (
             `<li class="hit-item">
-          <a ${bindEvent('click', hit, 'hit clicked')} href="` +
-            hit.url +
-            `">
-            <h2>
-              ${instantsearch.highlight({ attribute: 'title', hit: hit })}
-            </h2>
-            <p>
-              ${instantsearch.snippet({ attribute: 'content', hit: hit })}
-            </p>
-            ${
-              hit['categories.lvl2']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl2']}
-                </p>`
-                : hit['categories.lvl1']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl1']}
-                </p>`
-                : hit['categories.lvl0']
-                ? `<p class="search-breadcrumb">
-                  ${hit['categories.lvl0']}
-                </p>`
-                : null
-            }
-          </a>
-          </li>
-          `
+              <a ${bindEvent('click', hit, 'hit clicked')} href="` +
+                url +
+                `">
+                <h2>
+                  ${instantsearch.highlight({ attribute: 'title', hit: hit })}
+                </h2>
+                ${
+                  '<p>' +
+                  instantsearch.snippet({ attribute: 'content', hit: hit }) +
+                  '</p>'
+                }
+                ${
+                  hit['categories.lvl2']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl2']}
+                    </p>`
+                    : hit['categories.lvl1']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl1']}
+                    </p>`
+                    : hit['categories.lvl0']
+                    ? `<p class="search-breadcrumb">
+                      ${hit['categories.lvl0']}
+                    </p>`
+                    : null
+                }
+              </a>
+            </li>
+            `
           );
         },
         empty: (results) => {
-          refinementContainer.style.display = 'none';
-          return `<div id="noResults">
-                <h2>We're sorry!</h2>
-                <p>We couldn't find any results for: "${
-                  results && results.query
-                }"</p>
-              </div>`;
+          productRefinementContainer.style.display = 'none';
+          return `<div id="noResults" style="padding: 0.5rem;">
+                    <h2>We're sorry!</h2>
+                    <p>We couldn't find any results for: "${
+                      results && results.query
+                    }"</p>
+                  </div>`;
         },
       },
     }),
@@ -134,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (searchInput && event.key == 'Enter'){
       if (document.activeElement == document.querySelector('.ais-SearchBox-input')){
-        window.location.href =  "/" + pathSegment + "/search.html?q=" + searchInput;
+        window.location.href =  "/starburst-galaxy/sql/ref/search.html?q=" + searchInput;
       }
     }
   })

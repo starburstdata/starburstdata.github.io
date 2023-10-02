@@ -8,11 +8,15 @@ document.addEventListener('DOMContentLoaded', function () {
         <div id="resultsSearchbox"></div>
         <div class="filter-stats-container">
         <div class="filter-options">
+          <div
+            class="refinement-list"
+            id="versionsRefinementList"
+            style="display: none"
+          ></div>
           <div class="filter-type-container">
-            <h4 style="margin-right: 0.5rem;">Filter:</h4>
-            <div id="resultsRefinementList"></div>
+            <h4 style="margin-right: 0.5rem;">Product:</h4>
+            <div id="productsRefinementList"></div>
           </div>
-          <div id="toggle-refinement"></div>
         </div>
         </div>
         <div id="resultsStats"></div>
@@ -34,8 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       const hitsContainer = document.querySelector('#resultsHits');
-      const filterOptions = document.querySelector('.filter-options');
-      const refinementContainer = document.querySelector(
+      const statsContainer = document.querySelector('#resultsStats');
+      const refinementsContainer = document.querySelector(
         '.filter-stats-container'
       );
 
@@ -43,35 +47,41 @@ document.addEventListener('DOMContentLoaded', function () {
         'q'
       );
 
-      const pathName = window.location.pathname;
-      const pathArray = pathName.split('/');
-      const pathSegment = pathArray[1];
-
-      if (pathSegment == 'latest') {
-        document.querySelector('#toggle-refinement').style.display = 'none';
-      }
-
       const searchResults = instantsearch({
-        indexName: 'AllDocs',
+        indexName: 'DocsAll',
         searchClient,
         searchFunction: function (helper) {
-          helper.state.facetFilters = [
-            [`version: ${pathSegment}`, 'type: guides'],
-          ];
+          const page = helper.state.page;
+          helper.state.facetFilters = [['version:latest']];
           // if less than 2 character, don't trigger search and hide inner content
           if (helper.state.query.length < 2) {
             hitsContainer.style.display = 'none';
-            refinementContainer.style.display = 'none';
-            filterOptions.style.display = 'none';
+            statsContainer.style.display = 'none';
+            refinementsContainer.style.display = 'none';
           } else {
             hitsContainer.style.display = 'block';
-            refinementContainer.style.display = 'flex';
-            filterOptions.style.display = 'flex';
+            statsContainer.style.display = 'flex';
+            refinementsContainer.style.display = 'flex';
+            if (
+              helper
+                .getRefinements('product')
+                .find(
+                  (refinement) =>
+                    refinement.value === 'sep' || refinement.value === 'galaxy'
+                )
+            ) {
+              helper
+                .addDisjunctiveFacetRefinement('product', 'all')
+                .addDisjunctiveFacetRefinement('version', 'latest');
+            } else {
+              helper.clearRefinements('product');
+            }
+            helper.state.page = page;
             helper.search();
           }
         },
         searchParameters: {
-          facetFilters: [[`version: ${pathSegment}`, 'type: guides']],
+          facetFilters: [['version:latest']],
         },
       });
 
@@ -86,8 +96,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
       searchResults.addWidgets([
         instantsearch.widgets.configure({
-          attributesToSnippet: ['content:50'],
+          attributesToSnippet: ['content'],
           clickAnalytics: true,
+          getRankingInfo: true,
+          filters:
+            '(product:sep<score=0> OR product:galaxy<score=1> OR product:all<score=0>)',
         }),
 
         instantsearch.widgets.searchBox({
@@ -97,23 +110,42 @@ document.addEventListener('DOMContentLoaded', function () {
           placeholder: 'Search documentation',
         }),
 
-        instantsearch.widgets.refinementList({
-          container: '#resultsRefinementList',
-          attribute: 'type',
-          sortBy: ['name:desc', 'count:desc'],
-        }),
-
         instantsearch.widgets.pagination({
           container: '#pagination',
         }),
 
-        instantsearch.widgets.toggleRefinement({
-          container: '#toggle-refinement',
+        instantsearch.widgets.refinementList({
+          container: '#versionsRefinementList',
           attribute: 'version',
-          on: ['latest'],
-          off: [`${pathSegment}`],
+          sortBy: ['name:desc', 'count:desc'],
+        }),
+
+        instantsearch.widgets.refinementList({
+          container: '#productsRefinementList',
+          attribute: 'product',
+          sortBy: ['name:desc', 'count:desc'],
           templates: {
-            labelText: 'Search latest version',
+            item(item) {
+              const { url, label, isRefined } = item;
+
+              return (
+                label != 'all' &&
+                `<a href="${url}" style="display:flex;gap:0.5rem;align-items:center; ${
+                  isRefined ? 'font-weight: bold' : ''
+                }">
+                  <input type="checkbox" ${isRefined ? 'checked' : ''} />
+                  <span>
+                  ${
+                    label == 'sep'
+                      ? 'Starburst Enterprise'
+                      : label == 'galaxy'
+                      ? 'Starburst Galaxy'
+                      : ''
+                  }
+                  </span>
+                </a>`
+              );
+            },
           },
         }),
 
@@ -121,9 +153,11 @@ document.addEventListener('DOMContentLoaded', function () {
           container: '#resultsHits',
           templates: {
             item: (hit, bindEvent) => {
+              let score = hit._rankingInfo.firstMatchedWord / 1000;
+              let url = score === 0 ? hit.url.replace(/#.*$/, '') : hit.url;
               return (
                 `<a ${bindEvent('click', hit, 'Item clicked')} href="` +
-                hit.url +
+                url +
                 `"><li class="hit-item">
                       <h2 style="margin-top:0;">
                         ${instantsearch.highlight({
@@ -161,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             empty: (results) => {
               refinementContainer.style.display = 'none';
-              return `<div id="noResults">
+              return `<div id="noResults" style="padding: 0.5rem;">
                       <h2>We're sorry!</h2>
                       <p>We couldn't find any results for: "${
                         results && results.query
