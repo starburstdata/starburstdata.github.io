@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
         searchClient,
         searchFunction: function (helper) {
           const page = helper.state.page;
-          helper.state.facetFilters = [[`version:${pathSegment}`]];
+          helper.state.facetFilters = [[`version:${pathSegment}`, "product: galaxy"]];
           // if less than 2 character, don't trigger search and hide inner content
           if (helper.state.query.length < 2) {
             hitsContainer.style.display = 'none';
