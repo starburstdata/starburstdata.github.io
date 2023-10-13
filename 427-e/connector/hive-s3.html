@@ -445,18 +445,6 @@
         <li class="md-nav__item"><a href="#tuning-properties" class="md-nav__link">Tuning properties</a>
         </li>
         <li class="md-nav__item"><a href="#s3-data-encryption" class="md-nav__link">S3 data encryption</a>
-        </li>
-        <li class="md-nav__item"><a href="#s3-select-pushdown" class="md-nav__link">S3 Select pushdown</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#is-s3-select-a-good-fit-for-my-workload" class="md-nav__link">Is S3 Select a good fit for my workload?</a>
-        </li>
-        <li class="md-nav__item"><a href="#considerations-and-limitations" class="md-nav__link">Considerations and limitations</a>
-        </li>
-        <li class="md-nav__item"><a href="#enabling-s3-select-pushdown" class="md-nav__link">Enabling S3 Select pushdown</a>
-        </li>
-        <li class="md-nav__item"><a href="#understanding-and-tuning-the-maximum-connections" class="md-nav__link">Understanding and tuning the maximum connections</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -688,18 +676,6 @@
         <li class="md-nav__item"><a href="#tuning-properties" class="md-nav__link">Tuning properties</a>
         </li>
         <li class="md-nav__item"><a href="#s3-data-encryption" class="md-nav__link">S3 data encryption</a>
-        </li>
-        <li class="md-nav__item"><a href="#s3-select-pushdown" class="md-nav__link">S3 Select pushdown</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#is-s3-select-a-good-fit-for-my-workload" class="md-nav__link">Is S3 Select a good fit for my workload?</a>
-        </li>
-        <li class="md-nav__item"><a href="#considerations-and-limitations" class="md-nav__link">Considerations and limitations</a>
-        </li>
-        <li class="md-nav__item"><a href="#enabling-s3-select-pushdown" class="md-nav__link">Enabling S3 Select pushdown</a>
-        </li>
-        <li class="md-nav__item"><a href="#understanding-and-tuning-the-maximum-connections" class="md-nav__link">Understanding and tuning the maximum connections</a>
-        </li></ul>
-            </nav>
         </li></ul>
             </nav>
         </li>
@@ -1097,83 +1073,6 @@ classpath and must be able to communicate with your custom key management system
 the <code class="docutils literal notranslate"><span class="pre">org.apache.hadoop.conf.Configurable</span></code> interface from the Hadoop Java API, then the Hadoop configuration
 is passed in after the object instance is created, and before it is asked to provision or retrieve any
 encryption keys.</p>
-</section>
-<section id="s3-select-pushdown">
-<span id="s3selectpushdown"></span><h2 id="s3-select-pushdown">S3 Select pushdown<a class="headerlink" href="#s3-select-pushdown" title="Permalink to this heading">#</a></h2>
-<p>S3 Select pushdown enables pushing down projection (SELECT) and predicate (WHERE)
-processing to <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectSELECTContent.html">S3 Select</a>.
-With S3 Select Pushdown, Trino only retrieves the required data from S3 instead
-of entire S3 objects, reducing both latency and network usage.</p>
-<section id="is-s3-select-a-good-fit-for-my-workload">
-<h3 id="is-s3-select-a-good-fit-for-my-workload">Is S3 Select a good fit for my workload?<a class="headerlink" href="#is-s3-select-a-good-fit-for-my-workload" title="Permalink to this heading">#</a></h3>
-<p>Performance of S3 Select pushdown depends on the amount of data filtered by the
-query. Filtering a large number of rows should result in better performance. If
-the query doesn’t filter any data, then pushdown may not add any additional value
-and the user is charged for S3 Select requests. Thus, we recommend that you
-benchmark your workloads with and without S3 Select to see if using it may be
-suitable for your workload. By default, S3 Select Pushdown is disabled and you
-should enable it in production after proper benchmarking and cost analysis. For
-more information on S3 Select request cost, please see
-<a class="reference external" href="https://aws.amazon.com/s3/pricing/">Amazon S3 Cloud Storage Pricing</a>.</p>
-<p>Use the following guidelines to determine if S3 Select is a good fit for your
-workload:</p>
-<ul class="simple">
-<li><p>Your query filters out more than half of the original data set.</p></li>
-<li><p>Your query filter predicates use columns that have a data type supported by
-Trino and S3 Select.
-The <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, and <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> data types are not
-supported by S3 Select Pushdown. For more information about supported data
-types for S3 Select, see the
-<a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/dev/s3-glacier-select-sql-reference-data-types.html">Data Types documentation</a>.</p></li>
-<li><p>Your network connection between Amazon S3 and the Amazon EMR cluster has good
-transfer speed and available bandwidth. Amazon S3 Select does not compress
-HTTP responses, so the response size may increase for compressed input files.</p></li>
-</ul>
-</section>
-<section id="considerations-and-limitations">
-<h3 id="considerations-and-limitations">Considerations and limitations<a class="headerlink" href="#considerations-and-limitations" title="Permalink to this heading">#</a></h3>
-<ul class="simple">
-<li><p>Only objects stored in JSON format are supported. Objects can be uncompressed,
-or optionally compressed with gzip or bzip2.</p></li>
-<li><p>The “AllowQuotedRecordDelimiters” property is not supported. If this property
-is specified, the query fails.</p></li>
-<li><p>Amazon S3 server-side encryption with customer-provided encryption keys
-(SSE-C) and client-side encryption are not supported.</p></li>
-<li><p>S3 Select Pushdown is not a substitute for using columnar or compressed file
-formats such as ORC and Parquet.</p></li>
-</ul>
-</section>
-<section id="enabling-s3-select-pushdown">
-<h3 id="enabling-s3-select-pushdown">Enabling S3 Select pushdown<a class="headerlink" href="#enabling-s3-select-pushdown" title="Permalink to this heading">#</a></h3>
-<p>You can enable S3 Select Pushdown using the <code class="docutils literal notranslate"><span class="pre">s3_select_pushdown_enabled</span></code>
-Hive session property, or using the <code class="docutils literal notranslate"><span class="pre">hive.s3select-pushdown.enabled</span></code>
-configuration property. The session property overrides the config
-property, allowing you enable or disable on a per-query basis. Non-filtering
-queries (<code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span> <span class="pre">FROM</span> <span class="pre">table</span></code>) are not pushed down to S3 Select,
-as they retrieve the entire object content.</p>
-<p>For uncompressed files, S3 Select scans ranges of bytes in parallel. The scan range
-requests run across the byte ranges of the internal Hive splits for the query fragments
-pushed down to S3 Select. Changes in the Hive connector <a class="reference internal" href="hive.html#hive-performance-tuning-configuration"><span class="std std-ref">performance tuning configuration properties</span></a> are likely to impact
-S3 Select pushdown performance.</p>
-<p>S3 Select can be enabled for TEXTFILE data using the
-<code class="docutils literal notranslate"><span class="pre">hive.s3select-pushdown.experimental-textfile-pushdown-enabled</span></code> configuration property,
-however this has been shown to produce incorrect results. For more information see
-<a class="reference external" href="https://github.com/trinodb/trino/issues/17775">the GitHub Issue.</a></p>
-</section>
-<section id="understanding-and-tuning-the-maximum-connections">
-<h3 id="understanding-and-tuning-the-maximum-connections">Understanding and tuning the maximum connections<a class="headerlink" href="#understanding-and-tuning-the-maximum-connections" title="Permalink to this heading">#</a></h3>
-<p>Trino can use its native S3 file system or EMRFS. When using the native FS, the
-maximum connections is configured via the <code class="docutils literal notranslate"><span class="pre">hive.s3.max-connections</span></code>
-configuration property. When using EMRFS, the maximum connections is configured
-via the <code class="docutils literal notranslate"><span class="pre">fs.s3.maxConnections</span></code> Hadoop configuration property.</p>
-<p>S3 Select Pushdown bypasses the file systems, when accessing Amazon S3 for
-predicate operations. In this case, the value of
-<code class="docutils literal notranslate"><span class="pre">hive.s3select-pushdown.max-connections</span></code> determines the maximum number of
-client connections allowed for those operations from worker nodes.</p>
-<p>If your workload experiences the error <em>Timeout waiting for connection from
-pool</em>, increase the value of both <code class="docutils literal notranslate"><span class="pre">hive.s3select-pushdown.max-connections</span></code> and
-the maximum connections configuration for the file system you are using.</p>
-</section>
 </section>
 </section>
 
