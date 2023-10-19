@@ -530,7 +530,7 @@
         </li>
         <li class="md-nav__item"><a href="#sep-built-in-directories" class="md-nav__link">SEP built-in directories</a>
         </li>
-        <li class="md-nav__item"><a href="#sidecar-and-init-containers" class="md-nav__link">Sidecar and init containers</a>
+        <li class="md-nav__item"><a href="#init-containers" class="md-nav__link">Init containers</a>
         </li>
         <li class="md-nav__item"><a href="#keda-scaler" class="md-nav__link">KEDA scaler</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -739,7 +739,7 @@
     <li class="md-nav__item">
     
     
-      <a href="#sidecar-and-init-containers" class="md-nav__link">Sidecar and init containers</a>
+      <a href="#init-containers" class="md-nav__link">Init containers</a>
       
     
     </li>
@@ -940,7 +940,7 @@
         </li>
         <li class="md-nav__item"><a href="#sep-built-in-directories" class="md-nav__link">SEP built-in directories</a>
         </li>
-        <li class="md-nav__item"><a href="#sidecar-and-init-containers" class="md-nav__link">Sidecar and init containers</a>
+        <li class="md-nav__item"><a href="#init-containers" class="md-nav__link">Init containers</a>
         </li>
         <li class="md-nav__item"><a href="#keda-scaler" class="md-nav__link">KEDA scaler</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -1620,6 +1620,14 @@ coordinator properties, documented in preceding section.</p>
 script (<a class="reference internal" href="sep-config-examples.html#k8s-ex-startup-script"><span class="std std-ref">example</span></a>) to customize how SEP is
 started on the coordinator and workers, and pass additional arguments to it.
 These are undefined <a class="reference internal" href="sep-config-examples.html#k8s-defaults-initfile"><span class="std std-ref">by default</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To execute commands in your <code class="docutils literal notranslate"><span class="pre">initFile</span></code> script that are not available in the
+main SEP Docker image, Starburst recommends using init containers for
+initialization and setup tasks. Init containers can use any Docker image. For
+information on configuring init containers within your Kubernetes deployment,
+see <a class="reference internal" href="#helm-sep-initcontainers"><span class="std std-ref">Init containers</span></a>.</p>
+</div>
 <table id="id12">
 <caption><span class="caption-text">Startup script nodes</span><a class="headerlink" href="#id12" title="Permalink to this table">#</a></caption>
 <colgroup>
@@ -1928,14 +1936,55 @@ script.</p></li>
 redirected to stdout as recommended on containers.</p></li>
 </ul>
 </section>
-<section id="sidecar-and-init-containers">
-<h2 id="sidecar-and-init-containers">Sidecar and init containers<a class="headerlink" href="#sidecar-and-init-containers" title="Permalink to this heading">#</a></h2>
-<p>Extra sidecar and init containers can be specified to run together with
+<section id="init-containers">
+<span id="helm-sep-initcontainers"></span><h2 id="init-containers">Init containers<a class="headerlink" href="#init-containers" title="Permalink to this heading">#</a></h2>
+<p>Init containers are a Kubernetes feature designed for initialization and setup
+tasks within a pod. Starburst recommends using init containers as they provide
+alignment with Kubernetes <a class="reference external" href="https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#using-init-containers">best practices</a>.</p>
+<p>Using an init container within a pod allows you to prepare configuration and
+plugin files with a different Docker image than your main SEP containers. The
+init container’s Docker image may contain additional tools and utilities that
+are not available in the SEP image.</p>
+<p>To make the files and data stored in your init container accessible to the main
+containers in your pod, you must mount shared volumes in both the init
+container and main containers. This ensures that your main containers can access
+your init container’s resources.</p>
+<p>The following example demonstrates mounting a shared volume in all of your pod’s
+containers by defining an <code class="docutils literal notranslate"><span class="pre">emptyDir</span></code> volume in the <code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code>
+section of the Helm chart:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
+  <span class="nt">initContainers</span><span class="p">:</span>
+  <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">prep-node-properties</span>
+    <span class="nt">image</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">busybox:1.28</span>
+    <span class="nt">command</span><span class="p">:</span> <span class="p p-Indicator">[</span><span class="s">"sh"</span><span class="p p-Indicator">]</span>
+    <span class="nt">args</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">-c</span>
+    <span class="p p-Indicator">-</span> <span class="p p-Indicator">|</span>
+      <span class="no">grep -v node.environment /etc/starburst/node.properties &gt; /mnt/node.properties</span>
+      <span class="no">echo node.environment=$SEPENV &gt;&gt; /mnt/node.properties</span>
+    <span class="nt">volumeMounts</span><span class="p">:</span>
+    <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">additional-volume-0</span>
+      <span class="nt">mountPath</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt</span>
+<span class="nt">additionalVolumes</span><span class="p">:</span>
+<span class="p p-Indicator">-</span> <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/mnt</span>
+  <span class="nt">volume</span><span class="p">:</span>
+    <span class="nt">emptyDir</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
+<span class="nt">initFile</span><span class="p">:</span> <span class="p p-Indicator">|</span>
+  <span class="no">#!/bin/bash</span>
+  <span class="no">mv /mnt/node.properties2 /etc/starburst/node.properties</span>
+  <span class="no">exec /usr/lib/starburst/bin/run-starburst</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In the <code class="docutils literal notranslate"><span class="pre">volumeMounts</span></code> section, the <code class="docutils literal notranslate"><span class="pre">name</span></code> property must reference
+<code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code> by index number.</p>
+</div>
+<p>For more information on additional volumes, see <a class="reference internal" href="#helm-sep-volumes"><span class="std std-ref">additional volumes</span></a>.</p>
+<p>Extra sidecars and init containers can be specified to run together with
 coordinator or worker pods. You can use these containers for a number of use
-cases such as to prepare an additional driver for the SEP runtime. To have a
-directory available in all containers, define an <code class="docutils literal notranslate"><span class="pre">emptyDir</span></code> volume in
-<code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code> (section: <a class="reference internal" href="#helm-sep-volumes"><span class="std std-ref">Additional volumes</span></a>).</p>
-<p><strong>Sample configuration:</strong></p>
+cases, such as to prepare an additional driver for the SEP runtime. The
+following example demonstrates declaring both sidecars and init containers:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
   <span class="nt">sidecars</span><span class="p">:</span>
     <span class="p p-Indicator">-</span> <span class="nt">name</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">sidecar-1</span>
