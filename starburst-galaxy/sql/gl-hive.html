@@ -1855,6 +1855,17 @@
   </li>
   
   
+  
+    
+    
+    
+  <li 
+      
+    >
+    <a href="/starburst-galaxy/sql/gl-shared-session-properties.html" >Shared session properties</a>
+  </li>
+  
+  
 </ul>
 
 
@@ -2248,67 +2259,20 @@ in Starburst Galaxy. For example:</p>
   <span class="n">bucket_count</span> <span class="o">=</span> <span class="mi">50</span>
 <span class="p">)</span>
 </code></pre></div></div>
-      <h2 id="metadata-tables">
+      <h2 id="hive-metadata-table">
         
         
-          Metadata tables <a href="#metadata-tables" class="titleAnchor">#</a>
+          Hive metadata table <a href="#hive-metadata-table" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p><a href="./great-lakes.html">Great Lakes connectivity</a> exposes several metadata tables
-for the Hive table format. These metadata tables contain information about
-the internal structure of the Hive table. Query each metadata table by
-appending the metadata table name to the <code class="language-plaintext highlighter-rouge">table_name</code></p>
-      <h3 id="properties">
-        
-        
-          $properties <a href="#properties" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
+<p>The <code class="language-plaintext highlighter-rouge">$properties</code> metadata table provides general configuration information
+about a Hive table. Query the metadata table by appending <code class="language-plaintext highlighter-rouge">$properties</code> to a
+table name:</p>
 
-<p>The <code class="language-plaintext highlighter-rouge">$properties</code> table exposes the parameters of the table in the metastore.</p>
-
-<p>The raw Hive table properties are available as a hidden table, containing a
-separate column per table property, with a single row containing the property
-values.</p>
-
-<p>Inspect the property names and values with the following query:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$properties"</span><span class="p">;</span>
-</code></pre></div></div>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>| auto.purge |    numfiles |      presto_query_id       | presto_version | totalsize |transactional |
--------------+-------------+----------------------------+----------------+-----------+--------------+
-| false      |      -1     |20230705_152456_00001_nfugi | 423            |     -1    |    false     |
-</code></pre></div></div>
-      <h3 id="partitions">
-        
-        
-          $partitions <a href="#partitions" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<p>The <code class="language-plaintext highlighter-rouge">$partitions</code> table provides a list of all partition values of a partitioned
-table.</p>
-
-<p>The following example returns all partition values from the <code class="language-plaintext highlighter-rouge">table_name</code> table:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="nv">"table_name$partitions"</span><span class="p">;</span>
-</code></pre></div></div>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     day    | country
-------------+---------
- 2023-07-01 | POL
- 2023-07-02 | POL
- 2023-07-03 | POL
- 2023-03-01 | USA
- 2023-03-02 | USA
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="nv">"hive.web.page_views$properties"</span><span class="p">;</span>
 </code></pre></div></div>
       <h2 id="table-procedures">
         
@@ -2458,7 +2422,7 @@ schema and table names supplied with the required parameters <code class="langua
 <p>Once the migration process is complete, use the <code class="language-plaintext highlighter-rouge">SHOW CREATE TABLE</code> statement to
 confirm that the table type has changed:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SHOW</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span><span class="p">;</span>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SHOW</span> <span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example_catalog</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span><span class="p">;</span>
 </code></pre></div></div>
 
 <p>Successful migration displays <code class="language-plaintext highlighter-rouge">type='ICEBERG'</code>.</p>
@@ -2749,1120 +2713,303 @@ partition projection defined while creating the table, not the metastore.</p>
       </h2>
     
 
-<p>A <a href="./ref/sql/set-session.html">session property</a> temporarily modifies an
-internal Starburst Galaxy setting for the duration of the current connection
-session to the cluster. Use the <code class="language-plaintext highlighter-rouge">SET SESSION</code> statement followed by the property
-name, then a value such as <code class="language-plaintext highlighter-rouge">true</code> or <code class="language-plaintext highlighter-rouge">false</code> to modify the property:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">session_property</span> <span class="o">=</span> <span class="n">expression</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the <a href="./ref/sql/show-session.html">SHOW SESSION</a> statement to view all
-current session properties. For additional information, read about the <a href="./ref/sql/set-session.html">SET
-SESSION</a>, and <a href="./ref/sql/reset-session.html">RESET
-SESSION</a> SQL statements.</p>
-
-<p><strong>Catalog session properties</strong> are internal session properties that can be set
-on a per-catalog basis. These properties must be set separately for each catalog
-by including the catalog name before the property name, for example,
-<code class="language-plaintext highlighter-rouge">catalog_name.property_name</code>.</p>
-
-<p>Session properties are linked to the current session, which lets you have
-multiple connections to a cluster that each have different values for the same
-session properties. Once a session ends, either by disconnecting or creating a
-new session, any changes made to session properties during the previous session
-are lost.</p>
-
-<p>The following sections describe the session properties supported by <strong>Hive</strong>
-table type:</p>
-      <h3 id="avro_native_reader_enabled">
-        
-        
-          avro_native_reader_enabled <a href="#avro_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">avro_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native Avro file reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="avro_native_writer_enabled">
-        
-        
-          avro_native_writer_enabled <a href="#avro_native_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">writer_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native Avro file writer. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="bucket_execution_enabled">
-        
-        
-          bucket_execution_enabled <a href="#bucket_execution_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">bucket_execution_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable bucket-aware execution: only use a single worker per bucket. The default
-value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="collect_column_statistics_on_write">
-        
-        
-          collect_column_statistics_on_write <a href="#collect_column_statistics_on_write" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">collect_column_statistics_on_write</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enables automatic column level statistics collection on write. The default value
-is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="compression_codec">
-        
-        
-          compression_codec <a href="#compression_codec" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">compression_codec</span> <span class="o">=</span> <span class="s1">'DEFAULT'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The compression codec is used when writing new data files. The possible values
-are:</p>
-
-<ul>
-  <li><code class="language-plaintext highlighter-rouge">NONE</code></li>
-  <li><code class="language-plaintext highlighter-rouge">DEFAULT</code></li>
-  <li><code class="language-plaintext highlighter-rouge">SNAPPY</code></li>
-  <li><code class="language-plaintext highlighter-rouge">LZ4</code></li>
-  <li><code class="language-plaintext highlighter-rouge">ZSTD</code></li>
-  <li><code class="language-plaintext highlighter-rouge">GZIP</code></li>
-</ul>
-
-<p>The default value is <code class="language-plaintext highlighter-rouge">DEFAULT</code>.</p>
-      <h3 id="create_empty_bucket_files">
-        
-        
-          create_empty_bucket_files <a href="#create_empty_bucket_files" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">create_empty_bucket_files</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Create empty files for buckets that have no data. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="csv_native_reader_enabled">
-        
-        
-          csv_native_reader_enabled <a href="#csv_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">csv_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native CSV reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="csv_native_writer_enabled">
-        
-        
-          csv_native_writer_enabled <a href="#csv_native_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">csv_native_writer_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native CSV writer. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="dynamic_filtering_wait_timeout">
-        
-        
-          dynamic_filtering_wait_timeout <a href="#dynamic_filtering_wait_timeout" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">dynamic_filtering_wait_timeout</span> <span class="o">=</span> <span class="s1">'10s'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The duration to wait for completion of dynamic filtering during split
-generation. Dynamic filtering optimizations significantly improve the
-performance of queries with selective joins by avoiding reading of data that
-would be filtered by join conditions.</p>
-
-<p>This extra wait time can potentially result in significant overall savings in
-query and CPU time, if dynamic filtering is able to reduce the amount of scanned
-data. In the previous example, the <code class="language-plaintext highlighter-rouge">dynamic_filtering_wait_timeout</code> is set to
-<code class="language-plaintext highlighter-rouge">10</code> seconds.</p>
-      <h3 id="force_local_scheduling">
-        
-        
-          force_local_scheduling <a href="#force_local_scheduling" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">force_local_scheduling</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Only schedule splits on workers colocated with the data node. The default value
-is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="hive_storage_format">
-        
-        
-          hive_storage_format <a href="#hive_storage_format" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">hive_storage_format</span> <span class="o">=</span> <span class="s1">'ORC'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Default storage format for new tables or partitions. The possible values are:</p>
-
-<ul>
-  <li><code class="language-plaintext highlighter-rouge">ORC</code></li>
-  <li><code class="language-plaintext highlighter-rouge">PARQUET</code></li>
-  <li><code class="language-plaintext highlighter-rouge">AVRO</code></li>
-  <li><code class="language-plaintext highlighter-rouge">RCBINARY</code></li>
-  <li><code class="language-plaintext highlighter-rouge">RCTEXT</code></li>
-  <li><code class="language-plaintext highlighter-rouge">SEQUENCEFILE</code></li>
-  <li><code class="language-plaintext highlighter-rouge">JSON</code></li>
-  <li><code class="language-plaintext highlighter-rouge">OPENX_JSON</code></li>
-  <li><code class="language-plaintext highlighter-rouge">TEXTFILE</code></li>
-  <li><code class="language-plaintext highlighter-rouge">CSV</code></li>
-  <li><code class="language-plaintext highlighter-rouge">REGEX</code></li>
-</ul>
-
-<p>The default value is <code class="language-plaintext highlighter-rouge">ORC</code>.</p>
-      <h3 id="hive_views_legacy_translation">
-        
-        
-          hive_views_legacy_translation <a href="#hive_views_legacy_translation" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">hive_views_legacy_translation</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use <code class="language-plaintext highlighter-rouge">hive_views_legacy_translation</code> for catalog specific use to
-translate Hive views. Allow read access to the data. Hive views are defined in
-HiveQL and stored in the Hive Metastore Service. They are analyzed to allow read
-access to the data. Not available when using the Glue or Starburst metastore
-options. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="ignore_absent_partitions">
-        
-        
-          ignore_absent_partitions <a href="#ignore_absent_partitions" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">ignore_absent_partitions</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Ignore partitions when the file system location does not exist rather than
-failing the query. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="ignore_corrupted_statistics">
-        
-        
-          ignore_corrupted_statistics <a href="#ignore_corrupted_statistics" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">ignore_corrupted_statistics</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Ignore the corrupted statistics rather than failing the query. The default value
-is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="insert_existing_partitions_behavior">
-        
-        
-          insert_existing_partitions_behavior <a href="#insert_existing_partitions_behavior" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">insert_existing_partitions_behavior</span> <span class="o">=</span> <span class="s1">'APPEND'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Behavior on insert existing partitions; this session property does not control
-behavior on insert existing unpartitioned table. The default value is <code class="language-plaintext highlighter-rouge">APPEND</code>.</p>
-      <h3 id="json_native_reader_enabled">
-        
-        
-          json_native_reader_enabled <a href="#json_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">json_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native JSON reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="json_native_writer_enabled">
-        
-        
-          json_native_writer_enabled <a href="#json_native_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">json_native_writer_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native JSON writer. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="minimum_assigned_split_weight">
-        
-        
-          minimum_assigned_split_weight <a href="#minimum_assigned_split_weight" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">minimum_assigned_split_weight</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">05</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The minimum assigned split weight when size based split weighting is enabled.
-The default value is <code class="language-plaintext highlighter-rouge">0.05</code>.</p>
-      <h3 id="openx_json_native_reader_enabled">
-        
-        
-          openx_json_native_reader_enabled <a href="#openx_json_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">openx_json_native_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native OpenX JSON reader. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="openx_json_native_writer_enabled">
-        
-        
-          openx_json_native_writer_enabled <a href="#openx_json_native_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">openx_json_native_writer_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native OpenX JSON writer. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="optimize_mismatched_bucket_count">
-        
-        
-          optimize_mismatched_bucket_count <a href="#optimize_mismatched_bucket_count" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">optimize_mismatched_bucket_count</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-
-</code></pre></div></div>
-
-<p>Enable optimization to avoid shuffle when bucket count is compatible but not the
-same. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="optimize_symlink_listing">
-        
-        
-          optimize_symlink_listing <a href="#optimize_symlink_listing" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">optimize_symlink_listing</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Optimize the listing for <code class="language-plaintext highlighter-rouge">SymlinkTextFormat</code> tables with files in a single
-directory. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="orc_bloom_filters_enabled">
-        
-        
-          orc_bloom_filters_enabled <a href="#orc_bloom_filters_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_bloom_filters_enabled</span> <span class="o">=</span> <span class="nv">`false`</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable bloom filters for predicate pushdown. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="orc_lazy_read_small_ranges">
-        
-        
-          orc_lazy_read_small_ranges <a href="#orc_lazy_read_small_ranges" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_lazy_read_small_ranges</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Read small file segments lazily. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="orc_max_buffer_size">
-        
-        
-          orc_max_buffer_size <a href="#orc_max_buffer_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_buffer_size</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Maximum size of a single read. The default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
-      <h3 id="orc_max_merge_distance">
-        
-        
-          orc_max_merge_distance <a href="#orc_max_merge_distance" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_merge_distance</span> <span class="o">=</span> <span class="s1">'1MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Maximum size of gap between two reads to merge into a single read. The default
-value is <code class="language-plaintext highlighter-rouge">1MB</code>.</p>
-      <h3 id="orc_max_read_block_size">
-        
-        
-          orc_max_read_block_size <a href="#orc_max_read_block_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_max_read_block_size</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Soft maximum size of Trino blocks produced by ORC reader. The default value is
-<code class="language-plaintext highlighter-rouge">16MB</code>.</p>
-      <h3 id="orc_native_zstd_decompressor_enabled">
-        
-        
-          orc_native_zstd_decompressor_enabled <a href="#orc_native_zstd_decompressor_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_native_zstd_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable using the native <code class="language-plaintext highlighter-rouge">zstd</code> library for faster decompression of ORC files.
-The
-default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="orc_nested_lazy_enabled">
-        
-        
-          orc_nested_lazy_enabled <a href="#orc_nested_lazy_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_nested_lazy_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Lazily read nested data. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="orc_optimized_writer_max_dictionary_memory">
-        
-        
-          orc_optimized_writer_max_dictionary_memory <a href="#orc_optimized_writer_max_dictionary_memory" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_max_dictionary_memory</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum dictionary memory. The default value is <code class="language-plaintext highlighter-rouge">16MB</code>.</p>
-      <h3 id="orc_optimized_writer_max_stripe_rows">
-        
-        
-          orc_optimized_writer_max_stripe_rows <a href="#orc_optimized_writer_max_stripe_rows" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_max_stripe_rows</span> <span class="o">=</span> <span class="mi">10000000</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum stripe row count. The default value is <code class="language-plaintext highlighter-rouge">10000000</code>.</p>
-      <h3 id="orc_optimized_writer_max_stripe_size">
-        
-        
-          orc_optimized_writer_max_stripe_size <a href="#orc_optimized_writer_max_stripe_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_max_stripe_size</span> <span class="o">=</span> <span class="s1">'64MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum stripe size. The default value is <code class="language-plaintext highlighter-rouge">64MB</code>.</p>
-      <h3 id="orc_optimized_writer_min_stripe_size">
-        
-        
-          orc_optimized_writer_min_stripe_size <a href="#orc_optimized_writer_min_stripe_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_min_stripe_size</span> <span class="o">=</span> <span class="s1">'32MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The minimum stripe size. The default value is <code class="language-plaintext highlighter-rouge">32MB</code>.</p>
-      <h3 id="orc_optimized_writer_validate">
-        
-        
-          orc_optimized_writer_validate <a href="#orc_optimized_writer_validate" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_validate</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-
-</code></pre></div></div>
-
-<p>Force validation for all files. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="orc_optimized_writer_validate_mode">
-        
-        
-          orc_optimized_writer_validate_mode <a href="#orc_optimized_writer_validate_mode" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_validate_mode</span> <span class="o">=</span> <span class="s1">'BOTH'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Level of detail in ORC validation. Possible values include <code class="language-plaintext highlighter-rouge">HASHED</code>, <code class="language-plaintext highlighter-rouge">DETAILED</code>,
-and <code class="language-plaintext highlighter-rouge">BOTH</code>. The default value is <code class="language-plaintext highlighter-rouge">BOTH</code>.</p>
-      <h3 id="orc_optimized_writer_validate_percentage">
-        
-        
-          orc_optimized_writer_validate_percentage <a href="#orc_optimized_writer_validate_percentage" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_optimized_writer_validate_percentage</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The sample percentage for validation of files. The default value is <code class="language-plaintext highlighter-rouge">0</code>.</p>
-      <h3 id="orc_stream_buffer_size">
-        
-        
-          orc_stream_buffer_size <a href="#orc_stream_buffer_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_stream_buffer_size</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Size of buffer for streaming reads. The default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
-      <h3 id="orc_string_statistics_limit">
-        
-        
-          orc_string_statistics_limit <a href="#orc_string_statistics_limit" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_string_statistics_limit</span> <span class="o">=</span> <span class="s1">'64B'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Maximum size of the string statistics. The default value is <code class="language-plaintext highlighter-rouge">64B</code>.</p>
-      <h3 id="orc_tiny_stripe_threshold">
-        
-        
-          orc_tiny_stripe_threshold <a href="#orc_tiny_stripe_threshold" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_tiny_stripe_threshold</span> <span class="o">=</span> <span class="s1">'8MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The Threshold below which an ORC stripe or file will read in its entirety. The
-default value is <code class="language-plaintext highlighter-rouge">8MB</code>.</p>
-      <h3 id="orc_use_column_names">
-        
-        
-          orc_use_column_names <a href="#orc_use_column_names" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">orc_use_column_names</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Access ORC columns by name. By default, columns in ORC files are accessed by
-their ordinal position in the Hive table definition. The default value is
-<code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="parallel_partitioned_bucketed_writes">
-        
-        
-          parallel_partitioned_bucketed_writes <a href="#parallel_partitioned_bucketed_writes" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parallel_partitioned_bucketed_writes</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Improve parallelism of partitioned and bucketed table writes. The default value
-is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_ignore_statistics">
-        
-        
-          parquet_ignore_statistics <a href="#parquet_ignore_statistics" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_ignore_statistics</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Ignore statistics from Parquet to allow querying files with corrupted or
-incorrect statistics. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="parquet_max_read_block_row_count">
-        
-        
-          parquet_max_read_block_row_count <a href="#parquet_max_read_block_row_count" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_row_count</span> <span class="o">=</span> <span class="mi">8192</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Sets the maximum number of rows read in a batch. The default value is <code class="language-plaintext highlighter-rouge">8192</code>.</p>
-      <h3 id="parquet_max_read_block_size">
-        
-        
-          parquet_max_read_block_size <a href="#parquet_max_read_block_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_max_read_block_size</span> <span class="o">=</span> <span class="s1">'16MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum block size used when reading Parquet files. The default value is
-<code class="language-plaintext highlighter-rouge">16MB</code>.</p>
-      <h3 id="parquet_native_snappy_decompressor_enabled">
-        
-        
-          parquet_native_snappy_decompressor_enabled <a href="#parquet_native_snappy_decompressor_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_snappy_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable using the native <code class="language-plaintext highlighter-rouge">SNAPPY</code> library for faster decompression of Parquet
-files. The default value is <code class="language-plaintext highlighter-rouge">true</code>;</p>
-      <h3 id="parquet_native_zstd_decompressor_enabled">
-        
-        
-          parquet_native_zstd_decompressor_enabled <a href="#parquet_native_zstd_decompressor_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_native_zstd_decompressor_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable using the native <code class="language-plaintext highlighter-rouge">ZSTD</code> library for faster decompression of Parquet
-files. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_optimized_nested_reader_enabled">
-        
-        
-          parquet_optimized_nested_reader_enabled <a href="#parquet_optimized_nested_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_nested_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Specifies whether batched column readers are used when reading <code class="language-plaintext highlighter-rouge">ARRAY</code>, <code class="language-plaintext highlighter-rouge">MAP</code>,
-and <code class="language-plaintext highlighter-rouge">ROW</code> types from Parquet files for improved performance. Set this property
-to <code class="language-plaintext highlighter-rouge">false</code> to disable the optimized Parquet reader for structural data types.
-The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_optimized_reader_enabled">
-        
-        
-          parquet_optimized_reader_enabled <a href="#parquet_optimized_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_reader_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Specifies whether batched column readers are used when reading Parquet files for
-improved performance. Set this property to <code class="language-plaintext highlighter-rouge">false</code> to disable the optimized
-Parquet reader The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_optimized_writer_enabled">
-        
-        
-          parquet_optimized_writer_enabled <a href="#parquet_optimized_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_writer_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Specifies whether the optimized writer is used when writing Parquet files. The
-default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_optimized_writer_validation_percentage">
-        
-        
-          parquet_optimized_writer_validation_percentage <a href="#parquet_optimized_writer_validation_percentage" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_optimized_writer_validation_percentage</span> <span class="o">=</span> <span class="mi">5</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Percentage of Parquet files to validate after write by rereading the whole
-file. Validation is turned off by setting the value to <code class="language-plaintext highlighter-rouge">0</code>. The default value is
-<code class="language-plaintext highlighter-rouge">5</code>.</p>
-      <h3 id="parquet_use_bloom_filter">
-        
-        
-          parquet_use_bloom_filter <a href="#parquet_use_bloom_filter" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_bloom_filter</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Specifies whether Bloom filters are used for predicate pushdown when reading
-Parquet files. The default value is <code class="language-plaintext highlighter-rouge">true</code>;</p>
-      <h3 id="parquet_use_column_index">
-        
-        
-          parquet_use_column_index <a href="#parquet_use_column_index" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_index</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the Parquet column index. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_use_column_names">
-        
-        
-          parquet_use_column_names <a href="#parquet_use_column_names" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_names</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Access Parquet columns by name by default. Set this property to <code class="language-plaintext highlighter-rouge">false</code> to
-access columns by their ordinal position in the Hive table definition. The
-default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_vectorized_decoding_enabled">
-        
-        
-          parquet_vectorized_decoding_enabled <a href="#parquet_vectorized_decoding_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_use_column_names</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable the use of the Java Vector API for faster decoding of Parquet files. The
-default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="parquet_writer_batch_size">
-        
-        
-          parquet_writer_batch_size <a href="#parquet_writer_batch_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_batch_size</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Maximum number of rows processed by the Parquet writer in a batch. The default
-value is <code class="language-plaintext highlighter-rouge">10000</code>.</p>
-      <h3 id="parquet_writer_block_size">
-        
-        
-          parquet_writer_block_size <a href="#parquet_writer_block_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_block_size</span> <span class="o">=</span> <span class="s1">'128MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum block size created by the Parquet writer. The default value is
-<code class="language-plaintext highlighter-rouge">128MB</code>.</p>
-      <h3 id="parquet_writer_page_size">
-        
-        
-          parquet_writer_page_size <a href="#parquet_writer_page_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">parquet_writer_page_size</span> <span class="o">=</span> <span class="s1">'1MB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum page size created by the Parquet writer. The default value is <code class="language-plaintext highlighter-rouge">1MB</code>.</p>
-      <h3 id="partition_statistics_sample_size">
-        
-        
-          partition_statistics_sample_size <a href="#partition_statistics_sample_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">partition_statistics_sample_size</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>The maximum sample size of the partitions column statistics. The default value
-is <code class="language-plaintext highlighter-rouge">100</code>.</p>
-      <h3 id="projection_pushdown_enabled">
-        
-        
-          projection_pushdown_enabled <a href="#projection_pushdown_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">projection_pushdown_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable projection push down. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="propagate_table_scan_sorting_properties">
-        
-        
-          propagate_table_scan_sorting_properties <a href="#propagate_table_scan_sorting_properties" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">propagate_table_scan_sorting_properties</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use sorted table layout to generate more efficient execution plans. Note, this
-may lead to incorrect results if files are not sorted as per table definition.
-The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="query_partition_filter_required">
-        
-        
-          query_partition_filter_required <a href="#query_partition_filter_required" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">query_partition_filter_required</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Set to <code class="language-plaintext highlighter-rouge">true</code> to temporarily force a query to use a partition filter.</p>
-      <h3 id="query_partition_filter_required_schemas">
-        
-        
-          query_partition_filter_required_schemas <a href="#query_partition_filter_required_schemas" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">query_partition_filter_required_schemas</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="s1">'1'</span><span class="p">];</span>
-</code></pre></div></div>
-
-<p>The list of schemas for which filter on partition column is enforced. The
-default value is <code class="language-plaintext highlighter-rouge">array['']</code></p>
-      <h3 id="rcfile_optimized_writer_validate">
-        
-        
-          rcfile_optimized_writer_validate <a href="#rcfile_optimized_writer_validate" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">rcfile_optimized_writer_validate</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Validate <code class="language-plaintext highlighter-rouge">RCF</code> writer files. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="regex_native_reader_enabled">
-        
-        
-          regex_native_reader_enabled <a href="#regex_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">regex_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native REGEX reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="respect_table_format">
-        
-        
-          respect_table_format <a href="#respect_table_format" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">respect_table_format</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Write new partitions using table format rather than the default storage format.
-The default value <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="s3_select_pushdown_enabled">
-        
-        
-          s3_select_pushdown_enabled <a href="#s3_select_pushdown_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">s3_select_pushdown_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable S3 Select pushdown. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="sequence_file_native_reader_enabled">
-        
-        
-          sequence_file_native_reader_enabled <a href="#sequence_file_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">sequence_file_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native sequence file reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="sequence_file_native_writer_enabled">
-        
-        
-          sequence_file_native_writer_enabled <a href="#sequence_file_native_writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">sequence_file_native_writer_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native sequence file writer. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="size_based_split_weights_enabled">
-        
-        
-          size_based_split_weights_enabled <a href="#size_based_split_weights_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">size_based_split_weights_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable estimating split weights based on size in bytes. The default value is
-<code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="sorted_writing_enabled">
-        
-        
-          sorted_writing_enabled <a href="#sorted_writing_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">sorted_writing_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enable sorted writes. The default value is <code class="language-plaintext highlighter-rouge">true</code>.</p>
-      <h3 id="statistics_enabled">
-        
-        
-          statistics_enabled <a href="#statistics_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">statistics_enabled</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Enables table statistics for performance improvements. The default value is
-<code class="language-plaintext highlighter-rouge">true</code>. If the value is set to <code class="language-plaintext highlighter-rouge">false</code> the following session property is
-disabled:</p>
-
-<ul>
-  <li><a href="#extended_statistics_enabled">extended_statistics_enabled</a></li>
-</ul>
-      <h3 id="target_max_file_size">
-        
-        
-          target_max_file_size <a href="#target_max_file_size" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">target_max_file_size</span> <span class="o">=</span> <span class="s1">'1GB'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Target maximum size of written files. The default value is <code class="language-plaintext highlighter-rouge">1GB</code>.</p>
-      <h3 id="text_file_native_reader_enabled">
-        
-        
-          text_file_native_reader_enabled <a href="#text_file_native_reader_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">text_file_native_reader_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native text file reader. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="text_file__writer_enabled">
-        
-        
-          text_file__writer_enabled <a href="#text_file__writer_enabled" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">text_file_native_writer_enabled</span> <span class="o">=</span> <span class="k">false</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Use the native text file writer. The default value is <code class="language-plaintext highlighter-rouge">false</code>.</p>
-      <h3 id="timestamp_precision">
-        
-        
-          timestamp_precision <a href="#timestamp_precision" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">timestamp_precision</span> <span class="o">=</span> <span class="s1">'MILLISECONDS'</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Specifies the precision for the timestamp columns in Hive tables. The possible
-values are:</p>
-
-<ul>
-  <li><code class="language-plaintext highlighter-rouge">MILLISECONDS</code></li>
-  <li><code class="language-plaintext highlighter-rouge">MICROSECONDS</code></li>
-  <li><code class="language-plaintext highlighter-rouge">NANOSECONDS</code></li>
-</ul>
-
-<p>The default value is <code class="language-plaintext highlighter-rouge">MILLISECONDS</code>.</p>
-      <h3 id="validate_bucketing">
-        
-        
-          validate_bucketing <a href="#validate_bucketing" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SET</span> <span class="k">SESSION</span> <span class="k">catalog_name</span><span class="p">.</span><span class="n">validate_bucketing</span> <span class="o">=</span> <span class="k">true</span><span class="p">;</span>
-</code></pre></div></div>
-
-<p>Verify that data is bucketed correctly when reading. The default value is
-<code class="language-plaintext highlighter-rouge">true</code>.</p>
+<p>See <a href="./great-lakes.html#session-properties">session properties</a> on the <a href="./great-lakes.html">Great
+Lakes connectivity</a> page to understand how these properties
+are used.</p>
+
+<p>The following table describes the session properties supported by the <strong>Hive</strong>
+table type.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Session property</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>avro_native_reader_enabled</code></td>
+      <td>Use the native Avro file reader. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>avro_native_writer_enabled</code></td>
+      <td>Use the native Avro file writer. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>bucket_execution_enabled</code></td>
+      <td>Enable bucket-aware execution: only use a single worker per bucket.
+          The default value is <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>collect_column_statistics_on_write</code></td>
+      <td>Enables automatic column level statistics collection on write.
+          The default value is <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>create_empty_bucket_files</code></td>
+      <td>Create empty files for buckets that have no data. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>csv_native_reader_enabled</code></td>
+      <td>Use the native CSV reader. The default value is <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>csv_native_writer_enabled</code></td>
+      <td>Use the native CSV writer. The default value is <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>force_local_scheduling</code></td>
+      <td>Only schedule splits on workers colocated with the data node. The
+          default value is<code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>hive_storage_format</code></td>
+      <td>Default storage format for new tables or partitions. The possible
+          values are:
+          <ul>
+          <li><code>ORC</code></li>
+          <li><code>PARQUET</code></li>
+          <li><code>AVRO</code></li>
+          <li><code>RCBINARY</code></li>
+          <li><code>RCTEXT</code></li>
+          <li><code>SEQUENCEFILE</code></li>
+          <li><code>JSON</code></li>
+          <li><code>OPENX_JSON</code></li>
+          <li><code>TEXTFILE</code></li>
+          <li><code>CSV</code></li>
+          <li><code>REGEX</code></li>
+          </ul>
+          The default value is <code>ORC</code>.</td>
+    </tr>
+    <tr>
+      <td><code>hive_views_legacy_translation</code></td>
+      <td>Use <code>hive_views_legacy_translation</code> for catalog specific
+          use to translate Hive views. Allow read access to the data. Hive views
+          are defined in HiveQL and stored in the Hive Metastore Service. They
+          are analyzed to allow read access to the data. Not available when
+          using the Glue or Starburst metastore options. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>ignore_absent_partitions</code></td>
+      <td>Ignore partitions when the file system location does not exist
+          rather than failing the query. The default value is <code>false</code>
+          .</td>
+    </tr>
+    <tr>
+      <td><code>ignore_corrupted_statistics</code></td>
+      <td>Ignore the corrupted statistics rather than failing the query. The
+          default value is <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>insert_existing_partitions_behavior</code></td>
+      <td>Behavior on insert existing partitions; this session property does not
+          control behavior on insert existing unpartitioned table. The default
+          value is <code>APPEND</code>.</td>
+    </tr>
+    <tr>
+      <td><code>json_native_reader_enabled</code></td>
+      <td>Use the native JSON reader. The default value is <code>false</code>.
+          </td>
+    </tr>
+    <tr>
+      <td><code>minimum_assigned_split_weight</code></td>
+      <td>The minimum assigned split weight when size based split weighting is
+          enabled. The default value is <code>0.05</code>.</td>
+    </tr>
+    <tr>
+      <td><code>json_native_writer_enabled</code></td>
+      <td>Use the native JSON writer. The default value is <code>false</code>.
+          </td>
+    </tr>
+    <tr>
+      <td><code>openx_json_native_reader_enabled</code></td>
+      <td>Use the native OpenX JSON reader. The default value is
+          <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>openx_json_native_writer_enabled</code></td>
+      <td>Use the native OpenX JSON writer. The default value is
+          <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>optimize_mismatched_bucket_count</code></td>
+      <td>Enable optimization to avoid shuffle when bucket count is compatible
+          but not the same. The default value is <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>optimize_symlink_listing</code></td>
+      <td>Optimize the listing for <code>SymlinkTextFormat</code> tables with
+          files in a single directory. The default value is <code>true</code>.
+          </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_max_dictionary_memory</code></td>
+      <td>The maximum dictionary memory. The default value is <code>16MB</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_max_stripe_rows</code></td>
+      <td>The maximum stripe row count. The default value is
+          <code>10000000</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_max_stripe_size</code></td>
+      <td>The maximum stripe size. The default value is <code>64MB</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_min_stripe_size</code></td>
+      <td>The minimum stripe size. The default value is <code>32MB</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_validate</code></td>
+      <td>Force validation for all files. The default value is
+          <code>false</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_validate_mode</code></td>
+      <td>Level of detail in ORC validation. Possible values include
+          <code>HASHED</code>, <code>DETAILED</code>, and <code>BOTH</code>. The
+          default value is <code>BOTH</code>.</td>
+    </tr>
+    <tr>
+      <td><code>orc_optimized_writer_validate_percentage</code></td>
+      <td>The sample percentage for validation of files. The default value is
+          <code>0</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>orc_use_column_names</code></td>
+      <td>Access ORC columns by name. By default, columns in ORC files are
+          accessed by their ordinal position in the Hive table definition. The
+          default value is <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>parallel_partitioned_bucketed_writes</code></td>
+      <td>Improve parallelism of partitioned and bucketed table writes. The
+          default value is <code>true</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>parquet_ignore_statistics</code></td>
+      <td>Ignore statistics from Parquet to allow querying files with corrupted
+          or incorrect statistics. The default value is <code>false</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>parquet_optimized_writer_validation_percentage</code></td>
+      <td>TPercentage of Parquet files to validate after write by rereading the
+          whole file. Validation is turned off by setting the value to
+          <code>0</code>. The default value is <code>5</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>parquet_use_column_index</code></td>
+      <td>Use the Parquet column index. The default value is <code>true</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>parquet_use_column_names</code></td>
+      <td>Access Parquet columns by name by default. Set this property to
+          <code>false</code> to access columns by their ordinal position in the
+          Hive table definition. The default value is <code>true</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>partition_statistics_sample_size</code></td>
+      <td>The maximum sample size of the partitions column statistics. The
+          default value is <code>100</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>propagate_table_scan_sorting_properties</code></td>
+      <td>Use sorted table layout to generate more efficient execution plans.
+          Note, this may lead to incorrect results if files are not sorted as
+          per table definition. The default value is <code>false</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>query_partition_filter_required</code></td>
+      <td>Set to <code>true</code> to temporarily force a query to use a
+          partition filter.
+      </td>
+    </tr>
+    <tr>
+      <td><code>query_partition_filter_required_schemas</code></td>
+      <td>The list of schemas for which filter on partition column is enforced.
+          The default value is <code>array['']</code>.</td>
+    </tr>
+    <tr>
+      <td><code>rcfile_optimized_writer_validate</code></td>
+      <td>Validate <code>RCF</code> writer files. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>regex_native_reader_enabled</code></td>
+      <td>Use the native REGEX reader. The default value is <code>false</code>.
+          </td>
+    </tr>
+    <tr>
+      <td><code>respect_table_format</code></td>
+      <td>Write new partitions using table format rather than the default
+          storage format. The default value <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>s3_select_pushdown_enabled</code></td>
+      <td>Enable S3 Select pushdown. The default value is <code>false</code>.
+          </td>
+    </tr>
+    <tr>
+      <td><code>sequence_file_native_reader_enabled</code></td>
+      <td>Use the native sequence file reader. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>sequence_file_native_writer_enabled</code></td>
+      <td>Validate <code>RCF</code> writer files. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>size_based_split_weights_enabled</code></td>
+      <td>Enable estimating split weights based on size in bytes. The default
+          value is <code>true</code>.</td>
+    </tr>
+    <tr>
+      <td><code>text_file_native_reader_enabled</code></td>
+      <td>Use the native text file reader. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>text_file__writer_enabled</code></td>
+      <td>Use the native text file writer. The default value is
+          <code>false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>timestamp_precision</code></td>
+      <td>Specifies the precision for the timestamp columns in Hive tables.
+          The possible values are:
+          <ul>
+          <li><code>MILLISECONDS</code></li>
+          <li><code>MICROSECONDS</code></li>
+          <li><code>NANOSECONDS</code></li>
+          </ul>
+          The default value is <code>MILLISECONDS</code>.</td>
+    </tr>
+    <tr>
+      <td><code>validate_bucketing</code></td>
+      <td>Verify that data is bucketed correctly when reading. The default value
+          is <code>true</code>.</td>
+    </tr>
+  </tbody>
+</table>
       <h2 id="hive-sql-support">
         
         
@@ -3983,7 +3130,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#hive-table-format">Hive table format</a><ul><li><a href="#specify-hive-format">Specify Hive format</a><ul><li><a href="#hive-table-format-properties">Hive table format properties</a></li><li><a href="#hive-table-properties">Hive table properties</a></li></ul></li><li><a href="#metadata-tables">Metadata tables</a><ul><li><a href="#properties">$properties</a></li><li><a href="#partitions">$partitions</a></li></ul></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#create_empty_partition">create_empty_partition</a></li><li><a href="#drop_stats">drop_stats</a></li><li><a href="#register_partition">register_partition</a></li><li><a href="#sync_partition_metadata">sync_partition_metadata</a></li><li><a href="#unregister_partition">unregister_partition</a></li></ul></li><li><a href="#migrate-to-iceberg">Migrate to Iceberg</a></li><li><a href="#partition-projection">Partition projection</a><ul><li><a href="#using-partition-projection">Using partition projection</a></li></ul></li><li><a href="#session-properties">Session properties</a><ul><li><a href="#avro_native_reader_enabled">avro_native_reader_enabled</a></li><li><a href="#avro_native_writer_enabled">avro_native_writer_enabled</a></li><li><a href="#bucket_execution_enabled">bucket_execution_enabled</a></li><li><a href="#collect_column_statistics_on_write">collect_column_statistics_on_write</a></li><li><a href="#compression_codec">compression_codec</a></li><li><a href="#create_empty_bucket_files">create_empty_bucket_files</a></li><li><a href="#csv_native_reader_enabled">csv_native_reader_enabled</a></li><li><a href="#csv_native_writer_enabled">csv_native_writer_enabled</a></li><li><a href="#dynamic_filtering_wait_timeout">dynamic_filtering_wait_timeout</a></li><li><a href="#force_local_scheduling">force_local_scheduling</a></li><li><a href="#hive_storage_format">hive_storage_format</a></li><li><a href="#hive_views_legacy_translation">hive_views_legacy_translation</a></li><li><a href="#ignore_absent_partitions">ignore_absent_partitions</a></li><li><a href="#ignore_corrupted_statistics">ignore_corrupted_statistics</a></li><li><a href="#insert_existing_partitions_behavior">insert_existing_partitions_behavior</a></li><li><a href="#json_native_reader_enabled">json_native_reader_enabled</a></li><li><a href="#json_native_writer_enabled">json_native_writer_enabled</a></li><li><a href="#minimum_assigned_split_weight">minimum_assigned_split_weight</a></li><li><a href="#openx_json_native_reader_enabled">openx_json_native_reader_enabled</a></li><li><a href="#openx_json_native_writer_enabled">openx_json_native_writer_enabled</a></li><li><a href="#optimize_mismatched_bucket_count">optimize_mismatched_bucket_count</a></li><li><a href="#optimize_symlink_listing">optimize_symlink_listing</a></li><li><a href="#orc_bloom_filters_enabled">orc_bloom_filters_enabled</a></li><li><a href="#orc_lazy_read_small_ranges">orc_lazy_read_small_ranges</a></li><li><a href="#orc_max_buffer_size">orc_max_buffer_size</a></li><li><a href="#orc_max_merge_distance">orc_max_merge_distance</a></li><li><a href="#orc_max_read_block_size">orc_max_read_block_size</a></li><li><a href="#orc_native_zstd_decompressor_enabled">orc_native_zstd_decompressor_enabled</a></li><li><a href="#orc_nested_lazy_enabled">orc_nested_lazy_enabled</a></li><li><a href="#orc_optimized_writer_max_dictionary_memory">orc_optimized_writer_max_dictionary_memory</a></li><li><a href="#orc_optimized_writer_max_stripe_rows">orc_optimized_writer_max_stripe_rows</a></li><li><a href="#orc_optimized_writer_max_stripe_size">orc_optimized_writer_max_stripe_size</a></li><li><a href="#orc_optimized_writer_min_stripe_size">orc_optimized_writer_min_stripe_size</a></li><li><a href="#orc_optimized_writer_validate">orc_optimized_writer_validate</a></li><li><a href="#orc_optimized_writer_validate_mode">orc_optimized_writer_validate_mode</a></li><li><a href="#orc_optimized_writer_validate_percentage">orc_optimized_writer_validate_percentage</a></li><li><a href="#orc_stream_buffer_size">orc_stream_buffer_size</a></li><li><a href="#orc_string_statistics_limit">orc_string_statistics_limit</a></li><li><a href="#orc_tiny_stripe_threshold">orc_tiny_stripe_threshold</a></li><li><a href="#orc_use_column_names">orc_use_column_names</a></li><li><a href="#parallel_partitioned_bucketed_writes">parallel_partitioned_bucketed_writes</a></li><li><a href="#parquet_ignore_statistics">parquet_ignore_statistics</a></li><li><a href="#parquet_max_read_block_row_count">parquet_max_read_block_row_count</a></li><li><a href="#parquet_max_read_block_size">parquet_max_read_block_size</a></li><li><a href="#parquet_native_snappy_decompressor_enabled">parquet_native_snappy_decompressor_enabled</a></li><li><a href="#parquet_native_zstd_decompressor_enabled">parquet_native_zstd_decompressor_enabled</a></li><li><a href="#parquet_optimized_nested_reader_enabled">parquet_optimized_nested_reader_enabled</a></li><li><a href="#parquet_optimized_reader_enabled">parquet_optimized_reader_enabled</a></li><li><a href="#parquet_optimized_writer_enabled">parquet_optimized_writer_enabled</a></li><li><a href="#parquet_optimized_writer_validation_percentage">parquet_optimized_writer_validation_percentage</a></li><li><a href="#parquet_use_bloom_filter">parquet_use_bloom_filter</a></li><li><a href="#parquet_use_column_index">parquet_use_column_index</a></li><li><a href="#parquet_use_column_names">parquet_use_column_names</a></li><li><a href="#parquet_vectorized_decoding_enabled">parquet_vectorized_decoding_enabled</a></li><li><a href="#parquet_writer_batch_size">parquet_writer_batch_size</a></li><li><a href="#parquet_writer_block_size">parquet_writer_block_size</a></li><li><a href="#parquet_writer_page_size">parquet_writer_page_size</a></li><li><a href="#partition_statistics_sample_size">partition_statistics_sample_size</a></li><li><a href="#projection_pushdown_enabled">projection_pushdown_enabled</a></li><li><a href="#propagate_table_scan_sorting_properties">propagate_table_scan_sorting_properties</a></li><li><a href="#query_partition_filter_required">query_partition_filter_required</a></li><li><a href="#query_partition_filter_required_schemas">query_partition_filter_required_schemas</a></li><li><a href="#rcfile_optimized_writer_validate">rcfile_optimized_writer_validate</a></li><li><a href="#regex_native_reader_enabled">regex_native_reader_enabled</a></li><li><a href="#respect_table_format">respect_table_format</a></li><li><a href="#s3_select_pushdown_enabled">s3_select_pushdown_enabled</a></li><li><a href="#sequence_file_native_reader_enabled">sequence_file_native_reader_enabled</a></li><li><a href="#sequence_file_native_writer_enabled">sequence_file_native_writer_enabled</a></li><li><a href="#size_based_split_weights_enabled">size_based_split_weights_enabled</a></li><li><a href="#sorted_writing_enabled">sorted_writing_enabled</a></li><li><a href="#statistics_enabled">statistics_enabled</a></li><li><a href="#target_max_file_size">target_max_file_size</a></li><li><a href="#text_file_native_reader_enabled">text_file_native_reader_enabled</a></li><li><a href="#text_file__writer_enabled">text_file__writer_enabled</a></li><li><a href="#timestamp_precision">timestamp_precision</a></li><li><a href="#validate_bucketing">validate_bucketing</a></li></ul></li><li><a href="#hive-sql-support">Hive SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#hive-table-format">Hive table format</a><ul><li><a href="#specify-hive-format">Specify Hive format</a><ul><li><a href="#hive-table-format-properties">Hive table format properties</a></li><li><a href="#hive-table-properties">Hive table properties</a></li></ul></li><li><a href="#hive-metadata-table">Hive metadata table</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#create_empty_partition">create_empty_partition</a></li><li><a href="#drop_stats">drop_stats</a></li><li><a href="#register_partition">register_partition</a></li><li><a href="#sync_partition_metadata">sync_partition_metadata</a></li><li><a href="#unregister_partition">unregister_partition</a></li></ul></li><li><a href="#migrate-to-iceberg">Migrate to Iceberg</a></li><li><a href="#partition-projection">Partition projection</a><ul><li><a href="#using-partition-projection">Using partition projection</a></li></ul></li><li><a href="#session-properties">Session properties</a></li><li><a href="#hive-sql-support">Hive SQL support</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
