@@ -364,6 +364,8 @@
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#sql-security" class="md-nav__link">SQL security</a>
+        </li>
+        <li class="md-nav__item"><a href="#replacing-tables" class="md-nav__link">Replacing tables</a>
         </li></ul>
             </nav>
         </li>
@@ -642,6 +644,8 @@
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#sql-security" class="md-nav__link">SQL security</a>
+        </li>
+        <li class="md-nav__item"><a href="#replacing-tables" class="md-nav__link">Replacing tables</a>
         </li></ul>
             </nav>
         </li>
@@ -749,12 +753,47 @@ documentation</a>.</p></td>
 <p>The following improvements are included:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../language/sql-support.html#sql-security-operations"><span class="std std-ref">Security operations</span></a>, see also <a class="reference internal" href="#sb-delta-lake-sql-security"><span class="std std-ref">SQL security</span></a></p></li>
+<li><p>Table replacement, see <a class="reference internal" href="#sb-delta-lake-create-or-replace"><span class="std std-ref">Replacing tables</span></a></p></li>
 </ul>
 <section id="sql-security">
 <span id="sb-delta-lake-sql-security"></span><h3 id="sql-security">SQL security<a class="headerlink" href="#sql-security" title="Permalink to this heading">#</a></h3>
 <p>You must set the <code class="docutils literal notranslate"><span class="pre">delta.security</span></code> property in your catalog properties file to
 <code class="docutils literal notranslate"><span class="pre">sql-standard</span></code> in order to use SQL <a class="reference internal" href="../language/sql-support.html#sql-security-operations"><span class="std std-ref">security operation statements</span></a>. See <a class="reference internal" href="hive-security.html#hive-sql-standard-based-authorization"><span class="std std-ref">SQL standard based authorization</span></a> for
 more information.</p>
+</section>
+<section id="replacing-tables">
+<span id="sb-delta-lake-create-or-replace"></span><h3 id="replacing-tables">Replacing tables<a class="headerlink" href="#replacing-tables" title="Permalink to this heading">#</a></h3>
+<p>The connector supports replacing a table as an atomic operation. Atomic table
+replacement creates a new snapshot with the new table definition (see
+<a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a> and <a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a>), but keeps table
+history.</p>
+<p>The new table after replacement is completely new and separate from the old
+table. Only the name of the table remains identical.</p>
+<p>For example a partitioned table <code class="docutils literal notranslate"><span class="pre">my_table</span></code> can be replaced by a completely new
+definition.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">my_table</span> <span class="p">(</span>
+    <span class="n">a</span> <span class="nb">BIGINT</span><span class="p">,</span>
+    <span class="n">b</span> <span class="nb">DATE</span><span class="p">,</span>
+    <span class="k">c</span> <span class="nb">BIGINT</span><span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'a'</span><span class="p">]);</span>
+<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">my_table</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">sorted_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])</span>
+<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">another_table</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Table replacement in the Starburst Delta Lake connector has the following
+limitations:</p>
+<ul class="simple">
+<li><p>Table replacement does not work on append-only Delta Lake tables.</p></li>
+<li><p>Table replacement does not work for tables with the
+<code class="docutils literal notranslate"><span class="pre">change_data_feed_enabled</span></code> property set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+<li><p>Table replacement does not work if the new table after replacement has the
+<code class="docutils literal notranslate"><span class="pre">change_data_feed_enabled</span></code> property set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+<li><p>Table replacement does not work if the location specified in the property is
+different from the location of the existing table.</p></li>
+<li><p>Table types must stay the same. For example, table replacement cannot be used
+to replace a managed table with an external table.</p></li>
+</ul>
 </section>
 </section>
 <section id="performance">
