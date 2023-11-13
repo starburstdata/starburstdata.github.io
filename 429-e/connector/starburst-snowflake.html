@@ -467,7 +467,7 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#migrating-to-snowflake-parallel" class="md-nav__link">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
+        <li class="md-nav__item"><a href="#migrate-to-snowflake-parallel" class="md-nav__link">Migrate to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li></ul>
@@ -781,7 +781,7 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#migrating-to-snowflake-parallel" class="md-nav__link">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
+        <li class="md-nav__item"><a href="#migrate-to-snowflake-parallel" class="md-nav__link">Migrate to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
         </li></ul>
@@ -893,21 +893,26 @@ other descriptive name of the catalog).</p>
 <p>There are three connectors for Snowflake:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> (deprecated)</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> uses JDBC for all reads and writes and is more efficient
 when the result set returned from Snowflake is small.</p>
+<p>We recommend using the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector, which uses the JDBC
+client to execute queries, and requests data in Arrow format. The connector then
+reads each file independently from different nodes, which results in more
+efficient querying.</p>
 <p>When larger result sets are extracted from Snowflake, the
 <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector may be a better choice. Instead of
 requesting query results over a JDBC connection, the connector asks Snowflake to
 export them to object storage and SEP reads them from there. Since write and
 read operations are parallelized, this approach scales better for large data
 sets, but has a higher latency.</p>
-<p>We recommend using the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector, which uses the JDBC
-client to execute queries, and requests data in Arrow format. The connector then
-reads each file independently from different nodes, which results in more
-efficient querying.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector is deprecated as of SEP 429-e. Use
+the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector instead, and <a class="reference internal" href="#snowflake-parallel-migration"><span class="std std-ref">migrate existing Snowflake catalogs to the parallel connector</span></a>.</p>
+</div>
 <p>A requirement of using the distributed connector is that your Snowflake
 deployment runs on AWS or Azure. The connector automatically creates <a class="external reference" href="https://docs.snowflake.com/sql-reference/sql/create-stage.html">temporary
 stages</a>
@@ -918,7 +923,7 @@ connection properties as appropriate for your setup (for example, replace
 <code class="docutils literal notranslate"><span class="pre">&lt;account_name&gt;</span></code> with the full name of your account, as provided by
 Snowflake).</p>
 <p>For AWS:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_distributed, or snowflake_parallel&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_parallel, or snowflake_distributed&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -927,7 +932,7 @@ snowflake.database=&lt;database_name&gt;
 </pre></div>
 </div>
 <p>For Azure:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_distributed, or snowflake_parallel&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_parallel, or snowflake_distributed&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.&lt;azure_region&gt;.azure.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -1025,8 +1030,8 @@ the distributed connector:</p>
 </tr>
 </tbody>
 </table>
-<section id="migrating-to-snowflake-parallel">
-<h3 id="migrating-to-snowflake-parallel">Migrating to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code><a class="headerlink" href="#migrating-to-snowflake-parallel" title="Permalink to this heading">#</a></h3>
+<section id="migrate-to-snowflake-parallel">
+<span id="snowflake-parallel-migration"></span><h3 id="migrate-to-snowflake-parallel">Migrate to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code><a class="headerlink" href="#migrate-to-snowflake-parallel" title="Permalink to this heading">#</a></h3>
 <p>To configure an existing Snowflake catalog to use the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>
 connector, change the value of <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> in the catalog configuration
 properties to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>. The rest of the configuration is identical
@@ -1944,8 +1949,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/429-e/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/429-e/_static/searchbox.js" data-versions="{'Latest LTS (423-e)': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', '402-e LTS': '/402-e/', 'Latest STS (429-e)': '/429-e/', '427-e STS': '/427-e/'}"></script>
-<script src="https://docs.starburst.io/429-e/_static/searchresults.js" data-versions="{'Latest LTS (423-e)': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', '402-e LTS': '/402-e/', 'Latest STS (429-e)': '/429-e/', '427-e STS': '/427-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (423-e)': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', '402-e LTS': '/402-e/', 'Latest STS (429-e)': '/429-e/', '427-e STS': '/427-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (423-e)': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', '402-e LTS': '/402-e/', 'Latest STS (429-e)': '/429-e/', '427-e STS': '/427-e/'}"></script>
   </body>
 </html>
