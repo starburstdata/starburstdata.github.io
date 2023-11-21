@@ -288,6 +288,8 @@
         <li class="md-nav__item"><a href="#quantified-comparison-predicates-all-any-and-some" class="md-nav__link">Quantified comparison predicates: ALL, ANY and SOME</a>
         </li>
         <li class="md-nav__item"><a href="#pattern-comparison-like" class="md-nav__link">Pattern comparison: LIKE</a>
+        </li>
+        <li class="md-nav__item"><a href="#row-comparison-in" class="md-nav__link">Row comparison: IN</a>
         </li></ul>
             </nav>
         </li>
@@ -516,6 +518,8 @@
         <li class="md-nav__item"><a href="#quantified-comparison-predicates-all-any-and-some" class="md-nav__link">Quantified comparison predicates: ALL, ANY and SOME</a>
         </li>
         <li class="md-nav__item"><a href="#pattern-comparison-like" class="md-nav__link">Pattern comparison: LIKE</a>
+        </li>
+        <li class="md-nav__item"><a href="#row-comparison-in" class="md-nav__link">Row comparison: IN</a>
         </li></ul>
             </nav>
         </li>
@@ -795,6 +799,41 @@ use:</p>
 you need to match the used escape character as well, you can escape it.</p>
 <p>If you want to match for the chosen escape character, you simply escape itself.
 For example, you can use <code class="docutils literal notranslate"><span class="pre">\\</span></code> to match for <code class="docutils literal notranslate"><span class="pre">\</span></code>.</p>
+</section>
+<section id="row-comparison-in">
+<span id="in-operator"></span><h2 id="row-comparison-in">Row comparison: IN<a class="headerlink" href="#row-comparison-in" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">IN</span></code> operator can be used in a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause to compare column values with
+a list of values. The list of values can be supplied by a subquery or directly
+as static values in an array:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="p">...</span> <span class="k">WHERE</span> <span class="k">column</span> <span class="p">[</span><span class="k">NOT</span><span class="p">]</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'value1'</span><span class="p">,</span><span class="s1">'value2'</span><span class="p">);</span>
+<span class="p">...</span> <span class="k">WHERE</span> <span class="k">column</span> <span class="p">[</span><span class="k">NOT</span><span class="p">]</span> <span class="k">IN</span> <span class="p">(</span> <span class="n">subquery</span> <span class="p">);</span>
+</pre></div>
+</div>
+<p>Use the optional <code class="docutils literal notranslate"><span class="pre">NOT</span></code> keyword to negate the condition.</p>
+<p>The following example shows a simple usage with a static array:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">region</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'AMERICA'</span><span class="p">,</span> <span class="s1">'EUROPE'</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>The values in the clause are used for multiple comparisons that are combined as
+a logical <code class="docutils literal notranslate"><span class="pre">OR</span></code>. The preceding query is equivalent to the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">region</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">'AMERICA'</span> <span class="k">OR</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">'EUROPE'</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>You can negate the comparisons by adding <code class="docutils literal notranslate"><span class="pre">NOT</span></code>, and get all other regions
+except the values in list:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">region</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="k">NOT</span> <span class="k">IN</span> <span class="p">(</span><span class="s1">'AMERICA'</span><span class="p">,</span> <span class="s1">'EUROPE'</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>When using a subquery to determine the values to use in the comparison, the
+subquery must return a single column and one or more rows.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">name</span>
+<span class="k">FROM</span> <span class="n">nation</span>
+<span class="k">WHERE</span> <span class="n">regionkey</span> <span class="k">IN</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="n">starts_with</span><span class="p">(</span><span class="n">regionkey</span><span class="p">,</span><span class="ss">"A"</span><span class="p">)</span> <span class="k">AS</span> <span class="n">regionkey</span>
+    <span class="k">FROM</span> <span class="n">region</span>
+<span class="p">);</span>
+</pre></div>
+</div>
 </section>
 </section>
 
