@@ -519,6 +519,8 @@
         <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#cost-based-join-pushdown" class="md-nav__link">Cost-based join pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
         </li></ul>
             </nav>
         </li>
@@ -878,6 +880,8 @@
         <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#cost-based-join-pushdown" class="md-nav__link">Cost-based join pushdown</a>
+        </li>
+        <li class="md-nav__item"><a href="#predicate-pushdown-support" class="md-nav__link">Predicate pushdown support</a>
         </li></ul>
             </nav>
         </li>
@@ -1612,6 +1616,26 @@ testing and troubleshooting purposes.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="predicate-pushdown-support">
+<h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Permalink to this heading">#</a></h4>
+<p>Predicates are pushed down for most types.</p>
+<p>The connector does not support pushdown of range predicates such as <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>, on columns with <a class="reference internal" href="../language/types.html#string-data-types"><span class="std std-ref">character string types</span></a>
+like <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> or <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>.  Equality predicates such as <code class="docutils literal notranslate"><span class="pre">IN</span></code> or <code class="docutils literal notranslate"><span class="pre">=</span></code> and
+inequality predicates such as <code class="docutils literal notranslate"><span class="pre">!=</span></code> on columns with textual types are pushed
+down. This ensures correctness of results since the remote data source may sort
+strings differently than Trino.</p>
+<p>In the following example, the predicate of the first query is not pushed down
+since <code class="docutils literal notranslate"><span class="pre">name</span></code> is a column of type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> is a range predicate.
+The other queries are pushed down.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Not pushed down</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">&gt;</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="c1">-- Pushed down</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">!=</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">name</span> <span class="o">=</span> <span class="s1">'CANADA'</span><span class="p">;</span>
+</pre></div>
+</div>
 </section>
 </section>
 <section id="table-statistics">
