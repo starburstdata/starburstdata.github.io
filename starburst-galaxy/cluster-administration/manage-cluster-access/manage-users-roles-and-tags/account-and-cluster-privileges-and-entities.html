@@ -2083,13 +2083,6 @@ contained in a catalog. By default, the role that owns the schema containing the
 table owns the table. If there is no explicitly specified role owning the
 schema, then the role owning the table is the one that owns the catalog.</p>
 
-<p>In SQL, you can set the owner of a table <code class="language-plaintext highlighter-rouge">june_sales</code> in schema <code class="language-plaintext highlighter-rouge">monthly_sales</code>
-in catalog <code class="language-plaintext highlighter-rouge">prod_data</code> to role <code class="language-plaintext highlighter-rouge">sysadmin</code> this way:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">prod_data</span><span class="p">.</span><span class="n">monthly_sales</span><span class="p">.</span><span class="n">june_sales</span>
-<span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="k">ROLE</span> <span class="n">sysadmin</span>
-</code></pre></div></div>
-
 <p>Tables have the following privileges that can be granted either with SQL
 commands or in the Starburst Galaxy UI:</p>
 
@@ -2129,17 +2122,33 @@ commands or in the Starburst Galaxy UI:</p>
 
 <ul>
   <li>Views are stored in the metastore.</li>
-  <li>Views without explicit owners are disabled.</li>
-  <li>Views configured with SECURITY DEFINER are disabled. The run-as identity for
-views with SECURITY DEFINER is the explicitly defined owner of the view.</li>
-  <li>The catalog owner is not set as the run-as identity for views, and can
-therefore not execute them.</li>
   <li>The catalog owner can drop and alter views.</li>
-</ul>
+  <li>Views created with <code class="language-plaintext highlighter-rouge">SECURITY INVOKER</code> outside of Galaxy are executed
+as expected in Galaxy. The view is run with the set of permissions
+granted to the currently executing role.</li>
+  <li>
+    <p>Views created with <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> outside of Galaxy do not
+execute until you define an owning role for the view. You must explicitly set
+an owning role with a statement like the following:</p>
 
-<p>This behavior prevents a privilege escalation. You can not declare a view in an
-external system with limited privileges, and then execution the view in
-Starburst Galaxy with the catalog owner’s privileges.</p>
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">VIEW</span> <span class="n">view_name</span> <span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="k">ROLE</span> <span class="n">role_name</span><span class="p">;</span>
+</code></pre></div>    </div>
+    <p>For example, for a view <code class="language-plaintext highlighter-rouge">june_sales</code> in schema <code class="language-plaintext highlighter-rouge">monthly_sales</code>
+in catalog <code class="language-plaintext highlighter-rouge">prod_data</code>, set the owner to role <code class="language-plaintext highlighter-rouge">sysadmin</code> as follows:</p>
+
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">VIEW</span> <span class="n">prod_data</span><span class="p">.</span><span class="n">monthly_sales</span><span class="p">.</span><span class="n">june_sales</span>
+  <span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="k">ROLE</span> <span class="n">sysadmin</span><span class="p">;</span>
+</code></pre></div>    </div>
+
+    <p><code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> views do not assume an owning role because that could
+result in a privilege escalation. The <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> syntax restricts the
+permissions with which a view can be run. If that view is defined in a system
+outside of Galaxy, then Galaxy cannot make any assumptions
+about the roles that can be used to execute the view. The outside system and
+Galaxy have separate security domains. This is why Starburst Galaxy
+requires the user to explicitly set the owning role for views.</p>
+  </li>
+</ul>
       <h2 id="column-privileges-">
         
         
