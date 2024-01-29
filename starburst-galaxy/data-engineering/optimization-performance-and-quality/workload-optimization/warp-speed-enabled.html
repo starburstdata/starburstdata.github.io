@@ -2172,7 +2172,7 @@ further information.</p>
 index materialization on the cluster to accelerate future access to that data.
 This process of creating the indexes and caches is also called <em>warmup</em>. Warmup
 is performed individually by each worker based on the processed splits and uses
-the local high performance storage of the worker. Typically, these are SSD NVMe
+the local high performance storage of the worker. Typically, these are NVMe SSD
 drives.</p>
 
 <p>When new data is added to a table or the index and cache creation are in
@@ -2300,6 +2300,152 @@ strings that have range predicates. For example, <code class="language-plaintext
   <li>Queries with nested expressions, such as
 <code class="language-plaintext highlighter-rouge">starts_with(some_nested_method(col1), 'aaa')</code>, are not accelerated.</li>
 </ul>
+      <h3 id="index-and-cache-resiliency-">
+        
+        
+          Index and cache resiliency <a name="resiliency"></a> <a href="#index-and-cache-resiliency-" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Starburst Warp Speed optionally provides index and cache resiliency. When a new
+index is created or data is cached, it is stored on the NVMe (nonvolatile memory
+express) SSDs attached to each worker node by default, and in addition on a
+dedicated, shared bucket in your object storage. When you scale the cluster, the
+indexes and data cache remain available in the shared storage.</p>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  This is a <a href="/starburst-galaxy/feature-release-types.html">private preview
+feature</a>. Contact <a href="/starburst-galaxy/global/get-support.html">Starburst
+support</a> with questions or
+feedback.</div>
+
+<p>The index and cache resiliency feature enables fast warmup when scaling up by
+adding worker nodes to a cluster. When a cluster needs to warm an index or data
+cache, it first accesses the designated object storage bucket to check whether
+the indexes or cache are ready, and loads them accordingly. If the indexes or
+cache are not available in the shared object storage or cannot be loaded for any
+reason, the data is warmed as usual.</p>
+
+<p>Index and cache resiliency is available for AWS clusters in the <code class="language-plaintext highlighter-rouge">us-east-1</code> and
+<code class="language-plaintext highlighter-rouge">us-west-2</code> regions. The bucket used to back up the index and cache must be
+hosted in the same region as the cluster.</p>
+
+<p>To use the resiliency feature to back up your index and data cache in Amazon S3,
+follow these steps:</p>
+
+<ol>
+  <li>Incorporate a <a href="../../../working-with-data/create-catalogs/object-storage/s3.html#index-and-cache-resiliency">backup
+location</a>
+into your defined AWS S3 catalog.</li>
+  <li>Adjust the <a href="../../../security/external-aws.html#aws-privileges-">AWS
+privileges</a> to allow
+writing and reading from the backup location.</li>
+  <li>Enable the resiliency feature on the catalog. Click <i class="far fa-toggle-on" style="color:var(--fusion-fuchsia);"></i> <strong>Index and cache
+resiliency</strong> to enable resiliency when <a href="../../../get-started/learn/create-object-storage-catalog.html">creating a new
+catalog</a> or
+editing an existing catalog on an accelerated cluster.</li>
+  <li>Optionally set an S3 <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">lifecycle
+policy</a>
+to delete expired index or data cache elements in the backup location.</li>
+</ol>
+
+<p>After completing these steps, index and cache elements are created in the backup
+location when you run a query. When you run the same query on a <code class="language-plaintext highlighter-rouge">suspended</code> or
+<code class="language-plaintext highlighter-rouge">not enabled</code> cluster, warmup time is reduced.</p>
+      <h4 id="set-up-a-backup-location">
+        
+        
+          Set up a backup location <a href="#set-up-a-backup-location" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>To set a backup location in your object storage for index or data caches,
+enter a <strong>Bucket name</strong> and a <strong>Directory name</strong> within the bucket where the
+data is stored.</p>
+
+<p><img src="/assets/img/galaxy/resiliency-backup-location.png" alt="backup location" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+      <h4 id="edit-aws-privileges">
+        
+        
+          Edit AWS privileges <a href="#edit-aws-privileges" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>To use Starburst Warp Speed index and cache resiliency, you must include read/write
+permissions to the backup location in object storage. The following shows a
+privilege example for read/write access to S3:</p>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+    </span><span class="nl">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span><span class="w">
+    </span><span class="nl">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"Sid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"s3ReadWrite"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                </span><span class="s2">"s3:ListBucket"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:GetBucketPolicy"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:GetObject"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:GetObjectAttributes"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:PutObject"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:DeleteObject"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"s3:AbortMultipartUpload"</span><span class="w">
+            </span><span class="p">],</span><span class="w">
+            </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+                </span><span class="s2">"arn:aws:s3:::&lt;backup-location-bucket&gt;/*"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"arn:aws:s3:::&lt;backup-location-bucket&gt;"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"arn:aws:s3:::&lt;data-bucket&gt;/*"</span><span class="p">,</span><span class="w">
+                </span><span class="s2">"arn:aws:s3:::&lt;data-bucket&gt;/*"</span><span class="w">
+            </span><span class="p">]</span><span class="w">
+        </span><span class="p">},</span><span class="w">
+        </span><span class="p">{</span><span class="w">
+            </span><span class="nl">"Sid"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VisualEditor1"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"Effect"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Allow"</span><span class="p">,</span><span class="w">
+            </span><span class="nl">"Action"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w">
+              </span><span class="s2">"s3:ListAllMyBuckets"</span><span class="p">,</span><span class="w">
+              </span><span class="s2">"glue:*"</span><span class="w">
+            </span><span class="p">],</span><span class="w">
+            </span><span class="nl">"Resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"*"</span><span class="w">
+        </span><span class="p">}</span><span class="w">
+    </span><span class="p">]</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+      <h4 id="enable-the-feature">
+        
+        
+          Enable the feature <a href="#enable-the-feature" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>After you have configured a backup location, click <i class="far fa-toggle-on" style="color:var(--fusion-fuchsia);"></i> <strong>Index and cache resiliency</strong> to read
+and write index and cache elements in object storage. You can enable the feature
+when creating a new catalog or when editing a catalog on an existing accelerated
+cluster.</p>
+      <h4 id="lifecycle-policies">
+        
+        
+          Lifecycle Policies <a href="#lifecycle-policies" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>To control the cost associated with storing the index and cache data on your
+object storage, we recommend setting a <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">lifecycle
+policy</a>
+to delete
+<a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html">expired</a>
+elements in the backup location. Experiment with expiration settings based on
+your workload patterns.</p>
       <h3 id="index-and-cache-usage">
         
         
@@ -2532,7 +2678,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#warp-speed-enabled-clusters">Warp Speed-enabled clusters</a><ul><li><a href="#default-acceleration-">Default acceleration <a name="default-accel"></a></a><ul><li><a href="#acceleration-types">Acceleration types</a><ul><li><a href="#data-cache-acceleration-">Data cache acceleration <a name="data-cache-accel"></a></a></li><li><a href="#index-acceleration-">Index acceleration <a name="index-accel"></a></a></li><li><a href="#text-search-acceleration-">Text search acceleration <a name="text-search-accel"></a></a></li></ul></li><li><a href="#index-and-cache-usage">Index and cache usage</a></li><li><a href="#automated-clean-up">Automated clean up</a></li></ul></li><li><a href="#sql-support">SQL support</a></li><li><a href="#when-to-choose-accelerated">When to choose Accelerated</a></li><li><a href="#faq">FAQ</a></li></ul></li></ul>
+          <ul><li><a href="#warp-speed-enabled-clusters">Warp Speed-enabled clusters</a><ul><li><a href="#default-acceleration-">Default acceleration <a name="default-accel"></a></a><ul><li><a href="#acceleration-types">Acceleration types</a><ul><li><a href="#data-cache-acceleration-">Data cache acceleration <a name="data-cache-accel"></a></a></li><li><a href="#index-acceleration-">Index acceleration <a name="index-accel"></a></a></li><li><a href="#text-search-acceleration-">Text search acceleration <a name="text-search-accel"></a></a></li></ul></li><li><a href="#index-and-cache-resiliency-">Index and cache resiliency <a name="resiliency"></a></a><ul><li><a href="#set-up-a-backup-location">Set up a backup location</a></li><li><a href="#edit-aws-privileges">Edit AWS privileges</a></li><li><a href="#enable-the-feature">Enable the feature</a></li><li><a href="#lifecycle-policies">Lifecycle Policies</a></li></ul></li><li><a href="#index-and-cache-usage">Index and cache usage</a></li><li><a href="#automated-clean-up">Automated clean up</a></li></ul></li><li><a href="#sql-support">SQL support</a></li><li><a href="#when-to-choose-accelerated">When to choose Accelerated</a></li><li><a href="#faq">FAQ</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
