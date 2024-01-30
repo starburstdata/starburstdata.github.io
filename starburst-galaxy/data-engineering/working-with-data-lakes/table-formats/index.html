@@ -2388,6 +2388,211 @@ will drop tables, views, and materialized views.</p>
 
 <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">DROP</span> <span class="k">SCHEMA</span> <span class="k">schema_name</span> <span class="k">CASCADE</span><span class="p">;</span>
 </code></pre></div></div>
+      <h3 id="unload">
+        
+        
+          UNLOAD <a href="#unload" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The <code class="language-plaintext highlighter-rouge">UNLOAD</code> SQL statement is a pre-built table function within the <code class="language-plaintext highlighter-rouge">system</code>
+schema that writes files directly to storage. The files that <code class="language-plaintext highlighter-rouge">UNLOAD</code> writes to
+storage corresponds to what the <code class="language-plaintext highlighter-rouge">input</code> parameter selects.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="k">system</span><span class="p">.</span><span class="n">unload</span><span class="p">(</span>
+ <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(...)</span> <span class="p">[</span><span class="k">PARTITION</span> <span class="k">BY</span> <span class="n">col</span> <span class="p">(,</span> <span class="p">...)],</span>
+ <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">''</span><span class="p">,</span>
+ <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">''</span>
+ <span class="p">[,</span> <span class="n">compression</span> <span class="o">=&gt;</span> <span class="s1">''</span><span class="p">]</span>
+ <span class="p">[,</span> <span class="n">separator</span> <span class="o">=&gt;</span> <span class="s1">''</span><span class="p">]</span>
+<span class="p">))</span>
+</code></pre></div></div>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  The <code class="language-plaintext highlighter-rouge">input</code>, <code class="language-plaintext highlighter-rouge">location</code>, and <code class="language-plaintext highlighter-rouge">format</code> parameters
+are required. The <code class="language-plaintext highlighter-rouge">compression</code>, and <code class="language-plaintext highlighter-rouge">separator</code> parameters are optional. </div>
+
+<p>The <code class="language-plaintext highlighter-rouge">input</code> parameter can accept either a table name or a <code class="language-plaintext highlighter-rouge">SELECT</code> query. The
+<code class="language-plaintext highlighter-rouge">separator</code> parameter is applicable only when the <code class="language-plaintext highlighter-rouge">format</code> argument is set to
+<code class="language-plaintext highlighter-rouge">CSV</code> or <code class="language-plaintext highlighter-rouge">TEXTFILE</code>. See <a href="../file-formats.html">File formats</a> for more details.</p>
+
+<p>Roles do not have access to the <code class="language-plaintext highlighter-rouge">UNLOAD</code> function by default. To enable role
+access, users must have the <code class="language-plaintext highlighter-rouge">UNLOAD</code> <a href="../../../cluster-administration/manage-data-access/data-privileges.html#function-privileges-">function
+privilege</a>
+on the catalog, as well as the corresponding <a href="../../../cluster-administration/manage-data-access/data-privileges.html#location-privileges-">location
+privilege</a>
+on the object storage location where the output is written.</p>
+      <h4 id="examples">
+        
+        
+          Examples <a href="#examples" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>To unload the <code class="language-plaintext highlighter-rouge">orderkey</code>, <code class="language-plaintext highlighter-rouge">custkey</code>, and <code class="language-plaintext highlighter-rouge">orderstatus</code> columns from the <code class="language-plaintext highlighter-rouge">orders</code>
+table to the location <code class="language-plaintext highlighter-rouge">s3://mybucket/my/unload/location</code> in <code class="language-plaintext highlighter-rouge">ORC</code> file format:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span> <span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">unload</span> <span class="p">(</span>
+      <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span> <span class="p">(</span>
+        <span class="k">SELECT</span>
+          <span class="n">orderkey</span><span class="p">,</span>
+          <span class="n">custkey</span><span class="p">,</span>
+          <span class="n">orderstatus</span>
+        <span class="k">FROM</span>
+          <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span>
+      <span class="p">)</span>
+      <span class="k">PARTITION</span> <span class="k">BY</span>
+        <span class="p">(</span><span class="n">orderstatus</span><span class="p">),</span>
+      <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">'s3://mybucket/my/unload/location'</span><span class="p">,</span>
+      <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">'ORC'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+</code></pre></div></div>
+<p>An example of <code class="language-plaintext highlighter-rouge">UNLOAD</code> using <code class="language-plaintext highlighter-rouge">input =&gt; TABLE(tpch.sf1.orders)</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span> <span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">unload</span> <span class="p">(</span>
+      <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span> <span class="p">(</span><span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span><span class="p">)</span>
+      <span class="k">PARTITION</span> <span class="k">BY</span>
+        <span class="p">(</span><span class="n">orderstatus</span><span class="p">),</span>
+      <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">'s3://mybucket/my/unload/location'</span><span class="p">,</span>
+      <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">'ORC'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+</code></pre></div></div>
+
+<p>An example of <code class="language-plaintext highlighter-rouge">UNLOAD</code> with multiple partitions:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span> <span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">unload</span> <span class="p">(</span>
+      <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span> <span class="p">(</span>
+        <span class="k">SELECT</span>
+          <span class="n">orderkey</span><span class="p">,</span>
+          <span class="n">custkey</span><span class="p">,</span>
+          <span class="n">orderdate</span><span class="p">,</span>
+          <span class="n">orderstatus</span>
+        <span class="k">FROM</span>
+          <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span>
+      <span class="p">)</span>
+      <span class="k">PARTITION</span> <span class="k">BY</span>
+        <span class="p">(</span><span class="n">orderdate</span><span class="p">,</span> <span class="n">orderstatus</span><span class="p">),</span>
+      <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">'s3://mybucket/my/unload/location'</span><span class="p">,</span>
+      <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">'TEXTFILE'</span><span class="p">,</span>
+      <span class="n">compression</span> <span class="o">=&gt;</span> <span class="s1">'GZIP'</span><span class="p">,</span>
+      <span class="n">seperator</span> <span class="o">=&gt;</span> <span class="s1">'|'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+</code></pre></div></div>
+
+<p>An example of <code class="language-plaintext highlighter-rouge">UNLOAD</code> with <code class="language-plaintext highlighter-rouge">TEXTFILE</code> format, a separator, and no compression:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span> <span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">unload</span> <span class="p">(</span>
+      <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span> <span class="p">(</span>
+        <span class="k">SELECT</span>
+          <span class="n">orderkey</span><span class="p">,</span>
+          <span class="n">custkey</span><span class="p">,</span>
+          <span class="n">orderstatus</span>
+        <span class="k">FROM</span>
+          <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span>
+      <span class="p">)</span>
+      <span class="k">PARTITION</span> <span class="k">BY</span>
+        <span class="p">(</span><span class="n">orderstatus</span><span class="p">),</span>
+      <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">'s3://mybucket/my/unload/location'</span><span class="p">,</span>
+      <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">'TEXTFILE'</span><span class="p">,</span>
+      <span class="n">seperator</span> <span class="o">=&gt;</span> <span class="s1">'|'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+</code></pre></div></div>
+
+<p>An example of <code class="language-plaintext highlighter-rouge">UNLOAD</code> with <code class="language-plaintext highlighter-rouge">TEXTFILE</code> format, a separator, and compression:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span> <span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">unload</span> <span class="p">(</span>
+      <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span> <span class="p">(</span>
+        <span class="k">SELECT</span>
+          <span class="n">orderkey</span><span class="p">,</span>
+          <span class="n">custkey</span><span class="p">,</span>
+          <span class="n">orderstatus</span>
+        <span class="k">FROM</span>
+          <span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">orders</span>
+      <span class="p">)</span>
+      <span class="k">PARTITION</span> <span class="k">BY</span>
+        <span class="p">(</span><span class="n">orderstatus</span><span class="p">),</span>
+      <span class="k">location</span> <span class="o">=&gt;</span> <span class="s1">'s3://mybucket/my/unload/location'</span><span class="p">,</span>
+      <span class="n">format</span> <span class="o">=&gt;</span> <span class="s1">'TEXTFILE'</span><span class="p">,</span>
+      <span class="n">compression</span> <span class="o">=&gt;</span> <span class="s1">'GZIP'</span>
+      <span class="n">separater</span> <span class="o">=&gt;</span> <span class="s1">'|'</span>
+    <span class="p">)</span>
+  <span class="p">)</span>
+</code></pre></div></div>
+      <h4 id="supported-parameters">
+        
+        
+          Supported parameters <a href="#supported-parameters" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Supported <code class="language-plaintext highlighter-rouge">format</code> parameters:</p>
+
+<ul>
+  <li>ORC</li>
+  <li>PARQUET</li>
+  <li>AVRO</li>
+  <li>RCBINARY</li>
+  <li>RCTEXT</li>
+  <li>SEQUENCEFILE</li>
+  <li>JSON</li>
+  <li>OPENX_JSON</li>
+  <li>TEXTFILE</li>
+  <li>CSV</li>
+</ul>
+
+<p>Supported <code class="language-plaintext highlighter-rouge">compression</code> parameters:</p>
+
+<ul>
+  <li>NONE (default)</li>
+  <li>SNAPPY</li>
+  <li>LZ4</li>
+  <li>ZSTD</li>
+  <li>GZIP</li>
+</ul>
+      <h4 id="limitations">
+        
+        
+          Limitations <a href="#limitations" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Each format has its own set of constraints. The <code class="language-plaintext highlighter-rouge">CSV</code> format exclusively
+supports <code class="language-plaintext highlighter-rouge">VARCHAR</code> columns, and <code class="language-plaintext highlighter-rouge">AVRO</code> files do not permit special characters in
+the column names.</p>
       <h2 id="session-properties">
         
         
@@ -2502,7 +2707,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#table-formats">Table formats</a><ul><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#table-properties">Table properties</a></li><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a><ul><li><a href="#create-view">CREATE VIEW</a><ul><li><a href="#security-for-views">Security for views</a></li></ul></li><li><a href="#create-materialized-view">CREATE MATERIALIZED VIEW</a></li><li><a href="#create-schema">CREATE SCHEMA</a></li><li><a href="#drop-schema">DROP SCHEMA</a></li></ul></li><li><a href="#session-properties">Session properties</a></li></ul></li></ul>
+          <ul><li><a href="#table-formats">Table formats</a><ul><li><a href="#specify-default-table-format">Specify default table format</a></li><li><a href="#table-properties">Table properties</a></li><li><a href="#great-lakes-sql-support">Great Lakes SQL support</a><ul><li><a href="#create-view">CREATE VIEW</a><ul><li><a href="#security-for-views">Security for views</a></li></ul></li><li><a href="#create-materialized-view">CREATE MATERIALIZED VIEW</a></li><li><a href="#create-schema">CREATE SCHEMA</a></li><li><a href="#drop-schema">DROP SCHEMA</a></li><li><a href="#unload">UNLOAD</a><ul><li><a href="#examples">Examples</a></li><li><a href="#supported-parameters">Supported parameters</a></li><li><a href="#limitations">Limitations</a></li></ul></li></ul></li><li><a href="#session-properties">Session properties</a></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
