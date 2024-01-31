@@ -2152,19 +2152,24 @@ to role <code class="language-plaintext highlighter-rouge">sysadmin</code> this 
     </tr>
   </tbody>
 </table>
-      <h2 id="table-and-view-privileges-">
+      <h2 id="table-privileges-">
         
         
-          Table and view privileges <a name="table-privs"></a> <a href="#table-and-view-privileges-" class="titleAnchor">#</a>
+          Table privileges <a name="table-privs"></a> <a href="#table-privileges-" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>Tables and views have names, and are contained in a schema, which in turn is
-contained in a catalog. By default, the role that owns the schema containing the
-table owns the table. If there is no explicitly specified role owning the
-schema, then the role owning the table is the one that owns the catalog.</p>
+<p>Tables have names, and are contained in a schema, which in turn is
+contained in a catalog. Tables may also have
+<a href="../../security/access-control.html#ownership">owners</a>. Ownership
+of a table is automatically assigned to the creating role when the table is
+created using Galaxy, but if the table was created outside of
+Galaxy, it does not have an explicit owner. If there is no
+explicitly specified role owning the table, then the role owning the table
+is the one that owns the schema. Similarly, if there is no explicitly specified
+role which owns the schema, then the role owning the catalog owns the table.</p>
 
 <p>Tables have the following privileges that can be granted either with SQL
 commands or in the Starburst Galaxy UI:</p>
@@ -2200,19 +2205,32 @@ commands or in the Starburst Galaxy UI:</p>
     </tr>
   </tbody>
 </table>
+      <h2 id="view-privileges-">
+        
+        
+          View privileges <a name="view-privs"></a> <a href="#view-privileges-" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
 
-<p>The following details apply for views.</p>
+<p>Privileges for views and materialized views follow the same semantics as
+<a href="#table-privs">tables</a>, with minor differences. The following
+details apply for views:</p>
 
 <ul>
-  <li>Views are stored in the metastore.</li>
-  <li>The catalog owner can drop and alter views.</li>
-  <li>Views created with <code class="language-plaintext highlighter-rouge">SECURITY INVOKER</code> outside of Galaxy are executed
-as expected in Galaxy. The view is run with the set of permissions
-granted to the currently executing role.</li>
+  <li>Views are stored in the metastore configured in the catalog.</li>
+  <li>Views created with <code class="language-plaintext highlighter-rouge">SECURITY INVOKER</code> outside of Galaxy are
+executed as expected in Galaxy. The view is run with the set of
+permissions granted to the currently executing role. Views created with
+<code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> are executed with the permissions of the view owner as
+that owner is specified in Galaxy.</li>
   <li>
-    <p>Views created with <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> outside of Galaxy do not
-execute until you define an owning role for the view. You must explicitly set
-an owning role with a statement like the following:</p>
+    <p>Because of this, views created with <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> outside of
+Galaxy do not execute until you define an owning role for the view.
+You must explicitly set an owning role 
+<a href="../../working-with-data/explore-data/table-level.html">using the UI</a>
+or with a SQL statement like the following:</p>
 
     <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">VIEW</span> <span class="n">view_name</span> <span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="k">ROLE</span> <span class="n">role_name</span><span class="p">;</span>
 </code></pre></div>    </div>
@@ -2230,6 +2248,26 @@ outside of Galaxy, then Galaxy cannot make any assumptions
 about the roles that can be used to execute the view. The outside system and
 Galaxy have separate security domains. This is why Starburst Galaxy
 requires the user to explicitly set the owning role for views.</p>
+  </li>
+  <li>In order to query a view, the executing role must have privileges on both
+the view and any tables the view was created from. For example, consider a
+<code class="language-plaintext highlighter-rouge">SELECT</code> statement on the above <code class="language-plaintext highlighter-rouge">prod_data.monthly_sales.june_sales</code> view
+where <code class="language-plaintext highlighter-rouge">sysadmin</code> is the view owner:
+    <ul>
+      <li>If the view is defined as <code class="language-plaintext highlighter-rouge">SECURITY INVOKER</code>, the querying role must have
+<code class="language-plaintext highlighter-rouge">SELECT</code> access on the view in addition to any tables the view was
+created from.</li>
+      <li>If the view is defined as <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code>, <code class="language-plaintext highlighter-rouge">sysadmin</code> is the role
+executing the query. Because of this, the role querying the view must have
+<code class="language-plaintext highlighter-rouge">SELECT</code> access on the view, but <code class="language-plaintext highlighter-rouge">sysadmin</code> must also have
+<code class="language-plaintext highlighter-rouge">SELECT WITH GRANT OPTION</code> on all tables the view was created from. If not,
+this could represent a privilege escalation. Unless <code class="language-plaintext highlighter-rouge">sysadmin</code> has
+<code class="language-plaintext highlighter-rouge">GRANT OPTION</code> on the underlying tables, it could grant table access to
+others it should not have the authority to by creating a view.</li>
+      <li><code class="language-plaintext highlighter-rouge">SELECT WITH GRANT OPTION</code> is not required on <code class="language-plaintext highlighter-rouge">SECURITY DEFINER</code> views when
+the role running the query has the view owner’s role in its
+<a href="../manage-cluster-access/manage-users-roles-and-tags/roles#active-role-set">active role set</a>.</li>
+    </ul>
   </li>
 </ul>
       <h2 id="column-privileges-">
@@ -2663,7 +2701,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#data-privileges">Data privileges</a><ul><li><a href="#catalog-privileges-">Catalog privileges <a name="catalog-privs"></a></a></li><li><a href="#schema-privileges-">Schema privileges <a name="schema-privs"></a></a></li><li><a href="#table-and-view-privileges-">Table and view privileges <a name="table-privs"></a></a></li><li><a href="#column-privileges-">Column privileges <a name="column-privs"></a></a></li><li><a href="#location-privileges-">Location privileges <a name="location-privs"></a></a></li><li><a href="#function-privileges-">Function privileges <a name="function-privs"></a></a><ul><li><a href="#query-pass-through-table-function">Query pass-through table function</a></li><li><a href="#google-sheets-table-functions">Google Sheets table functions</a></li></ul></li><li><a href="#wildcard-privileges-">Wildcard privileges <a name="wildcard"></a></a><ul><li><a href="#table-wildcard-privilege-grants">Table wildcard privilege grants</a></li><li><a href="#schema-wildcard-privilege-grants">Schema wildcard privilege grants</a></li><li><a href="#read-only-access-with-wildcard-privileges-">Read only access with wildcard privileges <a name="read-only-wildcard"></a></a></li><li><a href="#full-read-and-write-access-with-wildcard-privileges-">Full read and write access with wildcard privileges <a name="read-write-wildcard"></a></a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#data-privileges">Data privileges</a><ul><li><a href="#catalog-privileges-">Catalog privileges <a name="catalog-privs"></a></a></li><li><a href="#schema-privileges-">Schema privileges <a name="schema-privs"></a></a></li><li><a href="#table-privileges-">Table privileges <a name="table-privs"></a></a></li><li><a href="#view-privileges-">View privileges <a name="view-privs"></a></a></li><li><a href="#column-privileges-">Column privileges <a name="column-privs"></a></a></li><li><a href="#location-privileges-">Location privileges <a name="location-privs"></a></a></li><li><a href="#function-privileges-">Function privileges <a name="function-privs"></a></a><ul><li><a href="#query-pass-through-table-function">Query pass-through table function</a></li><li><a href="#google-sheets-table-functions">Google Sheets table functions</a></li></ul></li><li><a href="#wildcard-privileges-">Wildcard privileges <a name="wildcard"></a></a><ul><li><a href="#table-wildcard-privilege-grants">Table wildcard privilege grants</a></li><li><a href="#schema-wildcard-privilege-grants">Schema wildcard privilege grants</a></li><li><a href="#read-only-access-with-wildcard-privileges-">Read only access with wildcard privileges <a name="read-only-wildcard"></a></a></li><li><a href="#full-read-and-write-access-with-wildcard-privileges-">Full read and write access with wildcard privileges <a name="read-write-wildcard"></a></a></li></ul></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
