@@ -587,7 +587,7 @@
         </li>
         <li class="md-nav__item"><a href="#optimizer-optimize-metadata-queries" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">optimizer.optimize-metadata-queries</span></code></a>
         </li>
-        <li class="md-nav__item"><a href="#optimizer-mark-distinct-strategy" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">optimizer.mark-distinct-strategy</span></code></a>
+        <li class="md-nav__item"><a href="#optimizer-distinct-aggregations-strategy" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">optimizer.distinct-aggregations-strategy</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#optimizer-push-aggregation-through-outer-join" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">optimizer.push-aggregation-through-outer-join</span></code></a>
         </li>
@@ -684,20 +684,27 @@ partition keys for partitions that have no rows. In particular, the Hive connect
 can return empty partitions, if they were created by other systems. Trino cannot
 create them.</p>
 </section>
-<section id="optimizer-mark-distinct-strategy">
-<h2 id="optimizer-mark-distinct-strategy"><code class="docutils literal notranslate"><span class="pre">optimizer.mark-distinct-strategy</span></code><a class="headerlink" href="#optimizer-mark-distinct-strategy" title="Permalink to this heading">#</a></h2>
+<section id="optimizer-distinct-aggregations-strategy">
+<h2 id="optimizer-distinct-aggregations-strategy"><code class="docutils literal notranslate"><span class="pre">optimizer.distinct-aggregations-strategy</span></code><a class="headerlink" href="#optimizer-distinct-aggregations-strategy" title="Permalink to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-string"><span class="std std-ref">string</span></a></p></li>
-<li><p><strong>Allowed values:</strong> <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code>, <code class="docutils literal notranslate"><span class="pre">ALWAYS</span></code>, <code class="docutils literal notranslate"><span class="pre">NONE</span></code></p></li>
+<li><p><strong>Allowed values:</strong> <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code>, <code class="docutils literal notranslate"><span class="pre">MARK_DISTINCT</span></code>, <code class="docutils literal notranslate"><span class="pre">SINGLE_STEP</span></code>,
+<code class="docutils literal notranslate"><span class="pre">PRE_AGGREGATE</span></code>, <code class="docutils literal notranslate"><span class="pre">SPLIT_TO_SUBQUERIES</span></code></p></li>
 <li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code></p></li>
-<li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">mark_distinct_strategy</span></code></p></li>
+<li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">distinct_aggregations_strategy</span></code></p></li>
 </ul>
-<p>The mark distinct strategy to use for distinct aggregations. <code class="docutils literal notranslate"><span class="pre">NONE</span></code> does not use
-<code class="docutils literal notranslate"><span class="pre">MarkDistinct</span></code> operator.  <code class="docutils literal notranslate"><span class="pre">ALWAYS</span></code> uses <code class="docutils literal notranslate"><span class="pre">MarkDistinct</span></code> for multiple distinct
-aggregations or for mix of distinct and non-distinct aggregations.
-<code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> limits the use of <code class="docutils literal notranslate"><span class="pre">MarkDistinct</span></code> only for cases with limited
-concurrency (global or small cardinality aggregations), where direct distinct
-aggregation implementation cannot utilize CPU efficiently.</p>
+<p>The strategy to use for multiple distinct aggregations. <code class="docutils literal notranslate"><span class="pre">SINGLE_STEP</span></code> computes
+distinct aggregations in single-step without any pre-aggregations. This strategy
+will perform poorly if the number of distinct grouping keys is small.
+<code class="docutils literal notranslate"><span class="pre">MARK_DISTINCT</span></code> uses <code class="docutils literal notranslate"><span class="pre">MarkDistinct</span></code> for multiple distinct aggregations or for
+mix of distinct and non-distinct aggregations. <code class="docutils literal notranslate"><span class="pre">PRE_AGGREGATE</span></code> computes distinct
+aggregations using a combination of aggregation and pre-aggregation steps.
+<code class="docutils literal notranslate"><span class="pre">SPLIT_TO_SUBQUERIES</span></code> splits the aggregation input to independent sub-queries,
+where each subquery computes single distinct aggregation thus improving
+parallelism <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> chooses the strategy automatically.</p>
+<p>Single-step strategy is preferred. However, for cases with limited concurrency
+due to a small number of distinct grouping keys, it will choose an alternative
+strategy based on input data statistics.</p>
 </section>
 <section id="optimizer-push-aggregation-through-outer-join">
 <h2 id="optimizer-push-aggregation-through-outer-join"><code class="docutils literal notranslate"><span class="pre">optimizer.push-aggregation-through-outer-join</span></code><a class="headerlink" href="#optimizer-push-aggregation-through-outer-join" title="Permalink to this heading">#</a></h2>
