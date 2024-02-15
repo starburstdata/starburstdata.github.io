@@ -2541,6 +2541,118 @@ are used.</p>
 
 <p>When using the Iceberg table format with Great Lakes connectivity, the
 <a href="./index.html#great-lakes-sql-support">general SQL support details</a> apply.</p>
+      <h3 id="replacing-tables">
+        
+        
+          Replacing tables <a href="#replacing-tables" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The catalog supports replacing a table, in case the table already exists, as an
+atomic operation. Atomic table replacement creates a new snapshot with the new
+table definition and keeps the existing table history. See
+<a href="#iceberg-metadata-tables">$history</a> metadata table.</p>
+
+<p>To replace a table, use <code class="language-plaintext highlighter-rouge">CREATE OR REPLACE TABLE</code> and/or <code class="language-plaintext highlighter-rouge">CREATE OR REPLACE
+TABLE AS</code>. For more information on creating tables, see <a href="../../../sql/ref/sql/create-table.html">CREATE
+TABLE</a> and <a href="../../../sql/ref/sql/create-table-as.html">CREATE TABLE
+AS</a>. These statements do not support
+changing table formats defined by the <code class="language-plaintext highlighter-rouge">type</code> table property.</p>
+
+<p>Earlier snapshots of the table can be queried through <a href="#time-travel-queries">time
+travel</a>.</p>
+
+<p>After replacement, the table definition is completely new and separate from the
+old table.</p>
+
+<p>For example, a table <code class="language-plaintext highlighter-rouge">example_table</code> can be replaced by a completely new
+definition:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CREATE TABLE example_table (
+    a BIGINT,
+    b DATE,
+    c BIGINT)
+WITH (type = 'iceberg');
+</code></pre></div></div>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">CREATE OR REPLACE TABLE AS</code> statement to overwrite the table content:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CREATE OR REPLACE TABLE example_table
+WITH (type = 'iceberg') AS 
+  SELECT * FROM (
+    VALUES 
+      (1, DATE '2024-01-01', BIGINT '10'),
+      (2, DATE '2024-01-02', BIGINT '20')
+  ) AS t(a, b, c);
+</code></pre></div></div>
+
+<p>Use the <code class="language-plaintext highlighter-rouge">CREATE OR REPLACE TABLE</code> statement to change the table definition:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CREATE OR REPLACE TABLE example_table (
+    a INT,
+    b DATE,
+    c BIGINT,
+    d VARCHAR)
+WITH (type = 'iceberg');
+</code></pre></div></div>
+      <h3 id="time-travel-queries">
+        
+        
+          Time travel queries <a href="#time-travel-queries" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The catalog offers the ability to query historical data. This allows you to
+query the table as it was when a previous snapshot of the table was taken, even
+if the data has since been modified or deleted.</p>
+
+<p>The historical data of the table can be retrieved by specifying the snapshot
+identifier corresponding to the version of the table to be retrieved:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders FOR VERSION AS OF 8954597067493422955
+</code></pre></div></div>
+
+<p>A different approach of retrieving historical data is to specify a point in time
+in the past, such as a day or week ago. The latest snapshot of the table taken
+before or at the specified timestamp in the query is internally used for
+providing the previous state of the table:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders
+  FOR TIMESTAMP AS OF TIMESTAMP '2022-03-23 09:59:29.803 Europe/Vienna'
+</code></pre></div></div>
+
+<p>You can capture a snapshot of a table in a query by specifying a date in the
+past. For example, assuming that the session time zone is <code class="language-plaintext highlighter-rouge">Europe/Vienna</code>, the
+following queries are equivalent:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders FOR TIMESTAMP AS OF DATE '2022-03-23'
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders
+  FOR TIMESTAMP AS OF TIMESTAMP '2022-03-23 00:00:00'
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders
+  FOR TIMESTAMP AS OF TIMESTAMP '2022-03-23 00:00:00.000 Europe/Vienna'
+</code></pre></div></div>
+
+<p>Iceberg supports named references of snapshots via branches and tags. Time
+travel can be performed on branches and tags in the table.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>SELECT *
+FROM example.testdb.customer_orders FOR VERSION AS OF 'historical-tag'
+SELECT *
+FROM example.testdb.customer_orders FOR VERSION AS OF 'test-branch'
+</code></pre></div></div>
 
         <div class="d-lg-none">
           <div class="feedback-container">
@@ -2645,7 +2757,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a><ul><li><a href="#replacing-tables">Replacing tables</a></li><li><a href="#time-travel-queries">Time travel queries</a></li></ul></li></ul></li></ul>
 
           <div class="feedback-container">
   <div class="feedback-thumbs">
