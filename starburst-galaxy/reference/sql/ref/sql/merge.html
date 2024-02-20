@@ -803,19 +803,26 @@ when_clause [...]
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
 <p>Conditionally update and/or delete rows of a table and/or insert new
 rows into a table.</p>
-<p><code class="docutils literal notranslate"><span class="pre">MERGE</span></code> supports an arbitrary number of <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses with different
-<code class="docutils literal notranslate"><span class="pre">MATCHED</span></code> conditions, executing the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> or <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>
-operation in the first <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause selected by the <code class="docutils literal notranslate"><span class="pre">MATCHED</span></code>
-state and the match condition.</p>
-<p>For each source row, the <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses are processed in order.  Only
-the first first matching <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause is executed and subsequent clauses
-are ignored.  A <code class="docutils literal notranslate"><span class="pre">MERGE_TARGET_ROW_MULTIPLE_MATCHES</span></code> exception is
-raised when a single target table row matches more than one source row.</p>
-<p>If a source row is not matched by any <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause and there is no
-<code class="docutils literal notranslate"><span class="pre">WHEN</span> <span class="pre">NOT</span> <span class="pre">MATCHED</span></code> clause, the source row is ignored.</p>
+<p><code class="docutils literal notranslate"><span class="pre">MERGE</span></code> changes data in the <code class="docutils literal notranslate"><span class="pre">target_table</span></code> based on the contents of the
+<code class="docutils literal notranslate"><span class="pre">source_table</span></code>. The <code class="docutils literal notranslate"><span class="pre">search_condition</span></code> defines a condition, such as a relation
+from identical columns, to associate the source and target data.</p>
+<p><code class="docutils literal notranslate"><span class="pre">MERGE</span></code> supports an arbitrary number of <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses. <code class="docutils literal notranslate"><span class="pre">MATCHED</span></code> conditions can
+execute <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> or <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operations on the target data, while <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">MATCHED</span></code>
+conditions can add data from the source to the target table with <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>.
+Additional conditions can narrow down the affected rows.</p>
+<p>For each source row, the <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses are processed in order. Only the first
+matching <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause is executed and subsequent clauses are ignored. The query
+fails if a single target table row matches more than one source row.</p>
 <p>In <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses with <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operations, the column value expressions
-can depend on any field of the target or the source.  In the <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">MATCHED</span></code>
+can depend on any field of the target or the source. In the <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">MATCHED</span></code>
 case, the <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> expressions can depend on any field of the source.</p>
+<p>Typical usage of <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> involves two tables with similar structure, containing
+different data. For example, the source table is part of a transactional usage
+in a production system, while the target table is located in a data warehouse
+used for analytics. Periodically, <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> operations are run to combine recent
+production data with long-term data in the analytics warehouse. As long as you
+can define a search condition between the two tables, you can also use very
+different tables.</p>
 </section>
 <section id="examples">
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permalink to this heading">#</a></h2>
@@ -838,10 +845,9 @@ match, insert the row from the source table:</p>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">MERGE</span></code> into the target table from the source table, deleting any matching
-target row for which the source address is Centreville.  For all other
-matching rows, add the source purchases and set the address to the source
-address, if there is no match in the target table, insert the source
-table row:</p>
+target row for which the source address is <code class="docutils literal notranslate"><span class="pre">Centreville</span></code>. For all other matching
+rows, add the source purchases and set the address to the source address. If
+there is no match in the target table, insert the source table row:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">MERGE</span> <span class="k">INTO</span> <span class="n">accounts</span> <span class="n">t</span> <span class="k">USING</span> <span class="n">monthly_accounts_update</span> <span class="n">s</span>
     <span class="k">ON</span> <span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">customer</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">customer</span><span class="p">)</span>
     <span class="k">WHEN</span> <span class="n">MATCHED</span> <span class="k">AND</span> <span class="n">s</span><span class="p">.</span><span class="n">address</span> <span class="o">=</span> <span class="s1">'Centreville'</span>
