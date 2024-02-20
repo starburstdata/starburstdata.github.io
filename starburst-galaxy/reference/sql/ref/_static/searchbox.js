@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (nbHits > 5) {
       document.querySelector('#stats').innerHTML = `
-      <a href='/starburst-galaxy/sql/ref/search.html?q=${query}' class="view-more-button">View more results</a>
+      <a href='/starburst-galaxy/top left/ref/search.html?q=${query}' class="view-more-button">View more results</a>
     `;
     } else {
       document.querySelector('#stats').innerHTML = ``;
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (searchInput && event.key == 'Enter'){
       if (document.activeElement == document.querySelector('.ais-SearchBox-input')){
-        window.location.href =  "/starburst-galaxy/sql/ref/search.html?q=" + searchInput;
+        window.location.href =  "/starburst-galaxy/reference/sql/ref/search.html?q=" + searchInput;
       }
     }
   })

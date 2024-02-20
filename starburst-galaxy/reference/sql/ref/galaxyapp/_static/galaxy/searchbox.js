@@ -56,10 +56,10 @@ document.addEventListener("DOMContentLoaded", function () {
           let score = hit._rankingInfo.firstMatchedWord / 1000;
           let url = score === 0 ? hit.url.replace(/#.*$/, "") : hit.url;
           url = url.replace(
-            "starburst-galaxy/sql/ref/",
-            "starburst-galaxy/sql/ref/galaxyapp/"
+            "starburst-galaxy/reference/sql/ref/",
+            "starburst-galaxy/reference/sql/ref/galaxyapp/"
           );
-          //docs.starburst.io/starburst-galaxy/sql/ref/galaxyapp/functions/binary.html#hex-encoding-functions
+          //docs.starburst.io/starburst-galaxy/reference/sql/ref/galaxyapp/functions/binary.html#hex-encoding-functions
           https: return (
             `<a ${bindEvent("click", hit, "hit clicked")} href="` +
             url +
