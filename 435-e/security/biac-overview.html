@@ -444,6 +444,12 @@
         </li>
         <li class="md-nav__item"><a href="#migrating-to-built-in-access-control" class="md-nav__link">Migrating to built-in access control</a>
         </li>
+        <li class="md-nav__item"><a href="#using-biac-with-iceberg-materialized-views-in-glue" class="md-nav__link">Using BIAC with Iceberg materialized views in Glue</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#migrate-missing-ownership" class="md-nav__link">Migrate missing ownership</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#api" class="md-nav__link">API</a>
         </li>
         <li class="md-nav__item"><a href="#sql-support-and-limitations" class="md-nav__link">SQL support and limitations</a>
@@ -669,6 +675,12 @@
         </li>
         <li class="md-nav__item"><a href="#migrating-to-built-in-access-control" class="md-nav__link">Migrating to built-in access control</a>
         </li>
+        <li class="md-nav__item"><a href="#using-biac-with-iceberg-materialized-views-in-glue" class="md-nav__link">Using BIAC with Iceberg materialized views in Glue</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#migrate-missing-ownership" class="md-nav__link">Migrate missing ownership</a>
+        </li></ul>
+            </nav>
+        </li>
         <li class="md-nav__item"><a href="#api" class="md-nav__link">API</a>
         </li>
         <li class="md-nav__item"><a href="#sql-support-and-limitations" class="md-nav__link">SQL support and limitations</a>
@@ -861,6 +873,57 @@ a way to control access to <a class="reference internal" href="../data-products.
 of the Starburst Enterprise <a class="reference internal" href="biac-privileges.html#biac-entity-ui"><span class="std std-ref">web UI</span></a>. Deployments that use
 <a class="reference internal" href="../security.html#third-party-access-control-systems"><span class="std std-ref">another access control system</span></a> can
 add SEP built-in access control to manage these additional features.</p>
+</section>
+<section id="using-biac-with-iceberg-materialized-views-in-glue">
+<span id="biac-iceberg-mv"></span><h2 id="using-biac-with-iceberg-materialized-views-in-glue">Using BIAC with Iceberg materialized views in Glue<a class="headerlink" href="#using-biac-with-iceberg-materialized-views-in-glue" title="Permalink to this heading">#</a></h2>
+<p>If you are using Iceberg materialized views with Glue, you must configure BIAC
+to store table entity ownership. Add the following property to your cluster
+configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.access-control.ownership-catalogs</span><span class="o">=</span><span class="s">icebergCatalog1</span>
+</pre></div>
+</div>
+<p>For a configuration with multiple catalogs, separate catalog names with a comma:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.access-control.ownership-catalogs</span><span class="o">=</span><span class="s">icebergCatalog1,icebergCatalog2</span>
+</pre></div>
+</div>
+<p>If you want to exclude any catalogs from this migration, do
+not include them in <code class="docutils literal notranslate"><span class="pre">starburst.access-control.ownership-catalogs</span></code>.</p>
+<p>This configuration migrates your table entity ownership for the configured
+catalogs to BIAC.</p>
+<section id="migrate-missing-ownership">
+<h3 id="migrate-missing-ownership">Migrate missing ownership<a class="headerlink" href="#migrate-missing-ownership" title="Permalink to this heading">#</a></h3>
+<p>When you configure BIAC ownership, any new view, table, or schema created stores
+ownership information in BIAC. However, for views and materialized
+views utilizing legacy catalog ownership, there may be a gap in ownership
+information which causes different results when querying table objects.</p>
+<p>If ownership information is missing from a view, BIAC automatically utilizes
+the schema ownership information. If schema ownership information is missing,
+BIAC instead uses the <code class="docutils literal notranslate"><span class="pre">Public</span></code> role.</p>
+<p>To migrate ownership information correctly, run the following query replacing
+the view and authorization names:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">VIEW</span> <span class="n">example_view</span> <span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="p">(</span><span class="k">user</span> <span class="o">|</span> <span class="k">USER</span> <span class="k">user</span> <span class="o">|</span> <span class="k">ROLE</span> <span class="k">role</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>For example, to give the <code class="docutils literal notranslate"><span class="pre">analyst</span></code> role access to a materialized view called
+<code class="docutils literal notranslate"><span class="pre">q4_sales_projections</span></code>, run the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span> <span class="k">VIEW</span> <span class="n">q4_sales_projections</span> <span class="k">SET</span> <span class="k">AUTHORIZATION</span> <span class="n">analyst</span>
+</pre></div>
+</div>
+<p>If you specify a user, the system interprets this as the aggregate of privileges
+across all roles for the user, excluding <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code>. If you specify a role, the
+system bases the access on the defined role’s privileges. If you do not set
+authorization for a view, then SEP maintains the <code class="docutils literal notranslate"><span class="pre">public</span></code> role as the owner.</p>
+<p>Materialized views created after table entity ownership is assigned to BIAC do
+not need to have authorization set manually, as the creator of the view
+automatically becomes its owner with both the username and the enabled role at
+the time of creation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not use <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">Roles</span></code> when defining view owners, because
+adjustments to any one role can inadvertently alter the view’s results when <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">Roles</span></code> are evaluated. Similarly, avoid <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">AUTHORIZATION</span></code> to <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">Roles</span></code> as the
+owner. You must instead define a distinct role as the object owner.</p>
+</div>
+</section>
 </section>
 <section id="api">
 <span id="biac-api"></span><h2 id="api">API<a class="headerlink" href="#api" title="Permalink to this heading">#</a></h2>
@@ -1105,8 +1168,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/435-e/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/435-e/_static/searchbox.js" data-versions="{'Latest LTS (429-e)': '/429-e/', '423-e LTS': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', 'Latest STS (435-e)': '/435-e/', '434-e STS': '/434-e/'}"></script>
-<script src="https://docs.starburst.io/435-e/_static/searchresults.js" data-versions="{'Latest LTS (429-e)': '/429-e/', '423-e LTS': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', 'Latest STS (435-e)': '/435-e/', '434-e STS': '/434-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (429-e)': '/429-e/', '423-e LTS': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', 'Latest STS (435-e)': '/435-e/', '434-e STS': '/434-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (429-e)': '/429-e/', '423-e LTS': '/423-e/', '413-e LTS': '/413-e/', '407-e LTS': '/407-e/', 'Latest STS (435-e)': '/435-e/', '434-e STS': '/434-e/'}"></script>
   </body>
 </html>
