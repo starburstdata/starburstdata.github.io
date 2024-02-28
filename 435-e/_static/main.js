@@ -15,19 +15,24 @@ const menuData = [
   "Insights",
   "SQL language",
   "SQL statement syntax",
+  "Functions and operators",
   "SQL routines",
   "Query optimizer",
   "Developer guide",
   "Object storage connectors",
   "Non-object storage connectors",
+  "Utilities",
   "Administration topics",
+  "Performance, logging, and governance features",
   "Security",
   "AWS ecosystem",
   "Google Cloud",
   "Microsoft Azure",
+  "Deploy with Kubernetes",
   "Deploy with Starburst Admin",
   "Deploy with CFT on AWS",
-  "Local installation"
+  "Local installation",
+  "Version-specific notices and information"
 ]
 
 // Add arrow and remove section navbar on the left side
