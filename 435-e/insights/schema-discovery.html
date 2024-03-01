@@ -362,24 +362,27 @@ following catalog configuration property:</p>
 <h2 id="run-schema-discovery">Run schema discovery<a class="headerlink" href="#run-schema-discovery" title="Permalink to this heading">#</a></h2>
 <p>Run schema discovery to analyze a schema in an object storage location and
 return the structure of any discovered tables using a system table or a table
-function in that location. You must specify the URI and the schema for both
-methods.</p>
+function in that location.</p>
 <p>To run schema discovery using a system table, specify the system table in the
 <code class="docutils literal notranslate"><span class="pre">FROM</span></code> clause, and the URI and schema in the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause, along with any
 options as shown in the following statement:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">sql</span> <span class="k">FROM</span> <span class="n">hive</span><span class="p">.</span><span class="n">schema_discovery</span><span class="p">.</span><span class="n">discovery</span> <span class="k">WHERE</span> <span class="n">uri</span> <span class="o">=</span> <span class="s1">'uri'</span> <span class="k">AND</span> <span class="k">schema</span> <span class="o">=</span> <span class="s1">'schema'</span> <span class="k">AND</span> <span class="k">options</span> <span class="o">=</span> <span class="s1">'sampleFilesPerTableModulo=1,excludePatterns=**/_SUCCESS'</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">sql</span> <span class="k">FROM</span> <span class="n">hive</span><span class="p">.</span><span class="n">schema_discovery</span><span class="p">.</span><span class="n">discovery</span>
+<span class="k">WHERE</span> <span class="n">uri</span> <span class="o">=</span> <span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders'</span>
+<span class="k">AND</span> <span class="k">schema</span> <span class="o">=</span> <span class="s1">'starburst_demo'</span>
+<span class="k">AND</span> <span class="k">options</span> <span class="o">=</span> <span class="s1">'sampleFilesPerTableModulo=1,excludePatterns=**/_SUCCESS'</span>
 </pre></div>
 </div>
 <p>To run schema discovery using a table function, you must call the
 <code class="docutils literal notranslate"><span class="pre">schema_discovery.discovery</span></code> function in the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> clause, and specify the
 URI and schema along with any options as follows:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">sql</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">schema_discovery</span><span class="p">.</span><span class="n">discovery</span><span class="p">(</span><span class="n">uri</span> <span class="o">=&gt;</span> <span class="s1">'uri'</span><span class="p">,</span> <span class="k">schema</span> <span class="o">=&gt;</span> <span class="s1">'schema'</span><span class="p">,</span> <span class="k">options</span> <span class="o">=&gt;</span> <span class="s1">'sampleFilesPerTableModulo=1,excludePatterns=**/_SUCCESS'</span><span class="p">))</span>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">sql</span> <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">schema_discovery</span><span class="p">.</span><span class="n">discovery</span><span class="p">(</span><span class="n">uri</span> <span class="o">=&gt;</span> <span class="s1">'s3://test-bucket/path/to/discoverable/table'</span><span class="p">,</span>
+<span class="k">schema</span> <span class="o">=&gt;</span> <span class="s1">'demo_schema'</span><span class="p">,</span> <span class="k">options</span> <span class="o">=&gt;</span> <span class="s1">'sampleFilesPerTableModulo=1,excludePatterns=**/_SUCCESS'</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>The following sections describe the available options.</p>
 <section id="default-options">
 <h3 id="default-options">Default options<a class="headerlink" href="#default-options" title="Permalink to this heading">#</a></h3>
-<p>Schema discovery is run by default with following options and their default
+<p>Schema discovery is run by default with the following options and their default
 values. Specify a different value as shown in the previous examples to override
 the default values.</p>
 <table>
@@ -484,8 +487,7 @@ the default values.</p>
 <td><p>yyyy-MM-dd HH:mm:ss[.SSSSSSS]</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">comment</span></code></p></td>
-<td><h1 class="rubric" id="id1"></h1>
-</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">#</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -630,13 +632,17 @@ queries on CSV and text files:</p>
 <h2 id="supported-formats">Supported formats<a class="headerlink" href="#supported-formats" title="Permalink to this heading">#</a></h2>
 <p>Schema discovery identifies objects stored in the Iceberg, Delta Lake, and Hive
 table formats. Schema discovery does not identify Hudi tables.</p>
-<p>{% include note.html content=”For Iceberg and Delta Lake tables, schema
-discovery registers tables using the <code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure. For Hive
-tables, schema discovery registers tables using the table metadata.” %}</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For Iceberg and Delta Lake tables, schema discovery registers tables
+using the <code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure. For Hive tables, schema discovery
+registers tables using the table metadata.</p>
+</div>
 <p>Schema discovery identifies tables and views that are stored in the following
 file formats:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">JSON</span></code> in Hive-JSON-SerDe format with one JSON object per line and no line
+termination characters separating the objects.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CSV</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ORC</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">PARQUET</span></code></p></li>
@@ -655,8 +661,8 @@ codecs:</p>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Ensure that your compression codec ends with the proper file extension. Schema
-discovery identifies compression codecs by file extension only.</p>
+<p>Schema discovery identifies compression codecs by file extension only.
+Ensure that your compression codec ends with the proper file extension.</p>
 </div>
 <!--
   - **Column:** The name of a column in the table.
