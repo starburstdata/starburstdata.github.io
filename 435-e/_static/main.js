@@ -22,6 +22,7 @@ const menuData = [
   "Object storage connectors",
   "Non-object storage connectors",
   "Utilities",
+  "Community-supported connectors",
   "Administration topics",
   "Performance, logging, and governance features",
   "Security",
