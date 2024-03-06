@@ -489,11 +489,10 @@ different Snowflake instances.</p>
 <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named <code class="docutils literal notranslate"><span class="pre">example.properties</span></code>, to mount the Snowflake connector
 as the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog (replace <code class="docutils literal notranslate"><span class="pre">example</span></code> with your database name or some
 other descriptive name of the catalog).</p>
-<p>There are three connectors for Snowflake:</p>
+<p>There are two connectors for Snowflake:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> (deprecated)</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> uses JDBC for all reads and writes and is more efficient
 when the result set returned from Snowflake is small.</p>
@@ -501,28 +500,18 @@ when the result set returned from Snowflake is small.</p>
 client to execute queries, and requests data in Arrow format. The connector then
 reads each file independently from different nodes, which results in more
 efficient querying.</p>
-<p>When larger result sets are extracted from Snowflake, the
-<code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector may be a better choice. Instead of
-requesting query results over a JDBC connection, the connector asks Snowflake to
-export them to object storage and SEP reads them from there. Since write and
-read operations are parallelized, this approach scales better for large data
-sets, but has a higher latency.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector is deprecated as of SEP 429-e. Use
 the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector instead, and <a class="reference internal" href="#snowflake-parallel-migration"><span class="std std-ref">migrate existing Snowflake catalogs to the parallel connector</span></a>.</p>
 </div>
-<p>A requirement of using the distributed connector is that your Snowflake
-deployment runs on AWS or Azure. The connector automatically creates <a class="reference external" href="https://docs.snowflake.com/sql-reference/sql/create-stage.html">temporary
-stages</a>
-in temporary storage buckets using Snowflake.</p>
 <p>Create the catalog properties file, for example
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code>, with the following contents, replacing the
 connection properties as appropriate for your setup (for example, replace
 <code class="docutils literal notranslate"><span class="pre">&lt;account_name&gt;</span></code> with the full name of your account, as provided by
 Snowflake).</p>
 <p>For AWS:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_parallel, or snowflake_distributed&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -531,7 +520,7 @@ snowflake.database=&lt;database_name&gt;
 </pre></div>
 </div>
 <p>For Azure:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc, snowflake_parallel, or snowflake_distributed&gt;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.&lt;azure_region&gt;.azure.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 connection-password=&lt;password&gt;
@@ -612,48 +601,6 @@ required at all times as part of the fully-qualified name.</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.proxy.password</span></code></p></td>
 <td><p>Password used to authenticate to the proxy server</p></td>
 <td></td>
-</tr>
-</tbody>
-</table>
-<p>Additionally, there are a number of configuration properties that apply only to
-the distributed connector:</p>
-<table id="id2">
-<caption><span class="caption-text">Distributed connector configuration properties</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
-<colgroup>
-<col style="width: 30%"/>
-<col style="width: 50%"/>
-<col style="width: 20%"/>
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property name</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Default</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.stage-schema</span></code></p></td>
-<td><p>Name of the schema in which stages are created for exporting data</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.max-export-retries</span></code></p></td>
-<td><p>Number of export retries</p></td>
-<td><p>3</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.parquet.max-read-block-size</span></code></p></td>
-<td><p>Maximum block size when reading from the export file</p></td>
-<td><p>16MB</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.max-split-size</span></code></p></td>
-<td><p>Maximum split size for processing the export file</p></td>
-<td><p>64MB</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.max-initial-split-size</span></code></p></td>
-<td><p>Maximum initial split size</p></td>
-<td><p>Half of <code class="docutils literal notranslate"><span class="pre">snowflake.max-split-size</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snowflake.export-file-max-size</span></code></p></td>
-<td><p>Maximum size of files to create when exporting data</p></td>
-<td><p>16MB</p></td>
 </tr>
 </tbody>
 </table>
@@ -759,8 +706,8 @@ each direction.</p>
 <h3 id="snowflake-to-trino-type-mapping">Snowflake to Trino type mapping<a class="headerlink" href="#snowflake-to-trino-type-mapping" title="Permalink to this heading">#</a></h3>
 <p>The connector maps Snowflake types to the corresponding Trino types according to
 the following table:</p>
-<table id="id3">
-<caption><span class="caption-text">Snowflake to Trino type mapping</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Snowflake to Trino type mapping</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 20%"/>
@@ -847,19 +794,19 @@ the following table:</p>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP_NTZ(n)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
-<td><p>Supports only precision 3 in distributed mode</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP_LTZ(n)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
-<td><p>Supports only precision 3 in distributed mode</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP_TZ(n)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
-<td><p>Supports only precision 3 in distributed mode</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(n)</span></code></p></td>
-<td><p>Supports only precision 3 in distributed mode</p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -869,8 +816,8 @@ the following table:</p>
 <h3 id="trino-to-snowflake-type-mapping">Trino to Snowflake type mapping<a class="headerlink" href="#trino-to-snowflake-type-mapping" title="Permalink to this heading">#</a></h3>
 <p>The connector maps Trino types to the corresponding Snowflake types according to the
 following table:</p>
-<table id="id4">
-<caption><span class="caption-text">Trino to Snowflake type mapping</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Trino to Snowflake type mapping</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 20%"/>
@@ -1042,12 +989,6 @@ property to <code class="docutils literal notranslate"><span class="pre">true</s
 <section id="table-functions">
 <span id="snowflake-table-functions"></span><h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to access Snowflake.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_distributed</span></code> connector does not support table functions.
-Only <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> and <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connectors support table
-functions.</p>
-</div>
 <section id="query-varchar-table">
 <span id="snowflake-query-function"></span><h3 id="query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(VARCHAR)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code><a class="headerlink" href="#query-varchar-table" title="Permalink to this heading">#</a></h3>
 <p>The <code class="docutils literal notranslate"><span class="pre">query</span></code> function allows you to query the underlying database directly. It
@@ -1217,8 +1158,8 @@ catalog configuration file:</p>
 </div>
 <p>The following catalog configuration properties can be used to tune
 connection pooling:</p>
-<table id="id5">
-<caption><span class="caption-text">JDBC connection pooling catalog configuration properties</span><a class="headerlink" href="#id5" title="Permalink to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">JDBC connection pooling catalog configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
