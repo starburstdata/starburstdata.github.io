@@ -8,7 +8,7 @@ function addArrowElementChild(element) {
 }
 
 const menuData = [
-  "Features, use cases, and support",
+  "What is Starburst Enterprise?",
   "Try Starburst Enterprise",
   "Clients",
   "Data products",
