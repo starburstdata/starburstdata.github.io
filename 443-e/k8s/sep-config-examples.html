@@ -1347,17 +1347,8 @@ script on the coordinator and workers:</p>
 &lt;&lt;starburst_logs&gt;&gt;
 </pre></div>
 </div>
-<p>Use <code class="docutils literal notranslate"><span class="pre">initFile:</span></code> to retrieve and load drivers and other large binaries with
-<code class="docutils literal notranslate"><span class="pre">curl</span></code> at startup:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">initFile</span><span class="p">:</span> <span class="p p-Indicator">|</span>
-  <span class="no">#!/bin/bash</span>
-  <span class="no">echo "Custom init for $1 $2"</span>
-  <span class="no">curl https://gdaadmins.blob.core.windows.net/prestoteradatadriver/terajdbc4.jar -o /usr/lib/presto/plugin/teradata/terajdbc4.jar</span>
-  <span class="no">exec /usr/lib/starburst/bin/run-starburst</span>
-<span class="nt">extraArguments</span><span class="p">:</span>
-  <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">TEST_ARG</span>
-</pre></div>
-</div>
+<p>To retrieve and load drivers and other large binaries at startup, Starburst
+recommends using an <a class="reference internal" href="sep-configuration.html#helm-sep-initcontainers"><span class="std std-ref">init container</span></a>.</p>
 </section>
 </section>
 <section id="security-considerations">
@@ -1819,8 +1810,9 @@ SEP:</p>
 </pre></div>
 </div>
 </section>
+<hr class="docutils" id="k8s-ex-kubernetes-configs"/>
 <section id="kubernetes-management-and-monitoring">
-<span id="k8s-ex-kubernetes-configs"></span><h3 id="kubernetes-management-and-monitoring">Kubernetes management and monitoring<a class="headerlink" href="#kubernetes-management-and-monitoring" title="Permalink to this heading">#</a></h3>
+<h3 id="kubernetes-management-and-monitoring">Kubernetes management and monitoring<a class="headerlink" href="#kubernetes-management-and-monitoring" title="Permalink to this heading">#</a></h3>
 </section>
 <section id="k8s-defaults-k8s-monitoring">
 <span id="id9"></span><h3 id="k8s-defaults-k8s-monitoring">Default<a class="headerlink" href="#k8s-defaults-k8s-monitoring" title="Permalink to this heading">#</a></h3>
@@ -1828,28 +1820,29 @@ SEP:</p>
 Do not place unchanged values in customization files. Instead, follow <a class="reference internal" href="sep-configuration.html#k8s-customization-file-set"><span class="std std-ref">best practices</span></a> for creating YAML files for customizing
 SEP:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">readinessProbe</span><span class="p">:</span>
-  <span class="nt">exec</span><span class="p">:</span>
-    <span class="nt">command</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">-c</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">curl --max-time 5 -s http://localhost:8080/v1/info | grep \"starting\":false</span>
-  <span class="nt">initialDelaySeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
-  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">5</span>
-  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
+  <span class="nt">httpGet</span><span class="p">:</span>
+    <span class="nt">scheme</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTP</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/v1/readiness</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8085</span>
+  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
+  <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
 
 <span class="nt">livenessProbe</span><span class="p">:</span>
-  <span class="nt">exec</span><span class="p">:</span>
-    <span class="nt">command</span><span class="p">:</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">/bin/sh</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">-c</span>
-      <span class="p p-Indicator">-</span> <span class="l l-Scalar l-Scalar-Plain">curl --max-time 5 -s http://localhost:8080/v1/info | grep \"starting\":false</span>
-  <span class="nt">initialDelaySeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
-  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">300</span>
-  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">30</span>
-  <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">1</span>
+  <span class="nt">httpGet</span><span class="p">:</span>
+    <span class="nt">scheme</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">HTTP</span>
+    <span class="nt">path</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">/v1/info</span>
+    <span class="nt">port</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">8085</span>
+  <span class="nt">timeoutSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">10</span>
+  <span class="nt">periodSeconds</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">60</span>
+  <span class="nt">failureThreshold</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">3</span>
 
 <span class="nt">commonLabels</span><span class="p">:</span> <span class="p p-Indicator">{}</span>
 </pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Both HTTP and HTTPS are supported.</p>
 </div>
 </section>
 </section>
