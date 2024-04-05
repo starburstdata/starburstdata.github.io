@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
       clickAnalytics: true,
       hitsPerPage: 20,
       getRankingInfo: true,
-      filters: '(categories.lvl2:"Starburst Galaxy > Reference > Sql > Ref")',
+      filters: '(categories.lvl2:"Starburst Galaxy > Reference > Sql")',
     }),
 
     instantsearch.widgets.searchBox({
