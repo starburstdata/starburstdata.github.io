@@ -2249,24 +2249,99 @@ Click the column name again to reverse the sort order.</p>
       </h2>
     
 
+<p>Data-driven organizations need quick access to data to make critical decisions.
+With Starburst Galaxy’s data profiling capabilities, you can view the shape of
+your data and create rules to monitor data quality. These are limited to object
+store connectors and a limited number of metrics consisting of null value
+percentage, minimum and maximum values, number of unique values, and volume of
+data.</p>
+
 <p>Click the <strong>Applied rules</strong> button to view your data quality monitoring rules,
 or to create a new rule. The <strong>Applied rules</strong> tab displays a list of
-information about each rule such as name, status, description, expression, and
-severity level.</p>
+information about each rule such as name, status, description, expression or SQL
+statement, and severity level.</p>
 
 <p>To create a new quality rule:</p>
 
 <ol>
   <li>Click <strong>Create data quality rule</strong>.</li>
   <li>Enter a name and description for the quality rule.</li>
-  <li>Enter an expression for the rule. See <a href="../../reference/expressions/data-quality-expressions.html">Expressions &gt; Data quality
-expressions</a> for
-more details and examples.</li>
+  <li>Select a monitoring type. You can monitor data quality with a <a href="#expression-based-quality-check">data quality
+expression</a>, or with a <a href="#sql-based-quality-check">custom SQL
+statement</a>.</li>
+  <li>Click <strong>Test expression</strong> or <strong>Test SQL</strong> to validate your monitoring rule.</li>
   <li>Select the level of severity for the quality check.</li>
   <li>Click <strong>Save</strong>.</li>
 </ol>
 
 <p><img src="/assets/img/galaxy/catalog-explorer-profile-rule.png" alt="data quality rule" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+
+<p>In the <strong>Applied rules</strong> list, click the <i class="fas fa-ellipsis-v"></i>
+options menu to evaluate, edit, or delete any quality check rule.</p>
+      <h3 id="expression-based-quality-check">
+        
+        
+          Expression-based quality check <a href="#expression-based-quality-check" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>You can write an expression to determine the scope of a data quality monitoring
+rule. For more details and examples of expression-based quality checks, see
+<a href="../../reference/expressions/data-quality-expressions.html">Reference -&gt; Data quality
+expressions</a>.</p>
+      <h3 id="sql-based-quality-check">
+        
+        
+          SQL-based quality check <a href="#sql-based-quality-check" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>You can write SQL statements that evaluate to a boolean that can be run on a
+ schedule to validate the data. There are two methods for writing a SQL-based
+ data quality check: a Common Table Expression (CTE) that generates rows and is
+ followed by a <code class="language-plaintext highlighter-rouge">COUNT</code> <a href="../../reference/sql/ref/routines/case.html">CASE</a>
+ statement, or a subquery embedded in a <code class="language-plaintext highlighter-rouge">CASE</code> statement.</p>
+
+<p>An example using the CTE method that returns one or more rows if the quality
+check fails. If <code class="language-plaintext highlighter-rouge">COUNT(*)</code> of CTE evaluates to <code class="language-plaintext highlighter-rouge">0</code>, return <code class="language-plaintext highlighter-rouge">TRUE</code>, otherwise
+return <code class="language-plaintext highlighter-rouge">FALSE</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">cte</span> <span class="k">AS</span><span class="p">(</span>
+	<span class="k">SELECT</span><span class="o">-</span><span class="n">based</span> <span class="o">&lt;</span><span class="k">data</span> <span class="n">quality</span> <span class="k">check</span><span class="o">&gt;</span>
+<span class="p">)</span>
+<span class="k">SELECT</span>
+   <span class="k">CASE</span>
+       <span class="k">WHEN</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">THEN</span> <span class="k">TRUE</span>
+       <span class="k">ELSE</span> <span class="k">FALSE</span>
+   <span class="k">END</span>
+<span class="k">FROM</span> <span class="n">cte</span>
+</code></pre></div></div>
+
+<p>An example using the subquery method:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+   <span class="k">CASE</span>
+       <span class="k">WHEN</span> <span class="k">avg</span><span class="p">(</span><span class="n">totalprice</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5000</span> <span class="k">THEN</span> <span class="k">TRUE</span>
+       <span class="k">ELSE</span> <span class="k">FALSE</span>
+   <span class="k">END</span>
+<span class="k">FROM</span> <span class="nv">"tpch"</span><span class="p">.</span><span class="nv">"tiny"</span><span class="p">.</span><span class="nv">"orders"</span>
+</code></pre></div></div>
+
+<p>You can author checks for a single column attribute, multiple attribute checks
+across multiple columns, or attribute checks at the row-level.</p>
+
+<p>A quality check can be executed manually, or scheduled as a cron job. Checks run
+on a user’s own cluster and incur compute costs.</p>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  Do not terminate SQL statements with a semicolon
+<code class="language-plaintext highlighter-rouge">;</code>.</div>
       <h2 id="profile-schedule">
         
         
@@ -2396,7 +2471,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#data-profile-and-quality">Data profile and quality</a><ul><li><a href="#header-section-and-graph">Header section and graph</a></li><li><a href="#column-profile">Column profile</a></li><li><a href="#data-quality">Data quality</a></li><li><a href="#profile-schedule">Profile schedule</a></li></ul></li></ul>
+          <ul><li><a href="#data-profile-and-quality">Data profile and quality</a><ul><li><a href="#header-section-and-graph">Header section and graph</a></li><li><a href="#column-profile">Column profile</a></li><li><a href="#data-quality">Data quality</a><ul><li><a href="#expression-based-quality-check">Expression-based quality check</a></li><li><a href="#sql-based-quality-check">SQL-based quality check</a></li></ul></li><li><a href="#profile-schedule">Profile schedule</a></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
