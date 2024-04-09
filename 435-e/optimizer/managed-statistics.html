@@ -240,6 +240,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Managed statistics</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#coordinator-node-configuration">Coordinator node configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#internal-tls-configuration">Internal TLS configuration</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#catalog-configuration">Catalog configuration</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#managed-statistics-configuration-properties">Managed statistics configuration properties</a></li>
 </ul>
@@ -317,6 +318,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#coordinator-node-configuration" class="md-nav__link">Coordinator node configuration</a>
         </li>
+        <li class="md-nav__item"><a href="#internal-tls-configuration" class="md-nav__link">Internal TLS configuration</a>
+        </li>
         <li class="md-nav__item"><a href="#catalog-configuration" class="md-nav__link">Catalog configuration</a>
         </li>
         <li class="md-nav__item"><a href="#managed-statistics-configuration-properties" class="md-nav__link">Managed statistics configuration properties</a>
@@ -359,6 +362,8 @@ underlying database.</p></li>
 <li><p>An <a class="reference internal" href="../security/internal-communication.html"><span class="doc">internal shared secret</span></a> to secure
 transmission of statistics.</p></li>
 </ul>
+<p>Transport Layer Security (TLS) is not configured automatically to secure managed
+statistics collection. If TLS is a requirement, it must be <a class="reference internal" href="#internal-tls-config"><span class="std std-ref">configured at the cluster level</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The managed statistics feature is only supported in select connectors.
@@ -372,6 +377,103 @@ configuration properties to <code class="docutils literal notranslate"><span cla
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.managed-statistics.enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
+</section>
+<section id="internal-tls-configuration">
+<span id="internal-tls-config"></span><h3 id="internal-tls-configuration">Internal TLS configuration<a class="headerlink" href="#internal-tls-configuration" title="Permalink to this heading">#</a></h3>
+<p>SSL/TLS is configured in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file. The SSL/TLS on the worker
+and coordinator nodes are configured using the same set of properties. Every
+node in the cluster must be configured. Nodes that have not been configured, or
+are configured incorrectly, are not able to communicate with other nodes in the
+cluster.</p>
+<p>To enable SSL/TLS for internal communication, do the following:</p>
+<ol class="arabic">
+<li><p>Disable HTTP endpoint.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">enabled</span><span class="o">=</span><span class="k">false</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>You can enable HTTPS, while leaving HTTP enabled. In most cases
+this is a security hole. If you are certain you want to use this
+configuration, you should consider using an firewall to limit access to the
+HTTP endpoint to only those hosts that should be allowed to use it.</p>
+</div>
+</li>
+<li><p>Configure the cluster to communicate using the fully qualified domain name
+(fqdn) of the cluster nodes. This can be done in either of the following
+ways:</p>
+<ul>
+<li><p>If the DNS service is configured properly, the nodes can introduce
+themselves to the coordinator using the hostname taken from the system
+configuration (<code class="docutils literal notranslate"><span class="pre">hostname</span> <span class="pre">--fqdn</span></code>)</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">node</span><span class="p">.</span><span class="n">internal</span><span class="o">-</span><span class="n">address</span><span class="o">-</span><span class="k">source</span><span class="o">=</span><span class="n">FQDN</span>
+</pre></div>
+</div>
+</li>
+<li><p>Alternatively, specify each node’s fully-qualified hostname manually. This
+is different for every host. Hosts should be in the same domain to make it
+easy to create the correct SSL/TLS certificates. For example:
+<code class="docutils literal notranslate"><span class="pre">coordinator.example.com</span></code>, <code class="docutils literal notranslate"><span class="pre">worker1.example.com</span></code>, <code class="docutils literal notranslate"><span class="pre">worker2.example.com</span></code>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">node</span><span class="p">.</span><span class="n">internal</span><span class="o">-</span><span class="n">address</span><span class="o">=&lt;</span><span class="n">node</span> <span class="n">fqdn</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p>Generate a Java Keystore File. Every SEP node must be able to connect to
+any other node within the same cluster. It is possible to create unique
+certificates for every node using the fully-qualified hostname of each host,
+create a keystore that contains all the public keys for all of the hosts, and
+specify it for the client. In most cases, it is easier to use a wildcard in
+the certificate as shown below.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">keytool</span> <span class="o">-</span><span class="n">genkeypair</span> <span class="o">-</span><span class="k">alias</span> <span class="n">example</span><span class="p">.</span><span class="n">com</span> <span class="o">-</span><span class="n">keyalg</span> <span class="n">RSA</span> <span class="o">-</span><span class="n">keystore</span> <span class="n">keystore</span><span class="p">.</span><span class="n">jks</span>
+<span class="n">Enter</span> <span class="n">keystore</span> <span class="n">password</span><span class="p">:</span>
+<span class="n">Re</span><span class="o">-</span><span class="n">enter</span> <span class="k">new</span> <span class="n">password</span><span class="p">:</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">your</span> <span class="k">first</span> <span class="k">and</span> <span class="k">last</span> <span class="n">name</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>  <span class="o">*</span><span class="p">.</span><span class="n">example</span><span class="p">.</span><span class="n">com</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">the</span> <span class="n">name</span> <span class="k">of</span> <span class="n">your</span> <span class="n">organizational</span> <span class="n">unit</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">the</span> <span class="n">name</span> <span class="k">of</span> <span class="n">your</span> <span class="n">organization</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">the</span> <span class="n">name</span> <span class="k">of</span> <span class="n">your</span> <span class="n">City</span> <span class="k">or</span> <span class="n">Locality</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">the</span> <span class="n">name</span> <span class="k">of</span> <span class="n">your</span> <span class="k">State</span> <span class="k">or</span> <span class="n">Province</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>
+<span class="n">What</span> <span class="k">is</span> <span class="n">the</span> <span class="n">two</span><span class="o">-</span><span class="n">letter</span> <span class="n">country</span> <span class="n">code</span> <span class="k">for</span> <span class="n">this</span> <span class="n">unit</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">Unknown</span><span class="p">]:</span>
+<span class="k">Is</span> <span class="n">CN</span><span class="o">=*</span><span class="p">.</span><span class="n">example</span><span class="p">.</span><span class="n">com</span><span class="p">,</span> <span class="n">OU</span><span class="o">=</span><span class="k">Unknown</span><span class="p">,</span> <span class="n">O</span><span class="o">=</span><span class="k">Unknown</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="k">Unknown</span><span class="p">,</span> <span class="n">ST</span><span class="o">=</span><span class="k">Unknown</span><span class="p">,</span> <span class="k">C</span><span class="o">=</span><span class="k">Unknown</span> <span class="n">correct</span><span class="o">?</span>
+  <span class="p">[</span><span class="k">no</span><span class="p">]:</span>  <span class="n">yes</span>
+<span class="n">Enter</span> <span class="k">key</span> <span class="n">password</span>
+        <span class="p">(</span><span class="k">RETURN</span> <span class="k">if</span> <span class="n">same</span> <span class="k">as</span> <span class="n">keystore</span> <span class="n">password</span><span class="p">):</span>
+</pre></div>
+</div>
+</li>
+<li><p>Distribute the Java Keystore File across the SEP cluster.</p></li>
+<li><p>Enable the HTTPS endpoint.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">http</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">enabled</span><span class="o">=</span><span class="k">true</span>
+<span class="n">http</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">port</span><span class="o">=&lt;</span><span class="n">https</span> <span class="n">port</span><span class="o">&gt;</span>
+<span class="n">http</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">keystore</span><span class="p">.</span><span class="n">path</span><span class="o">=&lt;</span><span class="n">keystore</span> <span class="n">path</span><span class="o">&gt;</span>
+<span class="n">http</span><span class="o">-</span><span class="n">server</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">keystore</span><span class="p">.</span><span class="k">key</span><span class="o">=&lt;</span><span class="n">keystore</span> <span class="n">password</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Change the discovery URI to HTTPS.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">discovery</span><span class="p">.</span><span class="n">uri</span><span class="o">=</span><span class="n">https</span><span class="p">:</span><span class="o">//&lt;</span><span class="n">coordinator</span> <span class="n">fqdn</span><span class="o">&gt;</span><span class="p">:</span><span class="o">&lt;</span><span class="n">https</span> <span class="n">port</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Configure the internal communication to require HTTPS.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">internal</span><span class="o">-</span><span class="n">communication</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">required</span><span class="o">=</span><span class="k">true</span>
+</pre></div>
+</div>
+</li>
+<li><p>Configure the internal communication to use the Java keystore file.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">internal</span><span class="o">-</span><span class="n">communication</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">keystore</span><span class="p">.</span><span class="n">path</span><span class="o">=&lt;</span><span class="n">keystore</span> <span class="n">path</span><span class="o">&gt;</span>
+<span class="n">internal</span><span class="o">-</span><span class="n">communication</span><span class="p">.</span><span class="n">https</span><span class="p">.</span><span class="n">keystore</span><span class="p">.</span><span class="k">key</span><span class="o">=&lt;</span><span class="n">keystore</span> <span class="n">password</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</li>
+</ol>
 </section>
 <section id="catalog-configuration">
 <h3 id="catalog-configuration">Catalog configuration<a class="headerlink" href="#catalog-configuration" title="Permalink to this heading">#</a></h3>
