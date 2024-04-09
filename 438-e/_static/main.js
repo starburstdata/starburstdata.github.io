@@ -1,12 +1,14 @@
-// Function to scroll the nav automatically
 function addArrowElementChild(element) {
-  // Create checkbox element
   var arrowElement = document.createElement('span');
   arrowElement.className = 'arrow fa fa-angle-right';
-  // Insert the <span> before the existing content of the <a> tag
   element.insertBefore(arrowElement, element.firstChild);
+  arrowElement.addEventListener('click', function(event) {
+    event.preventDefault(); 
+    event.stopPropagation();
+  });
 }
 
+// This list refers to all the first-level toc that has an arrow
 const menuData = [
   "What is Starburst Enterprise?",
   "Try Starburst Enterprise",
@@ -20,6 +22,7 @@ const menuData = [
   "Query optimizer",
   "Developer guide",
   "Object storage connectors",
+  "Object storage extensions",
   "Non-object storage connectors",
   "Utilities",
   "Community-supported connectors",
@@ -33,30 +36,62 @@ const menuData = [
   "Deploy with Starburst Admin",
   "Deploy with CFT on AWS",
   "Local installation",
-  "Version-specific notices and information"
+  "Release notes",
+  "Version-specific notices and information",
+  "Red Hat OpenShift",
 ]
 
-// Add arrow and remove section navbar on the left side
+// This list refers to all the headers that have the child pages underneath. Each header that has child page(s) need to be mentioned here to show it properly on the left-hand nav.
+const excludedText = [
+  'Functions by name',
+  'Functions per topic',
+  'Statements A-F',
+  'Statements G-R',
+  'Statements S-Z',
+  'Object storage connectors',
+  'Object storage extensions',
+  'Starburst tools',
+  'System information',
+  'Benchmarking',
+  'Other utility connectors',
+  "Properties reference",
+  "Performance-related properties and features",
+  "Starburst Cached Views",
+  "Data governance",
+  "Platform features",
+  "Other resources",
+  "Built-in access control",
+  "User authentication and client security",
+  "Cluster security",
+  "Third-party access control",
+  "Miscellaneous security options",
+  "Security topic areas"
+];
+
+
 document.addEventListener('DOMContentLoaded', function(){
-  // Define an array of selector strings
-  var selectors = ['.toctree-l1', '.toctree-l2', '.toctree-l3'];
-  // Get all elements with the class "reference internal"
+  var selectors = ['.toctree-l1' , '.toctree-l2', '.toctree-l3'];
+
   var elements = document.querySelectorAll('.reference.internal');
 
-  // Loop through each element and check if its href contains "#" and it has a parent with class "toctree-l1"
   elements.forEach(function(element) {
-    var parent = element.closest('.toctree-l1');
+    // var parent = element.closest('.toctree-l1');
+    var parent = element.closest('.toctree-l1, .toctree-l2, .toctree-l3');
     var hrefValue = element.getAttribute('href');
+    var textContent = element.textContent;
 
     // Check if the href attribute contains "#" and is not equal to "#"
-    if (parent && hrefValue && hrefValue !== "#" && hrefValue.includes('#')) {
+    if (parent && hrefValue && hrefValue !== "#" 
+    && hrefValue.includes('#') 
+    && !parent.querySelector('a[href$=".html"]')
+    && !excludedText.some(excluded => textContent.includes(excluded))
+    ) {
       // Hide the element
       element.style.display = 'none';
     }
   });
 
-  // Iterate through each selector and apply the function
-  selectors.forEach(function (selector) {
+  selectors.forEach(function (selector) { 
     // Select all elements matching the current selector
     var elements = document.querySelectorAll(selector);
 
@@ -67,66 +102,297 @@ document.addEventListener('DOMContentLoaded', function(){
         // If it has children, select the 'a' element and apply the function
         var childLink = element.querySelector('a');
          // Check if the text content of the element is in the menuData array
-        if (childLink && menuData.includes(childLink.firstChild.data)) {
+        if (childLink && menuData.includes(childLink.firstChild.data) 
+        && element.classList.contains('toctree-l1')
+        ) {
           addArrowElementChild(childLink);
         }
       }
     });
   });
 
-  //what happens when the left side bar is being clicked
-  document.body.addEventListener('click', function (event) {
-    // Check if the clicked element or its parent has the class 'toctree-l1'
-    var toctreeL1 = event.target.closest('.toctree-l1');
-
-    // Check if the clicked element has the class 'current'
-    var isCurrent = event.target.classList.contains('current');
-    console.log(isCurrent)
-
-    if (toctreeL1 && true) {
-
-
-        // Toggle the class on the clicked element
-        var arrowElement = toctreeL1.querySelector('.arrow');
-
-        // Toggle between 'fa-angle-right' and 'fa-angle-down'
-        arrowElement.classList.toggle('fa-angle-right');
-        arrowElement.classList.toggle('fa-angle-down');
-
-        // Get the ul child element of the clicked element
-        var child = event.target.nextElementSibling;
-
-        // Toggle the visibility classes on the child element based on its current state
-        if (child) {
-            child.classList.toggle('visibility-none');
-        }
-    }
-  });
-
   // Simulate a click event on a specific element after the DOM content has loaded
-  var targetElement = document.querySelector('.toctree-l1.current a');
+  var targetElement1 = document.querySelector('.toctree-l1.current a');
+  var targetElement2 = document.querySelector('.toctree-l2.current a');
+  var targetElement3 = document.querySelector('.toctree-l3.current a');
+  var targetElement4 = document.querySelector('.toctree-l4.current a');
   var clickEvent = new Event('click', {
       bubbles: true,
       cancelable: true
   });
 
-  // Below is the original code
-  // This function is to keep the left bar scrolling to the top 
-  targetElement.addEventListener('click', function (event) {
-      // Scroll to the clicked element
-      event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
-
-      var child = event.target.nextElementSibling;
-      if (child) {
-        child.classList.toggle('visibility-none');
-    }
+  var clickEvent2 = new Event('click', {
+    bubbles: true,
+    cancelable: true
   });
 
-  // Dispatch the simulated click event
-  targetElement.dispatchEvent(clickEvent);
-});
+  // This function is to keep the left bar scrolling to the top 
+  var targetElement = targetElement2 || targetElement3 || targetElement1 || targetElement4;
 
-document.addEventListener('DOMContentLoaded', function(){
+  if(targetElement) {
+    targetElement.addEventListener('click', function (event) {
+      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
+
+      var arrowElement = toctree.querySelector('.arrow');
+      var child = event.target.nextElementSibling;
+      child.classList.add("current")
+      // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
+
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+
+      toctreeL2Elements.forEach(function(toctreeL2) {
+        toctreeL2.addEventListener('click', function(event) {
+          // Inside the event listener, remove the "addBold" class from all 'toctree-l2' elements
+          toctreeL2Elements.forEach(function(element) {
+            element.classList.remove("addBold");
+          });
+
+          // Add the "addBold" class to the clicked 'toctree-l2' element
+          var grandChild = event.target;
+
+          grandChild.classList.add("bold");
+        });
+
+        toctreeL2.dispatchEvent(clickEvent2)
+      });
+
+      if (toctree && child) {
+        // Toggle visibility of the child element
+        child.classList.toggle('visible');
+
+        // Check if the child element is now visible
+        var isVisible = child.classList.contains('visible');
+        
+        if(event.target.baseURI.includes('#')){
+          setTimeout(function(){
+            // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
+            // console.log(event.target.nextElementSibling, "clicked")
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              var scrollY = window.scrollY + event.target.nextElementSibling.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        } 
+        else {
+          setTimeout(function(){
+            // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {      
+              var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        }
+
+        // If the child is hidden, add visibility-none class to it
+        if (!isVisible) {
+            child.classList.add('visibility-none');
+        } else {
+            // If the child is visible, remove visibility-none class
+            child.classList.remove('visibility-none');
+        }
+      }
+      
+      if (!child) {
+        // Create a new <ul> element with the class "visible"
+        const ulVisible = document.createElement('ul');
+      
+        // Append the new <ul> element to the parent of the event target
+        event.target.parentNode.appendChild(ulVisible);
+      
+        // Log the updated value of child after appending the <ul> element
+        child = event.target.nextElementSibling;
+      }
+    });
+  
+    // Dispatch the simulated click event
+    targetElement.dispatchEvent(clickEvent);
+  }
+
+  if(targetElement3) {
+    targetElement3.addEventListener('click', function (event) {
+      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
+
+      var arrowElement = toctree.querySelector('.arrow');
+      var child = event.target.nextElementSibling;
+      child.classList.add("current")
+      // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
+
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+
+      toctreeL2Elements.forEach(function(toctreeL2) {
+        toctreeL2.addEventListener('click', function(event) {
+          // Inside the event listener, remove the "addBold" class from all 'toctree-l2' elements
+          toctreeL2Elements.forEach(function(element) {
+            element.classList.remove("addBold");
+          });
+
+          // Add the "addBold" class to the clicked 'toctree-l2' element
+          var grandChild = event.target;
+
+          grandChild.classList.add("bold");
+        });
+
+        toctreeL2.dispatchEvent(clickEvent2)
+      });
+
+      if (toctree && child) {
+        // Toggle visibility of the child element
+        child.classList.toggle('visible');
+
+        // Check if the child element is now visible
+        var isVisible = child.classList.contains('visible');
+        
+        if(event.target.baseURI.includes('#')){
+          setTimeout(function(){
+            // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
+            // console.log(event.target.nextElementSibling, "clicked")
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              var scrollY = window.scrollY + event.target.nextElementSibling.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        } 
+        else {
+          setTimeout(function(){
+            // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {      
+              var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        }
+
+        // If the child is hidden, add visibility-none class to it
+        if (!isVisible) {
+            child.classList.add('visibility-none');
+        } else {
+            // If the child is visible, remove visibility-none class
+            child.classList.remove('visibility-none');
+        }
+      }
+      
+      if (!child) {
+        // Create a new <ul> element with the class "visible"
+        const ulVisible = document.createElement('ul');
+      
+        // Append the new <ul> element to the parent of the event target
+        event.target.parentNode.appendChild(ulVisible);
+      
+        // Log the updated value of child after appending the <ul> element
+        child = event.target.nextElementSibling;
+      }
+    });
+  
+    // Dispatch the simulated click event
+    targetElement3.dispatchEvent(clickEvent);
+  }
+
+  if(targetElement4) {
+    targetElement4.addEventListener('click', function (event) {
+      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
+
+      var arrowElement = toctree.querySelector('.arrow');
+      var child = event.target.nextElementSibling;
+      child.classList.add("current")
+      // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
+
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+
+      toctreeL2Elements.forEach(function(toctreeL2) {
+        toctreeL2.addEventListener('click', function(event) {
+          // Inside the event listener, remove the "addBold" class from all 'toctree-l2' elements
+          toctreeL2Elements.forEach(function(element) {
+            element.classList.remove("addBold");
+          });
+
+          // Add the "addBold" class to the clicked 'toctree-l2' element
+          var grandChild = event.target;
+
+          grandChild.classList.add("bold");
+        });
+
+        toctreeL2.dispatchEvent(clickEvent2)
+      });
+
+      if (toctree && child) {
+        // Toggle visibility of the child element
+        child.classList.toggle('visible');
+
+        // Check if the child element is now visible
+        var isVisible = child.classList.contains('visible');
+        
+        if(event.target.baseURI.includes('#')){
+          setTimeout(function(){
+            // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
+            // console.log(event.target.nextElementSibling, "clicked")
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              var scrollY = window.scrollY + event.target.nextElementSibling.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        } 
+        else {
+          setTimeout(function(){
+            // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
+            if ('scrollBehavior' in document.documentElement.style) {
+              event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {      
+              var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
+              window.scrollTo({ top: scrollY, behavior: 'smooth' });
+            }
+            arrowElement.classList.toggle('fa-angle-right', !isVisible);
+            arrowElement.classList.toggle('fa-angle-down', isVisible);
+          }, 100)
+        }
+
+        // If the child is hidden, add visibility-none class to it
+        if (!isVisible) {
+            child.classList.add('visibility-none');
+        } else {
+            // If the child is visible, remove visibility-none class
+            child.classList.remove('visibility-none');
+        }
+      }
+      
+      if (!child) {
+        // Create a new <ul> element with the class "visible"
+        const ulVisible = document.createElement('ul');
+      
+        // Append the new <ul> element to the parent of the event target
+        event.target.parentNode.appendChild(ulVisible);
+      
+        // Log the updated value of child after appending the <ul> element
+        child = event.target.nextElementSibling;
+      }
+    });
+  
+    // Dispatch the simulated click event
+    targetElement4.dispatchEvent(clickEvent);
+  }
+
   function copyToClipboard() {
     var titleAnchor = document.querySelectorAll('.headerlink');
     var url = window.location.href;
@@ -138,6 +404,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   copyToClipboard();
 });
+
 
 function toggleDropdown(){
   document.addEventListener('click', event => {
