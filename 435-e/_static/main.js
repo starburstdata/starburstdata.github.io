@@ -32,13 +32,13 @@ const menuData = [
   "AWS ecosystem",
   "Google Cloud",
   "Microsoft Azure",
+  "Red Hat OpenShift",
   "Deploy with Kubernetes",
   "Deploy with Starburst Admin",
   "Deploy with CFT on AWS",
   "Local installation",
   "Release notes",
   "Version-specific notices and information",
-  "Red Hat OpenShift",
 ]
 
 // This list refers to all the headers that have the child pages underneath. Each header that has child page(s) need to be mentioned here to show it properly on the left-hand nav.
