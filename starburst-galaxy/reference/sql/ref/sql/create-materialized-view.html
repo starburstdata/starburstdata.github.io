@@ -781,6 +781,7 @@
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">#</a></h2>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CREATE [ OR REPLACE ] MATERIALIZED VIEW
 [ IF NOT EXISTS ] view_name
+[ GRACE PERIOD interval ]
 [ COMMENT string ]
 [ WITH properties ]
 AS query
@@ -800,14 +801,25 @@ operation to create the data is performed once during refresh of the
 materialized views, as compared to each time of accessing the view. Multiple
 reads of view data over time, or by multiple users, all trigger repeated
 processing. This is avoided for materialized views.</p>
-<p>When the underlying data changes, the materialized view becomes out of sync with
-the source tables. Update the data in the materialized view with the
-<a class="reference internal" href="refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> statement.</p>
 <p>The optional <code class="docutils literal notranslate"><span class="pre">OR</span> <span class="pre">REPLACE</span></code> clause causes the materialized view to be replaced
 if it already exists rather than raising an error.</p>
 <p>The optional <code class="docutils literal notranslate"><span class="pre">IF</span> <span class="pre">NOT</span> <span class="pre">EXISTS</span></code> clause causes the materialized view only to be
 created if it does not exist yet.</p>
 <p>Note that <code class="docutils literal notranslate"><span class="pre">OR</span> <span class="pre">REPLACE</span></code> and <code class="docutils literal notranslate"><span class="pre">IF</span> <span class="pre">NOT</span> <span class="pre">EXISTS</span></code> are mutually exclusive clauses.</p>
+<p id="mv-grace-period">The optional <code class="docutils literal notranslate"><span class="pre">GRACE</span> <span class="pre">PERIOD</span></code> clause specifies how long the query materialization
+is used for querying:</p>
+<ul class="simple">
+<li><p>Within the grace period since last refresh, data retrieval is highly
+performant because the query materialization is used. However, the data may
+not be up to date with the base tables.</p></li>
+<li><p>After the grace period has elapsed, the data of the materialized view is
+computed on-the-fly using the <code class="docutils literal notranslate"><span class="pre">query</span></code>. Retrieval is therefore slower, but the
+data is up to date with the base tables.</p></li>
+<li><p>If not specified, the grace period defaults to infinity, and therefore all
+queries are within the grace period.</p></li>
+<li><p>Every <a class="reference internal" href="refresh-materialized-view.html"><span class="doc std std-doc">REFRESH MATERIALIZED VIEW</span></a> operation resets the start time for the
+grace period.</p></li>
+</ul>
 <p>The optional <code class="docutils literal notranslate"><span class="pre">COMMENT</span></code> clause causes a <code class="docutils literal notranslate"><span class="pre">string</span></code> comment to be stored with
 the metadata about the materialized view. The comment is displayed with the
 <a class="reference internal" href="show-create-materialized-view.html"><span class="doc">SHOW CREATE MATERIALIZED VIEW</span></a> statement and is available in the table
