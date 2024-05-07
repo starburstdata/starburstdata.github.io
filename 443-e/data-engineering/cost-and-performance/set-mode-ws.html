@@ -470,8 +470,8 @@ Microsoft Azure Kubernetes Service (AKS), or Google Kubernetes Engine (GKE) is
 required.</p>
 <section id="cluster-management">
 <span id="warp-speed-cluster-management"></span><h2 id="cluster-management">Cluster management<a class="headerlink" href="#cluster-management" title="Permalink to this heading">#</a></h2>
-<p>Starburst Warp Speed accommodates cluster expansion and contraction. Be
-aware of the following when scaling up or down:</p>
+<p>Starburst Warp Speed accommodates cluster expansion and contraction. Be aware of the following
+when scaling up or down:</p>
 <ul class="simple">
 <li><p>When scaling a cluster horizontally (adding or removing worker nodes),
 Starburst Warp Speed continues operating, assuming that requirements are
@@ -479,9 +479,9 @@ properly fulfilled. A cluster restart is not required when adding or removing
 nodes.</p></li>
 <li><p>Scaling a cluster vertically to use larger nodes requires a cluster restart,
 which facilitates the replacement of all worker nodes to the larger node size.</p></li>
-<li><p>After restarting the cluster, the <a class="reference internal" href="#warp-speed-default-acceleration"><span class="std std-ref">default acceleration</span></a> becomes active. New caches and indexes get created
-and populated based on the query workload. Any user-defined warmup rules are
-lost after restart, unless a <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">database is configured</span></a> for Starburst Warp Speed.</p></li>
+<li><p>After restarting the cluster, the <a class="reference internal" href="#warp-speed-default-acceleration"><span class="std std-ref">default acceleration</span></a> becomes active. New caches and indexes get
+created and populated based on the query workload. Any user-defined warmup
+rules are lost after restart, unless a <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">database is configured</span></a> for Starburst Warp Speed.</p></li>
 </ul>
 <section id="default-acceleration">
 <span id="warp-speed-default-acceleration"></span><h3 id="default-acceleration">Default acceleration<a class="headerlink" href="#default-acceleration" title="Permalink to this heading">#</a></h3>
@@ -736,6 +736,13 @@ script in the <code class="docutils literal notranslate"><span class="pre">manag
   <span class="s">"mkdir</span><span class="nv"> </span><span class="s">-p</span><span class="nv"> </span><span class="s">/opt/data"</span>
   <span class="s">"mount</span><span class="nv"> </span><span class="s">/dev/md0</span><span class="nv"> </span><span class="s">/opt/data"</span>
   <span class="s">"chmod</span><span class="nv"> </span><span class="s">777</span><span class="nv"> </span><span class="s">-R</span><span class="nv"> </span><span class="s">/opt/data"</span>
+</pre></div>
+</div>
+<p>If you do not have adequate privileges and are unable to use the bootstrap
+script, set the following configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warpSpeed</span><span class="o">:</span>
+<span class="na">  image</span><span class="o">:</span>
+<span class="na">    tag</span><span class="o">:</span> <span class="s">"a.b.c-awsprivileged"</span>
 </pre></div>
 </div>
 <p><strong>AKS</strong></p>
@@ -1222,13 +1229,13 @@ the cluster, configured for <a class="reference internal" href="../../security/i
 <code class="docutils literal notranslate"><span class="pre">/ext/{catalogName}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code>
 path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code>
 on a cluster without authentication exposed via HTTP:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s1">'http://sep.example.com:8080/ext/faster/warmup/warmup-rule-set'</span> <span class="se">\</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s1">'http://sep.example.com:8080/ext/faster/warmup/warmup-rule-get'</span> <span class="se">\</span>
   -H <span class="s1">'Accept: application/json'</span>
 </pre></div>
 </div>
 <p>A secured server needs to be accessed via HTTPS and potentially include
 authentication information:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s1">'https://sep.example.com/ext/faster/warmup/warmup-rule-set'</span> <span class="se">\</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X GET <span class="s1">'https://sep.example.com/ext/faster/warmup/warmup-rule-get'</span> <span class="se">\</span>
   -H <span class="s1">'Accept: application/json'</span>
 </pre></div>
 </div>
@@ -1334,7 +1341,7 @@ priority of the table rule.</p>
 <p>The following example creates a column-level warmup rule for the <code class="docutils literal notranslate"><span class="pre">int_1</span></code>
 column in the <code class="docutils literal notranslate"><span class="pre">aaa</span></code> table of the <code class="docutils literal notranslate"><span class="pre">tmp</span></code> schema:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl -X POST <span class="s1">'https://sep.example.com/ext/faster/warmup/warmup-rule-set'</span> <span class="se">\</span>
-  -d <span class="s1">'[ { "colNameId": "int_1", "schema": "tmp", "table": "aaa", "warmUpType": "WARM_UP_TYPE_BASIC", "priority": 8, "ttl": "PT720H", "predicates": [ ] } ]'</span>
+  -d <span class="s1">'[ { "column":{"classType":"RegularColumn", "key":"int_1"}, "schema": "tmp", "table": "aaa", "warmUpType": "WARM_UP_TYPE_BASIC", "priority": 8, "ttl": "PT720H", "predicates": [ ] } ]'</span>
   -H <span class="s1">'Content-Type: application/json'</span>
 </pre></div>
 </div>
@@ -1367,7 +1374,7 @@ the <code class="docutils literal notranslate"><span class="pre">tmp</span></cod
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">colNameid</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">columnid</span></code></p></td>
 <td><p>Name of the column to which a warmup rule is attached.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">column</span></code></p></td>
@@ -1419,7 +1426,7 @@ HTTP GET:</p>
   "id":186229827,
   "schema":"ride_sharing_dataset",
   "table":"trips_data_big",
-  "colNameId":"d_date",
+  "columnid":"d_date",
   "column":
     {
       "classType":"RegularColumn",
