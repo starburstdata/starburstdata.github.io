@@ -20,7 +20,6 @@ const menuData = [
   "Functions and operators",
   "SQL routines",
   "Query optimizer",
-  "Developer guide",
   "Object storage connectors",
   "Object storage extensions",
   "Non-object storage connectors",
@@ -37,6 +36,7 @@ const menuData = [
   "Deploy with CFT on AWS",
   "Local installation",
   "Release notes",
+  "Trino developer guide",
   "Version-specific notices and information",
   "Red Hat OpenShift",
 ]
