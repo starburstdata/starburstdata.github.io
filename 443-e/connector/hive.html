@@ -246,7 +246,6 @@
 <p class="caption" role="heading"><span class="caption-text">Connect to data sources</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../connector.html">Connector overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../object-storage.html">Object storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../object-storage-connectors.html">Object storage connectors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../non-object-storage-connectors.html">Non-object storage connectors</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../utilities.html">Utilities</a></li>
@@ -306,10 +305,10 @@
         <li class="md-nav__item"><a href="#hdfs-username-and-permissions" class="md-nav__link">HDFS username and permissions</a>
         </li>
         <li class="md-nav__item"><a href="#hive-general-configuration-properties" class="md-nav__link">Hive general configuration properties</a>
-        </li>
-        <li class="md-nav__item"><a href="#file-system-access-configuration" class="md-nav__link">File system access configuration</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#storage" class="md-nav__link">Storage</a>
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a>
         </li>
@@ -387,8 +386,6 @@
         </li>
         <li class="md-nav__item"><a href="#table-redirection" class="md-nav__link">Table redirection</a>
         </li>
-        <li class="md-nav__item"><a href="#file-system-cache" class="md-nav__link">File system cache</a>
-        </li>
         <li class="md-nav__item"><a href="#performance-tuning-configuration-properties" class="md-nav__link">Performance tuning configuration properties</a>
         </li></ul>
             </nav>
@@ -428,20 +425,24 @@ It does not use HiveQL or any part of Hive’s execution environment.</p>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
 <p>The Hive connector requires a
-<a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service</span></a> (HMS), or a compatible
+<a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service</span></a> (HMS), or a compatible
 implementation of the Hive metastore, such as
-<a class="reference internal" href="../object-storage/metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a>.</p>
+<a class="reference internal" href="metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a>.</p>
 <p>Apache Hadoop HDFS 2.x and 3.x are supported.</p>
-<p>Many <a class="reference internal" href="#hive-file-system-configuration"><span class="std std-ref">distributed storage systems</span></a> can be
-queried with the Hive connector.</p>
+<p>Many distributed storage systems including HDFS,
+<a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a> or S3-compatible systems,
+<a class="reference internal" href="hive-gcs-tutorial.html"><span class="doc std std-doc">Google Cloud Storage</span></a>,
+<a class="reference internal" href="hive-azure.html"><span class="doc">Azure Storage</span></a>, and
+<a class="reference internal" href="hive-cos.html"><span class="doc">IBM Cloud Object Storage</span></a> can be queried with the Hive
+connector.</p>
 <p>The coordinator and all workers must have network access to the Hive metastore
 and the storage system. Hive metastore access with the Thrift protocol defaults
 to using port 9083.</p>
 <p>Data files must be in a supported file format. Some file formats can be
 configured using file format configuration properties per catalog:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="../object-storage/file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a></p></li>
-<li><p><a class="reference internal" href="../object-storage/file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a></p></li>
+<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a></p></li>
+<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a></p></li>
 <li><p>Avro</p></li>
 <li><p>RCText (RCFile using ColumnarSerDe)</p></li>
 <li><p>RCBinary (RCFile using LazyBinaryColumnarSerDe)</p></li>
@@ -456,20 +457,20 @@ configured using file format configuration properties per catalog:</p>
 <p>To configure the Hive connector, create a catalog properties file
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code> that references the <code class="docutils literal notranslate"><span class="pre">hive</span></code>
 connector and defines a metastore. You must configure a metastore for table
-metadata. If you are using a <a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
+metadata. If you are using a <a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
 <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> must be configured:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://example.net:9083</span>
 </pre></div>
 </div>
-<p>If you are using <a class="reference internal" href="../object-storage/metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
+<p>If you are using <a class="reference internal" href="metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
 must instead set <code class="docutils literal notranslate"><span class="pre">hive.metastore</span></code> to <code class="docutils literal notranslate"><span class="pre">glue</span></code>:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.metastore</span><span class="o">=</span><span class="s">glue</span>
 </pre></div>
 </div>
 <p>Each metastore type has specific configuration properties along with
-<a class="reference internal" href="../object-storage/metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
+<a class="reference internal" href="metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
 <section id="multiple-hive-clusters">
 <h3 id="multiple-hive-clusters">Multiple Hive clusters<a class="headerlink" href="#multiple-hive-clusters" title="Permalink to this heading">#</a></h3>
 <p>You can have as many catalogs as you need, so if you have additional
@@ -763,25 +764,21 @@ multi-statement write transactions.</p></td>
 </tbody>
 </table>
 </section>
-<section id="file-system-access-configuration">
-<span id="hive-file-system-configuration"></span><h3 id="file-system-access-configuration">File system access configuration<a class="headerlink" href="#file-system-access-configuration" title="Permalink to this heading">#</a></h3>
-<p>The connector supports native, high-performance file system access to object
-storage systems:</p>
-<ul class="simple">
-<li><p><a class="reference internal" href="../object-storage.html"><span class="doc std std-doc">Object storage</span></a></p></li>
-<li><p><a class="reference internal" href="../object-storage/file-system-azure.html"><span class="doc std std-doc">Azure Storage file system support</span></a></p></li>
-<li><p><a class="reference internal" href="../object-storage/file-system-gcs.html"><span class="doc std std-doc">Google Cloud Storage file system support</span></a></p></li>
-<li><p><a class="reference internal" href="../object-storage/file-system-s3.html"><span class="doc std std-doc">S3 file system support</span></a></p></li>
-</ul>
-<p>You must enable and configure the specific native file system access. If none is
-activated, the <a class="reference internal" href="../object-storage.html#file-system-legacy"><span class="std std-ref">legacy support</span></a> is used and must be
-configured.</p>
 </section>
+<section id="storage">
+<h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permalink to this heading">#</a></h2>
+<p>The Hive connector supports the following storage options:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a></p></li>
+<li><p><a class="reference internal" href="hive-azure.html"><span class="doc">Azure Storage</span></a></p></li>
+<li><p><a class="reference internal" href="hive-gcs-tutorial.html"><span class="doc">Google Cloud Storage</span></a></p></li>
+<li><p><a class="reference internal" href="hive-cos.html"><span class="doc">IBM Cloud Object Storage</span></a></p></li>
+</ul>
 </section>
 <section id="security">
 <span id="hive-security"></span><h2 id="security">Security<a class="headerlink" href="#security" title="Permalink to this heading">#</a></h2>
-<p>The connector supports different means of authentication for the used <a class="reference internal" href="#hive-file-system-configuration"><span class="std std-ref">file
-system</span></a> and <a class="reference internal" href="#hive-configuration"><span class="std std-ref">metastore</span></a>.</p>
+<p>The connector supports different means of authentication for the file
+system and <a class="reference internal" href="#hive-configuration"><span class="std std-ref">metastore</span></a>.</p>
 <p>In addition, the following security-related features are supported.</p>
 </section>
 <section id="authorization">
@@ -1081,7 +1078,7 @@ type conversions.</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code>, <code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal notranslate"><span class="pre">DATE</span></code>, <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> as well as
+<td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal notranslate"><span class="pre">DATE</span></code>, <code class="docutils literal notranslate"><span class="pre">CHAR</span></code>, as well as
 narrowing conversions for <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
@@ -1819,11 +1816,6 @@ and Delta Lake tables with the following catalog configuration properties:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">hive.iceberg-catalog-name</span></code> for redirecting the query to <a class="reference internal" href="iceberg.html"><span class="doc">Iceberg connector</span></a></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">hive.delta-lake-catalog-name</span></code> for redirecting the query to <a class="reference internal" href="delta-lake.html"><span class="doc">Delta Lake connector</span></a></p></li>
 </ul>
-</section>
-<section id="file-system-cache">
-<h3 id="file-system-cache">File system cache<a class="headerlink" href="#file-system-cache" title="Permalink to this heading">#</a></h3>
-<p>The connector supports configuring and using <a class="reference internal" href="../object-storage/file-system-cache.html"><span class="doc std std-doc">file system
-caching</span></a>.</p>
 </section>
 <section id="performance-tuning-configuration-properties">
 <span id="hive-performance-tuning-configuration"></span><h3 id="performance-tuning-configuration-properties">Performance tuning configuration properties<a class="headerlink" href="#performance-tuning-configuration-properties" title="Permalink to this heading">#</a></h3>
