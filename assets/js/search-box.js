@@ -1,5 +1,5 @@
 const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
-const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+const ALGOLIA_KEY = '591d39ef5124b1813557f8e7f123cbd1'; // Algolia API Key
 
 // algolia analytics
 aa('init', {
