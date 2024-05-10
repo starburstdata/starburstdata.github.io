@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
   const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
-  const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+  const ALGOLIA_KEY = '591d39ef5124b1813557f8e7f123cbd1'; // Algolia API Key
 
   aa('init', {
     appId: ALGOLIA_ID,
@@ -8,10 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     useCookie: true,
   });
 
-  const searchClient = algoliasearch(
-    ALGOLIA_ID,
-    ALGOLIA_KEY
-  );
+  const searchClient = algoliasearch(ALGOLIA_ID, ALGOLIA_KEY);
 
   const hitsContainer = document.querySelector('#hits');
   const statsContainer = document.querySelector('#stats');
@@ -103,7 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
             `<a href="${url}" style="display:flex;gap:0.25rem;font-size:16px;color:#000;line-height:1;align-items:center; ${
               isRefined ? 'font-weight: bold' : ''
             }">
-              <input type="checkbox" class="refinement-list-checkbox" ${isRefined ? 'checked' : ''} />
+              <input type="checkbox" class="refinement-list-checkbox" ${
+                isRefined ? 'checked' : ''
+              } />
               <span>
               ${
                 label == 'sep'
@@ -129,8 +128,8 @@ document.addEventListener('DOMContentLoaded', function () {
           return (
             `<li class="hit-item">
               <a ${bindEvent('click', hit, 'hit clicked')} href="` +
-                url +
-                `">
+            url +
+            `">
                 <h2>
                   ${instantsearch.highlight({ attribute: 'title', hit: hit })}
                 </h2>
@@ -184,13 +183,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
   search.start();
 
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     const searchInput = document.querySelector('.ais-SearchBox-input').value;
 
-    if (searchInput && event.key == 'Enter'){
-      if (document.activeElement == document.querySelector('.ais-SearchBox-input')){
-        window.location.href =  "/starburst-galaxy/reference/sql/ref/search.html?q=" + searchInput;
+    if (searchInput && event.key == 'Enter') {
+      if (
+        document.activeElement == document.querySelector('.ais-SearchBox-input')
+      ) {
+        window.location.href =
+          '/starburst-galaxy/reference/sql/ref/search.html?q=' + searchInput;
       }
     }
-  })
+  });
 });
