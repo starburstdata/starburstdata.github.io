@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function searchResults() {
       const ALGOLIA_ID = '0X4IAR77M1'; // Algolia ID
-      const ALGOLIA_KEY = 'b4ad1fa9a2f4742b5c610060b34e87f8'; // Algolia API Key
+      const ALGOLIA_KEY = '591d39ef5124b1813557f8e7f123cbd1'; // Algolia API Key
 
       const searchClient = algoliasearch(ALGOLIA_ID, ALGOLIA_KEY);
 
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
         pathSegment = 'latest'; //Defaults to latest if version is not supported or is most recent version
       }
 
-      if(pathSegment == 'latest') {
+      if (pathSegment == 'latest') {
         document.querySelector('#toggle-refinement').style.display = 'none';
       }
 
@@ -87,7 +87,9 @@ document.addEventListener('DOMContentLoaded', function () {
         searchClient,
         searchFunction: function (helper) {
           const page = helper.state.page;
-          helper.state.facetFilters = [[`version:${pathSegment}`, "product: galaxy"]];
+          helper.state.facetFilters = [
+            [`version:${pathSegment}`, 'product: galaxy'],
+          ];
           // if less than 2 character, don't trigger search and hide inner content
           if (helper.state.query.length < 2) {
             hitsContainer.style.display = 'none';
