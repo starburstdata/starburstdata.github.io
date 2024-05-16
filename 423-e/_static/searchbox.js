@@ -140,9 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `<a href="${url}" style="display:flex;gap:0.25rem;font-size:16px;color:#000;line-height:1;align-items:center; ${
               isRefined ? 'font-weight: bold' : ''
             }">
-              <input type="checkbox" class="refinement-list-checkbox" ${
-                isRefined ? 'checked' : ''
-              } />
+              <input type="checkbox" ${isRefined ? 'checked' : ''} />
               <span>
               ${
                 label == 'sep'
