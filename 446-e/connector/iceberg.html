@@ -364,6 +364,8 @@
         </li>
         <li class="md-nav__item"><a href="#history-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table</a>
         </li>
+        <li class="md-nav__item"><a href="#metadata-log-entries-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$metadata_log_entries</span></code> table</a>
+        </li>
         <li class="md-nav__item"><a href="#snapshots-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$snapshots</span></code> table</a>
         </li>
         <li class="md-nav__item"><a href="#manifests-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$manifests</span></code> table</a>
@@ -388,7 +390,7 @@
         </li>
         <li class="md-nav__item"><a href="#using-snapshots" class="md-nav__link">Using snapshots</a>
         </li>
-        <li class="md-nav__item"><a href="#replacing-tables" class="md-nav__link">Replacing tables</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#replace-tables" class="md-nav__link">Replace tables</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#time-travel-queries" class="md-nav__link">Time travel queries</a>
         </li>
@@ -405,6 +407,12 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#table-changes" class="md-nav__link">table_changes</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -614,7 +622,8 @@ in the metastore.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.register-table-procedure.enabled</span></code></p></td>
-<td><p>Enable to allow user to call <code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure.</p></td>
+<td><p>Enable to allow user to call <a class="reference internal" href="#iceberg-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code>
+procedure</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required</span></code></p></td>
@@ -924,7 +933,8 @@ catalog. The following code snippet displays how to call the
 </div>
 <section id="register-table">
 <span id="iceberg-register-table"></span><h4 id="register-table">Register table<a class="headerlink" href="#register-table" title="Permalink to this heading">#</a></h4>
-<p>The connector can register existing Iceberg tables with the catalog.</p>
+<p>The connector can register existing Iceberg tables into the metastore if
+<code class="docutils literal notranslate"><span class="pre">iceberg.register-table-procedure.enabled</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> for the catalog.</p>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.register_table</span></code> allows the caller to register an
 existing Iceberg table in the metastore, using its existing metadata and data
 files:</p>
@@ -944,7 +954,8 @@ default. The procedure is enabled only when
 </section>
 <section id="unregister-table">
 <span id="iceberg-unregister-table"></span><h4 id="unregister-table">Unregister table<a class="headerlink" href="#unregister-table" title="Permalink to this heading">#</a></h4>
-<p>The connector can unregister existing Iceberg tables from the catalog.</p>
+<p>The connector can remove existing Iceberg tables from the metastore. Once
+unregistered, you can no longer query the table from Trino.</p>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.unregister_table</span></code> allows the caller to unregister an
 existing Iceberg table from the metastores without deleting the data:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">unregister_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">)</span>
@@ -1154,20 +1165,27 @@ configuration property, which defaults to <code class="docutils literal notransl
 <td><p>Optionally specifies table partitioning. If a table is partitioned by
 columns <code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>, the partitioning property is <code class="docutils literal notranslate"><span class="pre">partitioning</span> <span class="pre">=</span> <span class="pre">ARRAY['c1',</span> <span class="pre">'c2']</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">location</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sorted_by</span></code></p></td>
+<td><p>The sort order to be applied during writes to the content of
+each file written to the table. If the table files are sorted by columns
+<code class="docutils literal notranslate"><span class="pre">c1</span></code> and <code class="docutils literal notranslate"><span class="pre">c2</span></code>, the sort order property is <code class="docutils literal notranslate"><span class="pre">sorted_by</span> <span class="pre">=</span> <span class="pre">ARRAY['c1',</span> <span class="pre">'c2']</span></code>.
+The sort order applies to the contents written within each output file
+independently and not the entire dataset.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">location</span></code></p></td>
 <td><p>Optionally specifies the file system location URI for the table.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">format_version</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">format_version</span></code></p></td>
 <td><p>Optionally specifies the format version of the Iceberg specification to use
 for new tables; either <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">2</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">2</span></code>. Version <code class="docutils literal notranslate"><span class="pre">2</span></code> is required
 for row level deletes.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_columns</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_columns</span></code></p></td>
 <td><p>Comma-separated list of columns to use for ORC bloom filter. It improves the
 performance of queries using Equality and IN predicates when reading ORC
 files. Requires ORC format. Defaults to <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_fpp</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_fpp</span></code></p></td>
 <td><p>The ORC bloom filters false positive probability. Requires ORC format.
 Defaults to <code class="docutils literal notranslate"><span class="pre">0.05</span></code>.</p></td>
 </tr>
@@ -1228,7 +1246,7 @@ write.format.default   | PARQUET  |
 </div>
 </section>
 <section id="history-table">
-<h5 id="history-table"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table<a class="headerlink" href="#history-table" title="Permalink to this heading">#</a></h5>
+<span id="iceberg-history-table"></span><h5 id="history-table"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table<a class="headerlink" href="#history-table" title="Permalink to this heading">#</a></h5>
 <p>The <code class="docutils literal notranslate"><span class="pre">$history</span></code> table provides a log of the metadata changes performed on the
 Iceberg table.</p>
 <p>You can retrieve the changelog of the Iceberg table <code class="docutils literal notranslate"><span class="pre">test_table</span></code> by using the
@@ -1276,6 +1294,59 @@ following query:</p>
 </tbody>
 </table>
 </section>
+<section id="metadata-log-entries-table">
+<h5 id="metadata-log-entries-table"><code class="docutils literal notranslate"><span class="pre">$metadata_log_entries</span></code> table<a class="headerlink" href="#metadata-log-entries-table" title="Permalink to this heading">#</a></h5>
+<p>The <code class="docutils literal notranslate"><span class="pre">$metadata_log_entries</span></code> table provides a view of metadata log entries
+of the Iceberg table.</p>
+<p>You can retrieve the information about the metadata log entries of the Iceberg
+table <code class="docutils literal notranslate"><span class="pre">test_table</span></code> by using the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="ss">"test_table$metadata_log_entries"</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>             timestamp                 |                                                              file                                                          | latest_snapshot_id  | latest_schema_id | latest_sequence_number
+---------------------------------------+----------------------------------------------------------------------------------------------------------------------------+---------------------+------------------+------------------------
+ 2024-01-16 15:55:31.172 Europe/Vienna | hdfs://hadoop-master:9000/user/hive/warehouse/test_table/metadata/00000-39174715-be2a-48fa-9949-35413b8b736e.metadata.json | 1221802298419195590 |                0 |                      1
+ 2024-01-16 17:19:56.118 Europe/Vienna | hdfs://hadoop-master:9000/user/hive/warehouse/test_table/metadata/00001-e40178c9-271f-4a96-ad29-eed5e7aef9b0.metadata.json | 7124386610209126943 |                0 |                      2
+</pre></div>
+</div>
+<p>The output of the query has the following columns:</p>
+<table id="id8">
+<caption><span class="caption-text">Metadata log entries columns</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">timestamp</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(3)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></p></td>
+<td><p>The time when the metadata was created.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>The location of the metadata file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">latest_snapshot_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>The identifier of the latest snapshot when the metadata was updated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">latest_schema_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p>The identifier of the latest schema when the metadata was updated.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">latest_sequence_number</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>The data sequence number of the metadata file.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="snapshots-table">
 <h5 id="snapshots-table"><code class="docutils literal notranslate"><span class="pre">$snapshots</span></code> table<a class="headerlink" href="#snapshots-table" title="Permalink to this heading">#</a></h5>
 <p>The <code class="docutils literal notranslate"><span class="pre">$snapshots</span></code> table provides a detailed view of snapshots of the Iceberg
@@ -1293,8 +1364,8 @@ contents are represented by the union of all the data files in those manifests.<
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id8">
-<caption><span class="caption-text">Snapshots columns</span><a class="headerlink" href="#id8" title="Permalink to this table">#</a></caption>
+<table id="id9">
+<caption><span class="caption-text">Snapshots columns</span><a class="headerlink" href="#id9" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -1360,8 +1431,8 @@ corresponding to the snapshots performed in the log of the Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id9">
-<caption><span class="caption-text">Manifests columns</span><a class="headerlink" href="#id9" title="Permalink to this table">#</a></caption>
+<table id="id10">
+<caption><span class="caption-text">Manifests columns</span><a class="headerlink" href="#id10" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -1442,8 +1513,8 @@ Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id10">
-<caption><span class="caption-text">Partitions columns</span><a class="headerlink" href="#id10" title="Permalink to this table">#</a></caption>
+<table id="id11">
+<caption><span class="caption-text">Partitions columns</span><a class="headerlink" href="#id11" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -1495,8 +1566,8 @@ snapshot of the  Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id11">
-<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id11" title="Permalink to this table">#</a></caption>
+<table id="id12">
+<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id12" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 30%"/>
@@ -1597,8 +1668,8 @@ example_branch  | BRANCH | 20000000000 | 20000                   | 2            
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id12">
-<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id12" title="Permalink to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id13" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -1700,8 +1771,8 @@ comments on existing entities.</p>
 <p>Iceberg supports partitioning by specifying transforms over the table columns. A
 partition is created for each unique tuple value produced by the transforms.
 Identity transforms are simply the column name. Other transforms are:</p>
-<table id="id13">
-<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id13" title="Permalink to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id14" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1800,28 +1871,21 @@ following query:</p>
 </pre></div>
 </div>
 </section>
-<section id="replacing-tables">
-<span id="iceberg-create-or-replace"></span><h4 id="replacing-tables">Replacing tables<a class="headerlink" href="#replacing-tables" title="Permalink to this heading">#</a></h4>
-<p>The connector supports replacing a table as an atomic operation. Atomic table
-replacement creates a new snapshot with the new table definition (see
-<a class="reference internal" href="../sql/create-table.html"><span class="doc">CREATE TABLE</span></a> and <a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a>), but keeps table history.</p>
-<p>The new table after replacement is completely new and separate from the old table.
-Only the name of the table remains identical. Earlier snapshots can be retrieved
-through Iceberg’s <a class="reference internal" href="#iceberg-time-travel"><span class="std std-ref">time travel</span></a>.</p>
-<p>For example a partitioned table <code class="docutils literal notranslate"><span class="pre">my_table</span></code> can be replaced by completely new
-definition.</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">my_table</span> <span class="p">(</span>
-    <span class="n">a</span> <span class="nb">BIGINT</span><span class="p">,</span>
-    <span class="n">b</span> <span class="nb">DATE</span><span class="p">,</span>
-    <span class="k">c</span> <span class="nb">BIGINT</span><span class="p">)</span>
-<span class="k">WITH</span> <span class="p">(</span><span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'a'</span><span class="p">]);</span>
-
-<span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">my_table</span>
+<section id="replace-tables">
+<span id="iceberg-create-or-replace"></span><h4 id="replace-tables">Replace tables<a class="headerlink" href="#replace-tables" title="Permalink to this heading">#</a></h4>
+<p>The connector supports replacing an existing table, as an atomic operation.
+Atomic table replacement creates a new snapshot with the new table definition as
+part of the <a class="reference internal" href="#iceberg-history-table">table history</a>.</p>
+<p>To replace a table, use <a class="reference internal" href="../sql/create-table.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">TABLE</span></code></span></a> or
+<a class="reference internal" href="../sql/create-table-as.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code></span></a>.</p>
+<p>Earlier snapshots of the table can be queried through <a class="reference internal" href="#iceberg-time-travel"><span class="std std-ref">Time travel queries</span></a>.</p>
+<p>In the following example, a table <code class="docutils literal notranslate"><span class="pre">example_table</span></code> can be replaced by a
+completely new definition and data from the source table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">example_table</span>
 <span class="k">WITH</span> <span class="p">(</span><span class="n">sorted_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])</span>
-<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">from</span> <span class="n">another_table</span><span class="p">;</span>
+<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">another_table</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>Earlier snapshots can be retrieved through Iceberg’s <a class="reference internal" href="#iceberg-time-travel"><span class="std std-ref">time travel</span></a>.</p>
 <section id="time-travel-queries">
 <span id="iceberg-time-travel"></span><h5 id="time-travel-queries">Time travel queries<a class="headerlink" href="#time-travel-queries" title="Permalink to this heading">#</a></h5>
 <p>The connector offers the ability to query historical data. This allows you to
@@ -1842,7 +1906,7 @@ providing the previous state of the table:</p>
 </pre></div>
 </div>
 <p>The connector allows to create a new snapshot through Iceberg’s <a class="reference internal" href="#iceberg-create-or-replace"><span class="std std-ref">replace table</span></a>.</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">AS</span> 
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">AS</span>
 <span class="k">SELECT</span> <span class="o">*</span>
 <span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span> <span class="k">FOR</span> <span class="k">TIMESTAMP</span> <span class="k">AS</span> <span class="k">OF</span> <span class="k">TIMESTAMP</span> <span class="s1">'2022-03-23 09:59:29.803 Europe/Vienna'</span>
 </pre></div>
@@ -1947,6 +2011,139 @@ the definition and the storage table.</p>
 <span id="iceberg-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
 <p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
 processing. Read and write operations are both supported with any retry policy.</p>
+</section>
+<section id="table-functions">
+<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<p>The connector supports the table functions described in the following sections.</p>
+<section id="table-changes">
+<h3 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h3>
+<p>Allows reading row-level changes between two versions of an Iceberg table. The
+following query shows an example of displaying the changes of the <code class="docutils literal notranslate"><span class="pre">t1</span></code> table in
+the <code class="docutils literal notranslate"><span class="pre">default</span></code> schema in the current catalog. All changes between the start and
+end snapshots are returned.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+  <span class="o">*</span>
+<span class="k">FROM</span>
+  <span class="k">TABLE</span><span class="p">(</span>
+    <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span>
+      <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'default'</span><span class="p">,</span>
+      <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'t1'</span><span class="p">,</span>
+      <span class="n">start_snapshot_id</span> <span class="o">=&gt;</span> <span class="mi">6541165659943306573</span><span class="p">,</span>
+      <span class="n">end_snapshot_id</span> <span class="o">=&gt;</span> <span class="mi">6745790645714043599</span>
+    <span class="p">)</span>
+  <span class="p">);</span>
+</pre></div>
+</div>
+<p>The function takes the following required parameters:</p>
+<ul class="simple">
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">schema_name</span></code></dt><dd><p>Name of the schema for which the function is called.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">table_name</span></code></dt><dd><p>Name of the table for which the function is called.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">start_snapshot_id</span></code></dt><dd><p>The identifier of the exclusive starting snapshot.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">end_snapshot_id</span></code></dt><dd><p>The identifier of the inclusive end snapshot.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">$snapshots</span></code> metadata table to determine the snapshot IDs of the
+table.</p>
+<p>The function returns the columns present in the table, and the following values
+for each change:</p>
+<ul class="simple">
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">_change_type</span></code></dt><dd><p>The type of change that occurred. Possible values are <code class="docutils literal notranslate"><span class="pre">insert</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code>.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">_change_version_id</span></code></dt><dd><p>The identifier of the snapshot in which the change occurred.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">_change_timestamp</span></code></dt><dd><p>Timestamp when the snapshot became active.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple myst">
+<dt><code class="docutils literal notranslate"><span class="pre">_change_ordinal</span></code></dt><dd><p>Order number of the change, useful for sorting the results.</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p><strong>Example:</strong></p>
+<p>Create a table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span> <span class="p">(</span><span class="n">page_url</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="k">domain</span> <span class="nb">VARCHAR</span><span class="p">,</span> <span class="n">views</span> <span class="nb">INTEGER</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Insert some data:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span>
+    <span class="k">VALUES</span>
+        <span class="p">(</span><span class="s1">'url1'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url2'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url3'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span>
+<span class="k">INSERT</span> <span class="k">INTO</span> <span class="n">test_schema</span><span class="p">.</span><span class="n">pages</span>
+    <span class="k">VALUES</span>
+        <span class="p">(</span><span class="s1">'url4'</span><span class="p">,</span> <span class="s1">'domain1'</span><span class="p">,</span> <span class="mi">400</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url5'</span><span class="p">,</span> <span class="s1">'domain2'</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">'url6'</span><span class="p">,</span> <span class="s1">'domain3'</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Retrieve the snapshot identifiers of the changes performed on the table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+    <span class="n">snapshot_id</span><span class="p">,</span>
+    <span class="n">parent_id</span><span class="p">,</span>
+    <span class="k">operation</span>
+<span class="k">FROM</span> <span class="n">test_schema</span><span class="p">.</span><span class="ss">"pages$snapshots"</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>     snapshot_id     |      parent_id      | operation
+---------------------+---------------------+-----------
+ 2009020668682716382 |                NULL | append
+ 2135434251890923160 | 2009020668682716382 | append
+ 3108755571950643966 | 2135434251890923160 | append
+(3 rows)
+</pre></div>
+</div>
+<p>Select the changes performed in the previously-mentioned <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> statements:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
+    <span class="o">*</span>
+<span class="k">FROM</span>
+    <span class="k">TABLE</span><span class="p">(</span>
+            <span class="k">system</span><span class="p">.</span><span class="n">table_changes</span><span class="p">(</span>
+                    <span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'test_schema'</span><span class="p">,</span>
+                    <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'pages'</span><span class="p">,</span>
+                    <span class="n">start_snapshot_id</span> <span class="o">=&gt;</span> <span class="mi">2009020668682716382</span><span class="p">,</span>
+                    <span class="n">end_snapshot_id</span> <span class="o">=&gt;</span> <span class="mi">3108755571950643966</span>
+            <span class="p">)</span>
+    <span class="p">)</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">_change_ordinal</span> <span class="k">ASC</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> page_url | domain  | views | _change_type | _change_version_id  |      _change_timestamp      | _change_ordinal
+----------+---------+-------+--------------+---------------------+-----------------------------+-----------------
+ url1     | domain1 |     1 | insert       | 2135434251890923160 | 2024-04-04 21:24:26.105 UTC |               0
+ url2     | domain2 |     2 | insert       | 2135434251890923160 | 2024-04-04 21:24:26.105 UTC |               0
+ url3     | domain1 |     3 | insert       | 2135434251890923160 | 2024-04-04 21:24:26.105 UTC |               0
+ url4     | domain1 |   400 | insert       | 3108755571950643966 | 2024-04-04 21:24:28.318 UTC |               1
+ url5     | domain2 |   500 | insert       | 3108755571950643966 | 2024-04-04 21:24:28.318 UTC |               1
+ url6     | domain3 |     2 | insert       | 3108755571950643966 | 2024-04-04 21:24:28.318 UTC |               1
+(6 rows)
+</pre></div>
+</div>
+</section>
 </section>
 <section id="performance">
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this heading">#</a></h2>

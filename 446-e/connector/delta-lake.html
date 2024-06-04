@@ -340,6 +340,8 @@
         </li>
         <li class="md-nav__item"><a href="#schema-and-table-management" class="md-nav__link">Schema and table management</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#replace-tables" class="md-nav__link">Replace tables</a>
+        </li>
         <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#optimize" class="md-nav__link">optimize</a>
@@ -596,7 +598,8 @@ equivalent catalog session property is <code class="docutils literal notranslate
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.register-table-procedure.enabled</span></code></p></td>
-<td><p>Enable to allow users to call the <code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure.</p></td>
+<td><p>Enable to allow users to call the <a class="reference internal" href="#delta-lake-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code>
+procedure</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.vacuum.min-retention</span></code></p></td>
@@ -879,7 +882,7 @@ permitted. No operations that write data or metadata, such as
 <td><p>Authorization checks are enforced using a catalog-level access control
 configuration file whose path is specified in the <code class="docutils literal notranslate"><span class="pre">security.config-file</span></code>
 catalog configuration property. See <a class="reference internal" href="../security/file-system-access-control.html#catalog-file-based-access-control"><span class="std std-ref">Catalog-level access control files</span></a>
-for information on the authorization configuration file. :::</p></td>
+for information on the authorization configuration file.</p></td>
 </tr>
 </tbody>
 </table>
@@ -929,8 +932,8 @@ catalog. The following code snippet displays how to call the
 </div>
 <section id="register-table">
 <span id="delta-lake-register-table"></span><h4 id="register-table">Register table<a class="headerlink" href="#register-table" title="Permalink to this heading">#</a></h4>
-<p>The connector can register table into the metastore with existing transaction
-logs and data files.</p>
+<p>The connector can register existing Delta Lake tables into the metastore if
+<code class="docutils literal notranslate"><span class="pre">delta.register-table-procedure.enabled</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> for the catalog.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">system.register_table</span></code> procedure allows the caller to register an
 existing Delta Lake table in the metastore, using its existing transaction logs
 and data files:</p>
@@ -943,7 +946,8 @@ default. The procedure is enabled only when
 </section>
 <section id="unregister-table">
 <span id="delta-lake-unregister-table"></span><h4 id="unregister-table">Unregister table<a class="headerlink" href="#unregister-table" title="Permalink to this heading">#</a></h4>
-<p>The connector can unregister existing Delta Lake tables from the metastore.</p>
+<p>The connector can remove existing Delta Lake tables from the metastore. Once
+unregistered, you can no longer query the table.</p>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.unregister_table</span></code> allows the caller to unregister an
 existing Delta Lake table from the metastores without deleting the data:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">unregister_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">)</span>
@@ -1056,6 +1060,21 @@ in the metastore. As a result, any Databricks engine can write to the table:</p>
 </div>
 <p>The Delta Lake connector also supports creating tables using the <a class="reference internal" href="../sql/create-table-as.html"><span class="doc">CREATE TABLE AS</span></a> syntax.</p>
 <p id="delta-lake-alter-table">The connector supports the following <a class="reference internal" href="../sql/alter-table.html"><span class="doc std std-doc">ALTER TABLE</span></a> statements.</p>
+<section id="replace-tables">
+<span id="delta-lake-create-or-replace"></span><h4 id="replace-tables">Replace tables<a class="headerlink" href="#replace-tables" title="Permalink to this heading">#</a></h4>
+<p>The connector supports replacing an existing table as an atomic operation.
+Atomic table replacement creates a new snapshot with the new table definition as
+part of the <a class="reference internal" href="#delta-lake-history-table">table history</a>.</p>
+<p>To replace a table, use <a class="reference internal" href="../sql/create-table.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">TABLE</span></code></span></a> or
+<a class="reference internal" href="../sql/create-table-as.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code></span></a>.</p>
+<p>In this example, a table <code class="docutils literal notranslate"><span class="pre">example_table</span></code> is replaced by a completely new
+definition and data from the source table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">OR</span> <span class="k">REPLACE</span> <span class="k">TABLE</span> <span class="n">example_table</span>
+<span class="k">WITH</span> <span class="p">(</span><span class="n">partitioned_by</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'a'</span><span class="p">])</span>
+<span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">another_table</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
 <section id="alter-table-execute">
 <span id="delta-lake-alter-table-execute"></span><h4 id="alter-table-execute">ALTER TABLE EXECUTE<a class="headerlink" href="#alter-table-execute" title="Permalink to this heading">#</a></h4>
 <p>The connector supports the following commands for use with <a class="reference internal" href="../sql/alter-table.html#alter-table-execute"><span class="std std-ref">ALTER TABLE EXECUTE</span></a>.</p>
@@ -1163,7 +1182,7 @@ metadata table name to the table name:</p>
 </pre></div>
 </div>
 <section id="history-table">
-<h5 id="history-table"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table<a class="headerlink" href="#history-table" title="Permalink to this heading">#</a></h5>
+<span id="delta-lake-history-table"></span><h5 id="history-table"><code class="docutils literal notranslate"><span class="pre">$history</span></code> table<a class="headerlink" href="#history-table" title="Permalink to this heading">#</a></h5>
 <p>The <code class="docutils literal notranslate"><span class="pre">$history</span></code> table provides a log of the metadata changes performed on
 the Delta Lake table.</p>
 <p>You can retrieve the changelog of the Delta Lake table <code class="docutils literal notranslate"><span class="pre">test_table</span></code>
