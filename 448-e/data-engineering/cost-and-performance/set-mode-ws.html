@@ -284,12 +284,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#adls-considerations">ADLS considerations</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#database-configuration">Database configuration</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#mysql">MySQL</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#postgresql">PostgreSQL</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#oracle">Oracle</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#warmup-rule-persistency">Warmup rule persistency</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#starburst-warp-speed-management">Starburst Warp Speed management</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#rest-api-access">REST API access</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#rest-api-overview">REST API overview</a></li>
@@ -406,15 +401,7 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#database-configuration" class="md-nav__link">Database configuration</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#mysql" class="md-nav__link">MySQL</a>
-        </li>
-        <li class="md-nav__item"><a href="#postgresql" class="md-nav__link">PostgreSQL</a>
-        </li>
-        <li class="md-nav__item"><a href="#oracle" class="md-nav__link">Oracle</a>
-        </li></ul>
-            </nav>
+        <li class="md-nav__item"><a href="#warmup-rule-persistency" class="md-nav__link">Warmup rule persistency</a>
         </li>
         <li class="md-nav__item"><a href="#starburst-warp-speed-management" class="md-nav__link">Starburst Warp Speed management</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -480,8 +467,7 @@ nodes.</p></li>
 <li><p>Scaling a cluster vertically to use larger nodes requires a cluster restart,
 which facilitates the replacement of all worker nodes to the larger node size.</p></li>
 <li><p>After restarting the cluster, the <a class="reference internal" href="#warp-speed-default-acceleration"><span class="std std-ref">default acceleration</span></a> becomes active. New caches and indexes get
-created and populated based on the query workload. Any user-defined warmup
-rules are lost after restart, unless a <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">database is configured</span></a> for Starburst Warp Speed.</p></li>
+created and populated based on the query workload.</p></li>
 </ul>
 <section id="default-acceleration">
 <span id="warp-speed-default-acceleration"></span><h3 id="default-acceleration">Default acceleration<a class="headerlink" href="#default-acceleration" title="Permalink to this heading">#</a></h3>
@@ -681,8 +667,6 @@ access by the processed queries.</p>
 <li><p>A cluster deployment on Amazon Elastic Kubernetes Service (EKS), Microsoft
 Azure Kubernetes Service (AKS), or Google Kubernetes Engine (GKE) as detailed
 in <a class="reference internal" href="#warp-speed-cluster-configuration"><span class="std std-ref">Cluster configuration</span></a>.</p></li>
-<li><p>Optionally, a <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">database to persist warmup rules</span></a>
-with the REST API.</p></li>
 <li><p>A valid <a class="reference internal" href="../../license-requirements.html#sep-elite-license"><span class="std std-ref">Starburst Enterprise Elite license</span></a>.</p></li>
 </ul>
 <section id="supported-object-storage">
@@ -1139,77 +1123,34 @@ with the <a class="reference external" href="https://learn.microsoft.com/azure/s
 syntax</a>.</p>
 </section>
 </section>
-<section id="database-configuration">
-<span id="warp-speed-database"></span><h2 id="database-configuration">Database configuration<a class="headerlink" href="#database-configuration" title="Permalink to this heading">#</a></h2>
+<section id="warmup-rule-persistency">
+<span id="warp-speed-persistency"></span><h2 id="warmup-rule-persistency">Warmup rule persistency<a class="headerlink" href="#warmup-rule-persistency" title="Permalink to this heading">#</a></h2>
 <p>Advanced users, who configure <a class="reference internal" href="#warmup-rule"><span class="std std-ref">custom warmup rules</span></a> with the
-REST API, must use a database to prevent a <a class="reference internal" href="#warp-speed-cluster-management"><span class="std std-ref">loss of those rules with a restart of the cluster</span></a> Operation without a
-database uses a temporary database.</p>
-<p>The following RDBMS are supported:</p>
-<ul class="simple">
-<li><p>MySQL</p></li>
-<li><p>PostgreSQL</p></li>
-<li><p>Oracle</p></li>
-</ul>
-<p>Each catalog requires a separate database. You must create the database in an
-external server, and configure the JDBC connection string, including
-credentials, to the database. Refer to your RDBMS server and the documentation
-of the JDBC driver for details.</p>
-<p>You can secure the connection to the database with username and password
-authentication:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.jdbc.user</span><span class="o">=</span><span class="s">&lt;database-user&gt;</span>
-<span class="na">warp-speed.jdbc.password</span><span class="o">=</span><span class="s">&lt;database-password&gt;</span>
+REST API, must use object storage to ensure user-defined warmup rules are not
+lost after a cluster restart.</p>
+<p>Specify an object store path where custom warmup rules are stored. This path
+should point to a location in your object storage bucket:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.objectstore.store.path</span><span class="o">=</span><span class="s">file:///tmp</span>
 </pre></div>
 </div>
+<p>Starburst recommends that you specify a separate path for each catalog. Multiple
+catalogs can use a single object storage bucket with a separate file for each
+catalog.</p>
+<p>Storing custom warmup rules can fill up your object storage. Set a lifecycle
+configuration to manage warmup rules stored in your bucket and exclude them from
+deletion. Refer to the following lifecycle documentation for your cloud
+provider:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">database-user</span></code>: Name of a user on the database with sufficient access to
-create tables and manage the data.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">database-password</span></code>: Password of the user.</p></li>
+<li><p><a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/how-to-set-lifecycle-configuration-intro.html">AWS S3</a></p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/azure/storage/blobs/lifecycle-management-policy-configure?tabs=azure-portal">Azure Storage</a></p></li>
+<li><p><a class="reference external" href="https://cloud.google.com/storage/docs/lifecycle">Google Cloud Storage</a></p></li>
 </ul>
-<p>You can use <a class="reference internal" href="../../k8s/sep-config-examples.html#helm-sep-coordinator-envfrom"><span class="std std-ref">secrets</span></a> to avoid exposing
-these sensitive values.</p>
-<section id="mysql">
-<h3 id="mysql">MySQL<a class="headerlink" href="#mysql" title="Permalink to this heading">#</a></h3>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.jdbc.connection.url</span><span class="o">=</span><span class="s">jdbc:mysql://&lt;host&gt;:&lt;port&gt;/&lt;database&gt;</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>host: The host name of the database server.</p></li>
-<li><p>port: The HTTP port used by the database server. MySQL typically uses
-<code class="docutils literal notranslate"><span class="pre">3306</span></code>.</p></li>
-<li><p>database: The name of the database.</p></li>
-</ul>
-</section>
-<section id="postgresql">
-<h3 id="postgresql">PostgreSQL<a class="headerlink" href="#postgresql" title="Permalink to this heading">#</a></h3>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.jdbc.connection.url</span><span class="o">=</span><span class="s">jdbc:postgresql://&lt;host&gt;:&lt;port&gt;/&lt;database&gt;</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>host: The host name of the database server.</p></li>
-<li><p>port: The HTTP port used by the database server. PostgreSQL typically uses
-<code class="docutils literal notranslate"><span class="pre">5432</span></code>.</p></li>
-<li><p>database: The name of the database schema.</p></li>
-</ul>
-</section>
-<section id="oracle">
-<h3 id="oracle">Oracle<a class="headerlink" href="#oracle" title="Permalink to this heading">#</a></h3>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.jdbc.connection.url</span><span class="o">=</span><span class="s">jdbc:oracle:thin:@&lt;host&gt;:&lt;port&gt;/&lt;schema-name&gt;</span>
-</pre></div>
-</div>
-<ul class="simple">
-<li><p>host: The host name of the database server.</p></li>
-<li><p>port: The HTTP port used by the database server. Oracle typically uses
-<code class="docutils literal notranslate"><span class="pre">1521</span></code>.</p></li>
-<li><p>database: The name of the database schema.</p></li>
-</ul>
-</section>
 </section>
 <section id="starburst-warp-speed-management">
 <span id="warp-speed-management"></span><h2 id="starburst-warp-speed-management">Starburst Warp Speed management<a class="headerlink" href="#starburst-warp-speed-management" title="Permalink to this heading">#</a></h2>
 <p>Starburst Warp Speed automatically creates and manages its data based on processed queries,
 also called the <a class="reference internal" href="#warp-speed-default-acceleration"><span class="std std-ref">Default acceleration</span></a></p>
-<p>Additional custom configuration can be applied with the REST API. Persistent
-storage of this configuration <a class="reference internal" href="#warp-speed-database"><span class="std std-ref">requires a configured database</span></a>.</p>
+<p>Additional custom configuration can be applied with the REST API.</p>
 <p>The <a class="reference internal" href="../../insights/query-details.html#insights-query-details-warp-speed"><span class="std std-ref">Index and cache usage</span></a> tab
 provides summary statistics that indicate performance gains from using Starburst Warp Speed.</p>
 <section id="rest-api-access">
