@@ -266,9 +266,18 @@
 <li class="toctree-l4"><a class="reference internal" href="#maxcompute-to-trino-type-mapping">MaxCompute to Trino type mapping</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#sql-support">SQL support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sql-support">SQL support</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#view-management">View management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#materialized-views">Materialized views</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#external-tables">External tables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#managed-tables">Managed tables</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#performance">Performance</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#projection-pushdown">Projection pushdown</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -352,11 +361,25 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a>
+        <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#view-management" class="md-nav__link">View management</a>
+        </li>
+        <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a>
+        </li>
+        <li class="md-nav__item"><a href="#external-tables" class="md-nav__link">External tables</a>
+        </li>
+        <li class="md-nav__item"><a href="#managed-tables" class="md-nav__link">Managed tables</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#projection-pushdown" class="md-nav__link">Projection pushdown</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -536,7 +559,46 @@ this table:</p>
 <h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Permalink to this heading">#</a></h2>
 <p>The connector provides <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and
 <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a> statements to access data and
-metadata in MaxCompute.</p>
+metadata in MaxCompute:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../language/sql-support.html#sql-view-management"><span class="std std-ref">View management</span></a>, see also <a class="reference internal" href="#maxcompute-view-management"><span class="std std-ref">View management</span></a></p></li>
+<li><p><a class="reference internal" href="../language/sql-support.html#sql-materialized-view-management"><span class="std std-ref">Materialized view management</span></a>, see also
+<a class="reference internal" href="#maxcompute-materialized-views"><span class="std std-ref">Materialized views</span></a></p></li>
+</ul>
+<section id="view-management">
+<span id="maxcompute-view-management"></span><h3 id="view-management">View management<a class="headerlink" href="#view-management" title="Permalink to this heading">#</a></h3>
+<p>The connector supports read-only views to data and metadata exposed by the
+connector accessing a data source.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When you query a view, the underlying <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> statement that defines that view
+is executed in MaxCompute, then the result set is returned. Because some
+computation is completed by MaxCompute, this may incur costs in MaxCompute.</p>
+</div>
+</section>
+<section id="materialized-views">
+<span id="maxcompute-materialized-views"></span><h3 id="materialized-views">Materialized views<a class="headerlink" href="#materialized-views" title="Permalink to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../language/sql-support.html#sql-materialized-view-management"><span class="std std-ref">Materialized view management</span></a>. In the
+underlying system, each materialized view consists of a query statement and a
+<a class="reference external" href="https://www.alibabacloud.com/help/maxcompute/user-guide/view-related-operations#:~:text=Last%20Updated%3AMar%2028%2C%202024,storage%20space%20by%20using%20views.">MaxCompute virtual
+table</a>.
+When you query a view, the query statement converts into the SQL statement that
+is used to define the view.</p>
+</section>
+<section id="external-tables">
+<h3 id="external-tables">External tables<a class="headerlink" href="#external-tables" title="Permalink to this heading">#</a></h3>
+<p>The connector lets you view <a class="reference external" href="https://www.alibabacloud.com/help/en/dataworks/user-guide/external-table">external
+tables</a>
+and access unstructured data stored externally.</p>
+</section>
+<section id="managed-tables">
+<h3 id="managed-tables">Managed tables<a class="headerlink" href="#managed-tables" title="Permalink to this heading">#</a></h3>
+<p>Managed tables are fully managed by MaxCompute, including the physical storage
+of the tables. For these tables, SEP uses the <a class="reference external" href="https://www.alibabacloud.com/help/maxcompute/user-guide/overview-28">tunnel
+API</a> to
+retrieve data in MaxCompute. This lets SEP determine the data size, split it
+by records and partitions, and use parallelization with multiple <code class="docutils literal notranslate"><span class="pre">InputSplits</span></code>.</p>
+</section>
 </section>
 <section id="performance">
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this heading">#</a></h2>
@@ -544,7 +606,11 @@ metadata in MaxCompute.</p>
 following sections.</p>
 <section id="pushdown">
 <h3 id="pushdown">Pushdown<a class="headerlink" href="#pushdown" title="Permalink to this heading">#</a></h3>
-<p>The connector supports partition pushdown.</p>
+<p>The connector supports partition and <a class="reference internal" href="#maxcompute-projection-pushdown"><span class="std std-ref">projection</span></a> pushdown.</p>
+<section id="projection-pushdown">
+<span id="maxcompute-projection-pushdown"></span><h4 id="projection-pushdown">Projection pushdown<a class="headerlink" href="#projection-pushdown" title="Permalink to this heading">#</a></h4>
+<p>The connector supports <a class="reference internal" href="../optimizer/pushdown.html#projection-pushdown"><span class="std std-ref">Projection pushdown</span></a> for <code class="docutils literal notranslate"><span class="pre">VIEWS</span></code>, <code class="docutils literal notranslate"><span class="pre">MATERIALIZED</span> <span class="pre">VIEWS</span></code>, and external tables.</p>
+</section>
 </section>
 </section>
 </section>
