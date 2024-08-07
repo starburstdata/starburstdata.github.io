@@ -385,7 +385,7 @@ this property is set, automatic authentication is disabled.</p></td>
 S3-compatible storage system instead of AWS.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">results-cache.s3.region</span></code></p></td>
-<td><p>The AWS region where the S3 bucket is located. <strong>Required</strong>.</p></td>
+<td><p>The AWS region where the S3 bucket is located.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results-cache.s3.path-style-access</span></code></p></td>
 <td><p>Used to specify path-style access for all requests to the S3-compatible
@@ -395,11 +395,30 @@ storage. Defaults to <code class="docutils literal notranslate"><span class="pre
 <td><p>The maximum amount of time that query results are stored in the cache
 before they are considered stale. The upper limit is 7 days.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results-cache.max-result-size</span></code></p></td>
+<td><p>The maximum size of the query results that are stored in the cache,
+accepts values between <code class="docutils literal notranslate"><span class="pre">1kB</span></code> and <code class="docutils literal notranslate"><span class="pre">5MB</span></code>, inclusive. Defaults to <code class="docutils literal notranslate"><span class="pre">1MB</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">results-cache.upload.threads</span></code></p></td>
+<td><p>The size of the thread pool allocated for uploading results to the
+results cache. Defaults to <code class="docutils literal notranslate"><span class="pre">5</span></code>.</p></td>
+</tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">results-cache.telemetry-enabled</span></code></p></td>
 <td><p>Used to enable telemetry data collection for the results cache.</p></td>
 </tr>
 </tbody>
 </table>
+<p>The following is an example configuration for query result caching:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">results-cache.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">results-cache.s3.endpoint</span><span class="o">=</span><span class="s">s3.us-east-2.amazonaws.com</span>
+<span class="na">results-cache.s3.aws-access-key</span><span class="o">=</span><span class="s">${ENV:AWS_ACCESS_KEY_ID}</span>
+<span class="na">results-cache.s3.aws-secret-key</span><span class="o">=</span><span class="s">${ENV:AWS_SECRET_ACCESS_KEY}</span>
+<span class="na">results-cache.s3.bucket</span><span class="o">=</span><span class="s">sep-result-cache</span>
+<span class="na">results-cache.s3.region</span><span class="o">=</span><span class="s">us-east-2</span>
+<span class="na">results-cache.s3.path-style-access</span><span class="o">=</span><span class="s">true</span>
+<span class="na">results-cache.max-age</span><span class="o">=</span><span class="s">10m</span>
+</pre></div>
+</div>
 </section>
 <section id="usage">
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permalink to this heading">#</a></h2>
@@ -414,15 +433,16 @@ catalog session properties, or additional credentials change the cache key and
 are treated as a separate cache entry.</p>
 <p>A user with appropriate permissions can use the following session property to
 bypass cached results:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">skip_results_cache</span><span class="o">=</span><span class="s">true</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">SET</span> <span class="s">SESSION</span>
+<span class="na">skip_results_cache</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">flush_results_cache()</span></code> procedure is used to clear the query results cache.</p>
 </section>
 <section id="expiration">
 <h2 id="expiration">Expiration<a class="headerlink" href="#expiration" title="Permalink to this heading">#</a></h2>
-<p>Lifetime of the cache entry is dependent on the S3 storage lifecycle. Starburst
-recommends setting a <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">lifecycle
+<p>SEP does not delete cache files it creates in S3.Starburst recommends setting a
+<a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html">lifecycle
 policy</a>
 for the bucket used to store cached results in order to delete expired elements.</p>
 <p>For example, the following lifecycle policy would expire cache entries after one
