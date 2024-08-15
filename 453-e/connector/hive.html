@@ -239,6 +239,7 @@
 <p class="caption" role="heading"><span class="caption-text">For data engineers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../catalogs.html">Define catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../object-storage.html">Object storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-engineering/materialized-views.html">Materialized views</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">Query optimizer</a></li>
 </ul>
@@ -301,10 +302,12 @@
         <li class="md-nav__item"><a href="#multiple-hive-clusters" class="md-nav__link">Multiple Hive clusters</a>
         </li>
         <li class="md-nav__item"><a href="#hive-general-configuration-properties" class="md-nav__link">Hive general configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#file-system-access-configuration" class="md-nav__link">File system access configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li></ul>
             </nav>
-        </li>
-        <li class="md-nav__item"><a href="#storage" class="md-nav__link">Storage</a>
         </li>
         <li class="md-nav__item"><a href="#security" class="md-nav__link">Security</a>
         </li>
@@ -364,8 +367,6 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
-        </li>
         <li class="md-nav__item"><a href="#performance" class="md-nav__link">Performance</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-statistics" class="md-nav__link">Table statistics</a><nav class="md-nav">
@@ -403,9 +404,7 @@
             
   <section id="hive-connector">
 <h1 id="connector-hive--page-root">Hive connector<a class="headerlink" href="#connector-hive--page-root" title="Permalink to this heading">#</a></h1>
-<img class="connector-logo" src="../_static/img/hive.png"/><div class="toctree-wrapper compound">
-</div>
-<p>The Hive connector allows querying data stored in an
+<img class="connector-logo" src="../_static/img/hive.png"/><p>The Hive connector allows querying data stored in an
 <a class="reference external" href="https://hive.apache.org/">Apache Hive</a>
 data warehouse. Hive is a combination of three components:</p>
 <ul class="simple">
@@ -423,20 +422,11 @@ It does not use HiveQL or any part of Hive’s execution environment.</p>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
 <p>The Hive connector requires a
-<a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service</span></a> (HMS), or a compatible
+<a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service</span></a> (HMS), or a compatible
 implementation of the Hive metastore, such as
-<a class="reference internal" href="metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>SEP supports the Hive Metastore Service (HMS) version 3.1.3. HMS version 4.X
-is not supported.</p>
-</div>
-<p>Many distributed storage systems including HDFS,
-<a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a> or S3-compatible systems,
-<a class="reference internal" href="hive-gcs-tutorial.html"><span class="doc std std-doc">Google Cloud Storage</span></a>,
-<a class="reference internal" href="hive-azure.html"><span class="doc">Azure Storage</span></a>, and
-<a class="reference internal" href="hive-cos.html"><span class="doc">IBM Cloud Object Storage</span></a> can be queried with the Hive
-connector.</p>
+<a class="reference internal" href="../object-storage/metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a>.</p>
+<p>Many <a class="reference internal" href="#hive-file-system-configuration"><span class="std std-ref">distributed storage systems</span></a> can be
+queried with the Hive connector.</p>
 <p>The coordinator and all workers must have network access to the Hive metastore
 and the storage system. Hive metastore access with the Thrift protocol defaults
 to using port 9083.</p>
@@ -444,8 +434,8 @@ to using port 9083.</p>
 configured using the <a class="reference internal" href="#hive-table-properties"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">format</span></code> table property</span></a>
 and other specific properties:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a></p></li>
-<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a></p></li>
 <li><p>Avro</p></li>
 </ul>
 <p>In the case of serializable formats, only specific
@@ -466,20 +456,20 @@ more <a class="reference external" href="https://github.com/trinodb/trino/tree/m
 <p>To configure the Hive connector, create a catalog properties file
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code> that references the <code class="docutils literal notranslate"><span class="pre">hive</span></code>
 connector and defines a metastore. You must configure a metastore for table
-metadata. If you are using a <a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
+metadata. If you are using a <a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
 <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> must be configured:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://example.net:9083</span>
 </pre></div>
 </div>
-<p>If you are using <a class="reference internal" href="metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
+<p>If you are using <a class="reference internal" href="../object-storage/metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
 must instead set <code class="docutils literal notranslate"><span class="pre">hive.metastore</span></code> to <code class="docutils literal notranslate"><span class="pre">glue</span></code>:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.metastore</span><span class="o">=</span><span class="s">glue</span>
 </pre></div>
 </div>
 <p>Each metastore type has specific configuration properties along with
-<a class="reference internal" href="metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
+<a class="reference internal" href="../object-storage/metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
 <section id="multiple-hive-clusters">
 <h3 id="multiple-hive-clusters">Multiple Hive clusters<a class="headerlink" href="#multiple-hive-clusters" title="Permalink to this heading">#</a></h3>
 <p>You can have as many catalogs as you need, so if you have additional
@@ -635,10 +625,10 @@ Retained size limit is shared across all running queries.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.timestamp-precision</span></code></p></td>
 <td><p>Specifies the precision to use for Hive columns of type <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>.
-Possible values are <code class="docutils literal notranslate"><span class="pre">MILLISECONDS</span></code>, <code class="docutils literal notranslate"><span class="pre">MICROSECONDS</span></code> and <code class="docutils literal notranslate"><span class="pre">NANOSECONDS</span></code>. Values
-with higher precision than configured are rounded. The equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc std std-doc">catalog
-session property</span></a> is <code class="docutils literal notranslate"><span class="pre">timestamp_precision</span></code> for session
-specific use.</p></td>
+Possible values are <code class="docutils literal notranslate"><span class="pre">MILLISECONDS</span></code>, <code class="docutils literal notranslate"><span class="pre">MICROSECONDS</span></code> and <code class="docutils literal notranslate"><span class="pre">NANOSECONDS</span></code>.
+Values with higher precision than configured are rounded. The equivalent
+<a class="reference internal" href="../sql/set-session.html"><span class="doc std std-doc">catalog session property</span></a> is <code class="docutils literal notranslate"><span class="pre">timestamp_precision</span></code> for
+session specific use.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">MILLISECONDS</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-enabled</span></code></p></td>
@@ -678,7 +668,17 @@ the number of writing threads is limited to number of buckets.</p></td>
 catalog specific use.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.table-statistics-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required-schemas</span></code></p></td>
+<td><p>Allow specifying the list of schemas for which Trino will enforce that
+queries use a filter on partition keys for source tables. The list can be
+specified using the <code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required-schemas</span></code>,
+or the <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required_schemas</span></code> session property. The list
+is taken into consideration only if the <code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required</span></code>
+configuration property or the <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required</span></code> session
+property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.table-statistics-enabled</span></code></p></td>
 <td><p>Enables <a class="reference internal" href="../optimizer/statistics.html"><span class="doc std std-doc">Table statistics</span></a>. The equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc std std-doc">catalog session
 property</span></a> is <code class="docutils literal notranslate"><span class="pre">statistics_enabled</span></code> for session specific
 use. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable statistics. Disabling statistics means that
@@ -686,20 +686,20 @@ use. Set to <code class="docutils literal notranslate"><span class="pre">false</
 the query plan.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.auto-purge</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.auto-purge</span></code></p></td>
 <td><p>Set the default value for the auto_purge table property for managed tables.
 See the <a class="reference internal" href="#hive-table-properties"><span class="std std-ref">Table properties</span></a> for more information on auto_purge.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.partition-projection-enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.partition-projection-enabled</span></code></p></td>
 <td><p>Enables Athena partition projection support</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.max-partition-drops-per-query</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.max-partition-drops-per-query</span></code></p></td>
 <td><p>Maximum number of partitions to drop in a single query.</p></td>
 <td><p>100,000</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.single-statement-writes</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.single-statement-writes</span></code></p></td>
 <td><p>Enables auto-commit for all writes. This can be used to disallow
 multi-statement write transactions.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
@@ -707,21 +707,34 @@ multi-statement write transactions.</p></td>
 </tbody>
 </table>
 </section>
-</section>
-<section id="storage">
-<h2 id="storage">Storage<a class="headerlink" href="#storage" title="Permalink to this heading">#</a></h2>
-<p>The Hive connector supports the following storage options:</p>
+<section id="file-system-access-configuration">
+<span id="hive-file-system-configuration"></span><h3 id="file-system-access-configuration">File system access configuration<a class="headerlink" href="#file-system-access-configuration" title="Permalink to this heading">#</a></h3>
+<p>The connector supports native, high-performance file system access to object
+storage systems:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a></p></li>
-<li><p><a class="reference internal" href="hive-azure.html"><span class="doc">Azure Storage</span></a></p></li>
-<li><p><a class="reference internal" href="hive-gcs-tutorial.html"><span class="doc">Google Cloud Storage</span></a></p></li>
-<li><p><a class="reference internal" href="hive-cos.html"><span class="doc">IBM Cloud Object Storage</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage.html"><span class="doc std std-doc">Object storage</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-azure.html"><span class="doc std std-doc">Azure Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-gcs.html"><span class="doc std std-doc">Google Cloud Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-s3.html"><span class="doc std std-doc">S3 file system support</span></a></p></li>
 </ul>
+<p>You must enable and configure the specific native file system access. If none is
+activated, the <a class="reference internal" href="../object-storage.html#file-system-legacy"><span class="std std-ref">legacy support</span></a> is used and must be
+configured.</p>
+</section>
+<section id="fault-tolerant-execution-support">
+<span id="hive-fte-support"></span><h3 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
+processing. Read and write operations are both supported with any retry policy
+on non-transactional tables.</p>
+<p>Read operations are supported with any retry policy on transactional tables.
+Write operations and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">AS</span></code> operations are not supported with
+any retry policy on transactional tables.</p>
+</section>
 </section>
 <section id="security">
 <span id="hive-security"></span><h2 id="security">Security<a class="headerlink" href="#security" title="Permalink to this heading">#</a></h2>
-<p>The connector supports different means of authentication for the file
-system and <a class="reference internal" href="#hive-configuration"><span class="std std-ref">metastore</span></a>.</p>
+<p>The connector supports different means of authentication for the used <a class="reference internal" href="#hive-file-system-configuration"><span class="std std-ref">file
+system</span></a> and <a class="reference internal" href="#hive-configuration"><span class="std std-ref">metastore</span></a>.</p>
 <p>In addition, the following security-related features are supported.</p>
 </section>
 <section id="authorization">
@@ -1017,11 +1030,11 @@ type conversions.</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code>, <code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>,
-<code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal notranslate"><span class="pre">DATE</span></code>, <code class="docutils literal notranslate"><span class="pre">CHAR</span></code>, as well as narrowing conversions for <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code>, <code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>, <code class="docutils literal notranslate"><span class="pre">DATE</span></code>, <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> as well as
+narrowing conversions for <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
-<td><p>narrowing conversions for <code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, narrowing conversions for <code class="docutils literal notranslate"><span class="pre">CHAR</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code></p></td>
@@ -1050,6 +1063,9 @@ well as narrowing and widening conversions for <code class="docutils literal not
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">DATE</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1546,15 +1562,6 @@ functionality:</p>
 </section>
 </section>
 </section>
-<section id="fault-tolerant-execution-support">
-<span id="hive-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
-<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
-processing. Read and write operations are both supported with any retry policy
-on non-transactional tables.</p>
-<p>Read operations are supported with any retry policy on transactional tables.
-Write operations and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">AS</span></code> operations are not supported with
-any retry policy on transactional tables.</p>
-</section>
 <section id="performance">
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this heading">#</a></h2>
 <p>The connector includes a number of performance improvements, detailed in the
@@ -1764,7 +1771,7 @@ and Delta Lake tables with the following catalog configuration properties:</p>
 </section>
 <section id="file-system-cache">
 <h3 id="file-system-cache">File system cache<a class="headerlink" href="#file-system-cache" title="Permalink to this heading">#</a></h3>
-<p>The connector supports configuring and using <a class="reference internal" href="file-system-cache.html"><span class="doc std std-doc">file system
+<p>The connector supports configuring and using <a class="reference internal" href="../object-storage/file-system-cache.html"><span class="doc std std-doc">file system
 caching</span></a>.</p>
 </section>
 <section id="performance-tuning-configuration-properties">

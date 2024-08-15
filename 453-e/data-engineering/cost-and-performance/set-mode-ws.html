@@ -239,6 +239,7 @@
 <p class="caption" role="heading"><span class="caption-text">For data engineers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../catalogs.html">Define catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../object-storage.html">Object storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../materialized-views.html">Materialized views</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../optimizer.html">Query optimizer</a></li>
 </ul>
@@ -787,13 +788,6 @@ Starburst Warp Speed:</p>
   <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
-<p>By default, it is disabled. The recommended memory allocation is automatically
-configured.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">warpSpeed</span><span class="p">:</span>
-  <span class="nt">enabled</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
-  <span class="nt">additionalHeapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
-</pre></div>
-</div>
 <p>Starburst Warp Speed uses a filesystem on top of the underlying storage in order to not
 require privileged mode. Add the following filesystem and image configuration to
 your values file:</p>
@@ -807,8 +801,9 @@ your values file:</p>
     <span class="l l-Scalar l-Scalar-Plain"># bootstrap process (preBootstrapCommands script in EKS deployments).</span>
     <span class="l l-Scalar l-Scalar-Plain"># This functionality is available for AKS, EKS, and GKE only.</span>
     <span class="l l-Scalar l-Scalar-Plain"># For AWS, use default setting.</span>
-    <span class="l l-Scalar l-Scalar-Plain"># For Azure and GKE deployments, set autoConfigure to true.</span>
-  <span class="nt">autoConfigure</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">false</span>
+    <span class="l l-Scalar l-Scalar-Plain"># For Azure and GKE deployments, or S3 deployments using the native</span>
+    <span class="l l-Scalar l-Scalar-Plain"># filesystem implementation, set autoConfigure to true.</span>
+  <span class="nt">autoConfigure</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">true</span>
     <span class="l l-Scalar l-Scalar-Plain"># Additional percentage of container memory reduced from heap size assigned to Java, must be less than 100</span>
   <span class="nt">additionalHeapSizePercentage</span><span class="p">:</span> <span class="l l-Scalar l-Scalar-Plain">15</span>
   <span class="nt">fileSystem</span><span class="p">:</span>
@@ -885,6 +880,8 @@ adding the required configuration properties:</p>
     <span class="no">connector.name=warp_speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
+    <span class="no"># Do not configure the following property if you are using a native</span>
+    <span class="no"># filesystem implementation.</span>
     <span class="no">warp-speed.config.internal-communication.shared-secret=aLongSecretString</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
@@ -907,6 +904,8 @@ configuration of a catalog and update it:</p>
     <span class="no">connector.name=warp_speed</span>
     <span class="no">warp-speed.proxied-connector=hive</span>
     <span class="no">warp-speed.cluster-uuid=example-cluster-567891234567</span>
+    <span class="no"># Do not configure the following property if you are using a native</span>
+    <span class="no"># filesystem implementation.</span>
     <span class="no">warp-speed.config.internal-communication.shared-secret=aLongSecretString</span>
     <span class="no">hive.metastore=glue</span>
     <span class="no">...</span>
@@ -949,11 +948,12 @@ new cluster and the same <code class="docutils literal notranslate"><span class=
 into the newly created cluster.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code></p></td>
-<td><p><strong>Required, unless REST API is disabled.</strong>  The shared secret value of
-the cluster. It is configured for <a class="reference internal" href="../../security/internal-communication.html"><span class="doc">secure internal communication</span></a> in <code class="docutils literal notranslate"><span class="pre">sharedSecret:</span></code> for the
-Kubernetes deployment. The identical value used for the property
-<code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code> for each
-catalog.</p></td>
+<td><p><strong>Required, unless REST API is disabled or you are using a native filesystem
+implementation</strong>  The shared secret value of the cluster. It is configured
+for <a class="reference internal" href="../../security/internal-communication.html"><span class="doc">secure internal communication</span></a>
+in <code class="docutils literal notranslate"><span class="pre">sharedSecret:</span></code> for the Kubernetes deployment. The identical value used
+for the property <code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code>
+for each catalog. Do not configure if you are using a <a class="reference internal" href="../../object-storage.html"><span class="doc">native filesystem implementation</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code></p></td>
 <td><p>The path to a bucket in object storage where SSD data is backed up for fast
@@ -966,7 +966,9 @@ configured with <code class="docutils literal notranslate"><span class="pre">war
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
 <td><p>Specifies to run the REST API on the coordinator in the same server as
-SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>.</p></td>
+SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. Do not configure if you are using a
+<a class="reference internal" href="../../object-storage.html"><span class="doc">native filesystem implementation</span></a>. For details, see
+<a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-port-enabled</span></code></p></td>
 <td><p>Optional parameter to enable the REST API server on the coordinator and
@@ -979,6 +981,8 @@ as <code class="docutils literal notranslate"><span class="pre">8088</span></cod
 context, and are otherwise identical to the <a class="reference internal" href="#warp-speed-management"><span class="std std-ref">secured REST API</span></a>. Typically the port is not exposed outside the
 cluster, so users need to forward the port or call the API from inside
 the cluster.</p>
+<p>Do not configure if you are using a
+<a class="reference internal" href="../../object-storage.html"><span class="doc">native filesystem implementation</span></a>.</p>
 </td>
 </tr>
 </tbody>
@@ -992,7 +996,7 @@ connector as the proxied connector for Starburst Warp Speed:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../../connector/hive.html#hive-table-redirection"><span class="std std-ref">Table redirection from a catalog using the Hive connector</span></a> to Delta Lake or Iceberg is not supported.</p></li>
 <li><p><a class="reference internal" href="../../connector/starburst-hive.html#sb-hive-materialized-views"><span class="std std-ref">Materialized views</span></a> are supported.</p></li>
-<li><p><a class="reference internal" href="../../connector/hive-s3.html#hive-s3-configuration"><span class="std std-ref">S3 proxy</span></a> is not supported.</p></li>
+<li><p><a class="reference internal" href="../../object-storage/legacy-s3.html#hive-s3-configuration"><span class="std std-ref">S3 proxy</span></a> is not supported.</p></li>
 <li><p><a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/serv-side-encryption.html">Server-side
 encryption</a>
 with S3 managed keys is supported. S3 client-side encryption is not supported.</p></li>
@@ -1087,7 +1091,7 @@ catalog properties:</p>
 <span class="na">hive.gcs.use-access-token</span><span class="o">=</span><span class="s">false</span>
 </pre></div>
 </div>
-<p>View the <a class="reference internal" href="../../connector/hive-gcs-tutorial.html"><span class="doc">Google Cloud Storage</span></a> to learn more.</p>
+<p>View the <a class="reference internal" href="../../object-storage/legacy-gcs.html"><span class="doc">Legacy Google Cloud Storage support</span></a> to learn more.</p>
 <p>The following <a class="reference external" href="https://developers.google.com/identity/protocols/oauth2/scopes">OAuth 2.0 access scopes for Google
 APIs</a>
 must be attached during GKE node creation to enable the <a class="reference internal" href="#warp-speed-index-cache"><span class="std std-ref">index and cache resiliency</span></a>:</p>
@@ -1133,12 +1137,11 @@ REST API, must use object storage to ensure user-defined warmup rules are not
 lost after a cluster restart.</p>
 <p>Specify an object store path where custom warmup rules are stored. This path
 should point to a location in your object storage bucket:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.objectstore.store.path</span><span class="o">=</span><span class="s">file:///tmp</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">warp-speed.objectstore.store.path</span><span class="o">=</span><span class="s">protocol://account_name.path.to.bucket/storage</span>
 </pre></div>
 </div>
-<p>Starburst recommends that you specify a separate path for each catalog. Multiple
-catalogs can use a single object storage bucket with a separate file for each
-catalog.</p>
+<p>Specify a separate path for each catalog. Multiple catalogs can use a single
+object storage bucket with a separate file for each catalog.</p>
 <p>Storing custom warmup rules can fill up your object storage. Set a lifecycle
 configuration to manage warmup rules stored in your bucket and exclude them from
 deletion. Refer to the following lifecycle documentation for your cloud
@@ -1167,6 +1170,13 @@ identical to the <a class="reference internal" href="../../starburst-rest-api.ht
 <code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code> set to <code class="docutils literal notranslate"><span class="pre">false</span></code>. The shared secret value of
 the cluster, configured for <a class="reference internal" href="../../security/internal-communication.html"><span class="doc">secure internal communication</span></a>, must be set in
 <code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code> for each catalog.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are using a <a class="reference internal" href="../../object-storage.html"><span class="doc">native filesystem implementation</span></a>
+rather than the default Hadoop implementation, do not add
+<code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code> or
+<code class="docutils literal notranslate"><span class="pre">warp-speed.config.internal-communication.shared-secret</span></code> to your configuration.</p>
+</div>
 <p>The endpoints path structure includes the name of the catalog,
 <code class="docutils literal notranslate"><span class="pre">/ext/{catalogName}/{paths:</span> <span class="pre">.+}</span></code>. The following example shows the <code class="docutils literal notranslate"><span class="pre">/ext</span></code>
 path to the <code class="docutils literal notranslate"><span class="pre">warmup/warmup-rule-set</span></code> endpoint for the catalog named <code class="docutils literal notranslate"><span class="pre">faster</span></code>

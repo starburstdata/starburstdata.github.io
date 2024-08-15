@@ -239,6 +239,7 @@
 <p class="caption" role="heading"><span class="caption-text">For data engineers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../catalogs.html">Define catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../object-storage.html">Object storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-engineering/materialized-views.html">Materialized views</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">Query optimizer</a></li>
 </ul>
@@ -296,7 +297,13 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#general-configuration" class="md-nav__link">General configuration</a>
+        <li class="md-nav__item"><a href="#general-configuration" class="md-nav__link">General configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#file-system-access-configuration" class="md-nav__link">File system access configuration</a>
         </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -403,14 +410,12 @@
             </nav>
         </li>
         <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li>
         <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-changes" class="md-nav__link">table_changes</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -466,17 +471,13 @@ consults the underlying file system for files that must be read.</p>
 <ul class="simple">
 <li><p>Network access from the Trino coordinator and workers to the distributed
 object storage.</p></li>
-<li><p>Access to a <a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service (HMS)</span></a>, an
-<a class="reference internal" href="metastores.html#iceberg-glue-catalog"><span class="std std-ref">AWS Glue catalog</span></a>, a <a class="reference internal" href="metastores.html#iceberg-jdbc-catalog"><span class="std std-ref">JDBC catalog</span></a>, a <a class="reference internal" href="metastores.html#iceberg-rest-catalog"><span class="std std-ref">REST catalog</span></a>, or a
-a <a class="reference internal" href="metastores.html#iceberg-nessie-catalog"><span class="std std-ref">Nessie server</span></a>, or a
-<a class="reference internal" href="metastores.html#iceberg-snowflake-catalog"><span class="std std-ref">Snowflake catalog</span></a>.</p></li>
-<li><p>Data files stored in a supported file format. These can be configured using
-file format configuration properties per catalog:</p>
-<ul>
-<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a></p></li>
-<li><p><a class="reference internal" href="object-storage-file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a> (default)</p></li>
-</ul>
-</li>
+<li><p>Access to a <a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore service (HMS)</span></a>, an
+<a class="reference internal" href="../object-storage/metastores.html#iceberg-glue-catalog"><span class="std std-ref">AWS Glue catalog</span></a>, a <a class="reference internal" href="../object-storage/metastores.html#iceberg-jdbc-catalog"><span class="std std-ref">JDBC catalog</span></a>, a <a class="reference internal" href="../object-storage/metastores.html#iceberg-rest-catalog"><span class="std std-ref">REST catalog</span></a>,
+a <a class="reference internal" href="../object-storage/metastores.html#iceberg-nessie-catalog"><span class="std std-ref">Nessie server</span></a>, or a
+<a class="reference internal" href="../object-storage/metastores.html#iceberg-snowflake-catalog"><span class="std std-ref">Snowflake catalog</span></a>.</p></li>
+<li><p>Data files stored in the file formats
+<a class="reference internal" href="../object-storage/file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet</span></a>(default), <a class="reference internal" href="../object-storage/file-formats.html#hive-orc-configuration"><span class="std std-ref">ORC</span></a>,
+or Avro on a <a class="reference internal" href="#iceberg-file-system-configuration"><span class="std std-ref">supported file system</span></a>.</p></li>
 </ul>
 </section>
 <section id="general-configuration">
@@ -484,17 +485,15 @@ file format configuration properties per catalog:</p>
 <p>To configure the Iceberg connector, create a catalog properties file
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code> that references the <code class="docutils literal notranslate"><span class="pre">iceberg</span></code>
 connector and defines a metastore type. The Hive metastore catalog is the
-default implementation. To use a <a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
-<code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">hive_metastore</span></code> and
+default implementation. To use a <a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
 <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> must be configured:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">iceberg</span>
-<span class="na">iceberg.catalog.type</span><span class="o">=</span><span class="s">hive_metastore</span>
 <span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://example.net:9083</span>
 </pre></div>
 </div>
 <p>Other metadata catalog types as listed in the requirements section of this topic
 are available. Each metastore type has specific configuration properties along
-with <a class="reference internal" href="metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
+with <a class="reference internal" href="../object-storage/metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
 <p>The following configuration properties are independent of which catalog
 implementation is used:</p>
 <table id="id2">
@@ -512,7 +511,7 @@ implementation is used:</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type</span></code></p></td>
-<td><p>Define the <a class="reference internal" href="metastores.html#general-metastore-properties"><span class="std std-ref">metastore type</span></a> to use. Possible
+<td><p>Define the <a class="reference internal" href="../object-storage/metastores.html#general-metastore-properties"><span class="std std-ref">metastore type</span></a> to use. Possible
 values are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">hive_metastore</span></code></p></li>
@@ -523,7 +522,7 @@ values are:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake</span></code></p></li>
 </ul>
 </td>
-<td></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hive_metastore</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.file-format</span></code></p></td>
 <td><p>Define the data storage file format for Iceberg tables. Possible values are:</p>
@@ -618,24 +617,58 @@ materialized view definition. When the <code class="docutils literal notranslate
 property is specified, it takes precedence over this catalog property.</p></td>
 <td><p>Empty</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.materialized-views.hide-storage-table</span></code></p></td>
-<td><p>Hide the information about the storage table backing the materialized view
-in the metastore.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.register-table-procedure.enabled</span></code></p></td>
-<td><p>Enable to allow user to call <a class="reference internal" href="#iceberg-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code>
-procedure</span></a>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.register-table-procedure.enabled</span></code></p></td>
+<td><p>Enable to allow user to call <a class="reference internal" href="#iceberg-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required</span></code></p></td>
 <td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to force a query to use a partition filter. You can use the
 <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required</span></code> catalog session property for temporary,
 catalog specific use.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required-schemas</span></code></p></td>
+<td><p>Allow specifying the list of schemas for which Trino will enforce that
+queries use a filter on partition keys for source tables. The list can be
+specified using the <code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required-schemas</span></code>,
+or the <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required_schemas</span></code> session property. The list
+is taken into consideration only if the <code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required</span></code>
+configuration property or the <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required</span></code> session
+property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.incremental-refresh-enabled</span></code></p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to force the materialized view refresh operation to always
+perform a full refresh. You can use the <code class="docutils literal notranslate"><span class="pre">incremental_refresh_enabled</span></code>
+catalog session property for temporary, catalog specific use. In the
+majority of cases, using incremental refresh, as compared to a full refresh,
+is beneficial since a much smaller subset of the source tables needs to be
+scanned. While incremental refresh may scan less data, it may result in the
+creation of more data files, since it uses the append operation to insert
+the new records.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
 </tbody>
 </table>
+<section id="fault-tolerant-execution-support">
+<span id="iceberg-fte-support"></span><h3 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
+processing. Read and write operations are both supported with any retry policy.</p>
+</section>
+</section>
+<section id="file-system-access-configuration">
+<span id="iceberg-file-system-configuration"></span><h2 id="file-system-access-configuration">File system access configuration<a class="headerlink" href="#file-system-access-configuration" title="Permalink to this heading">#</a></h2>
+<p>The connector supports native, high-performance file system access to object
+storage systems:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../object-storage.html"><span class="doc std std-doc">Object storage</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-azure.html"><span class="doc std std-doc">Azure Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-gcs.html"><span class="doc std std-doc">Google Cloud Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-s3.html"><span class="doc std std-doc">S3 file system support</span></a></p></li>
+</ul>
+<p>You must enable and configure the specific native file system access. If none is
+activated, the <a class="reference internal" href="../object-storage.html#file-system-legacy"><span class="std std-ref">legacy support</span></a> is used and must be
+configured.</p>
 </section>
 <section id="type-mapping">
 <h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this heading">#</a></h2>
@@ -799,10 +832,12 @@ the following table:</p>
 <h3 id="kerberos-authentication">Kerberos authentication<a class="headerlink" href="#kerberos-authentication" title="Permalink to this heading">#</a></h3>
 <p>The Iceberg connector supports Kerberos authentication for the Hive metastore
 and HDFS and is configured using the same parameters as the Hive connector. Find
-more information in the <a class="reference internal" href="file-system-hdfs.html"><span class="doc std std-doc">HDFS file system support</span></a> section.</p>
+more information in the <a class="reference internal" href="../object-storage/file-system-hdfs.html"><span class="doc std std-doc">HDFS file system support</span></a> section.</p>
 </section>
 <section id="authorization">
 <span id="iceberg-authorization"></span><h3 id="authorization">Authorization<a class="headerlink" href="#authorization" title="Permalink to this heading">#</a></h3>
+<p>The Iceberg connector allows you to choose one of several means of providing
+authorization at the catalog level.</p>
 <p>You can enable authorization checks for the connector by setting the
 <code class="docutils literal notranslate"><span class="pre">iceberg.security</span></code> property in the catalog properties file. This property must
 be one of the following values:</p>
@@ -1223,6 +1258,16 @@ Parquet files. Requires Parquet format. Defaults to <code class="docutils litera
     <span class="k">location</span> <span class="o">=</span> <span class="s1">'/var/example_tables/test_table'</span><span class="p">,</span>
     <span class="n">orc_bloom_filter_columns</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'c1'</span><span class="p">,</span> <span class="s1">'c2'</span><span class="p">],</span>
     <span class="n">orc_bloom_filter_fpp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">.</span><span class="mi">05</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The table definition below specifies to use Avro files, partitioning
+by <code class="docutils literal notranslate"><span class="pre">child1</span></code> field in <code class="docutils literal notranslate"><span class="pre">parent</span></code> column:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">test_table</span> <span class="p">(</span>
+    <span class="k">data</span> <span class="nb">INTEGER</span><span class="p">,</span>
+    <span class="n">parent</span> <span class="k">ROW</span><span class="p">(</span><span class="n">child1</span> <span class="n">DOUBLE</span><span class="p">,</span> <span class="n">child2</span> <span class="nb">INTEGER</span><span class="p">))</span>
+<span class="k">WITH</span> <span class="p">(</span>
+    <span class="n">format</span> <span class="o">=</span> <span class="s1">'AVRO'</span><span class="p">,</span>
+    <span class="n">partitioning</span> <span class="o">=</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'"parent.child1"'</span><span class="p">])</span>
 </pre></div>
 </div>
 </section>
@@ -1997,15 +2042,19 @@ used to specify the schema where the storage table is created.</p>
 <p>Creating a materialized view does not automatically populate it with data. You
 must run <a class="reference internal" href="../sql/refresh-materialized-view.html"><span class="doc">REFRESH MATERIALIZED VIEW</span></a> to populate data in the
 materialized view.</p>
-<p>Updating the data in the materialized view with <code class="docutils literal notranslate"><span class="pre">REFRESH</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code>
+<p>Updating the data in the materialized view can be achieved using the <code class="docutils literal notranslate"><span class="pre">REFRESH</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> command. This operation may perform either an incremental or
+a full refresh, depending on the complexity of the materialized view definition
+and the snapshot history of the source tables. For a full refresh, the operation
 deletes the data from the storage table, and inserts the data that is the result
-of executing the materialized view query into the existing table. Data is
-replaced atomically, so users can continue to query the materialized view while
-it is being refreshed. Refreshing a materialized view also stores the
-snapshot-ids of all Iceberg tables that are part of the materialized view’s
-query in the materialized view metadata. When the materialized view is queried,
-the snapshot-ids are used to check if the data in the storage table is up to
-date.</p>
+of executing the materialized view query into the existing table. For
+incremental refresh, the existing data is not deleted from the storage table and
+only the delta records are processed from the source tables and appended into
+the storage table as needed. In both cases, data is replaced or appended
+atomically, so users can continue to query the materialized view while it is
+being refreshed. Refreshing a materialized view also stores the snapshot-ids of
+all Iceberg tables that are part of the materialized view’s query in the
+materialized view metadata. When the materialized view is queried, the
+snapshot-ids are used to check if the data in the storage table is up to date.</p>
 <p>Materialized views that use non-Iceberg tables in the query show the <a class="reference internal" href="../sql/create-materialized-view.html#mv-grace-period"><span class="std std-ref">default
 behavior around grace periods</span></a>. If all tables are Iceberg
 tables, the connector can determine if the data has not changed and continue to
@@ -2013,17 +2062,11 @@ use the data from the storage tables, even after the grace period expired.</p>
 <p>Dropping a materialized view with <a class="reference internal" href="../sql/drop-materialized-view.html"><span class="doc">DROP MATERIALIZED VIEW</span></a> removes
 the definition and the storage table.</p>
 </section>
-</section>
-<section id="fault-tolerant-execution-support">
-<span id="iceberg-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
-<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
-processing. Read and write operations are both supported with any retry policy.</p>
-</section>
 <section id="table-functions">
-<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h3>
 <p>The connector supports the table functions described in the following sections.</p>
 <section id="table-changes">
-<h3 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h3>
+<h4 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h4>
 <p>Allows reading row-level changes between two versions of an Iceberg table.
 The following query shows an example of displaying the changes of the <code class="docutils literal notranslate"><span class="pre">t1</span></code>
 table in the <code class="docutils literal notranslate"><span class="pre">default</span></code> schema in the current catalog.
@@ -2152,6 +2195,7 @@ for each change:</p>
 </div>
 </section>
 </section>
+</section>
 <section id="performance">
 <h2 id="performance">Performance<a class="headerlink" href="#performance" title="Permalink to this heading">#</a></h2>
 <p>The connector includes a number of performance improvements, detailed in the
@@ -2259,7 +2303,7 @@ Fragment 0 [SOURCE]
 </section>
 <section id="file-system-cache">
 <h3 id="file-system-cache">File system cache<a class="headerlink" href="#file-system-cache" title="Permalink to this heading">#</a></h3>
-<p>The connector supports configuring and using <a class="reference internal" href="file-system-cache.html"><span class="doc std std-doc">file system
+<p>The connector supports configuring and using <a class="reference internal" href="../object-storage/file-system-cache.html"><span class="doc std std-doc">file system
 caching</span></a>.</p>
 </section>
 </section>

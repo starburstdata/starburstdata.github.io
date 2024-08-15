@@ -239,6 +239,7 @@
 <p class="caption" role="heading"><span class="caption-text">For data engineers</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../catalogs.html">Define catalogs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../object-storage.html">Object storage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../data-engineering/materialized-views.html">Materialized views</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../optimizer.html">Query optimizer</a></li>
 </ul>
@@ -296,11 +297,15 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#general-configuration" class="md-nav__link">General configuration</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#general-configuration" class="md-nav__link">General configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#file-system-access-configuration" class="md-nav__link">File system access configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#delta-lake-general-configuration-properties" class="md-nav__link">Delta Lake general configuration properties</a>
         </li>
         <li class="md-nav__item"><a href="#catalog-session-properties" class="md-nav__link">Catalog session properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li></ul>
             </nav>
         </li>
@@ -365,14 +370,12 @@
         <li class="md-nav__item"><a href="#metadata-columns" class="md-nav__link">Metadata columns</a>
         </li></ul>
             </nav>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li>
         <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#table-changes" class="md-nav__link">table_changes</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -429,9 +432,8 @@ fully supported.</p></li>
 or a Glue metastore.</p></li>
 <li><p>Network access to the HMS from the coordinator and workers. Port 9083 is the
 default port for the Thrift protocol used by the HMS.</p></li>
-<li><p>Data files stored in the Parquet file format. These can be configured using
-<a class="reference internal" href="object-storage-file-formats.html#hive-parquet-configuration"><span class="std std-ref">file format configuration properties</span></a> per
-catalog.</p></li>
+<li><p>Data files stored in the <a class="reference internal" href="../object-storage/file-formats.html#hive-parquet-configuration"><span class="std std-ref">Parquet file format</span></a> on
+a <a class="reference internal" href="#delta-lake-file-system-configuration"><span class="std std-ref">supported file system</span></a>.</p></li>
 </ul>
 </section>
 <section id="general-configuration">
@@ -439,30 +441,37 @@ catalog.</p></li>
 <p>To configure the Delta Lake connector, create a catalog properties file
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code> that references the <code class="docutils literal notranslate"><span class="pre">delta_lake</span></code>
 connector and defines a metastore. You must configure a metastore for table
-metadata.  If you are using a <a class="reference internal" href="metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
+metadata.  If you are using a <a class="reference internal" href="../object-storage/metastores.html#hive-thrift-metastore"><span class="std std-ref">Hive metastore</span></a>,
 <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> must be configured:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">delta_lake</span>
 <span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://example.net:9083</span>
 </pre></div>
 </div>
-<p>If you are using <a class="reference internal" href="metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
+<p>If you are using <a class="reference internal" href="../object-storage/metastores.html#hive-glue-metastore"><span class="std std-ref">AWS Glue</span></a> as your metastore, you
 must instead set <code class="docutils literal notranslate"><span class="pre">hive.metastore</span></code> to <code class="docutils literal notranslate"><span class="pre">glue</span></code>:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">delta_lake</span>
 <span class="na">hive.metastore</span><span class="o">=</span><span class="s">glue</span>
 </pre></div>
 </div>
 <p>Each metastore type has specific configuration properties along with
-<a class="reference internal" href="metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
+<a class="reference internal" href="../object-storage/metastores.html#general-metastore-properties"><span class="std std-ref">general metastore configuration properties</span></a>.</p>
 <p>The connector recognizes Delta Lake tables created in the metastore by the Databricks
 runtime. If non-Delta Lake tables are present in the metastore as well, they are not
 visible to the connector.</p>
-<p>To configure access to S3 and S3-compatible storage, Azure storage, and others,
-consult the appropriate section of the Hive documentation:</p>
+</section>
+<section id="file-system-access-configuration">
+<span id="delta-lake-file-system-configuration"></span><h2 id="file-system-access-configuration">File system access configuration<a class="headerlink" href="#file-system-access-configuration" title="Permalink to this heading">#</a></h2>
+<p>The connector supports native, high-performance file system access to object
+storage systems:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a></p></li>
-<li><p><a class="reference internal" href="hive-azure.html"><span class="doc">Azure storage documentation</span></a></p></li>
-<li><p><a class="reference internal" href="hive-gcs-tutorial.html#hive-google-cloud-storage-configuration"><span class="std std-ref">GCS</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage.html"><span class="doc std std-doc">Object storage</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-azure.html"><span class="doc std std-doc">Azure Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-gcs.html"><span class="doc std std-doc">Google Cloud Storage file system support</span></a></p></li>
+<li><p><a class="reference internal" href="../object-storage/file-system-s3.html"><span class="doc std std-doc">S3 file system support</span></a></p></li>
 </ul>
+<p>You must enable and configure the specific native file system access. If none is
+activated, the <a class="reference internal" href="../object-storage.html#file-system-legacy"><span class="std std-ref">legacy support</span></a> is used and must be
+configured.</p>
 <section id="delta-lake-general-configuration-properties">
 <h3 id="delta-lake-general-configuration-properties">Delta Lake general configuration properties<a class="headerlink" href="#delta-lake-general-configuration-properties" title="Permalink to this heading">#</a></h3>
 <p>The following configuration properties are all using reasonable, tested default
@@ -600,8 +609,7 @@ equivalent catalog session property is <code class="docutils literal notranslate
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.register-table-procedure.enabled</span></code></p></td>
-<td><p>Enable to allow users to call the <a class="reference internal" href="#delta-lake-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code>
-procedure</span></a>.</p></td>
+<td><p>Enable to allow users to call the <a class="reference internal" href="#delta-lake-register-table"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">register_table</span></code> procedure</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.vacuum.min-retention</span></code></p></td>
@@ -657,6 +665,11 @@ queries.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="fault-tolerant-execution-support">
+<span id="delta-lake-fte-support"></span><h3 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
+processing. Read and write operations are both supported with any retry policy.</p>
 </section>
 </section>
 <section id="type-mapping">
@@ -952,7 +965,7 @@ default. The procedure is enabled only when
 <section id="unregister-table">
 <span id="delta-lake-unregister-table"></span><h4 id="unregister-table">Unregister table<a class="headerlink" href="#unregister-table" title="Permalink to this heading">#</a></h4>
 <p>The connector can remove existing Delta Lake tables from the metastore. Once
-unregistered, you can no longer query the table.</p>
+unregistered, you can no longer query the table from Trino.</p>
 <p>The procedure <code class="docutils literal notranslate"><span class="pre">system.unregister_table</span></code> allows the caller to unregister an
 existing Delta Lake table from the metastores without deleting the data:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span> <span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">unregister_table</span><span class="p">(</span><span class="k">schema_name</span> <span class="o">=&gt;</span> <span class="s1">'testdb'</span><span class="p">,</span> <span class="k">table_name</span> <span class="o">=&gt;</span> <span class="s1">'customer_orders'</span><span class="p">)</span>
@@ -1006,7 +1019,7 @@ enabled by default. Trino detects write collisions on these storage systems
 when writing from multiple Trino clusters, or from other query engines.</p>
 </li>
 <li><p>S3 and S3-compatible storage</p>
-<p>Writes to <a class="reference internal" href="hive-s3.html"><span class="doc">Amazon S3</span></a> and S3-compatible storage must be enabled
+<p>Writes to <a class="reference internal" href="../object-storage/legacy-s3.html"><span class="doc">Amazon S3</span></a> and S3-compatible storage must be enabled
 with the <code class="docutils literal notranslate"><span class="pre">delta.enable-non-concurrent-writes</span></code> property. Writes to S3 can
 safely be made from multiple Trino clusters; however, write collisions are not
 detected when writing concurrently from other Delta Lake engines. You must
@@ -1122,7 +1135,7 @@ one of the following conditions:</p>
 <ul class="simple">
 <li><p>The table type is external.</p></li>
 <li><p>The table is backed by a metastore that does not perform object storage
-operations, for example, AWS Glue or Thrift.</p></li>
+operations, for example, AWS Glue.</p></li>
 </ul>
 </section>
 <section id="table-properties">
@@ -1354,17 +1367,11 @@ directly or used in conditional statements.</p>
 </ul>
 </section>
 </section>
-</section>
-<section id="fault-tolerant-execution-support">
-<span id="delta-lake-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
-<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
-processing. Read and write operations are both supported with any retry policy.</p>
-</section>
 <section id="table-functions">
-<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h3>
 <p>The connector provides the following table functions:</p>
 <section id="table-changes">
-<h3 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h3>
+<h4 id="table-changes">table_changes<a class="headerlink" href="#table-changes" title="Permalink to this heading">#</a></h4>
 <p>Allows reading Change Data Feed (CDF) entries to expose row-level changes
 between two versions of a Delta Lake table. When the <code class="docutils literal notranslate"><span class="pre">change_data_feed_enabled</span></code>
 table property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> on a specific Delta Lake table,
@@ -1489,6 +1496,7 @@ url6        |     domain4    |    2        |    update_postimage |     3        
 </div>
 <p>You can see changes that occurred at version 1 as three inserts. They are
 not visible in the previous statement when <code class="docutils literal notranslate"><span class="pre">since_version</span></code> value was set to 1.</p>
+</section>
 </section>
 </section>
 <section id="performance">
@@ -1746,7 +1754,7 @@ catalog specific use.</p></td>
 </section>
 <section id="file-system-cache">
 <h3 id="file-system-cache">File system cache<a class="headerlink" href="#file-system-cache" title="Permalink to this heading">#</a></h3>
-<p>The connector supports configuring and using <a class="reference internal" href="file-system-cache.html"><span class="doc std std-doc">file system
+<p>The connector supports configuring and using <a class="reference internal" href="../object-storage/file-system-cache.html"><span class="doc std std-doc">file system
 caching</span></a>.</p>
 </section>
 </section>
