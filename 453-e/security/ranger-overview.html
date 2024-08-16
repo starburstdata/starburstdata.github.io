@@ -278,6 +278,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#column-masking">Column masking</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#service-and-catalog-integrations">Service and catalog integrations</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#location-privileges">Location privileges</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#geolocation-based-policies">Geolocation-based policies</a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#features-and-use-cases">Features and use cases</a><ul>
@@ -373,6 +374,8 @@
         <li class="md-nav__item"><a href="#service-and-catalog-integrations" class="md-nav__link">Service and catalog integrations</a>
         </li>
         <li class="md-nav__item"><a href="#location-privileges" class="md-nav__link">Location privileges</a>
+        </li>
+        <li class="md-nav__item"><a href="#geolocation-based-policies" class="md-nav__link">Geolocation-based policies</a>
         </li></ul>
             </nav>
         </li>
@@ -644,6 +647,61 @@ default. Location privileges support recursive or non-recursive policies. For
 example, if you have a recursive policy with the location <code class="docutils literal notranslate"><span class="pre">/tmp/allow</span></code> then
 <code class="docutils literal notranslate"><span class="pre">/tmp/allow/nested</span></code> is valid.</p>
 <p>Additionally, policies can contain wildcards, such as <code class="docutils literal notranslate"><span class="pre">/tmp/*/my_table</span></code>.</p>
+</section>
+<section id="geolocation-based-policies">
+<span id="ranger-geolocation"></span><h3 id="geolocation-based-policies">Geolocation-based policies<a class="headerlink" href="#geolocation-based-policies" title="Permalink to this heading">#</a></h3>
+<p>The SEP Ranger plugin supports authorization based on the geographical
+location that the data is being accessed from, such as a specific country or
+city.</p>
+<p>IP location data is stored in a text file, such as <code class="docutils literal notranslate"><span class="pre">geo-location.txt</span></code>, formatted
+in the <a class="reference external" href="https://blog.ip2location.com/knowledge-base/what-is-ip2location-csv-data-file/">IP2Location
+CSV</a>
+format. For example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> IP_FROM,IP_TO,COUNTRY_CODE,COUNTRY_NAME,REGION,CITY
+0.0.0.0,120.0.0.0,US,United States,California,Santa Clara
+130.0.0.0,255.255.255.255,EU,Europe,Poland,Krakow
+127.0.0.0,127.255.255.255,LOCAL,LOCAL,LOCAL,LOCAL
+</pre></div>
+</div>
+<p>To enable geolocation-based policies, you must update the Starburst Ranger service
+definition. This can be done with Ranger REST API endpoints, or with the
+<a class="reference internal" href="#starburst-ranger-cli"><span class="std std-ref">Starburst Ranger CLI</span></a> using the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="si">${</span><span class="nv">RANGER_CLI</span><span class="si">}</span> service-definition starburst update-with-conditions-enrichers --conditions-folder<span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">CONDITIONS_DIRECTORY</span><span class="si">}</span><span class="s2">"</span> --enrichers-folder<span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">ENRICHERS_DIRECTORY</span><span class="si">}</span><span class="s2">"</span> --properties<span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">RANGER_PROPERTIES</span><span class="si">}</span><span class="s2">"</span>
+</pre></div>
+</div>
+<p>Replace the <code class="docutils literal notranslate"><span class="pre">CONDITIONS_DIRECTORY</span></code> and the <code class="docutils literal notranslate"><span class="pre">ENRICHERS_DIRECTORY</span></code> values with
+the path to the appropriate directories in your configuration. These
+directories contain your <code class="docutils literal notranslate"><span class="pre">conditions</span></code> and <code class="docutils literal notranslate"><span class="pre">enrichers</span></code> JSON files.</p>
+<p>The following example shows the <code class="docutils literal notranslate"><span class="pre">geo-enricher.json</span></code> enrichers file:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"itemId"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"geoenricher"</span><span class="p">,</span>
+  <span class="nt">"enricher"</span><span class="p">:</span> <span class="s2">"org.apache.ranger.plugin.contextenricher.RangerFileBasedGeolocationProvider"</span><span class="p">,</span>
+  <span class="nt">"enricherOptions"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"FilePath"</span><span class="p">:</span> <span class="s2">"/docker/presto-product-tests/conf/presto/etc/geo_location.txt"</span><span class="p">,</span>
+    <span class="nt">"IPInDotFormat"</span><span class="p">:</span> <span class="s2">"true"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">FilePath</span></code> is the location where Ranger libraries inside SEP search for
+the IP range mapping file as described above.</p>
+<p>The following example shows the <code class="docutils literal notranslate"><span class="pre">geo-location.json</span></code> conditions file:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"itemId"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+  <span class="nt">"name"</span><span class="p">:</span> <span class="s2">"geocondition"</span><span class="p">,</span>
+  <span class="nt">"label"</span><span class="p">:</span> <span class="s2">"Accessed from location?"</span><span class="p">,</span>
+  <span class="nt">"description"</span><span class="p">:</span> <span class="s2">"Accessed from location?"</span><span class="p">,</span>
+  <span class="nt">"evaluator"</span><span class="p">:</span> <span class="s2">"org.apache.ranger.plugin.conditionevaluator.RangerContextAttributeValueInCondition"</span><span class="p">,</span>
+  <span class="nt">"evaluatorOptions"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">"attributeName"</span><span class="p">:</span> <span class="s2">"LOCATION_COUNTRY_CODE"</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In the Ranger UI, you can add the geolocation to your policy conditions. For
+more details on geolocation-based policies in Ranger, view the <a class="reference external" href="https://cwiki.apache.org/confluence/display/RANGER/Geo-location+based+policies">Ranger
+documentation</a>.</p>
 </section>
 </section>
 <section id="features-and-use-cases">
