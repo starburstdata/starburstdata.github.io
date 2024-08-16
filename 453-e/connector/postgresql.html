@@ -277,6 +277,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#non-transactional-insert">Non-transactional INSERT</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#fault-tolerant-execution-support">Fault-tolerant execution support</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#type-mapping">Type mapping</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#postgresql-type-to-trino-type-mapping">PostgreSQL type to Trino type mapping</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#trino-type-to-postgresql-type-mapping">Trino type to PostgreSQL type mapping</a></li>
@@ -295,11 +296,15 @@
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#alter-table-rename-to">ALTER TABLE RENAME TO</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#alter-schema">ALTER SCHEMA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#procedures">Procedures</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#system-flush-metadata-cache"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="#system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#fault-tolerant-execution-support">Fault-tolerant execution support</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#table-functions">Table functions</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#table-functions">Table functions</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#performance">Performance</a><ul>
@@ -417,6 +422,8 @@
         </li></ul>
             </nav>
         </li>
+        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
+        </li>
         <li class="md-nav__item"><a href="#type-mapping" class="md-nav__link">Type mapping</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#postgresql-type-to-trino-type-mapping" class="md-nav__link">PostgreSQL type to Trino type mapping</a>
@@ -448,14 +455,20 @@
         <li class="md-nav__item"><a href="#alter-table-rename-to" class="md-nav__link">ALTER TABLE RENAME TO</a>
         </li>
         <li class="md-nav__item"><a href="#alter-schema" class="md-nav__link">ALTER SCHEMA</a>
+        </li>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#system-flush-metadata-cache" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#system-execute-query" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a>
         </li></ul>
             </nav>
-        </li>
-        <li class="md-nav__item"><a href="#fault-tolerant-execution-support" class="md-nav__link">Fault-tolerant execution support</a>
         </li>
         <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#query-varchar-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -802,7 +815,6 @@ predicates. Increasing this threshold may improve pushdown of large
 The <code class="docutils literal notranslate"><span class="pre">domain-compaction-threshold</span></code> catalog configuration property or the
 <code class="docutils literal notranslate"><span class="pre">domain_compaction_threshold</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">catalog session property</span></a> can be used to adjust the default value of
 <code class="docutils literal notranslate"><span class="pre">32</span></code> for this threshold.</p>
-<p>DELETE ME</p>
 </section>
 <section id="case-insensitive-matching">
 <h3 id="case-insensitive-matching">Case insensitive matching<a class="headerlink" href="#case-insensitive-matching" title="Permalink to this heading">#</a></h3>
@@ -866,6 +878,11 @@ or the corresponding <code class="docutils literal notranslate"><span class="pre
 exceptions occur during the insert operation. With transactions disabled, no
 rollback can be performed.</p>
 </section>
+</section>
+<section id="fault-tolerant-execution-support">
+<span id="postgresql-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
+<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
+processing. Read and write operations are both supported with any retry policy.</p>
 </section>
 <section id="type-mapping">
 <span id="postgresql-type-mapping"></span><h2 id="type-mapping">Type mapping<a class="headerlink" href="#type-mapping" title="Permalink to this heading">#</a></h2>
@@ -973,11 +990,15 @@ this table:</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">HSTORE</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VECTOR</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ARRAY(REAL)</span></code></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HSTORE</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">MAP(VARCHAR,</span> <span class="pre">VARCHAR)</span></code></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARRAY</span></code></p></td>
 <td><p>Disabled, <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code>, or <code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
 <td><p>See <a class="reference internal" href="#postgresql-array-type-handling"><span class="std std-ref">Array type handling</span></a> for more information.</p></td>
 </tr>
@@ -1249,18 +1270,49 @@ is not supported:</p>
 <p>The connector supports renaming a schema with the <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">RENAME</span></code>
 statement. <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">SET</span> <span class="pre">AUTHORIZATION</span></code> is not supported.</p>
 </section>
+<section id="procedures">
+<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Permalink to this heading">#</a></h3>
+<section id="system-flush-metadata-cache">
+<h4 id="system-flush-metadata-cache"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code><a class="headerlink" href="#system-flush-metadata-cache" title="Permalink to this heading">#</a></h4>
+<p>Flush JDBC metadata caches. For example, the following system call
+flushes the metadata caches for all schemas in the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">flush_metadata_cache</span><span class="p">();</span>
+</pre></div>
+</div>
 </section>
-<section id="fault-tolerant-execution-support">
-<span id="postgresql-fte-support"></span><h2 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Permalink to this heading">#</a></h2>
-<p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
-processing. Read and write operations are both supported with any retry policy.</p>
+<section id="system-execute-query">
+<h4 id="system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code><a class="headerlink" href="#system-execute-query" title="Permalink to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">execute</span></code> procedure allows you to execute a query in the underlying data
+source directly. The query must use supported syntax of the connected data
+source. Use the procedure to access features which are not available in Trino
+or to execute queries that return no result set and therefore can not be used
+with the <code class="docutils literal notranslate"><span class="pre">query</span></code> or <code class="docutils literal notranslate"><span class="pre">raw_query</span></code> pass-through table function. Typical use cases
+are statements that create or alter objects, and require native feature such
+as constraints, default values, automatic identifier creation, or indexes.
+Queries can also invoke statements that insert, update, or delete data, and do
+not return any data as a result.</p>
+<p>The query text is not parsed by Trino, only passed through, and therefore only
+subject to any security or access control of the underlying data source.</p>
+<p>The following example sets the current database to the <code class="docutils literal notranslate"><span class="pre">example_schema</span></code> of the
+<code class="docutils literal notranslate"><span class="pre">example</span></code> catalog. Then it calls the procedure in that schema to drop the
+default value from <code class="docutils literal notranslate"><span class="pre">your_column</span></code> on <code class="docutils literal notranslate"><span class="pre">your_table</span></code> table using the standard SQL
+syntax in the parameter value assigned for <code class="docutils literal notranslate"><span class="pre">query</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="k">execute</span><span class="p">(</span><span class="n">query</span> <span class="o">=&gt;</span> <span class="s1">'ALTER TABLE your_table ALTER COLUMN your_column DROP DEFAULT'</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Verify that the specific database supports this syntax, and adapt as necessary
+based on the documentation for the specific connected database and database
+version.</p>
+</section>
 </section>
 <section id="table-functions">
-<h2 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h2>
+<h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Permalink to this heading">#</a></h3>
 <p>The connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to
 access PostgreSQL.</p>
 <section id="query-varchar-table">
-<span id="postgresql-query-function"></span><h3 id="query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code><a class="headerlink" href="#query-varchar-table" title="Permalink to this heading">#</a></h3>
+<span id="postgresql-query-function"></span><h4 id="query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code><a class="headerlink" href="#query-varchar-table" title="Permalink to this heading">#</a></h4>
 <p>The <code class="docutils literal notranslate"><span class="pre">query</span></code> function allows you to query the underlying database directly. It
 requires syntax native to PostgreSQL, because the full query is pushed down and
 processed in PostgreSQL. This can be useful for accessing native features which
@@ -1322,6 +1374,7 @@ when using window functions:</p>
 function. If the passed query contains an <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span></code> clause, the
 function result may not be ordered as expected.</p>
 </div>
+</section>
 </section>
 </section>
 <section id="performance">
