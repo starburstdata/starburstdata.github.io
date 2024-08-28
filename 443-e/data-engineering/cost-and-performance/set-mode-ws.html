@@ -265,7 +265,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#index-and-cache-usage">Index and cache usage</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#index-and-cache-resiliency">Index and cache resiliency <a name="resiliency"></a></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#automated-clean-up">Automated clean up</a></li>
 </ul>
 </li>
@@ -374,8 +373,6 @@
         </li>
         <li class="md-nav__item"><a href="#index-and-cache-usage" class="md-nav__link">Index and cache usage</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#index-and-cache-resiliency" class="md-nav__link">Index and cache resiliency <a name="resiliency"></a></a>
-        </li>
         <li class="md-nav__item"><a href="#automated-clean-up" class="md-nav__link">Automated clean up</a>
         </li></ul>
             </nav>
@@ -607,52 +604,6 @@ configure text search acceleration for a specific column with the REST API.</p>
 details and other summary statistics on the <strong>Index and cache usage</strong> tab in the
 Starburst Enterprise web UI.</p>
 <p>For more information, see the <a class="reference internal" href="../../insights/query-details.html#insights-query-details-warp-speed"><span class="std std-ref">reference documentation</span></a>.</p>
-<section id="index-and-cache-resiliency">
-<h3 id="index-and-cache-resiliency">Index and cache resiliency <a name="resiliency"></a><a class="headerlink" href="#index-and-cache-resiliency" title="Permalink to this heading">#</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Index and cache resiliency is a <a class="reference internal" href="../../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> feature. Contact
-<a class="external reference" href="../../support.html">Starburst support</a> with questions or feedback.</p>
-</div>
-<p>Starburst Warp Speed optionally provides index and cache resiliency. When a new
-index is created or data is cached, it is stored on the SSD NVMe (nonvolatile
-memory express) drives attached to each worker by default, and in addition on a
-dedicated, shared bucket in your object storage. When you scale the cluster,
-the indexes and data cache remain available in the shared storage.</p>
-<p>The resiliency feature enables fast warmup when scaling up by adding worker
-nodes to a cluster. This also eliminates the need for keeping instances idling
-when a cluster is not in use. Instead, when a cluster needs to warm an index or
-data cache, it first accesses the designated bucket on the object storage to
-check if the indexes or cache are ready and loads them accordingly. If the
-indexes or cache are not available in the shared object storage or cannot be
-loaded for any reason, the data is warmed as usual.</p>
-<p>There are three storage tiers accessed for queries:</p>
-<ul class="simple">
-<li><p><strong>Hot data and index:</strong> Uses SSD NVMe attached to the workers in a cluster to
-process queries and store hot data and a cache for optimal performance. This
-layer is enabled by default with Starburst Warp Speed.</p></li>
-<li><p><strong>Warm data and index:</strong> Indexes and cached data are stored in a designated
-object storage bucket. This layer is shared amongst all of your workers to
-ensure minimal resources are allocated to indexing when scaling up a cluster
-and adds resiliency. When a cluster is scaled down or eliminated, and nodes
-are shut down, the indexes remain available as warm data. The warm layer is
-disabled by default. <a class="reference internal" href="#warp-speed-catalog-configuration"><span class="std std-ref">Enabling index and cache resiliency</span></a> makes the warm tier available for fast
-warmup of indexes and caches.</p></li>
-<li><p><strong>Cold data:</strong> Direct access of your object storage.</p></li>
-</ul>
-<p>With this tiered approach, you can continue using your existing scaling and
-auto-scaling policies.</p>
-<p>Storing the indexes and data caches can fill up your object storage. Setting a
-lifecycle policy to control the associated cost is highly recommended. Refer to
-the following lifecycle documentation for your cloud provider:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/how-to-set-lifecycle-configuration-intro.html">AWS S3</a></p></li>
-<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure?tabs=azure-portal">Azure Storage</a></p></li>
-<li><p><a class="reference external" href="https://cloud.google.com/storage/docs/lifecycle">Google Cloud Storage</a></p></li>
-</ul>
-<p>As a best practice, allocate at least the average available SSD storage of your
-cluster.</p>
-</section>
 <section id="automated-clean-up">
 <h3 id="automated-clean-up">Automated clean up<a class="headerlink" href="#automated-clean-up" title="Permalink to this heading">#</a></h3>
 <p>When the available storage on the cluster is about to run out of storage space,
@@ -973,15 +924,11 @@ this is managed in memory of the workers. You can use <code class="docutils lite
 storage. Write access privileges are necessary. With remote a object
 storage configuration import-export and call-home data is also managed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.enable.import-export</span></code></p></td>
-<td><p>Enable or disable <a class="reference internal" href="#warp-speed-index-cache"><span class="std std-ref">index and cache resiliency</span></a>. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>. Requires an object storage
-configured with <code class="docutils literal notranslate"><span class="pre">warp-speed.store.path</span></code>.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.use-http-server-port</span></code></p></td>
 <td><p>Specifies to run the REST API on the coordinator in the same server as
 SEP. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>. For details, see <a class="reference internal" href="#rest-api-access"><span class="std std-ref">REST API access</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-port-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">warp-speed.config.http-rest-port-enabled</span></code></p></td>
 <td><p>Optional parameter to enable the REST API server on the coordinator and
 each worker for each catalog. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>. This REST API is
 only suitable for testing and debugging purposes, since it is not
@@ -1102,20 +1049,6 @@ catalog properties:</p>
 </pre></div>
 </div>
 <p>View the <a class="reference internal" href="../../connector/hive-gcs-tutorial.html"><span class="doc">Google Cloud Storage</span></a> to learn more.</p>
-<p>The following <a class="reference external" href="https://developers.google.com/identity/protocols/oauth2/scopes">OAuth 2.0 access scopes for Google
-APIs</a>
-must be attached during GKE node creation to enable the <a class="reference internal" href="#warp-speed-index-cache"><span class="std std-ref">index and cache resiliency</span></a>:</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/devstorage.full_control">devstorage.full_control</a></p></li>
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/logging.write">logging.write</a></p></li>
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/monitoring">monitoring</a></p></li>
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/servicecontrol">service control</a></p></li>
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/service.management.readonly">service.management.readonly</a></p></li>
-<li><p><a class="reference external" href="https://www.googleapis.com/auth/trace.append">trace.append</a></p></li>
-</ul>
-<p>For more information about authorization, refer to <a class="reference external" href="https://cloud.google.com/compute/docs/access/service-accounts">Google Cloud Service
-accounts</a>
-documentation.</p>
 </section>
 <section id="adls-considerations">
 <span id="warp-speed-adls-considerations"></span><h3 id="adls-considerations">ADLS considerations<a class="headerlink" href="#adls-considerations" title="Permalink to this heading">#</a></h3>
