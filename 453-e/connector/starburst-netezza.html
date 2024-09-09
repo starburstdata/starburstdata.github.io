@@ -275,6 +275,11 @@
 <li class="toctree-l5"><a class="reference internal" href="#collect-statistics">collect_statistics</a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="#procedures">Procedures</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#system-flush-metadata-cache"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></a></li>
+<li class="toctree-l5"><a class="reference internal" href="#system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#sep-to-netezza-write-type-mapping">SEP to Netezza write type mapping</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#type-mapping-configuration-properties">Type mapping configuration properties</a></li>
 </ul>
@@ -391,6 +396,14 @@
         <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#collect-statistics" class="md-nav__link">collect_statistics</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#system-flush-metadata-cache" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#system-execute-query" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a>
         </li></ul>
             </nav>
         </li>
@@ -703,6 +716,43 @@ array of column names. For example:</p>
     <span class="k">EXECUTE</span> <span class="n">collect_statistics</span><span class="p">(</span><span class="n">columns</span> <span class="o">=&gt;</span> <span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'customer'</span><span class="p">,</span><span class="s1">'line_item'</span><span class="p">]);</span>
 </pre></div>
 </div>
+</section>
+</section>
+<section id="procedures">
+<span id="sb-netezza-procedures"></span><h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Permalink to this heading">#</a></h3>
+<section id="system-flush-metadata-cache">
+<h4 id="system-flush-metadata-cache"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code><a class="headerlink" href="#system-flush-metadata-cache" title="Permalink to this heading">#</a></h4>
+<p>Flush JDBC metadata caches. For example, the following system call
+flushes the metadata caches for all schemas in the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="n">flush_metadata_cache</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="system-execute-query">
+<h4 id="system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code><a class="headerlink" href="#system-execute-query" title="Permalink to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">execute</span></code> procedure allows you to execute a query in the underlying data
+source directly. The query must use supported syntax of the connected data
+source. Use the procedure to access features which are not available in Trino
+or to execute queries that return no result set and therefore can not be used
+with the <code class="docutils literal notranslate"><span class="pre">query</span></code> or <code class="docutils literal notranslate"><span class="pre">raw_query</span></code> pass-through table function. Typical use cases
+are statements that create or alter objects, and require native feature such
+as constraints, default values, automatic identifier creation, or indexes.
+Queries can also invoke statements that insert, update, or delete data, and do
+not return any data as a result.</p>
+<p>The query text is not parsed by Trino, only passed through, and therefore only
+subject to any security or access control of the underlying data source.</p>
+<p>The following example sets the current database to the <code class="docutils literal notranslate"><span class="pre">example_schema</span></code> of the
+<code class="docutils literal notranslate"><span class="pre">example</span></code> catalog. Then it calls the procedure in that schema to drop the
+default value from <code class="docutils literal notranslate"><span class="pre">your_column</span></code> on <code class="docutils literal notranslate"><span class="pre">your_table</span></code> table using the standard SQL
+syntax in the parameter value assigned for <code class="docutils literal notranslate"><span class="pre">query</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span> <span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span> <span class="k">system</span><span class="p">.</span><span class="k">execute</span><span class="p">(</span><span class="n">query</span> <span class="o">=&gt;</span> <span class="s1">'ALTER TABLE your_table ALTER COLUMN your_column DROP DEFAULT'</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Verify that the specific database supports this syntax, and adapt as necessary
+based on the documentation for the specific connected database and database
+version.</p>
 </section>
 </section>
 <section id="sep-to-netezza-write-type-mapping">
