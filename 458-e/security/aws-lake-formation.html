@@ -397,7 +397,8 @@ interacting with its API.</p></li>
 You can define security policies that restrict access to data at database,
 table, column, row and cell levels.</p>
 <p>AWS Lake Formation access control support is only available for catalogs that
-use the Hive connector because it utilizes <a class="reference internal" href="../object-storage/file-system-hdfs.html"><span class="doc">HDFS file system support</span></a>.</p>
+use the Iceberg connector or the Hive connector, which utilizes
+<a class="reference internal" href="../object-storage/file-system-hdfs.html"><span class="doc">HDFS file system support</span></a>.</p>
 <p>AWS Lake Formation can be enabled alongside <a class="reference internal" href="biac-overview.html"><span class="doc">built-in access control</span></a> as long as the two security systems are securing mutually
 exclusive entities. Using both AWS Lake Formation and built-in access control
 for authorization on the same catalog is not supported.</p>
@@ -405,12 +406,18 @@ for authorization on the same catalog is not supported.</p>
 <section id="configure-aws-lake-formation">
 <h2 id="configure-aws-lake-formation">Configure AWS Lake Formation<a class="headerlink" href="#configure-aws-lake-formation" title="Permalink to this heading">#</a></h2>
 <p>Each catalog that needs to be controlled with AWS Lake Formation must have the
-catalog properties file configured to use the <code class="docutils literal notranslate"><span class="pre">lake-formation</span></code> Hive security:</p>
+catalog properties file configured to use <code class="docutils literal notranslate"><span class="pre">lake-formation</span></code> security.</p>
+<p>For Hive:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hive.security</span><span class="o">=</span><span class="s">lake-formation</span>
 </pre></div>
 </div>
+<p>For Iceberg:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.security</span><span class="o">=</span><span class="s">lake-formation</span>
+</pre></div>
+</div>
 <p>The following is a more complex example of a catalog properties file that is
-configured to use AWS Lake Formation for authorization with the Hive connector.</p>
+configured to use AWS Lake Formation for authorization.</p>
+<p>For the Hive connector:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.security</span><span class="o">=</span><span class="s">lake-formation</span>
 <span class="na">hive.metastore</span><span class="o">=</span><span class="s">glue</span>
@@ -421,6 +428,21 @@ configured to use AWS Lake Formation for authorization with the Hive connector.<
 <span class="na">lake-formation.security-mapping.config-file</span><span class="o">=</span><span class="s">etc/lakeformation-security-mapping.json</span>
 </pre></div>
 </div>
+<p>For the Iceberg connector:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">iceberg</span>
+<span class="na">iceberg.security</span><span class="o">=</span><span class="s">lake-formation</span>
+<span class="na">iceberg.catalog.type</span><span class="o">=</span><span class="s">glue</span>
+<span class="na">hive.metastore.glue.region</span><span class="o">=</span><span class="s">us-east-2</span>
+<span class="na">hive.metastore.glue.sts.region</span><span class="o">=</span><span class="s">us-east-2</span>
+<span class="na">hive.metastore.glue.default-warehouse-dir</span><span class="o">=</span><span class="s">s3://data-lake-bucket</span>
+<span class="na">hive.metastore.glue.catalogid</span><span class="o">=</span><span class="s">&lt;account_id&gt;</span>
+<span class="na">hive.metastore.glue.iam-role</span><span class="o">=</span><span class="s">arn:aws:iam::&lt;account_id&gt;:role/&lt;admin-role&gt;</span>
+<span class="na">lake-formation.authorized-caller-tag</span><span class="o">=</span><span class="s">starburst-enterprise</span>
+<span class="na">lake-formation.security-mapping.config-file</span><span class="o">=</span><span class="s">etc/lakeformation-security-mapping.json</span>
+</pre></div>
+</div>
+<p>For Lake Formation access control to work with the Iceberg connector
+<code class="docutils literal notranslate"><span class="pre">iceberg.glue.cache-table-metadata</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
 <p>More information on lake formation security mapping can be found <a class="reference internal" href="#lake-formation-security-mapping"><span class="std std-ref">later in this topic</span></a>.</p>
 <section id="lake-formation-data-lake-locations">
 <h3 id="lake-formation-data-lake-locations">Lake Formation data lake locations<a class="headerlink" href="#lake-formation-data-lake-locations" title="Permalink to this heading">#</a></h3>
@@ -505,9 +527,9 @@ where SEP is running. Defaults to <code class="docutils literal notranslate"><sp
 </tr>
 </tbody>
 </table>
-<p>In order for SEP to integrate with AWS Lake Formation, you must add a session
-tag for SEP to AWS Lake Formation external data filtering. The session tag
-value added to AWS Lake Formation is set in the
+<p>In order for SEP to integrate with AWS Lake Formation, you must add a
+session tag for SEP to AWS Lake Formation external data filtering. The
+session tag value added to AWS Lake Formation is set in the
 <code class="docutils literal notranslate"><span class="pre">lake-formation.authorized-caller-tag</span></code> property. Permission checking for SEP
 fails for AWS Lake Formation if this property is not set. Read the <a class="reference external" href="https://docs.aws.amazon.com/lake-formation/latest/dg/permitting-third-party-call.html">AWS
 documentation</a>
@@ -832,8 +854,8 @@ catalog:</p>
 <section id="views">
 <h2 id="views">Views<a class="headerlink" href="#views" title="Permalink to this heading">#</a></h2>
 <p>Views that were created before enabling AWS Lake Formation access control or
-views created in older SEP versions must be manually migrated before they can
-be queried using an AWS Lake Formation-secured catalog:</p>
+views created in older SEP versions must be manually migrated before they
+can be queried using an AWS Lake Formation-secured catalog:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CREATE OR REPLACE VIEW AS query
 </pre></div>
 </div>
@@ -844,12 +866,15 @@ supported in AWS Lake Formation access control.</p>
 </section>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h2>
-<p>Creating views in <code class="docutils literal notranslate"><span class="pre">DEFINER</span></code> security mode is not supported in AWS Lake
-Formation.</p>
-<p>If AWS Lake Formation controls access to a database and is configured to use
-data filters, another access control system should not be configured to control
-access to that same database. Overlapping policies may interact in unexpected
-ways.</p>
+<ul class="simple">
+<li><p>Iceberg does not support credentials vending.</p></li>
+<li><p>Creating views in <code class="docutils literal notranslate"><span class="pre">DEFINER</span></code> security mode is not supported in AWS Lake
+Formation.</p></li>
+<li><p>If AWS Lake Formation controls access to a database and is configured to use
+data filters, another access control system should not be configured to
+control access to that same database. Overlapping policies may interact in
+unexpected ways.</p></li>
+</ul>
 </section>
 </section>
 
