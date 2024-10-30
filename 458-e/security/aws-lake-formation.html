@@ -687,12 +687,37 @@ portion of the string will be replaced with the current session’s username. If
 <li><p><code class="docutils literal notranslate"><span class="pre">"allowedIamRoles":</span></code> Comma-separated list of IAM roles that specified
 AWS account users are limited to.</p></li>
 </ul>
-<p>The security mapping entries are processed in the order listed in the
-JSON mapping. More specific mapping entries should thus be specified
-before less specific mapping entries. For example, the mapping list might have a
-<code class="docutils literal notranslate"><span class="pre">"group":</span></code> entry for “salesnorth” followed by an entry for “sales” to allow to
-apply a more specific lake formation security mapping to the north sales team,
-before applying a more broad security mapping to the whole sales department.</p>
+<p>SEP finds all the matching entries for a user in the security mapping
+entries. When multiple entries match, SEP adds all the <code class="docutils literal notranslate"><span class="pre">allowedIamRoles</span></code>
+values to a single comma-separated list.</p>
+<p>For example, if user <code class="docutils literal notranslate"><span class="pre">alice</span></code> belongs to both the <code class="docutils literal notranslate"><span class="pre">hq</span></code> and <code class="docutils literal notranslate"><span class="pre">admin</span></code> groups, the
+user can access all the roles across the matching entries: <code class="docutils literal notranslate"><span class="pre">alice_role</span></code>,
+<code class="docutils literal notranslate"><span class="pre">hq_role</span></code>, and <code class="docutils literal notranslate"><span class="pre">admin_role</span></code>.</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">"mappings"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">"user"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">,</span>
+      <span class="nt">"iamRole"</span><span class="p">:</span> <span class="s2">"arn:aws:iam::123456789101:role/alice_role_1"</span><span class="p">,</span>
+      <span class="nt">"allowedIamRoles"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"arn:aws:iam::123456789101:role/alice_role"</span><span class="p">,</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"group"</span><span class="p">:</span> <span class="s2">"hq"</span><span class="p">,</span>
+      <span class="nt">"allowedIamRoles"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"arn:aws:iam::123456789101:role/hq_role"</span><span class="p">,</span>
+      <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">"group"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+      <span class="nt">"allowedIamRoles"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"arn:aws:iam::123456789101:role/admin_role"</span><span class="p">,</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 <p>You can set a default mapping by adding an entry to the end of the file that
 does not specify an SEP match criteria. If no mapping entry matches and no
 default is configured, access is denied with a “Cannot set role NONE” error.</p>
