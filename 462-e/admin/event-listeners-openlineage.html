@@ -57,7 +57,7 @@
   <script async src='https://www.google-analytics.com/analytics.js'></script>
   
   
-    <title>Kafka event listener &#8212; Starburst Enterprise</title>
+    <title>OpenLineage event listener &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/material.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
@@ -77,8 +77,8 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Security" href="../security.html" />
-    <link rel="prev" title="OpenLineage event listener" href="event-listeners-openlineage.html" />
+    <link rel="next" title="Kafka event listener" href="event-listeners-kafka.html" />
+    <link rel="prev" title="MySQL event listener" href="event-listeners-mysql.html" />
 
   
    
@@ -90,7 +90,7 @@
 
 
 <!-- Always link to the latest version, as canonical -->
-<link rel="canonical" href="https://docs.starburst.io/latest/admin/event-listeners-kafka.html">
+<link rel="canonical" href="https://docs.starburst.io/latest/admin/event-listeners-openlineage.html">
 
   </head>
   <body dir=ltr
@@ -107,7 +107,7 @@
   <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer">
   <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search">
   <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
-  <a href="#admin/event-listeners-kafka" tabindex="1" class="md-skip"> Skip to content </a>
+  <a href="#admin/event-listeners-openlineage" tabindex="1" class="md-skip"> Skip to content </a>
   
 <header class="md-header" data-md-component="header">
   <nav class="md-header-nav md-grid">
@@ -130,7 +130,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 462-e STS</a>
-          <span class="md-header-nav__topic"> Kafka event listener </span>
+          <span class="md-header-nav__topic"> OpenLineage event listener </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -293,13 +293,33 @@
 <nav class="md-nav md-nav--secondary">
     <label class="md-nav__title" for="__toc">Contents</label>
   <ul class="md-nav__list" data-md-scrollfix="">
-        <li class="md-nav__item"><a href="#admin-event-listeners-kafka--page-root" class="md-nav__link">Kafka event listener</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#admin-event-listeners-openlineage--page-root" class="md-nav__link">OpenLineage event listener</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#rationale" class="md-nav__link">Rationale</a>
+        <li class="md-nav__item"><a href="#rationale" class="md-nav__link">Rationale</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#available-trino-facets" class="md-nav__link">Available Trino Facets</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#trino-metadata" class="md-nav__link">Trino Metadata</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-query-context" class="md-nav__link">Trino Query Context</a>
+        </li>
+        <li class="md-nav__item"><a href="#trino-query-statistics" class="md-nav__link">Trino Query Statistics</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#requirements" class="md-nav__link">Requirements</a>
         </li>
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#supported-transport-types" class="md-nav__link">Supported Transport Types</a>
+        </li>
+        <li class="md-nav__item"><a href="#custom-http-headers" class="md-nav__link">Custom HTTP headers</a>
+        </li>
+        <li class="md-nav__item"><a href="#custom-url-params" class="md-nav__link">Custom URL Params</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -312,53 +332,126 @@
         <div class="md-content">
           <article class="md-content__inner md-typeset" role="main">
             
-  <section id="kafka-event-listener">
-<h1 id="admin-event-listeners-kafka--page-root">Kafka event listener<a class="headerlink" href="#admin-event-listeners-kafka--page-root" title="Permalink to this heading">#</a></h1>
-<p>The Kafka event listener plugin allows streaming of query events to an external
-Kafka-compatible system. The query history in the Kafka topic can then be
-accessed directly in Kafka, via Trino in a catalog using the <a class="reference internal" href="../connector/kafka.html"><span class="doc std std-doc">Kafka
-connector</span></a> or many downstream systems processing and storing
-the data.</p>
+  <section id="openlineage-event-listener">
+<h1 id="admin-event-listeners-openlineage--page-root">OpenLineage event listener<a class="headerlink" href="#admin-event-listeners-openlineage--page-root" title="Permalink to this heading">#</a></h1>
+<p>The OpenLineage event listener plugin allows streaming of lineage information,
+encoded in
+JSON format aligned with OpenLineage specification, to an external, OpenLineage
+compatible API, by POSTing them
+to a specified URI.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>OpenLineage support through the event listener is a community feature. Support
+for this feature is available through the Trino community.</p>
+</div>
 <section id="rationale">
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permalink to this heading">#</a></h2>
-<p>This event listener is a first step to store the query history of your Trino
-cluster. The query events can provide CPU and memory usage metrics, what data is
-being accessed with resolution down to specific columns, and metadata about the
-query processing.</p>
-<p>Running the capture system separate from Trino reduces the performance impact
-and avoids downtime for non-client-facing changes.</p>
+<p>This event listener is aiming to capture every query that creates or modifies
+Trino tables and transform it into lineage
+information. Linage can be understood as relationship/flow between data/tables.
+OpenLineage is a widely used open-source
+standard for capturing lineage information from variety of system including (but
+not limited to) Spark, Airflow, Flink.</p>
+<table id="id2">
+<caption><span class="caption-text">Trino Query attributes mapping to OpenLineage attributes</span><a class="headerlink" href="#id2" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 50%"/>
+<col style="width: 50%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Trino</p></th>
+<th class="head"><p>OpenLineage</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">{UUID(Query</span> <span class="pre">Id)}</span></code></p></td>
+<td><p>Run ID</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">{queryCreatedEvent.getCreateTime()}</span> <span class="pre">or</span> <span class="pre">{queryCompletedEvent.getEndTime()}</span> </code></p></td>
+<td><p>Run Event Time</p></td>
+</tr>
+<tr class="row-even"><td><p>Query Id</p></td>
+<td><p>Job Facet Name</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trino://</span> <span class="pre">+</span> <span class="pre">{openlineage-event-listener.trino.uri.getHost()}</span> <span class="pre">+</span> <span class="pre">":"</span> <span class="pre">+</span> <span class="pre">{openlineage-event-listener.trino.uri.getPort()}</span></code></p></td>
+<td><p>Job Facet Namespace (default, can be overriden)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">{schema}.{table}</span></code></p></td>
+<td><p>Dataset Name</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trino://</span> <span class="pre">+</span> <span class="pre">{openlineage-event-listener.trino.uri.getHost()}</span> <span class="pre">+</span> <span class="pre">":"</span> <span class="pre">+</span> <span class="pre">{openlineage-event-listener.trino.uri.getPort()}</span></code></p></td>
+<td><p>Dataset Namespace</p></td>
+</tr>
+</tbody>
+</table>
+<section id="available-trino-facets">
+<span id="trino-facets"></span><h3 id="available-trino-facets">Available Trino Facets<a class="headerlink" href="#available-trino-facets" title="Permalink to this heading">#</a></h3>
+<section id="trino-metadata">
+<h4 id="trino-metadata">Trino Metadata<a class="headerlink" href="#trino-metadata" title="Permalink to this heading">#</a></h4>
+<p>Facet containing properties (if present):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">queryPlan</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transactionId</span></code> - transaction id used for query processing</p></li>
+</ul>
+<p>related to query based on which OpenLineage Run Event was generated.</p>
+<p>Available in both <code class="docutils literal notranslate"><span class="pre">Start</span></code> and <code class="docutils literal notranslate"><span class="pre">Complete/Fail</span></code> OpenLineage events.</p>
+<p>If you want to disable this facet, add <code class="docutils literal notranslate"><span class="pre">trino_metadata</span></code> to
+<code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.disabled-facets</span></code>.</p>
+</section>
+<section id="trino-query-context">
+<h4 id="trino-query-context">Trino Query Context<a class="headerlink" href="#trino-query-context" title="Permalink to this heading">#</a></h4>
+<p>Facet containing properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">serverVersion</span></code> - version of Trino server that was used to process the query</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">environment</span></code> - inherited from <code class="docutils literal notranslate"><span class="pre">node.environment</span></code> of <a class="reference internal" href="../installation/deployment.html#node-properties"><span class="std std-ref">Node properties</span></a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">queryType</span></code> - one of query types configured via
+<code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.trino.include-query-types</span></code></p></li>
+</ul>
+<p>related to query based on which OpenLineage Run Event was generated.</p>
+<p>Available in both <code class="docutils literal notranslate"><span class="pre">Start</span></code> and <code class="docutils literal notranslate"><span class="pre">Complete/Fail</span></code> OpenLineage events.</p>
+<p>If you want to disable this facet, add <code class="docutils literal notranslate"><span class="pre">trino_query_context</span></code> to
+<code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.disabled-facets</span></code>.</p>
+</section>
+<section id="trino-query-statistics">
+<h4 id="trino-query-statistics">Trino Query Statistics<a class="headerlink" href="#trino-query-statistics" title="Permalink to this heading">#</a></h4>
+<p>Facet containing full contents of query statistics of completed. Available only
+in OpenLineage <code class="docutils literal notranslate"><span class="pre">Complete/Fail</span></code> events.</p>
+<p>If you want to disable this facet, add <code class="docutils literal notranslate"><span class="pre">trino_query_statistics</span></code> to
+<code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.disabled-facets</span></code>.</p>
+</section>
+</section>
 </section>
 <section id="requirements">
-<span id="kafka-event-listener-requirements"></span><h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
+<span id="openlineage-event-listener-requirements"></span><h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permalink to this heading">#</a></h2>
 <p>You need to perform the following steps:</p>
 <ul class="simple">
-<li><p>Provide an Kafka service that is network-accessible to Trino.</p></li>
-<li><p>Configure <code class="docutils literal notranslate"><span class="pre">kafka-event-listener.broker-endpoints</span></code> in the event listener
+<li><p>Provide an HTTP/S service that accepts POST events with a JSON body and is
+compatible with the OpenLineage API format.</p></li>
+<li><p>Configure <code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.transport.url</span></code> in the event listener
 properties file with the URI of the service</p></li>
+<li><p>Configure <code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.trino.uri</span></code> so proper OpenLineage job
+namespace is render within produced events. Needs to be proper uri with scheme,
+host and port (otherwise plugin will fail to start).</p></li>
 <li><p>Configure what events to send as detailed
-in <a class="reference internal" href="#kafka-event-listener-configuration"><span class="std std-ref">Configuration</span></a></p></li>
+in <a class="reference internal" href="#openlineage-event-listener-configuration"><span class="std std-ref">Configuration</span></a></p></li>
 </ul>
 </section>
 <section id="configuration">
-<span id="kafka-event-listener-configuration"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
-<p>To configure the Kafka event listener, create an event listener properties
-file in <code class="docutils literal notranslate"><span class="pre">etc</span></code> named <code class="docutils literal notranslate"><span class="pre">kafka-event-listener.properties</span></code> with the following
-contents as an example of a minimal required configuration:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">kafka</span>
-<span class="na">kafka-event-listener.broker-endpoints</span><span class="o">=</span><span class="s">kafka.example.com:9093</span>
-<span class="na">kafka-event-listener.created-event.topic</span><span class="o">=</span><span class="s">query_create</span>
-<span class="na">kafka-event-listener.completed-event.topic</span><span class="o">=</span><span class="s">query_complete</span>
-<span class="na">kafka-event-listener.client-id</span><span class="o">=</span><span class="s">trino-example</span>
+<span id="openlineage-event-listener-configuration"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
+<p>To configure the OpenLineage event listener, create an event listener properties
+file in <code class="docutils literal notranslate"><span class="pre">etc</span></code> named <code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.properties</span></code> with the following
+contents as an example of minimal required configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.name</span><span class="o">=</span><span class="s">openlineage</span>
+<span class="na">openlineage-event-listener.trino.uri</span><span class="o">=</span><span class="s">&lt;Address of your Trino coordinator&gt;</span>
 </pre></div>
 </div>
-<p>Add <code class="docutils literal notranslate"><span class="pre">etc/kafka-event-listener.properties</span></code> to <code class="docutils literal notranslate"><span class="pre">event-listener.config-files</span></code>
+<p>Add <code class="docutils literal notranslate"><span class="pre">etc/openlineage-event-listener.properties</span></code> to <code class="docutils literal notranslate"><span class="pre">event-listener.config-files</span></code>
 in <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">Config properties</span></a>:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.config-files</span><span class="o">=</span><span class="s">etc/kafka-event-listener.properties,...</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">event-listener.config-files</span><span class="o">=</span><span class="s">etc/openlineage-event-listener.properties,...</span>
 </pre></div>
 </div>
-<p>Use the following properties for further configuration.</p>
-<table id="id1">
-<caption><span class="caption-text">Kafka event listener configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">OpenLineage event listener configuration properties</span><a class="headerlink" href="#id3" title="Permalink to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 40%"/>
@@ -371,80 +464,115 @@ in <a class="reference internal" href="../installation/deployment.html#config-pr
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.broker-endpoints</span></code></p></td>
-<td><p>Comma-separated list of Kafka broker endpoints with URL and port, for
-example <code class="docutils literal notranslate"><span class="pre">kafka-1.example.com:9093,kafka-2.example.com:9093</span></code>.</p></td>
-<td></td>
+<tr class="row-even"><td><p>openlineage-event-listener.transport</p></td>
+<td><p>Type of transport to use when emitting lineage information.
+See <a class="reference internal" href="#supported-transport-types"><span class="std std-ref">Supported Transport Types</span></a> for list of available options with
+descriptions.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CONSOLE</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.anonymization.enabled</span></code></p></td>
-<td><p><a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">Boolean</span></a> switch to enable anonymization of the event
-data in Trino before it is sent to Kafka.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<tr class="row-odd"><td><p>openlineage-event-listener.trino.host</p></td>
+<td><p>Trino hostname. Used to render Job Namespace in OpenLineage. Required.</p></td>
+<td><p>None.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.client-id</span></code></p></td>
-<td><p><a class="reference internal" href="properties.html#prop-type-string"><span class="std std-ref">String identifier</span></a> for the Trino cluster to allow
-distinction in Kafka, if multiple Trino clusters send events to the same
-Kafka system.</p></td>
-<td></td>
+<tr class="row-even"><td><p>openlineage-event-listener.trino.port</p></td>
+<td><p>Trino port. Used to render Job Namespace in OpenLineage. Required.</p></td>
+<td><p>None.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.publish-created-event</span></code></p></td>
-<td><p><a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">Boolean</span></a> switch to control publishing of query creation
-events.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+<tr class="row-odd"><td><p>openlineage-event-listener.trino.include-query-types</p></td>
+<td><p>Which types of queries should be taken into account when emitting lineage
+information. List of values split by comma. Each value must be
+matching <code class="docutils literal notranslate"><span class="pre">io.trino.spi.resourcegroups.QueryType</span></code> enum. Query types not
+included here are filtered out.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DELETE,INSERT,MERGE,UPDATE,ALTER_TABLE_EXECUTE</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.created-event.topic</span></code></p></td>
-<td><p>Name of the Kafka topic for the query creation event data.</p></td>
-<td></td>
+<tr class="row-even"><td><p>openlineage-event-listener.disabled-facets</p></td>
+<td><p>Which <a class="reference internal" href="#trino-facets"><span class="std std-ref">Available Trino Facets</span></a> should be not included in final OpenLineage event.
+Allowed values: <code class="docutils literal notranslate"><span class="pre">trino_metadata</span></code>, <code class="docutils literal notranslate"><span class="pre">trino_query_context</span></code>,
+<code class="docutils literal notranslate"><span class="pre">trino_query_statistics</span></code>.</p></td>
+<td><p>None.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.publish-split-completed-event</span></code></p></td>
-<td><p><a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">Boolean</span></a> switch to control publishing of
-<a class="reference internal" href="../overview/concepts.html#trino-concept-splits"><span class="std std-ref">split</span></a> completion events.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.split-completed-event.topic</span></code></p></td>
-<td><p>Name of the Kafka topic for the split completion event data.</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.publish-completed-event</span></code></p></td>
-<td><p><a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">Boolean</span></a> switch to control publishing of query
-completion events.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.completed-event.topic</span></code></p></td>
-<td><p>Name of the Kafka topic for the query completion event data.</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.excluded-fields</span></code></p></td>
-<td><p>Comma-separated list of field names to exclude from the Kafka event, for
-example <code class="docutils literal notranslate"><span class="pre">payload,user</span></code>. Values are replaced with null.</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.client-config-overrides</span></code></p></td>
-<td><p>Comma-separated list of key-value pairs to specify Kafka client configuration
-overrides, for example <code class="docutils literal notranslate"><span class="pre">buffer.memory=67108864,compression.type=zstd</span></code>.</p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.request-timeout</span></code></p></td>
-<td><p>Timeout <a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> to complete a Kafka request. Minimum
-value of <code class="docutils literal notranslate"><span class="pre">1ms</span></code>.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">10s</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.terminate-on-initialization-failure</span></code></p></td>
-<td><p>Kafka publisher initialization can fail due to network issues reaching the
-Kafka brokers. This <a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">boolean</span></a> switch controls whether to
-throw an exception in such cases.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kafka-event-listener.env-var-prefix</span></code></p></td>
-<td><p>When set, Kafka events are sent with additional metadata populated from
-environment variables. For example, if the value is <code class="docutils literal notranslate"><span class="pre">TRINO_INSIGHTS_</span></code> and an
-environment variable on the cluster is set at
-<code class="docutils literal notranslate"><span class="pre">TRINO_INSIGHTS_CLUSTER_ID=foo</span></code>, then the Kafka payload metadata contains
-<code class="docutils literal notranslate"><span class="pre">CLUSTER_ID=foo</span></code>.</p></td>
-<td></td>
+<tr class="row-odd"><td><p>openlineage-event-listener.namespace</p></td>
+<td><p>Custom namespace to be used for Job <code class="docutils literal notranslate"><span class="pre">namespace</span></code> attribute. If blank will
+default to Dataset Namespace.</p></td>
+<td><p>None.</p></td>
 </tr>
 </tbody>
 </table>
+<section id="supported-transport-types">
+<span id="id1"></span><h3 id="supported-transport-types">Supported Transport Types<a class="headerlink" href="#supported-transport-types" title="Permalink to this heading">#</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CONSOLE</span></code> - sends OpenLineage JSON event to Trino coordinator standard output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">HTTP</span></code> - sends OpenLineage JSON event to OpenLineage compatible HTTP endpoint.</p></li>
+</ul>
+<table id="id4">
+<caption><span class="caption-text">OpenLineage <code class="docutils literal notranslate"><span class="pre">HTTP</span></code> Transport Configuration properties</span><a class="headerlink" href="#id4" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 40%"/>
+<col style="width: 20%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>openlineage-event-listener.transport.url</p></td>
+<td><p>URL of OpenLineage . Required if <code class="docutils literal notranslate"><span class="pre">HTTP</span></code> transport is configured.</p></td>
+<td><p>None.</p></td>
+</tr>
+<tr class="row-odd"><td><p>openlineage-event-listener.transport.endpoint</p></td>
+<td><p>Custom path for OpenLineage compatible endpoint. If configured, there
+cannot be any custom path within
+<code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.transport.url</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/api/v1</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p>openlineage-event-listener.transport.api-key</p></td>
+<td><p>API key (string value) used to authenticate with the service.
+at <code class="docutils literal notranslate"><span class="pre">openlineage-event-listener.transport.url</span></code>.</p></td>
+<td><p>None.</p></td>
+</tr>
+<tr class="row-odd"><td><p>openlineage-event-listener.transport.timeout</p></td>
+<td><p><a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">Timeout</span></a> when making HTTP Requests.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5000ms</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>openlineage-event-listener.transport.headers</p></td>
+<td><p>List of custom HTTP headers to be sent along with the events. See
+<a class="reference internal" href="#openlineage-event-listener-custom-headers"><span class="std std-ref">Custom HTTP headers</span></a> for more details.</p></td>
+<td><p>Empty</p></td>
+</tr>
+<tr class="row-odd"><td><p>openlineage-event-listener.transport.url-params</p></td>
+<td><p>List of custom url params to be added to final HTTP Request. See
+<a class="reference internal" href="#openlineage-event-listener-custom-url-params"><span class="std std-ref">Custom URL Params</span></a> for more details.</p></td>
+<td><p>Empty</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="custom-http-headers">
+<span id="openlineage-event-listener-custom-headers"></span><h3 id="custom-http-headers">Custom HTTP headers<a class="headerlink" href="#custom-http-headers" title="Permalink to this heading">#</a></h3>
+<p>Providing custom HTTP headers is a useful mechanism for sending metadata along
+with event messages.</p>
+<p>Providing headers follows the pattern of <code class="docutils literal notranslate"><span class="pre">key:value</span></code> pairs separated by commas:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openlineage-event-listener.transport.headers="Header-Name-1:header value 1,Header-Value-2:header value 2,..."
+</pre></div>
+</div>
+<p>If you need to use a comma(<code class="docutils literal notranslate"><span class="pre">,</span></code>) or colon(<code class="docutils literal notranslate"><span class="pre">:</span></code>) in a header name or value,
+escape it using a backslash (<code class="docutils literal notranslate"><span class="pre">\</span></code>).</p>
+<p>Keep in mind that these are static, so they can not carry information
+taken from the event itself.</p>
+</section>
+<section id="custom-url-params">
+<span id="openlineage-event-listener-custom-url-params"></span><h3 id="custom-url-params">Custom URL Params<a class="headerlink" href="#custom-url-params" title="Permalink to this heading">#</a></h3>
+<p>Providing additional URL Params included in final HTTP Request.</p>
+<p>Providing url params follows the pattern of <code class="docutils literal notranslate"><span class="pre">key:value</span></code> pairs separated by commas:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>openlineage-event-listener.transport.url-params="Param-Name-1:param value 1,Param-Value-2:param value 2,..."
+</pre></div>
+</div>
+<p>Keep in mind that these are static, so they can not carry information
+taken from the event itself.</p>
+</section>
 </section>
 </section>
 
@@ -565,7 +693,7 @@ feedback();
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
           
-            <a href="event-listeners-openlineage.html" title="OpenLineage event listener"
+            <a href="event-listeners-mysql.html" title="MySQL event listener"
                class="md-flex md-footer-nav__link md-footer-nav__link--prev"
                rel="prev">
               <div class="md-flex__cell md-flex__cell--shrink">
@@ -574,17 +702,17 @@ feedback();
               <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
                 <span class="md-flex__ellipsis">
                   <span
-                      class="md-footer-nav__direction"> Previous </span> OpenLineage event listener </span>
+                      class="md-footer-nav__direction"> Previous </span> MySQL event listener </span>
               </div>
             </a>
           
           
-            <a href="../security.html" title="Security"
+            <a href="event-listeners-kafka.html" title="Kafka event listener"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> Next </span> Security </span>
+                class="md-footer-nav__direction"> Next </span> Kafka event listener </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
