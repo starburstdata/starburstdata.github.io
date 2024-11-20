@@ -77,7 +77,7 @@
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Immuta access control" href="immuta-overview.html" />
+    <link rel="next" title="Legacy Hive and Delta Lake access control with Apache Ranger" href="legacy-hive-ranger.html" />
     <link rel="prev" title="Global access control with Apache Ranger" href="global-ranger.html" />
 
   
@@ -269,15 +269,12 @@
 <li class="toctree-l5"><a class="reference internal" href="global-ranger.html">Global Ranger</a></li>
 <li class="toctree-l5 current"><a class="current reference internal" href="#">Hive Ranger</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#installation">Installation</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#configuration">Configuration</a><ul>
-<li class="toctree-l7"><a class="reference internal" href="#access-views-created-in-sep">Access views created in SEP</a></li>
-</ul>
-</li>
-<li class="toctree-l6"><a class="reference internal" href="#policy-management-with-sql">Policy management with SQL</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#configuration">Configuration</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#resource-and-privilege-relationship-limitations">Resource and privilege relationship limitations</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#role-management-limitations">Role management limitations</a></li>
 </ul>
 </li>
+<li class="toctree-l5"><a class="reference internal" href="legacy-hive-ranger.html">Legacy Hive Ranger</a></li>
 <li class="toctree-l5"><a class="reference internal" href="ranger-overview.html#requirements">Requirements</a></li>
 <li class="toctree-l5"><a class="reference internal" href="ranger-overview.html#ranger-usage-options">Ranger usage options</a></li>
 <li class="toctree-l5"><a class="reference internal" href="ranger-overview.html#key-concepts">Key concepts</a></li>
@@ -337,13 +334,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#installation" class="md-nav__link">Installation</a>
         </li>
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
-              <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#access-views-created-in-sep" class="md-nav__link">Access views created in SEP</a>
-        </li></ul>
-            </nav>
-        </li>
-        <li class="md-nav__item"><a href="#policy-management-with-sql" class="md-nav__link">Policy management with SQL</a>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
         </li>
         <li class="md-nav__item"><a href="#resource-and-privilege-relationship-limitations" class="md-nav__link">Resource and privilege relationship limitations</a>
         </li>
@@ -362,42 +353,67 @@
             
   <section id="hive-and-delta-lake-access-control-with-apache-ranger">
 <h1 id="security-hive-ranger--page-root">Hive and Delta Lake access control with Apache Ranger<a class="headerlink" href="#security-hive-ranger--page-root" title="Permalink to this heading">#</a></h1>
-<p>You can use the <a class="reference internal" href="ranger-overview.html"><span class="doc">Apache Ranger integration</span></a>
-with SEP to control access to Hive and Delta Lake data sources configured in
-any catalog using the SEP Hive or Delta Lake connectors.</p>
+<p>You can use the <a class="reference internal" href="ranger-overview.html"><span class="doc std std-doc">Apache Ranger integration</span></a> with
+SEP to control access to Hive, Delta Lake, and Iceberg data sources
+configured in any catalog using the SEP Hive, Delta Lake, or Iceberg
+connectors.</p>
 <p>This is specifically useful in the following scenarios:</p>
 <ul class="simple">
 <li><p>You already use Apache Ranger to control access for these data sources</p></li>
 <li><p>You use SQL standard-based authorization</p></li>
 </ul>
-<p>If you want to want to control access for other catalogs and connectors with
-Ranger, you need to adopt <a class="reference internal" href="global-ranger.html"><span class="doc">global access control</span></a>.</p>
+<p>If you want to control access for other catalogs and connectors with Ranger, you
+need to adopt <a class="reference internal" href="global-ranger.html"><span class="doc std std-doc">global access
+control</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Hive and Delta Lake access control with Apache Ranger requires a valid
-<a class="reference internal" href="../license-requirements.html"><span class="doc">Starburst Enterprise license</span></a>.</p>
+<a class="reference internal" href="../license-requirements.html"><span class="doc std std-doc">Starburst license</span></a>.</p>
 </div>
 <section id="installation">
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h2>
-<p>Before you begin, verify you fulfill the <a class="reference internal" href="ranger-overview.html#ranger-requirements"><span class="std std-ref">Ranger requirements</span></a>.</p>
-<p>If you do not yet have a configured and running Apache Ranger, you can take
-advantage of the supported installation methods for <a class="reference internal" href="global-ranger.html"><span class="doc">global access control with Apache Ranger</span></a>.</p>
+<p>Verify you fulfill the <a class="reference internal" href="ranger-overview.html#ranger-requirements"><span class="std std-ref">Apache Ranger
+requirements</span></a>.</p>
+<p>If you do not yet have Ranger running and configured, you can take advantage of
+the supported installation methods for <a class="reference internal" href="global-ranger.html"><span class="doc std std-doc">global access control with Apache
+Ranger</span></a>.</p>
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h2>
-<p>Each Hive and Delta Lake catalog that needs to be controlled with Ranger must
-have the catalog properties file configured to use <code class="docutils literal notranslate"><span class="pre">ranger</span></code> Hive security.</p>
+<p>To use Ranger with Hive, Delta Lake, and Iceberg catalogs, you must set the
+appropriate property for your setup in the catalog configuration file:</p>
 <p>For Hive catalogs:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hive.security</span><span class="o">=</span><span class="s">ranger</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hive.security</span><span class="o">=</span><span class="s">system</span>
 </pre></div>
 </div>
 <p>For Delta Lake catalogs:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">delta.security</span><span class="o">=</span><span class="s">ranger</span>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">delta.security</span><span class="o">=</span><span class="s">system</span>
 </pre></div>
 </div>
-<p>The following is a more complete example of a Hive catalog properties file that
-is configured to use Apache Ranger for authorization. It utilizes Kerberos for
-authentication.</p>
+<p>For Iceberg catalogs:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.security</span><span class="o">=</span><span class="s">system</span>
+</pre></div>
+</div>
+<p>Additionally, you must have the <code class="docutils literal notranslate"><span class="pre">access-control.properties</span></code> file as well as the
+<code class="docutils literal notranslate"><span class="pre">hive.security</span></code> file for Hive catalogs. The <code class="docutils literal notranslate"><span class="pre">access-control.properties</span></code> and
+<code class="docutils literal notranslate"><span class="pre">hive.security</span></code> files are configured to use Apache Ranger for authorization and
+Kerberos for authentication.</p>
+<p>An example <code class="docutils literal notranslate"><span class="pre">access-control.properties</span></code> file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">access-control.name</span><span class="o">=</span><span class="s">hive-based-ranger</span>
+
+<span class="na">ranger.hive-based.catalogs</span><span class="o">=</span><span class="s">hive</span>
+<span class="na">ranger.hive-based.fallback-access-control</span><span class="o">=</span><span class="s">ALLOW_ALL</span>
+
+<span class="na">ranger.policy-rest-url</span><span class="o">=</span><span class="s">https://ranger-host:6182</span>
+<span class="na">ranger.service-name</span><span class="o">=</span><span class="s">hive</span>
+
+<span class="na">ranger.authentication-type</span><span class="o">=</span><span class="s">KERBEROS</span>
+<span class="na">ranger.kerberos-principal</span><span class="o">=</span><span class="s">sep-server/sep-server-node@EXAMPLE.COM</span>
+<span class="na">ranger.kerberos-keytab</span><span class="o">=</span><span class="s">/etc/sep/conf/sep-server.keytab</span>
+<span class="na">ranger.plugin-policy-ssl-config-file</span><span class="o">=</span><span class="s">/etc/hive/conf/ranger-policymgr-ssl.xml</span>
+</pre></div>
+</div>
+<p>An example <code class="docutils literal notranslate"><span class="pre">hive.properties</span></code> file:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hive</span>
 <span class="na">hive.metastore.uri</span><span class="o">=</span><span class="s">thrift://hive-metastore-node:9083</span>
 
@@ -411,103 +427,71 @@ authentication.</p>
 <span class="na">hive.hdfs.trino.principal</span><span class="o">=</span><span class="s">hdfs/sep-server-node@EXAMPLE.COM</span>
 <span class="na">hive.hdfs.trino.keytab</span><span class="o">=</span><span class="s">/etc/hadoop/conf/hdfs.keytab</span>
 
-<span class="na">hive.security</span><span class="o">=</span><span class="s">ranger</span>
-
-<span class="na">ranger.policy-rest-url</span><span class="o">=</span><span class="s">https://ranger-host:6182</span>
-<span class="na">ranger.service-name</span><span class="o">=</span><span class="s">hive</span>
-
-<span class="na">ranger.authentication-type</span><span class="o">=</span><span class="s">KERBEROS</span>
-<span class="na">ranger.kerberos-principal</span><span class="o">=</span><span class="s">sep-server/sep-server-node@EXAMPLE.COM</span>
-<span class="na">ranger.kerberos-keytab</span><span class="o">=</span><span class="s">/etc/sep/conf/sep-server.keytab</span>
-<span class="na">ranger.plugin-policy-ssl-config-file</span><span class="o">=</span><span class="s">/etc/hive/conf/ranger-policymgr-ssl.xml</span>
+<span class="na">hive.security</span><span class="o">=</span><span class="s">system</span>
 </pre></div>
 </div>
-<p>More details about the supported <a class="reference internal" href="ranger-overview.html#ranger-config-properties"><span class="std std-ref">configuration properties is available in the Ranger overview</span></a>.</p>
-<section id="access-views-created-in-sep">
-<h3 id="access-views-created-in-sep">Access views created in SEP<a class="headerlink" href="#access-views-created-in-sep" title="Permalink to this heading">#</a></h3>
-<p>To access views created in SEP, you must assign <code class="docutils literal notranslate"><span class="pre">hive.*</span></code> catalog access to
-the <code class="docutils literal notranslate"><span class="pre">Public</span></code> role. If there is a connector-level access control system enabled,
-such as Ranger, SEP cannot determine that a user with a given username from
-another access control system is the same as the user in SEP. Granting
-catalog access to a <code class="docutils literal notranslate"><span class="pre">Public</span></code> role is synonymous with excluding the catalog from
-access control checks in SEP’s built-in access control system.</p>
-</section>
-</section>
-<section id="policy-management-with-sql">
-<span id="hive-ranger-sql"></span><h2 id="policy-management-with-sql">Policy management with SQL<a class="headerlink" href="#policy-management-with-sql" title="Permalink to this heading">#</a></h2>
-<p>You can manage your Hive And Delta Lake access control with Ranger using the SQL
-<a class="reference internal" href="../sql/grant.html"><span class="doc">GRANT privilege</span></a> and <a class="reference internal" href="../sql/revoke.html"><span class="doc">REVOKE privilege</span></a> statements. Policies managed this way
-must have the <code class="docutils literal notranslate"><span class="pre">Delegate</span> <span class="pre">Admin</span></code> option selected in the policy.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>If you do not select the <code class="docutils literal notranslate"><span class="pre">Delegate</span> <span class="pre">Admin</span></code> option, you receive access
-denied errors.</p>
-</div>
-<p>Ranger Hive and Delta Lake service definitions use a limited access-type model
-compared to SEP. This limits the granularity of grant and revoke operations.</p>
-<p>You can manage privileges on schema and table access with <code class="docutils literal notranslate"><span class="pre">GRANT</span></code> and
-<code class="docutils literal notranslate"><span class="pre">REVOKE</span></code>.</p>
-<p>SEP defines the following mapping from the Hive and Delta Lake access type
-model to the SEP privileges model:</p>
-<table>
+<table id="id1">
+<caption><span class="caption-text">System access control configuration properties</span><a class="headerlink" href="#id1" title="Permalink to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 70%"/>
+</colgroup>
 <thead>
-<tr class="row-odd"><th class="head"><p>Hive access type</p></th>
-<th class="head"><p>SEP privilege</p></th>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">access-control.name</span></code></p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">hive-based-ranger</span></code> to use Apache Ranger with your catalogs.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UPDATE</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.catalogs</span></code></p></td>
+<td><p>Specifies the comma-separated names of catalogs to be secured by Hive Ranger policies.</p></td>
 </tr>
-</tbody>
-</table>
-<p>and the other way around:</p>
-<table>
-<thead>
-<tr class="row-odd"><th class="head"><p>SEP privilege</p></th>
-<th class="head"><p>Hive access type</p></th>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.fallback-access-control</span></code></p></td>
+<td><p>Fallback access control to control resources that are out of scope of Hive
+Ranger policies. There are three options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DENY-ALL</span></code>: all resources that are not related to controlled catalogs are denied.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALLOW_ALL</span></code>: all resources that are not related to controlled catalogs are allowed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PRESTO_DEFAULT</span></code>: Similar to <code class="docutils literal notranslate"><span class="pre">ALLOW_ALL</span></code>, however it also forbids user
+impersonating and writing system information such as marking nodes
+offline, or changing runtime flags.</p></li>
+</ul>
+</td>
 </tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.query-access-control.enabled</span></code></p></td>
+<td><p>Determines if access to query execution and killing should be controlled. Default is <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">INSERT</span></code></p></td>
-<td><p>Unsupported, use <code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.udf-access-control.enabled</span></code></p></td>
+<td><p>Determines if access to user defined functions should be controlled. Default is <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">UPDATE</span></code></p></td>
-<td><p>Unsupported, use <code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">DELETE</span></code></p></td>
-<td><p>Unsupported, use <code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> instead</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code> and <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-views.run-as-invoker-default-value</span></code></p></td>
+<td><p>Specifies default value for the <a class="reference internal" href="../connector/starburst-hive.html#sb-hive-mv-automatic-refresh"><span class="std std-ref">run-as-invoker property</span></a>.</p></td>
 </tr>
 </tbody>
 </table>
+<p>See <a class="reference internal" href="ranger-overview.html#ranger-config-properties"><span class="std std-ref">additional configuration properties available in Ranger.
+</span></a></p>
 </section>
 <section id="resource-and-privilege-relationship-limitations">
 <h2 id="resource-and-privilege-relationship-limitations">Resource and privilege relationship limitations<a class="headerlink" href="#resource-and-privilege-relationship-limitations" title="Permalink to this heading">#</a></h2>
-<p>The integration of Ranger with the Hive and Delta Lake connectors does not
-support any kind of relation between a resource, such as a table, and the
+<p>The integration of Ranger with the Hive, Delta Lake, and Iceberg connectors does
+not support any kind of relation between a resource, such as a table, and the
 granted access. This is particularly evident when newly created resources are
 treated with the access rights of the existing policies.</p>
-<p>For example, as user without full administrative access (<code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code>) you
+<p>For example, as a user without full administrative access (<code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code>) you
 can end up in a situation where you create a new table, but can not grant access
 to that table to other users. As a workaround you can create global policies
 that use matching patterns and define the desired default access.</p>
 <p>If you want all tables ending with <code class="docutils literal notranslate"><span class="pre">-reporting</span></code> to be accessible by everyone,
-you can create a policy that uses a value for <code class="docutils literal notranslate"><span class="pre">*-reporting</span></code> for the table. If
-you use <code class="docutils literal notranslate"><span class="pre">*</span></code> for database and <code class="docutils literal notranslate"><span class="pre">*</span></code> for column, you can grant a
-specific access to such a reporting table and all its columns in any database.</p>
-<p>Alternatively you can grant all privileges to anyone creating new objects and
-requiring privileges to grant access to others. This policy might be too open
+you can create a policy that uses the value <code class="docutils literal notranslate"><span class="pre">*-reporting</span></code> for the table. If
+you use <code class="docutils literal notranslate"><span class="pre">*</span></code> for database and <code class="docutils literal notranslate"><span class="pre">*</span></code> for column, you can grant a specific privilege
+such as reporting a table and all of its columns in any database.</p>
+<p>Alternatively, you can grant all privileges to anyone creating new objects and
+require privileges to grant access to other users. This policy might be too open
 for your use case, depending on your security policies, the data, the number of
-users and other aspects.</p>
+users, and other aspects.</p>
 </section>
 <section id="role-management-limitations">
 <h2 id="role-management-limitations">Role management limitations<a class="headerlink" href="#role-management-limitations" title="Permalink to this heading">#</a></h2>
@@ -649,12 +633,12 @@ feedback();
             </a>
           
           
-            <a href="immuta-overview.html" title="Immuta access control"
+            <a href="legacy-hive-ranger.html" title="Legacy Hive and Delta Lake access control with Apache Ranger"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> Next </span> Immuta access control </span>
+                class="md-footer-nav__direction"> Next </span> Legacy Hive and Delta Lake access control with Apache Ranger </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
