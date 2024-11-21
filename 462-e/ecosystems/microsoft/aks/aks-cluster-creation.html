@@ -272,6 +272,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#create-your-azure-cluster">Create your Azure cluster</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#establish-nodepools">Establish nodepools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuring-user-assigned-managed-identities-with-aks">Configuring user-assigned managed identities with AKS</a></li>
 </ul>
 </li>
 </ul>
@@ -317,6 +318,8 @@
         <li class="md-nav__item"><a href="#create-your-azure-cluster" class="md-nav__link">Create your Azure cluster</a>
         </li>
         <li class="md-nav__item"><a href="#establish-nodepools" class="md-nav__link">Establish nodepools</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuring-user-assigned-managed-identities-with-aks" class="md-nav__link">Configuring user-assigned managed identities with AKS</a>
         </li></ul>
             </nav>
         </li>
@@ -420,6 +423,98 @@ command creates a nodepool for a coordinator:</p>
 </div>
 <p>You must adjust parameters such as the VM size for the nodes, the available disk
 space, node counts, and specific identifiers to your planned deployment.</p>
+</section>
+<section id="configuring-user-assigned-managed-identities-with-aks">
+<span id="aks-user-assigned-managed-identities"></span><h2 id="configuring-user-assigned-managed-identities-with-aks">Configuring user-assigned managed identities with AKS<a class="headerlink" href="#configuring-user-assigned-managed-identities-with-aks" title="Permalink to this heading">#</a></h2>
+<p>SEP supports user-assigned managed identities via Workload Identity
+management to authenticate and access Azure resources like ADLS based on the
+permissions assigned to that identity.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following steps assume that you already created a user-assigned managed
+identity in Azure and the identity has adequate permissions to access a specific
+ADLS location.</p>
+</div>
+<ol class="arabic">
+<li><p>Enable workload identity management on an existing AKS cluster with
+the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>az aks update <span class="se">\</span>
+--resource-group <span class="s2">"</span><span class="si">${</span><span class="nv">RESOURCE_GROUP</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+--name <span class="s2">"</span><span class="si">${</span><span class="nv">CLUSTER_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+--enable-oidc-issuer <span class="se">\</span>
+--enable-workload-identity
+</pre></div>
+</div>
+<p>Alternatively, create a new AKS cluster with workload identity management:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>az aks create <span class="se">\</span>
+--resource-group <span class="s2">"</span><span class="si">${</span><span class="nv">RESOURCE_GROUP</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+--name <span class="s2">"</span><span class="si">${</span><span class="nv">CLUSTER_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+--enable-oidc-issuer <span class="se">\</span>
+--enable-workload-identity <span class="se">\</span>
+--generate-ssh-keys
+</pre></div>
+</div>
+</li>
+<li><p>Create a service account to use the user-assigned managed identity:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    azure.workload.identity/client-id: <span class="s2">"</span><span class="si">${</span><span class="nv">USER_ASSIGNED_CLIENT_ID</span><span class="si">}</span><span class="s2">"</span>
+  name: <span class="s2">"</span><span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAME</span><span class="si">}</span><span class="s2">"</span>
+  namespace: <span class="s2">"</span><span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAMESPACE</span><span class="si">}</span><span class="s2">"</span>
+</pre></div>
+</div>
+<p>If you need to fetch the user-assigned client ID, use the following command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">USER_ASSIGNED_CLIENT_ID</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>az identity show <span class="se">\</span>
+  --resource-group <span class="s2">"</span><span class="si">${</span><span class="nv">RESOURCE_GROUP</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+  --name <span class="s2">"</span><span class="si">${</span><span class="nv">USER_ASSIGNED_IDENTITY_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+  --query <span class="s1">'clientId'</span> <span class="se">\</span>
+  --output tsv<span class="k">)</span><span class="s2">"</span>
+</pre></div>
+</div>
+</li>
+<li><p>Create a federated credential to allow the identity to authenticate
+Kubernetes workloads:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>az identity federated-credential create <span class="se">\</span>
+   --name <span class="si">${</span><span class="nv">FEDERATED_IDENTITY_CREDENTIAL_NAME</span><span class="si">}</span> <span class="se">\</span>
+   --identity-name <span class="s2">"</span><span class="si">${</span><span class="nv">USER_ASSIGNED_IDENTITY_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+   --resource-group <span class="s2">"</span><span class="si">${</span><span class="nv">RESOURCE_GROUP</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+   --issuer <span class="s2">"</span><span class="si">${</span><span class="nv">AKS_OIDC_ISSUER</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+   --subject system:serviceaccount:<span class="s2">"</span><span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAMESPACE</span><span class="si">}</span><span class="s2">"</span>:<span class="s2">"</span><span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+   --audience api://AzureADTokenExchange
+</pre></div>
+</div>
+<p>If you need to fetch the OpenID Connect (OIDC) issuer, use the following
+command:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">AKS_OIDC_ISSUER</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>az aks show --name <span class="s2">"</span><span class="si">${</span><span class="nv">CLUSTER_NAME</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+ --resource-group <span class="s2">"</span><span class="si">${</span><span class="nv">RESOURCE_GROUP</span><span class="si">}</span><span class="s2">"</span> <span class="se">\</span>
+ --query <span class="s2">"oidcIssuerProfile.issuerUrl"</span> <span class="se">\</span>
+ --output tsv<span class="k">)</span><span class="s2">"</span>
+</pre></div>
+</div>
+</li>
+<li><p>Deploy the Helm chart and ensure your workload uses the appropriate service
+account linked to the user-assigned managed identity:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>apiVersion: v1
+kind: Pod
+metadata:
+  name: sample-workload-identity
+  namespace: <span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAMESPACE</span><span class="si">}</span>
+  labels:
+    azure.workload.identity/use: <span class="s2">"true"</span>  <span class="c1"># Required. Only pods with this label can use workload identity.</span>
+spec:
+  serviceAccountName: <span class="si">${</span><span class="nv">SERVICE_ACCOUNT_NAME</span><span class="si">}</span>
+  containers:
+   - image: &lt;image&gt;
+     name: &lt;containerName&gt;
+</pre></div>
+</div>
+</li>
+</ol>
+<p>For more information on creating a user-assigned managed identy, see the <a class="reference external" href="https://learn.microsoft.com/azure/aks/workload-identity-deploy-cluster">AKS
+documentation</a>.</p>
 </section>
 </section>
 
