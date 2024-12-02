@@ -2354,9 +2354,8 @@ entity’s assigned attributes, such as
     </tr>
         <tr>
       <td><strong>Matching expression</strong></td>
-      <td>A boolean expression that can test whether tags are associated with an
-       entity. Tags can be associated with one or more catalogs, schemas,
-        tables, views, or columns.</td>
+      <td>A boolean expression that can test whether the policy should apply.
+       Supported expressions are listed below.</td>
     </tr>
         <tr>
       <td><strong>A role that the policy is assigned to</strong></td>
@@ -2406,7 +2405,7 @@ entities such as clusters, catalogs, and tables. This provides fine-grained
 control that protects your data, and allows you to define just the right mix of
 allowed actions and access for each function in your organization.</p>
 
-<p>You can manage users, roles, and privileges in the <a href="../manage-galaxy-access/manage-users-roles-and-tags/manage-users-without-sso.html">Access - Users
+<p>Manage users, roles, and privileges in the <a href="../manage-galaxy-access/manage-users-roles-and-tags/manage-users-without-sso.html">Access - Users
 section</a>
 and the <a href="../manage-galaxy-access/manage-users-roles-and-tags/index.html">Access - Roles and privileges
 section</a> of
@@ -2436,9 +2435,10 @@ combination of policies and attributes, such as
 to further manage role access to entities such as catalogs, schemas, tables,
 views, and columns.</p>
 
-<p>A policy can grant privileges that can apply to different entities, such as a
-schema and a table. A policy is only active if the policy role is contained in
-the user’s current active role set.</p>
+<p>A policy can grant privileges, apply row filters, or apply column masks to
+different entities, such as a schema and a table. A policy is only active if the
+policy role is contained in the user’s current <a href="../manage-galaxy-access/manage-users-roles-and-tags/roles.html#active-role-set">active role
+set</a>.</p>
 
 <p>Starburst Galaxy combines attribute-based privilege grants and role-based
 privilege grants to determine role access to entities.</p>
@@ -2454,29 +2454,163 @@ basics</a>.</p>
       </h2>
     
 
-<p>The matching expression is a boolean expression that uses parentheses and the
-<code class="language-plaintext highlighter-rouge">AND</code>, <code class="language-plaintext highlighter-rouge">OR</code> and <code class="language-plaintext highlighter-rouge">NOT</code> operators. <code class="language-plaintext highlighter-rouge">HAS_TAG(example_tag)</code> is a special
-function operator that is applied using the name of a tag as a parameter. If the
-tag is associated with the set of tags on an entity, it returns <code class="language-plaintext highlighter-rouge">true</code>. As
-with SQL expressions, matching expression operators are case-insensitive, but by
-convention are usually written as uppercase.</p>
+<p>The matching expression is a boolean expression that determines whether the
+policy is applicable to the particular entity. Matching expressions are defined
+using a custom language. All supported expressions are documented on this page.</p>
 
-<p>Matching expressions do not refer to entities directly. They only refer to the
-tags associated with an entity. This means that the same policy can apply to a
-catalog, schema, table, view, or column.</p>
-
-<p>The following example shows a matching expression that tests if the set of tags
-on an entity includes the tag <code class="language-plaintext highlighter-rouge">sales_department</code> and does not include the tag
-<code class="language-plaintext highlighter-rouge">pii</code>:</p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HAS_TAG(sales_department) AND NOT HAS_TAG(pii)
-</code></pre></div></div>
-
-<p>The following example shows a matching expression that returns <code class="language-plaintext highlighter-rouge">true</code> if
+<p>Parentheses are also supported and can be used to make complex expressions.
+The following example shows a matching expression that returns <code class="language-plaintext highlighter-rouge">true</code> if
 either the set of tags on an entity includes the tag <code class="language-plaintext highlighter-rouge">sales_department</code> or
 includes tag <code class="language-plaintext highlighter-rouge">marketing_department</code> as well as tag <code class="language-plaintext highlighter-rouge">sales_liaison</code>:</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HAS_TAG(sales_department) OR (HAS_TAG(marketing_department) AND HAS_TAG(sales_liaison))
+</code></pre></div></div>
+
+<p>The full list of supported matching expressions is shown below:</p>
+      <h3 id="supported-base-expressions">
+        
+        
+          Supported base expressions <a href="#supported-base-expressions" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Base expressions are simple expressions that look exclusively at some piece of
+data and do not rely on any other expressions for their evaluation. Supported
+expressions can evaluate tags, user attributes, or the names of entities.</p>
+
+<p>Here is the full list of supported base expressions:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Expression</th>
+      <th style="width: 75%;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+       <code>true</code>
+        or
+       <code>false</code>
+      </td>
+      <td>Booleans are acceptable expressions.</td>
+    </tr>
+        <tr>
+      <td>
+       <code>has_tag($TAG_NAME)</code>
+      </td>
+      <td>Test whether <code>$TAG_NAME</code> is associated with an entity.
+          <a href="../manage-galaxy-access/manage-users-roles-and-tags/create-and-use-attribute-tags.md">Tags</a>
+          can be associated with one or more catalogs, schemas, tables, views, or columns.</td>
+    </tr>
+        <tr>
+      <td>
+       <code>has_tag($TAG_NAME.*)</code>
+      </td>
+      <td>Test whether parent tag <code>$TAG_NAME</code> (or any tag that starts with
+       <code>$TAG_NAME.</code>) is associated with an entity. <code>$TAG_NAME</code>
+       in this case is considered a <em>parent tag</em> (example <code>pii</code>).
+       Child tag names have the tag name as the prefix and are separated by a period
+       (example <code>pii.email</code>).</td>
+    </tr>
+        <tr>
+      <td>
+       <code>user_attribute_exists('$ATTR')</code>
+      </td>
+      <td>Test whether the user has an attribute that exists entitled <code>$ATTR</code>.
+       Only enabled with SSO integrations.<br />
+       <a href="#user-attribute-predicates">See more detail here.</a></td>
+    </tr>
+        <tr>
+      <td>
+       <code>user_has_attribute('$ATTR', '$VAL')</code>
+      </td>
+      <td>Test whether the user has an attribute that exists entitled <code>$ATTR</code>
+       and at least one corresponding value equals <code>$VAL</code>. Only enabled with SSO integrations.<br />
+       <a href="#user-attribute-predicates">See more detail here.</a></td>
+    </tr>
+        <tr>
+      <td>
+       <code>catalog_name_matches('$NAME*')</code>
+      </td>
+      <td><strong>Private preview</strong><br />
+          Test whether the catalog name matches the given pattern. The scope of the policy
+          must be one or more catalogs, or <code>ALL_CATALOGS</code>.<br />
+       <a href="#wildcard-name-predicates">See more detail here.</a></td>
+    </tr>
+        <tr>
+      <td>
+       <code>schema_name_matches('$NAME*')</code>
+      </td>
+      <td><strong>Private preview</strong><br />
+          Test whether the schema name matches the given pattern. The scope of the policy
+          must be one or more catalogs or schemas, or <code>ALL_CATALOGS</code>.<br />
+       <a href="#wildcard-name-predicates">See more detail here.</a></td>
+    </tr>
+        <tr>
+      <td>
+       <code>table_name_matches('$NAME*')</code>
+      </td>
+      <td><strong>Private preview</strong><br />
+          Test whether the table name matches the given pattern. The scope of the policy
+          at or above the level of a table or <code>ALL_CATALOGS</code>.<br />
+       <a href="#wildcard-name-predicates">See more detail here.</a></td>
+    </tr>
+  </tbody>
+</table>
+      <h4 id="compound-expressions">
+        
+        
+          Compound expressions <a href="#compound-expressions" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Compound expressions take in one or more of the above base expressions to
+create more expressive access control policies. All compound expressions are
+listed below; any usage of <code class="language-plaintext highlighter-rouge">$EXPRESSION</code> can be replaced by any of the base
+expressions listed above.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width: 25%;">Expression</th>
+      <th style="width: 50%;">Description</th>
+      <th style="width: 25%;">Example</th>
+    </tr>
+  </thead>
+  <tbody>
+        <tr>
+      <td><code>NOT $EXPRESSION</code></td>
+      <td>Evaluates to <code>true</code> if <code>$EXPRESSION</code> evaluates to false.
+       <code>NOT</code> has a higher precedence than <code>AND</code> and <code>OR</code>.</td>
+      <td><code>NOT has_tag(pii)</code></td>
+    </tr>
+        <tr>
+      <td><code>$EXPRESSION AND $EXPRESSION</code></td>
+      <td>Evaluates to <code>true</code> if both expressions evaluates to true,
+       <code>false</code> otherwise. <code>AND</code> has a higher precedence than <code>OR</code>.</td>
+      <td><code>has_tag(pii) AND table_name_matches('foo*')</code></td>
+    </tr>
+        <tr>
+      <td><code>$EXPRESSION OR $EXPRESSION</code></td>
+      <td>Evaluates to <code>true</code> if either expression evaluates to true,
+       <code>false</code> if both are false.</td>
+      <td><code>has_tag(pii) OR table_name_matches('foo*')</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>For compound expressions, it may be useful to use parentheses for clarity
+and to avoid ambiguity around operator precedence. For example, the following
+two expressions are equivalent because <code class="language-plaintext highlighter-rouge">AND</code> has a higher precedence than <code class="language-plaintext highlighter-rouge">OR</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>HAS_TAG(pii.email) OR HAS_TAG(pii.phone) AND HAS_TAG(pii.address)
+HAS_TAG(pii.email) OR (HAS_TAG(pii.phone) AND HAS_TAG(pii.address))
 </code></pre></div></div>
       <h2 id="policy-grants">
         
@@ -2504,11 +2638,13 @@ catalog named <code class="language-plaintext highlighter-rouge">sales_data</cod
 <p>The <a href="../manage-galaxy-access/manage-users-roles-and-tags/index.html#policies-tab">Policies
 tab</a>
 lists all policies. The tab is only visible if a role in the user’s active role
-set has the account-level privilege
-<a href="../manage-galaxy-access/manage-users-roles-and-tags/account-and-cluster-privileges.html#account-privileges-">Manage security</a>.</p>
+set has the account-level privilege <a href="../manage-galaxy-access/manage-users-roles-and-tags/account-and-cluster-privileges.html#account-privileges-">Manage
+security</a>.</p>
 
-<p>If a role in the user’s active role set has the <code class="language-plaintext highlighter-rouge">Manage security</code>
-privilege, the user can create a new policy by clicking <strong>Add policy</strong>.</p>
+<p>If a role in the user’s <a href="../manage-galaxy-access/manage-users-roles-and-tags/roles.html#active-role-set">active role
+set</a>
+has the <code class="language-plaintext highlighter-rouge">Manage security</code> privilege, the user can create a new policy by
+clicking <strong>Add policy</strong>.</p>
 
 <p>When creating a policy, you can enter the matching expression as free text in
 the matching expression input field. For each character typed, the expression
@@ -2532,14 +2668,14 @@ operations to check whether the user has access to a catalog, schema, table,
 view, or column entity:</p>
 <ul>
   <li>The tags associated with the catalog, schema, table, view, or column are
-fetched. Because of tag inheritance, a tag applied to a catalog is returned in
-the set of tags for any schema, table, view, or column in the catalog.
+fetched. Because of tag inheritance, a tag applied to a catalog is returned
+in the set of tags for any schema, table, view, or column in the catalog.
 Similarly, a tag applied to a schema is returned in the set of tags for any
-table, view, or column in the schema. Finally, a tag applied to a table or view
-is returned in the set of tags for any column in the table or view.</li>
+table, view, or column in the schema. Finally, a tag applied to a table or
+view is returned in the set of tags for any column in the table or view.</li>
   <li>The system evaluates the <a href="#matching-expressions">matching expression</a> for all
-policies based on the tags associated with the entity. The system collects the
-privileges granted by the policies on the entity for which the matching
+policies based on the tags associated with the entity. The system collects
+the privileges granted by the policies on the entity for which the matching
 expressions are <code class="language-plaintext highlighter-rouge">true</code>.</li>
   <li>Role-based grants for the entity are retrieved and combined with the policy
 grants. The usual rules for <code class="language-plaintext highlighter-rouge">ALLOW</code> and <code class="language-plaintext highlighter-rouge">DENY</code> privilege grants are
@@ -2556,13 +2692,13 @@ entities when the policy has a <code class="language-plaintext highlighter-rouge
 entity. For example, <code class="language-plaintext highlighter-rouge">DENY SELECT</code> on scope <code class="language-plaintext highlighter-rouge">catalog_example</code> with
 expression <code class="language-plaintext highlighter-rouge">NOT HAS_TAG(pii)</code>.<br /><br />
 
-In this example, the entire catalog <code class="language-plaintext highlighter-rouge">catalog_example</code> is denied the privilege,
-including every entity that is a child of <code class="language-plaintext highlighter-rouge">catalog_example</code>, even if the
-<code class="language-plaintext highlighter-rouge">pii</code> tag is applied to that child entity. This happens because a <code class="language-plaintext highlighter-rouge">DENY</code> on
-a parent entity overrides an <code class="language-plaintext highlighter-rouge">ALLOW</code> on a child entity. A <code class="language-plaintext highlighter-rouge">DENY</code> policy on a
-parent entity with child entities to which the policy does not apply, is not
-equivalent to an <code class="language-plaintext highlighter-rouge">ALLOW</code> policy with child entities to which the policy does
-not apply. </div>
+In this example, the entire catalog <code class="language-plaintext highlighter-rouge">catalog_example</code> is denied the
+privilege, including every entity that is a child of <code class="language-plaintext highlighter-rouge">catalog_example</code>, even
+if the <code class="language-plaintext highlighter-rouge">pii</code> tag is applied to that child entity. This happens because a
+<code class="language-plaintext highlighter-rouge">DENY</code> on a parent entity overrides an <code class="language-plaintext highlighter-rouge">ALLOW</code> on a child entity. A
+<code class="language-plaintext highlighter-rouge">DENY</code> policy on a parent entity with child entities to which the policy
+does not apply, is not equivalent to an <code class="language-plaintext highlighter-rouge">ALLOW</code> policy with child entities
+to which the policy does not apply. </div>
       <h2 id="policy-grants-and-catalog-schema-table-and-view-visibility">
         
         
@@ -2576,22 +2712,23 @@ not apply. </div>
 catalogs, schemas, tables, and views:</p>
 
 <ul>
-  <li>A catalog is visible to a user if a role in the user’s active role set owns
-the catalog, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the catalog or any schema,
+  <li>A catalog is visible to a user if a role in the user’s <a href="../manage-galaxy-access/manage-users-roles-and-tags/roles.html#active-role-set">active role
+set</a>
+owns the catalog, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the catalog or any schema,
 table, view, or column in the catalog, and that the <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege is not
 overridden by a <code class="language-plaintext highlighter-rouge">DENY</code> privilege.  The privileges can come from role-based
 grants, or from policies whose matching expression is <code class="language-plaintext highlighter-rouge">true</code> for the tags
 associated with a tagged entity in the catalog.</li>
   <li>Similarly, a schema is visible to a user if a role in the user’s active role
-set owns the schema, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the schema or any table,
-view, or column in the schema, and that the <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege is not
+set owns the schema, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the schema or any
+table, view, or column in the schema, and that the <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege is not
 overridden by a <code class="language-plaintext highlighter-rouge">DENY</code> privilege.  The privileges can come from role-based
 grants, or from policies whose matching expression is <code class="language-plaintext highlighter-rouge">true</code> for the tags
 associated with a tagged entity in the schema.</li>
   <li>Finally, a table or view is visible to a user if a role in the user’s active
-role set owns the table or view, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the table or
-view, or any column in the table or view, and that the <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege is
-not overridden by a <code class="language-plaintext highlighter-rouge">DENY</code> privilege. The privileges can come from
+role set owns the table or view, or has an <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege on the table
+or view, or any column in the table or view, and that the <code class="language-plaintext highlighter-rouge">ALLOW</code> privilege
+is not overridden by a <code class="language-plaintext highlighter-rouge">DENY</code> privilege. The privileges can come from
 role-based grants, or from policies whose matching expression is <code class="language-plaintext highlighter-rouge">true</code> for
 the tags associated with a tagged entity in the table or view.</li>
 </ul>
@@ -2604,30 +2741,30 @@ the tags associated with a tagged entity in the table or view.</li>
       </h2>
     
 
-<p><strong>Row-level filters</strong> are an important component of data governance. They ensure
-that the rows returned by queries are rows the user is entitled to see. Unlike
-RBAC grants, which apply to entire tables or columns, row filters determine
-access on a row-by-row basis.</p>
+<p><strong>Row-level filters</strong> are an important component of data governance. They
+ensure that the rows returned by queries are rows the user is entitled to see.
+Unlike RBAC grants, which apply to entire tables or columns, row filters
+determine access on a row-by-row basis.</p>
 
 <p>A row-level filter is a named SQL expression. One or more row filters can be
 added to a policy whose target is a table or view. When Starburst Galaxy
 fetches privileges for a table or view, if the table or view matches the policy
-target, and the policy matching expression evaluates to <code class="language-plaintext highlighter-rouge">true</code> for the table’s
-tags, the policy’s row filters are included in the table privileges. Multiple
-different policies can match the table, so the row filters returned can come
-from multiple different policies.</p>
+target, and the policy matching expression evaluates to <code class="language-plaintext highlighter-rouge">true</code> for the
+table’s tags, the policy’s row filters are included in the table privileges.
+Multiple different policies can match the table, so the row filters returned
+cam come from multiple different policies.</p>
 
 <p>The row filter SQL expressions from all row filters from all matching policies
-are compared with the <code class="language-plaintext highlighter-rouge">OR</code> operator and added to the query’s <code class="language-plaintext highlighter-rouge">WHERE</code> clause.
-The rows in the query for which any of the row filter expressions returns
-<code class="language-plaintext highlighter-rouge">true</code> are included in the query result, and the rows for which all row
-filters returned <code class="language-plaintext highlighter-rouge">false</code> are excluded.</p>
+are compared with the <code class="language-plaintext highlighter-rouge">OR</code> operator and added to the query’s <code class="language-plaintext highlighter-rouge">WHERE</code>
+clause. The rows in the query for which any of the row filter expressions
+returns <code class="language-plaintext highlighter-rouge">true</code> are included in the query result, and the rows for which all
+row filters returned <code class="language-plaintext highlighter-rouge">false</code> are excluded.</p>
 
 <p>Row filters are evaluated using the privileges of the role that owns the row
 filter, which may not be the same as the current role of the user running a
 query to which the row filter is applied. This means that the row filter in
-general has privileges to reference tables the user running a query doesn’t have
-the privileges to access.</p>
+general has privileges to reference tables the user running a query does not
+have the privileges to access.</p>
       <h3 id="creating-row-level-filters">
         
         
@@ -2637,10 +2774,11 @@ the privileges to access.</p>
       </h3>
     
 
-<p>To create row filters, a user’s active role set must have the
-<code class="language-plaintext highlighter-rouge">Manage security</code> privilege. In addition, the <strong>Row filters</strong> side pane link
-is only visible to users whose active role set has the <code class="language-plaintext highlighter-rouge">Manage security</code>
-privilege.</p>
+<p>To create row filters, a user’s <a href="../manage-galaxy-access/manage-users-roles-and-tags/roles.html#active-role-set">active role
+set</a>
+must have the <code class="language-plaintext highlighter-rouge">Manage security</code> privilege. In addition, the <strong>Row filters</strong>
+side pane link is only visible to users whose active role set has the <code class="language-plaintext highlighter-rouge">Manage
+security</code> privilege.</p>
 
 <p>See <a href="./row-filters.html">Row filters</a> for more details.</p>
       <h2 id="column-masks">
@@ -2658,21 +2796,21 @@ permission to see the data by masking the values returned by the query.</p>
 
 <p>One or more column masks can be added to a policy whose target is a table or
 view. Column masks function similar to <a href="#row-level-filters">row filters</a> in that
-when Starburst Galaxy fetches privileges for a table or view, and that table or
-view matches the policy target and the policy’s matching expression is <code class="language-plaintext highlighter-rouge">true</code>
-for the table or view’s tags, then the policy’s column masks are included in the
-table or view privileges.</p>
+when Starburst Galaxy fetches privileges for a table or view, and that table
+or view matches the policy target and the policy’s matching expression is <code class="language-plaintext highlighter-rouge">true</code>
+for the table or view’s tags, then the policy’s column masks are included in
+the table or view privileges.</p>
 
 <p>Column masks are evaluated using the privileges of the role that owns the column
 mask, which may not be the same as the current role of the user running a query
 to which the column mask is applied. This means that the column mask in general
-has privileges to reference tables the user running a query doesn’t have the
+has privileges to reference tables the user running a query does not have the
 privileges to access.</p>
 
-<p>When you execute a query, Galaxy automatically rewrites your query and
-applies a column mask expression to the specified column. The column rewrite
-applies the mask expression everywhere the column appears in the query. Users
-see masked data based on the conditions you define.</p>
+<p>When you execute a query, Galaxy automatically rewrites your query
+and applies a column mask expression to the specified column. The column
+rewrite applies the mask expression everywhere the column appears in the query.
+Users see masked data based on the conditions you define.</p>
       <h3 id="when-to-use-masking-vs-hashing">
         
         
@@ -2682,8 +2820,8 @@ see masked data based on the conditions you define.</p>
       </h3>
     
 
-<p>Masking and hashing are different obfuscation techniques that have different use
-cases:</p>
+<p>Masking and hashing are different obfuscation techniques that have different
+use cases:</p>
 
 <ul>
   <li>
@@ -2714,24 +2852,25 @@ must also mask or hash the values you are comparing.</div>
       </h3>
     
 
-<p>To create column masks, a user’s active role set must have the
-<code class="language-plaintext highlighter-rouge">Manage security</code> privilege. In addition, the <strong>Column mask</strong> side pane link
-is only visible to users whose active role set has the <code class="language-plaintext highlighter-rouge">Manage security</code>
-privilege.</p>
+<p>To create column masks, a user’s <a href="../manage-galaxy-access/manage-users-roles-and-tags/roles.html#active-role-set">active role
+set</a>
+must have the <code class="language-plaintext highlighter-rouge">Manage security</code> privilege. In addition, the <strong>Column mask</strong>
+side pane link is only visible to users whose active role set has the <code class="language-plaintext highlighter-rouge">Manage
+security</code> privilege.</p>
 
 <p>See <a href="./column-masks.html">Column masks</a> for more details.</p>
-      <h2 id="user-attributes">
+      <h2 id="user-attribute-predicates">
         
         
-          User attributes <a href="#user-attributes" class="titleAnchor">#</a>
+          User attribute predicates <a href="#user-attribute-predicates" class="titleAnchor">#</a>
         
         
       </h2>
     
 
 <p>User attributes can be imported into Galaxy from your identity
-provider, such as Okta. A total of 1KB in attribute statements is supported.
-Statements exceeding 1KB may result in attributes being dropped.</p>
+provider, such as Okta. A total of 7KB in attribute statements is supported.
+Statements exceeding 7KB may result in attributes being dropped.</p>
 
 <p>For more information on importing attribute statements from Okta, see <a href="../manage-galaxy-access/manage-sso-integration/okta-saml-setup.html#configure-okta-to-send-user-attributes-to-galaxy">Okta SAML
 setup</a>.</p>
@@ -2773,7 +2912,7 @@ attribute name <code class="language-plaintext highlighter-rouge">it's an exampl
     
 
 <p>User attribute statements can also be substituted in row filter expressions
-automatically on a per user basis. There are two special expressions which allow
+automatically on a per user basis. There are two special expressions that allow
 for this substitution:</p>
 
 <ul>
@@ -2788,6 +2927,68 @@ for the name <code class="language-plaintext highlighter-rouge">attributeName</c
 checking for strict equality in the filter expression, and
 <code class="language-plaintext highlighter-rouge">$USER_ATTRIBUTE_LIST('attributeName')</code> when you want to match any value in the
 list. Note that there is no validation performed on the row filter expression.</p>
+      <h2 id="wildcard-name-predicates">
+        
+        
+          Wildcard name predicates <a href="#wildcard-name-predicates" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  This is a <a href="/starburst-galaxy/get-started/feature-release-types.html">private preview
+feature</a>. To
+participate in the preview, contact <a href="/starburst-galaxy/get-started/get-support.html">Starburst
+support</a> for current preview
+status.</div>
+
+<p>Policy expressions can also support wildcard resource name wildcard matching on
+catalog, schema, and table names. The name to match is entered as an argument to
+the matching function. The character <code class="language-plaintext highlighter-rouge">*</code> represents the wildcard matching
+character.</p>
+
+<p>Predicate supported include:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">catalog_name_matches('foo*')</code> evaluates to <code class="language-plaintext highlighter-rouge">true</code> if the name of the
+catalog starts with or equals <code class="language-plaintext highlighter-rouge">foo</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">schema_name_matches('*foo')</code> evaluates to <code class="language-plaintext highlighter-rouge">true</code> if the name of the
+schema ends with or equals <code class="language-plaintext highlighter-rouge">foo</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">table_name_matches('foo*')</code> evaluates to <code class="language-plaintext highlighter-rouge">true</code> if the name of the table
+starts with or equals <code class="language-plaintext highlighter-rouge">foo</code>.</li>
+</ul>
+      <h3 id="limitations-of-wildcard-name-matcher-predicates">
+        
+        
+          Limitations of wildcard name matcher predicates <a href="#limitations-of-wildcard-name-matcher-predicates" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>There is a maximum of one wildcard <code class="language-plaintext highlighter-rouge">*</code> marker allowed in a wildcard matcher
+expression.</p>
+
+<p>When considering catalog or schema visibility, if there is a policy that
+grants an <code class="language-plaintext highlighter-rouge">ALLOW</code> on a privilege and contains a wildcard expression in scope
+whose predicate operates below the level being checked for visibility, the
+container entity is considered visible unless there is a corresponding
+<code class="language-plaintext highlighter-rouge">DENY</code> grant on that privilege.</p>
+
+<p>For example, consider a policy on all catalogs with the predicate
+<code class="language-plaintext highlighter-rouge">table_name_matches('foo*')</code> which grants <code class="language-plaintext highlighter-rouge">ALLOW SELECT</code> access to all tables
+that match. If a role were to query <code class="language-plaintext highlighter-rouge">SHOW CATALOGS</code>, Galaxy does not
+look for tables in those catalogs that match <code class="language-plaintext highlighter-rouge">foo*</code>. Galaxy treats all
+catalogs as visible. Similarly, the statement <code class="language-plaintext highlighter-rouge">SHOW SCHEMAS FROM mycatalog</code>
+shows all schemas in the catalog even if there are no tables in schemas that
+match <code class="language-plaintext highlighter-rouge">foo*</code>.</p>
+
+<p>The above example only applies to policies that grant <code class="language-plaintext highlighter-rouge">ALLOW</code> on a privilege.
+<code class="language-plaintext highlighter-rouge">DENY</code> privilege grants, row filters, or column masks do not affect visibility
+in this case.</p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -2890,7 +3091,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#access-control-policy-types">Access control policy types</a><ul><li><a href="#role-based-access-control">Role-based access control</a></li><li><a href="#attribute-based-access-control">Attribute-based access control</a></li><li><a href="#matching-expressions">Matching expressions</a></li><li><a href="#policy-grants">Policy grants</a></li><li><a href="#defining-policies">Defining policies</a></li><li><a href="#policy-grants-and-privilege-checking">Policy grants and privilege checking</a></li><li><a href="#policy-grants-and-catalog-schema-table-and-view-visibility">Policy grants and catalog, schema, table, and view visibility</a></li><li><a href="#row-level-filters">Row-level filters</a><ul><li><a href="#creating-row-level-filters">Creating row-level filters</a></li></ul></li><li><a href="#column-masks">Column masks</a><ul><li><a href="#when-to-use-masking-vs-hashing">When to use masking vs hashing</a></li><li><a href="#creating-column-masks">Creating column masks</a></li></ul></li><li><a href="#user-attributes">User attributes</a><ul><li><a href="#user-attributes-in-policy-expressions">User attributes in policy expressions</a></li><li><a href="#user-attributes-in-row-filter-expressions">User attributes in row filter expressions</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#access-control-policy-types">Access control policy types</a><ul><li><a href="#role-based-access-control">Role-based access control</a></li><li><a href="#attribute-based-access-control">Attribute-based access control</a></li><li><a href="#matching-expressions">Matching expressions</a><ul><li><a href="#supported-base-expressions">Supported base expressions</a><ul><li><a href="#compound-expressions">Compound expressions</a></li></ul></li></ul></li><li><a href="#policy-grants">Policy grants</a></li><li><a href="#defining-policies">Defining policies</a></li><li><a href="#policy-grants-and-privilege-checking">Policy grants and privilege checking</a></li><li><a href="#policy-grants-and-catalog-schema-table-and-view-visibility">Policy grants and catalog, schema, table, and view visibility</a></li><li><a href="#row-level-filters">Row-level filters</a><ul><li><a href="#creating-row-level-filters">Creating row-level filters</a></li></ul></li><li><a href="#column-masks">Column masks</a><ul><li><a href="#when-to-use-masking-vs-hashing">When to use masking vs hashing</a></li><li><a href="#creating-column-masks">Creating column masks</a></li></ul></li><li><a href="#user-attribute-predicates">User attribute predicates</a><ul><li><a href="#user-attributes-in-policy-expressions">User attributes in policy expressions</a></li><li><a href="#user-attributes-in-row-filter-expressions">User attributes in row filter expressions</a></li></ul></li><li><a href="#wildcard-name-predicates">Wildcard name predicates</a><ul><li><a href="#limitations-of-wildcard-name-matcher-predicates">Limitations of wildcard name matcher predicates</a></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
