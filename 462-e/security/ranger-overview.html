@@ -615,9 +615,32 @@ Catalog, row level filtering and tag-based policies.</p>
 </section>
 <section id="location-privileges">
 <span id="ranger-location"></span><h3 id="location-privileges">Location privileges<a class="headerlink" href="#location-privileges" title="Permalink to this heading">#</a></h3>
-<p>The SEP integration with Ranger allows you to set location privileges to
-ensure the correct users have access to create objects in specific object
-storage locations. Location privileges support <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">SCHEMA</span></code> operations, as well as <code class="docutils literal notranslate"><span class="pre">CALL</span> <span class="pre">system.register_partion</span></code> for Hive catalogs.</p>
+<p>The <strong>location</strong> privilege applies only to <a class="reference internal" href="../object-storage-connectors.html"><span class="doc std std-doc">object storage
+catalogs</span></a>. Use this
+privilege to restrict creating or altering objects in unexpected object
+storage locations outside the configured default location of the current
+catalog.</p>
+<p>Your cloud provider credentials, such as an IAM role or AWS key for S3 catalogs,
+may have broad access rights to multiple locations. If you provide these
+credentials when configuring a catalog for a narrow location, users
+connecting to that catalog may have the inadvertently granted right to make
+changes outside that narrow location.</p>
+<p>Let’s say you configure a catalog to access the S3 location
+<code class="docutils literal notranslate"><span class="pre">s3://bucket-name/folder-name/</span></code>, but you configure the catalog with an AWS key
+that has write rights throughout all of <code class="docutils literal notranslate"><span class="pre">s3://bucket-name/*</span></code>. This allows anyone
+connecting to this catalog to create, for example,
+<code class="docutils literal notranslate"><span class="pre">s3://bucket-name/different-folder</span></code>.</p>
+<p>If you set the location privilege for a role to
+<code class="docutils literal notranslate"><span class="pre">s3://bucket-name/folder-name/*</span></code>, you restrict creation or alteration of schemas
+or tables to the folder-name location only for that role.</p>
+<p>The <strong>location</strong> privilege is only verified for <code class="docutils literal notranslate"><span class="pre">CREATE</span></code> or <code class="docutils literal notranslate"><span class="pre">ALTER</span></code> operations
+of a table or schema, because these are the only operations capable of creating
+objects outside the default location of the catalog. If that operation is within
+the configured location of the catalog, the catalog privileges and schema
+privileges are also considered.</p>
+<p>The <strong>location</strong> privilege is not checked for <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>, <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operations on object storage tables, where table privileges manage
+access instead.</p>
 <p>To enable Ranger location privileges, create a
 <code class="docutils literal notranslate"><span class="pre">location-access-control.properties</span></code> file in your <code class="docutils literal notranslate"><span class="pre">etc</span></code> directory with the
 following attributes, replacing the example text with your own:</p>
