@@ -263,14 +263,18 @@
 <li class="toctree-l4"><a class="reference internal" href="#trino-type-to-bigquery-type-mapping">Trino type to BigQuery type mapping</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#system-tables">System tables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#special-columns">Special columns</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sql-support">SQL support</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sql-delete">SQL DELETE</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#collect-statistics">collect_statistics</a></li>
 </ul>
 </li>
-<li class="toctree-l4"><a class="reference internal" href="#system-tables">System tables</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#special-columns">Special columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#procedures">Procedures</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#table-functions">Table functions</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#query-varchar-table"><code class="docutils literal notranslate"><span class="pre">query(varchar)</span> <span class="pre">-&gt;</span> <span class="pre">table</span></code></a></li>
 </ul>
@@ -386,6 +390,10 @@
         </li></ul>
             </nav>
         </li>
+        <li class="md-nav__item"><a href="#system-tables" class="md-nav__link">System tables</a>
+        </li>
+        <li class="md-nav__item"><a href="#special-columns" class="md-nav__link">Special columns</a>
+        </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#sql-delete" class="md-nav__link">SQL DELETE</a>
@@ -396,9 +404,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#system-tables" class="md-nav__link">System tables</a>
-        </li>
-        <li class="md-nav__item"><a href="#special-columns" class="md-nav__link">Special columns</a>
+        <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#system-execute-query" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -836,6 +846,43 @@ this table:</p>
 <p>No other types are supported.</p>
 </section>
 </section>
+<section id="system-tables">
+<h2 id="system-tables">System tables<a class="headerlink" href="#system-tables" title="Link to this heading">#</a></h2>
+<p>For each Trino table that maps to a BigQuery view, there exists a system table
+which exposes the corresponding BigQuery view definition. For example, if you
+have a view named <code class="docutils literal notranslate"><span class="pre">example_view</span></code>, run the following query to see the SQL that
+defines the view:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">example_view$view_definition</span>
+</pre></div>
+</div>
+</section>
+<section id="special-columns">
+<span id="bigquery-special-columns"></span><h2 id="special-columns">Special columns<a class="headerlink" href="#special-columns" title="Link to this heading">#</a></h2>
+<p>In addition to the defined columns, the BigQuery connector exposes partition
+information in a number of hidden columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">$partition_date</span></code>: Equivalent to <code class="docutils literal notranslate"><span class="pre">_PARTITIONDATE</span></code> pseudo-column in BigQuery</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">$partition_time</span></code>: Equivalent to <code class="docutils literal notranslate"><span class="pre">_PARTITIONTIME</span></code> pseudo-column in BigQuery</p></li>
+</ul>
+<p>You can use these columns in your SQL statements like any other column. They can
+be selected directly or used in conditional statements.</p>
+<p><strong>Example</strong></p>
+<p>Inspect the partition date and time for each record:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="ss">"$partition_date"</span><span class="p">,</span><span class="w"> </span><span class="ss">"$partition_time"</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Retrieve all records stored in the partition <code class="docutils literal notranslate"><span class="pre">_PARTITIONDATE</span> <span class="pre">=</span> <span class="pre">'2022-04-07'</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">"$partition_date"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">'2022-04-07'</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Two special partitions <code class="docutils literal notranslate"><span class="pre">__NULL__</span></code> and <code class="docutils literal notranslate"><span class="pre">__UNPARTITIONED__</span></code> are not supported.</p>
+</div>
+</section>
 <section id="sql-support">
 <span id="bigquery-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Link to this heading">#</a></h2>
 <p>The connector provides read and write access to data and metadata in the
@@ -882,42 +929,33 @@ array of column names. For example:</p>
 </div>
 </section>
 </section>
-<section id="system-tables">
-<h3 id="system-tables">System tables<a class="headerlink" href="#system-tables" title="Link to this heading">#</a></h3>
-<p>For each Trino table that maps to a BigQuery view, there exists a system table
-which exposes the corresponding BigQuery view definition. For example, if you
-have a view named <code class="docutils literal notranslate"><span class="pre">example_view</span></code>, run the following query to see the SQL that
-defines the view:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">example_view$view_definition</span>
+<section id="procedures">
+<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
+<section id="system-execute-query">
+<h4 id="system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code><a class="headerlink" href="#system-execute-query" title="Link to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">execute</span></code> procedure allows you to execute a query in the underlying data
+source directly. The query must use supported syntax of the connected data
+source. Use the procedure to access features which are not available in Trino
+or to execute queries that return no result set and therefore can not be used
+with the <code class="docutils literal notranslate"><span class="pre">query</span></code> or <code class="docutils literal notranslate"><span class="pre">raw_query</span></code> pass-through table function. Typical use cases
+are statements that create or alter objects, and require native feature such
+as constraints, default values, automatic identifier creation, or indexes.
+Queries can also invoke statements that insert, update, or delete data, and do
+not return any data as a result.</p>
+<p>The query text is not parsed by Trino, only passed through, and therefore only
+subject to any security or access control of the underlying data source.</p>
+<p>The following example sets the current database to the <code class="docutils literal notranslate"><span class="pre">example_schema</span></code> of the
+<code class="docutils literal notranslate"><span class="pre">example</span></code> catalog. Then it calls the procedure in that schema to drop the
+default value from <code class="docutils literal notranslate"><span class="pre">your_column</span></code> on <code class="docutils literal notranslate"><span class="pre">your_table</span></code> table using the standard SQL
+syntax in the parameter value assigned for <code class="docutils literal notranslate"><span class="pre">query</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+<span class="k">CALL</span><span class="w"> </span><span class="k">system</span><span class="p">.</span><span class="k">execute</span><span class="p">(</span><span class="n">query</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'ALTER TABLE your_table ALTER COLUMN your_column DROP DEFAULT'</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>Verify that the specific database supports this syntax, and adapt as necessary
+based on the documentation for the specific connected database and database
+version.</p>
 </section>
-<section id="special-columns">
-<span id="bigquery-special-columns"></span><h3 id="special-columns">Special columns<a class="headerlink" href="#special-columns" title="Link to this heading">#</a></h3>
-<p>In addition to the defined columns, the BigQuery connector exposes partition
-information in a number of hidden columns:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">$partition_date</span></code>: Equivalent to <code class="docutils literal notranslate"><span class="pre">_PARTITIONDATE</span></code> pseudo-column in BigQuery</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">$partition_time</span></code>: Equivalent to <code class="docutils literal notranslate"><span class="pre">_PARTITIONTIME</span></code> pseudo-column in BigQuery</p></li>
-</ul>
-<p>You can use these columns in your SQL statements like any other column. They can
-be selected directly or used in conditional statements.</p>
-<p><strong>Example</strong></p>
-<p>Inspect the partition date and time for each record:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="ss">"$partition_date"</span><span class="p">,</span><span class="w"> </span><span class="ss">"$partition_time"</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span><span class="p">;</span>
-</pre></div>
-</div>
-<p>Retrieve all records stored in the partition <code class="docutils literal notranslate"><span class="pre">_PARTITIONDATE</span> <span class="pre">=</span> <span class="pre">'2022-04-07'</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="n">page_views</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="ss">"$partition_date"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">date</span><span class="w"> </span><span class="s1">'2022-04-07'</span><span class="p">;</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Two special partitions <code class="docutils literal notranslate"><span class="pre">__NULL__</span></code> and <code class="docutils literal notranslate"><span class="pre">__UNPARTITIONED__</span></code> are not supported.</p>
-</div>
 </section>
 <section id="table-functions">
 <h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Link to this heading">#</a></h3>
