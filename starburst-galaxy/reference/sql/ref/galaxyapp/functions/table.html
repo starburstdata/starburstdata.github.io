@@ -194,44 +194,65 @@ function is a <strong>polymorphic table function</strong>.</p>
 <p>Polymorphic table functions allow you to dynamically invoke custom logic from
 within the SQL query. They can be used for working with external systems as
 well as for enhancing Trino with capabilities going beyond the SQL standard.</p>
+<p>For the list of built-in table functions available in Trino, see <a class="reference internal" href="#built-in-table-functions"><span class="std std-ref">built in
+table functions</span></a>.</p>
+<p>Trino supports adding custom table functions.</p>
 
 <span id="id1"></span><h2 id="built-in-table-functions">Built-in table functions<a class="headerlink" href="#built-in-table-functions" title="Permalink to this heading">#</a></h2>
-<span class="target" id="exclude-columns-table-function"></span><dl class="py function">
-<dt class="sig sig-object py" id="exclude_columns">
-<code class="sig-name descname"><span class="pre">exclude_columns</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">input</span> <span class="pre">=&gt;</span> <span class="pre">table</span></span></em>, <em><span class="n"><span class="pre">columns</span> <span class="pre">=&gt;</span> <span class="pre">descriptor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">table</span></span></span><a class="headerlink" href="#exclude_columns" title="Permalink to this definition">#</a></dt>
-<dd><p>Excludes from <code class="docutils literal notranslate"><span class="pre">table</span></code> all columns listed in <code class="docutils literal notranslate"><span class="pre">descriptor</span></code>::</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>    <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">exclude_columns</span><span class="p">(</span>
-                            <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">orders</span><span class="p">),</span>
-                            <span class="n">columns</span> <span class="o">=&gt;</span> <span class="k">DESCRIPTOR</span><span class="p">(</span><span class="n">clerk</span><span class="p">,</span> <span class="k">comment</span><span class="p">)))</span>
-</pre></div>
-</div>
-<p>The argument <code class="docutils literal notranslate"><span class="pre">input</span></code> is a table or a query.
+
+<span id="id2"></span><h3 id="exclude-columns-table-function"><code class="docutils literal notranslate"><span class="pre">exclude_columns</span></code> table function<a class="headerlink" href="#exclude-columns-table-function" title="Permalink to this heading">#</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">exclude_columns</span></code> table function to return a new table based on an input
+table <code class="docutils literal notranslate"><span class="pre">table</span></code>, with the exclusion of all columns specified in <code class="docutils literal notranslate"><span class="pre">descriptor</span></code>:</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<code class="sig-name descname"><span class="pre">exclude_columns</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">input</span> <span class="pre">=&gt;</span> <span class="pre">table</span></span></em>, <em><span class="n"><span class="pre">columns</span> <span class="pre">=&gt;</span> <span class="pre">descriptor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">table</span></span></span></dt>
+<dd><p>The argument <code class="docutils literal notranslate"><span class="pre">input</span></code> is a table or a query.
 The argument <code class="docutils literal notranslate"><span class="pre">columns</span></code> is a descriptor without types.</p>
 </dd></dl>
-<span class="target" id="sequence-table-function"></span><dl class="py function">
-<dt class="sig sig-object py">
-<code class="sig-name descname"><span class="pre">sequence</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">start</span> <span class="pre">=&gt;</span> <span class="pre">bigint</span></span></em>, <em><span class="n"><span class="pre">stop</span> <span class="pre">=&gt;</span> <span class="pre">bigint</span></span></em>, <em><span class="n"><span class="pre">step</span> <span class="pre">=&gt;</span> <span class="pre">bigint)</span> <span class="pre">-&gt;</span> <span class="pre">table(sequential_number</span> <span class="pre">bigint</span></span></em><span class="sig-paren">)</span></dt>
-<dd><p>Returns a single column <code class="docutils literal notranslate"><span class="pre">sequential_number</span></code> containing a sequence of
-bigint::</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span>    <span class="k">SELECT</span> <span class="o">*</span>
-    <span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">sequence</span><span class="p">(</span>
-                    <span class="k">start</span> <span class="o">=&gt;</span> <span class="mi">1000000</span><span class="p">,</span>
-                    <span class="n">stop</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="mi">2000000</span><span class="p">,</span>
-                    <span class="n">step</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="mi">3</span><span class="p">))</span>
+<p>Example query using the orders table from the TPC-H dataset:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">exclude_columns</span><span class="p">(</span>
+                        <span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">orders</span><span class="p">),</span>
+                        <span class="n">columns</span> <span class="o">=&gt;</span> <span class="k">DESCRIPTOR</span><span class="p">(</span><span class="n">clerk</span><span class="p">,</span> <span class="k">comment</span><span class="p">)));</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">start</span></code> is the first element in the sequence. The default value is <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
+<p>The table function is useful for queries where you want to return nearly all
+columns from tables with many columns. You can avoid enumerating all columns,
+and only need to specify the columns to exclude.</p>
+
+
+<span id="id3"></span><h3 id="sequence-table-function"><code class="docutils literal notranslate"><span class="pre">sequence</span></code> table function<a class="headerlink" href="#sequence-table-function" title="Permalink to this heading">#</a></h3>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">sequence</span></code> table function to return a table with a single column
+<code class="docutils literal notranslate"><span class="pre">sequential_number</span></code> containing a sequence of bigint:</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<code class="sig-name descname"><span class="pre">sequence</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">start</span> <span class="pre">=&gt;</span> <span class="pre">bigint</span></span></em>, <em><span class="n"><span class="pre">stop</span> <span class="pre">=&gt;</span> <span class="pre">bigint</span></span></em>, <em><span class="n"><span class="pre">step</span> <span class="pre">=&gt;</span> <span class="pre">bigint)</span> <span class="pre">-&gt;</span> <span class="pre">table(sequential_number</span> <span class="pre">bigint</span></span></em><span class="sig-paren">)</span></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">start</span></code> is the first element in the sequence. The default value is <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">stop</span></code> is the end of the range, inclusive. The last element in the
 sequence is equal to <code class="docutils literal notranslate"><span class="pre">stop</span></code>, or it is the last value within range,
 reachable by steps.</p>
 <p><code class="docutils literal notranslate"><span class="pre">step</span></code> is the difference between subsequent values. The default value is
 <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
 </dd></dl>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">The result of the <code class="docutils literal notranslate"><span class="pre">sequence</span></code> table function might not be ordered.</p>
+<p>Example query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">sequence</span><span class="p">(</span>
+                <span class="k">start</span> <span class="o">=&gt;</span> <span class="mi">1000000</span><span class="p">,</span>
+                <span class="n">stop</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="mi">2000000</span><span class="p">,</span>
+                <span class="n">step</span> <span class="o">=&gt;</span> <span class="o">-</span><span class="mi">3</span><span class="p">));</span>
+</pre></div>
 </div>
+<p>The result of the <code class="docutils literal notranslate"><span class="pre">sequence</span></code> table function might not be ordered. If required,
+enforce ordering in the enclosing query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">sequence</span><span class="p">(</span>
+                <span class="k">start</span> <span class="o">=&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">stop</span> <span class="o">=&gt;</span> <span class="mi">100</span><span class="p">,</span>
+                <span class="n">step</span> <span class="o">=&gt;</span> <span class="mi">5</span><span class="p">))</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">sequential_number</span><span class="p">;</span>
+</pre></div>
+</div>
+
 
 
 <h2 id="table-function-invocation">Table function invocation<a class="headerlink" href="#table-function-invocation" title="Permalink to this heading">#</a></h2>
@@ -284,17 +305,15 @@ compatible with the declared argument type:</p>
 <span class="k">data</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">region</span><span class="p">,</span> <span class="n">nation</span> <span class="k">WHERE</span> <span class="n">region</span><span class="p">.</span><span class="n">regionkey</span> <span class="o">=</span> <span class="n">nation</span><span class="p">.</span><span class="n">regionkey</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>If the table argument is declared as set semantics,
-you can specify partitioning and ordering. Each partition is processed
-independently by the table function. If you do not specify partitioning, the
-argument is processed as a single partition. You can also specify
-<code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>. With <code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> you
-declare that you are not interested in the function result if the argument is
-empty. This information is used by the Trino engine to optimize the query. The
-<code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> option indicates that the function should be executed even
-if the table argument is empty. By specifying <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or
-<code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>, you override the property set for the argument by the
-function author.</p>
+<p>If the table argument is declared as <code class="docutils literal notranslate"><span class="pre">set</span> <span class="pre">semantics</span></code> you can specify
+partitioning and ordering. Each partition is processed independently by the
+table function. If you do not specify partitioning, the argument is processed as
+a single partition. You can also specify <code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>. With <code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> you declare that you are not interested in the
+function result if the argument is empty. This information is used by the Trino
+engine to optimize the query. The <code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> option indicates that the
+function should be executed even if the table argument is empty. By specifying
+<code class="docutils literal notranslate"><span class="pre">KEEP</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code> or <code class="docutils literal notranslate"><span class="pre">PRUNE</span> <span class="pre">WHEN</span> <span class="pre">EMPTY</span></code>, you override the property set for the
+argument by the function author.</p>
 <p>The following example shows how the table argument properties should be ordered:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">input</span> <span class="o">=&gt;</span> <span class="k">TABLE</span><span class="p">(</span><span class="n">orders</span><span class="p">)</span>
                     <span class="n">PARTITION</span> <span class="k">BY</span> <span class="n">orderstatus</span>
