@@ -692,6 +692,13 @@
     <li class="md-nav__item">
     
     
+      <a href="sql-entity-kinds-and-privileges.html" class="md-nav__link">SQL entity kinds and privileges</a>
+      
+    
+    </li>
+    <li class="md-nav__item">
+    
+    
       <a href="start-transaction.html" class="md-nav__link">START TRANSACTION</a>
       
     
@@ -787,38 +794,71 @@
 <section id="synopsis">
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">#</a></h2>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>DENY ( privilege [, ...] | ( ALL PRIVILEGES ) )
-ON ( table_name | TABLE table_name | SCHEMA schema_name)
-TO ( user | USER user | ROLE role )
+ON ( table_name |
+     TABLE table_name |
+     SCHEMA schema_name |
+     MY ACCOUNT |
+     CLUSTER cluster_name |
+     CATALOG catalog_name |
+     COLUMN column_name |
+     LOCATION table_location |
+     FUNCTION function_name |
+     DATA_PRODUCT data_product_name
+)
+TO ROLE role
 </pre></div>
 </div>
 </section>
 <section id="description">
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
 <p>Denies the specified privileges to the specified grantee.</p>
+<p>Specifying <code class="docutils literal notranslate"><span class="pre">ALL</span> <span class="pre">PRIVILEGES</span></code> denies all entity kind privileges on the entity
+to the supplied role.
+If the entity is a table, <a class="reference internal" href="select.html"><span class="doc">SELECT</span></a>, <a class="reference internal" href="update.html"><span class="doc">UPDATE</span></a>, <a class="reference internal" href="delete.html"><span class="doc">DELETE</span></a> and
+<a class="reference internal" href="insert.html"><span class="doc">INSERT</span></a> privileges are denied.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">schema_name</span></code> may be a “qualified name”, where the catalog is specified
+explicitly, e.g., <code class="docutils literal notranslate"><span class="pre">my_catalog.my_schema</span></code>. If the catalog is not supplied
+the current session catalog is used.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">table_name</span></code>, <code class="docutils literal notranslate"><span class="pre">function_name</span></code> or <code class="docutils literal notranslate"><span class="pre">column_name</span></code> may be “qualified names” in
+which the schema and sometimes the catalog are explicit. For example, the table
+<code class="docutils literal notranslate"><span class="pre">my_catalog.my_schema.my_table</span></code>, in which all components are explicit,
+and <code class="docutils literal notranslate"><span class="pre">my_schema.my_table</span></code>, in which the schema is explicit and the catalog
+defaults to the session catalog.</p>
 <p>Deny on a table rejects the specified privilege on all current and future
 columns of the table.</p>
 <p>Deny on a schema rejects the specified privilege on all current and future
 columns of all current and future tables of the schema.</p>
+<p>To deny an account privilege, the entity kind and account must be <code class="docutils literal notranslate"><span class="pre">MY</span> <span class="pre">ACCOUNT</span></code>.</p>
 </section>
 <section id="examples">
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permalink to this heading">#</a></h2>
 <p>Deny <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privileges on the table <code class="docutils literal notranslate"><span class="pre">orders</span></code>
-to user <code class="docutils literal notranslate"><span class="pre">alice</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="k">INSERT</span><span class="p">,</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="n">orders</span> <span class="k">TO</span> <span class="n">alice</span><span class="p">;</span>
+to role <code class="docutils literal notranslate"><span class="pre">orders_admin</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="k">INSERT</span><span class="p">,</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="n">orders</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">orders_admin</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>Deny <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> privilege on the schema <code class="docutils literal notranslate"><span class="pre">finance</span></code> to user <code class="docutils literal notranslate"><span class="pre">bob</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="k">DELETE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="n">finance</span> <span class="k">TO</span> <span class="n">bob</span><span class="p">;</span>
+<p>Deny <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> privilege on the schema <code class="docutils literal notranslate"><span class="pre">finance</span></code> to role <code class="docutils literal notranslate"><span class="pre">finance_admin</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="k">DELETE</span> <span class="k">ON</span> <span class="k">SCHEMA</span> <span class="n">finance</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">finance_admin</span><span class="p">;</span>
 </pre></div>
 </div>
 <p>Deny <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> privilege on the table <code class="docutils literal notranslate"><span class="pre">orders</span></code> to everyone:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="k">SELECT</span> <span class="k">ON</span> <span class="n">orders</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="k">PUBLIC</span><span class="p">;</span>
 </pre></div>
 </div>
+<p>DENY cluster privilege <code class="docutils literal notranslate"><span class="pre">USE_CLUSTER</span></code> on cluster <code class="docutils literal notranslate"><span class="pre">demo_cluster</span></code> to role
+<code class="docutils literal notranslate"><span class="pre">data_user</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="n">USE_CLUSTER</span> <span class="k">ON</span> <span class="k">CLUSTER</span> <span class="n">demo_cluster</span> <span class="k">TO</span> <span class="k">ROLE</span> <span class="n">data_user</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Deny account privilege <code class="docutils literal notranslate"><span class="pre">CREATE_ROLE</span></code> to role <code class="docutils literal notranslate"><span class="pre">roles_admin</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">DENY</span> <span class="n">CREATE_ROLE</span> <span class="k">ON</span> <span class="n">MY</span> <span class="n">ACCOUNT</span> <span class="k">to</span> <span class="k">role</span> <span class="o">`</span><span class="n">roles_admin</span><span class="o">`</span><span class="p">;</span>
+</pre></div>
+</div>
 </section>
 <section id="see-also">
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permalink to this heading">#</a></h2>
-<p><a class="reference internal" href="grant.html"><span class="doc">GRANT privilege</span></a>, <a class="reference internal" href="revoke.html"><span class="doc">REVOKE privilege</span></a>, <a class="reference internal" href="show-grants.html"><span class="doc">SHOW GRANTS</span></a></p>
+<p><a class="reference internal" href="sql-entity-kinds-and-privileges.html"><span class="doc">SQL entity kinds and privileges</span></a>, <a class="reference internal" href="grant.html"><span class="doc">GRANT privilege</span></a>, <a class="reference internal" href="revoke.html"><span class="doc">REVOKE privilege</span></a>,
+<a class="reference internal" href="show-grants.html"><span class="doc">SHOW GRANTS</span></a></p>
 </section>
 </section>
 
