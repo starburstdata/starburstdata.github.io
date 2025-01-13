@@ -234,8 +234,9 @@
 <li class="toctree-l2"><a class="reference internal" href="cluster-history.html">Insights cluster history</a></li>
 <li class="toctree-l2"><a class="reference internal" href="usage-metrics-overview.html">Insights usage metrics</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Schema discovery</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#configure-schema-discovery">Configure schema discovery</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#iceberg-and-delta-lake-catalog-configuration">Iceberg and Delta Lake catalog configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#built-in-access-control-configuration">Built-in access control configuration</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#list-of-discoveries">List of discoveries</a></li>
@@ -322,9 +323,11 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#insights-schema-discovery--page-root" class="md-nav__link">Schema discovery</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#configure-schema-discovery" class="md-nav__link">Configure schema discovery</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#iceberg-and-delta-lake-catalog-configuration" class="md-nav__link">Iceberg and Delta Lake catalog configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#built-in-access-control-configuration" class="md-nav__link">Built-in access control configuration</a>
         </li></ul>
             </nav>
         </li>
@@ -369,30 +372,19 @@
 to a known schema location. For example, when a logging process creates a new
 log file every hour, rolling over from the previous hour’s log file, schema
 discovery locates the newly added files so that SEP can query them.</p>
-<section id="configure-schema-discovery">
-<h2 id="configure-schema-discovery">Configure schema discovery<a class="headerlink" href="#configure-schema-discovery" title="Link to this heading">#</a></h2>
-<p>To configure schema discovery, set the following configuration properties in the
-coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">schema-discovery.starburst-jdbc-url</span><span class="o">=</span><span class="s">jdbc:trino://coordinator.example.com</span>
-<span class="na">schema-discovery.starburst-user</span><span class="o">=</span><span class="s">alice</span>
-<span class="na">schema-discovery.starburst-password</span><span class="o">=</span><span class="s">my123password</span>
-</pre></div>
-</div>
-<p>Both the current user and the user assigned to the
-<code class="docutils literal notranslate"><span class="pre">schema-discovery.starburst-user</span></code> property must have the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role to
-execute a schema discovery run. The current user is required to have it assigned
-and enabled in the current session, while the user added to
-<code class="docutils literal notranslate"><span class="pre">schema-discovery.starburst-user</span></code> must only have it assigned. The user assigned
-to <code class="docutils literal notranslate"><span class="pre">schema-discovery.starburst-user</span></code> must also be listed in the
-<code class="docutils literal notranslate"><span class="pre">starburst.access-control.authorized-users</span></code> property on the coordinator.</p>
-<p>If you do not provide a value for <code class="docutils literal notranslate"><span class="pre">schema-discovery.starburst-user</span></code>, SEP
-uses <code class="docutils literal notranslate"><span class="pre">schema_discovery</span></code> by default.</p>
+<section id="configuration">
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<p>Schema discovery requires additional configuration depending on your cluster
+setup. If using Iceberg or Delta Lake catalogs, view the <a class="reference internal" href="#discovery-iceberg-delta"><span class="std std-ref">Iceberg and Delta Lake
+catalog configuration</span></a> section. If you are using
+built-in access control, view the <a class="reference internal" href="#discovery-biac"><span class="std std-ref">Built-in access control
+configuration</span></a> section.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Registering a table in different catalogs can lead to inconsistencies in the table.</p>
 </div>
 <section id="iceberg-and-delta-lake-catalog-configuration">
-<h3 id="iceberg-and-delta-lake-catalog-configuration">Iceberg and Delta Lake catalog configuration<a class="headerlink" href="#iceberg-and-delta-lake-catalog-configuration" title="Link to this heading">#</a></h3>
+<span id="discovery-iceberg-delta"></span><h3 id="iceberg-and-delta-lake-catalog-configuration">Iceberg and Delta Lake catalog configuration<a class="headerlink" href="#iceberg-and-delta-lake-catalog-configuration" title="Link to this heading">#</a></h3>
 <p>The following tables list additional catalog configuration properties for the
 Iceberg and Delta Lake connectors. The
 <code class="docutils literal notranslate"><span class="pre">iceberg.register-table-procedure.enabled</span></code> and
@@ -449,30 +441,23 @@ Default is <code class="docutils literal notranslate"><span class="pre">8</span>
 </tr>
 </tbody>
 </table>
-<!-- ### Built-in access control configuration (commented out for use in 462-e)
-
-If you are using {{sep}}'s [built-in access control](../security/biac-overview),
-there are some additional configuration requirements.
-
-The user executing the schema discovery run must have:
-
-  - A [user interface grant](biac-entity-ui) for the Schema Discovery UI feature.
-  - A `CREATE` grant on the target catalog.
-  - `SELECT` grants on the `schema_discovery.discovery` and
-    `schema_discovery.shallow_discovery` tables. Alternatively, you can grant
-    the entire catalog or just the `schema_discovery` schema.
-  - A [location grant](biac-entity-location) for the source file system.
-
-The service account, called `schema_discovery` by default, must have:
-
-  - Role grants on all roles that the user assumes while using schema discovery.
-  - An [IMPERSONATE](biac-entity-users) grant on the user by the
-    aforementioned roles.
-
-  For example, in order for the user `alice` to run schema discovery, the
-  `schema_discovery` service account must have grants for all roles assumed by
-  `alice` during the schema discovery run. Additionally, the aforementioned
-  roles must have an `IMPERSONATE` grant on `alice`. -->
+</section>
+<section id="built-in-access-control-configuration">
+<span id="discovery-biac"></span><h3 id="built-in-access-control-configuration">Built-in access control configuration<a class="headerlink" href="#built-in-access-control-configuration" title="Link to this heading">#</a></h3>
+<p>If you are using SEP’s <a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">built-in access control</span></a>,
+there are some additional configuration requirements.</p>
+<p>The user executing the schema discovery run must have:</p>
+<ul class="simple">
+<li><p>A <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ui"><span class="std std-ref">user interface grant</span></a> for the Schema Discovery UI feature.</p></li>
+<li><p>A <code class="docutils literal notranslate"><span class="pre">CREATE</span></code> grant on the target catalog.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SELECT</span></code> grants on the <code class="docutils literal notranslate"><span class="pre">schema_discovery.discovery</span></code> and
+<code class="docutils literal notranslate"><span class="pre">schema_discovery.shallow_discovery</span></code> tables. Alternatively, you can grant
+the entire catalog or just the <code class="docutils literal notranslate"><span class="pre">schema_discovery</span></code> schema.</p></li>
+<li><p>A <a class="reference internal" href="../security/biac-privileges.html#biac-entity-location"><span class="std std-ref">location grant</span></a> for the source file system.</p></li>
+<li><p>For Iceberg and Delta Lake catalogs there must be an <code class="docutils literal notranslate"><span class="pre">EXECUTE</span></code> privilege on
+the <code class="docutils literal notranslate"><span class="pre">&lt;catalog&gt;.system.register_table</span></code> <a class="reference internal" href="../connector/iceberg.html#iceberg-register-table"><span class="std std-ref">procedure</span></a>.
+The <code class="docutils literal notranslate"><span class="pre">CREATE</span></code> privilege is still needed in order to create the target schema.</p></li>
+</ul>
 </section>
 </section>
 <section id="list-of-discoveries">
