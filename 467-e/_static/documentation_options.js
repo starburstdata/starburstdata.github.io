@@ -1,5 +1,5 @@
 DOCUMENTATION_OPTIONS = {
-  URL_ROOT: document.getElementById("documentation_options").getAttribute('data-url_root'),
+  URL_ROOT: document.documentElement.dataset.content_root,
   LANGUAGE: 'None',
   COLLAPSE_INDEX: false,
   BUILDER: 'html',
