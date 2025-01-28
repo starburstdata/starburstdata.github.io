@@ -723,13 +723,14 @@ values. Typical usage does not require you to configure them.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.metadata.cache-ttl</span></code></p></td>
-<td><p>Frequency of checks for metadata updates equivalent to transactions to
-update the metadata cache specified in <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a>.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">5m</span></code></p></td>
+<td><p>Caching duration for Delta Lake tables metadata.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30m</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.metadata.cache-size</span></code></p></td>
-<td><p>The maximum number of Delta table metadata entries to cache.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">1000</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.metadata.cache-max-retained-size</span></code></p></td>
+<td><p>Maximum retained size of Delta table metadata stored in cache. Must be
+specified in <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">data size</span></a> values such as <code class="docutils literal notranslate"><span class="pre">64MB</span></code>. Default is
+calculated to 5% of the maximum memory allocated to the JVM.</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.metadata.live-files.cache-size</span></code></p></td>
 <td><p>Amount of memory allocated for caching information about files. Must be
@@ -866,6 +867,11 @@ property is <code class="docutils literal notranslate"><span class="pre">vacuum_
 <td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> for enabling deletion vectors by default when creating new
 tables.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.metadata.parallelism</span></code></p></td>
+<td><p>Number of threads used for retrieving metadata. Currently, only table
+loading is parallelized.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">8</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -1479,11 +1485,11 @@ by using the following query:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"test_table$history"</span>
 </pre></div>
 </div>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> version |               timestamp               | user_id | user_name |  operation   |         operation_parameters          |                 cluster_id      | read_version |  isolation_level  | is_blind_append
----------+---------------------------------------+---------+-----------+--------------+---------------------------------------+---------------------------------+--------------+-------------------+----------------
-       2 | 2023-01-19 07:40:54.684 Europe/Vienna | trino   | trino     | WRITE        | {queryId=20230119_064054_00008_4vq5t} | trino-406-trino-coordinator     |            2 | WriteSerializable | true
-       1 | 2023-01-19 07:40:41.373 Europe/Vienna | trino   | trino     | ADD COLUMNS  | {queryId=20230119_064041_00007_4vq5t} | trino-406-trino-coordinator     |            0 | WriteSerializable | true
-       0 | 2023-01-19 07:40:10.497 Europe/Vienna | trino   | trino     | CREATE TABLE | {queryId=20230119_064010_00005_4vq5t} | trino-406-trino-coordinator     |            0 | WriteSerializable | true
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> version |               timestamp               | user_id | user_name |  operation   |         operation_parameters          |                 cluster_id      | read_version |  isolation_level  | is_blind_append | operation_metrics
+---------+---------------------------------------+---------+-----------+--------------+---------------------------------------+---------------------------------+--------------+-------------------+-----------------+-------------------
+       2 | 2023-01-19 07:40:54.684 Europe/Vienna | trino   | trino     | WRITE        | {queryId=20230119_064054_00008_4vq5t} | trino-406-trino-coordinator     |            2 | WriteSerializable | true            | {}
+       1 | 2023-01-19 07:40:41.373 Europe/Vienna | trino   | trino     | ADD COLUMNS  | {queryId=20230119_064041_00007_4vq5t} | trino-406-trino-coordinator     |            0 | WriteSerializable | true            | {}
+       0 | 2023-01-19 07:40:10.497 Europe/Vienna | trino   | trino     | CREATE TABLE | {queryId=20230119_064010_00005_4vq5t} | trino-406-trino-coordinator     |            0 | WriteSerializable | true            | {}
 </pre></div>
 </div>
 <p>The output of the query has the following history columns:</p>
@@ -1540,6 +1546,10 @@ by using the following query:</p>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">is_blind_append</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
 <td><p>Whether or not the operation appended data</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">operation_metrics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">map(VARCHAR,</span> <span class="pre">VARCHAR)</span></code></p></td>
+<td><p>Metrics of the operation</p></td>
 </tr>
 </tbody>
 </table>
