@@ -2614,39 +2614,52 @@ the <a href="../../../reference/index.html">Reference</a> navigation menu.</p>
       </h3>
     
 
-<p>You can write SQL statements that evaluate to a boolean that can be run on a
-schedule to validate the data. There are two methods for writing a SQL-based
-data quality check: a Common Table Expression (CTE) that generates rows and is
-followed by a <code class="language-plaintext highlighter-rouge">COUNT</code> <a href="../../../reference/sql/ref/routines/case.html">CASE</a>
-statement, or a subquery embedded in a <code class="language-plaintext highlighter-rouge">CASE</code> statement.</p>
+<p>You can write SQL statements that return a boolean result to be run on a
+schedule to validate data. There are two methods for writing SQL-based
+data quality checks:</p>
 
-<p>An example using the CTE method that returns one or more rows if the quality
-check fails. If <code class="language-plaintext highlighter-rouge">COUNT(*)</code> of CTE evaluates to <code class="language-plaintext highlighter-rouge">0</code>, return <code class="language-plaintext highlighter-rouge">TRUE</code>, otherwise
-return <code class="language-plaintext highlighter-rouge">FALSE</code>:</p>
+<ul>
+  <li>
+    <p>Select an aggregate function with a comparison operator. This returns the
+boolean result of the comparison. For example:</p>
 
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">cte</span> <span class="k">AS</span><span class="p">(</span>
-    <span class="k">SELECT</span> <span class="n">name_of_month</span> <span class="k">FROM</span> <span class="n">my_catalog</span><span class="p">.</span><span class="n">sql_quality_samples</span><span class="p">.</span><span class="n">value_check</span>
-    <span class="k">WHERE</span> <span class="n">name_of_month</span> <span class="k">NOT</span> <span class="k">IN</span> <span class="p">(</span>
-        <span class="k">SELECT</span> <span class="k">month</span> <span class="k">FROM</span> <span class="n">my_catalog</span><span class="p">.</span><span class="n">reference_values</span><span class="p">.</span><span class="n">dates</span>
-    <span class="p">)</span>
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
+  <span class="k">avg</span><span class="p">(</span><span class="n">totalprice</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5000</span>
+<span class="k">FROM</span>
+  <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">orders</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Use a <a href="https://learnsql.com/blog/what-is-common-table-expression/">Common Table
+Expression</a> (CTE)
+to build a temporary result table, followed by an
+<a href="../../../reference/sql/ref/sql/select.html#exists"><code class="language-plaintext highlighter-rouge">EXISTS</code></a> predicate
+statement to test whether there are any values in the result table. This
+returns a boolean result.</p>
+
+    <p>The following example generates a CTE that includes any row in the <code class="language-plaintext highlighter-rouge">lineitem</code>
+table whose <code class="language-plaintext highlighter-rouge">orderkey</code> column is NULL. The statement goes on to test whether
+there are any entries in the result table.</p>
+
+    <p>The example shows two ways to minimize processing time for this SQL test:</p>
+
+    <ol>
+      <li>When building the CTE, select only the column of interest instead of a
+whole row.</li>
+      <li>The EXISTS subquery stops when a single record is found instead of waiting
+to count them all.</li>
+    </ol>
+
+    <div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">WITH</span> <span class="n">cte</span><span class="o">-</span><span class="k">result</span><span class="o">-</span><span class="k">table</span> <span class="k">AS</span> <span class="p">(</span>
+
+  <span class="k">SELECT</span> <span class="n">orderkey</span> <span class="k">from</span> <span class="n">tpch</span><span class="p">.</span><span class="n">tiny</span><span class="p">.</span><span class="n">lineitem</span>
+    <span class="k">where</span> <span class="n">orderkey</span> <span class="o">=</span> <span class="k">null</span>
 <span class="p">)</span>
-<span class="k">SELECT</span>
-    <span class="k">CASE</span>
-        <span class="k">WHEN</span> <span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">THEN</span> <span class="k">TRUE</span>
-        <span class="k">ELSE</span> <span class="k">FALSE</span>
-    <span class="k">END</span>
-<span class="k">FROM</span> <span class="n">cte</span><span class="p">;</span>
-</code></pre></div></div>
+<span class="k">SELECT</span> <span class="k">EXISTS</span> <span class="p">(</span><span class="k">SELECT</span> <span class="mi">1</span> <span class="k">FROM</span> <span class="n">cte</span><span class="o">-</span><span class="k">result</span><span class="o">-</span><span class="k">table</span><span class="p">)</span>
 
-<p>An example using the subquery method:</p>
-
-<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span>
-   <span class="k">CASE</span>
-       <span class="k">WHEN</span> <span class="k">avg</span><span class="p">(</span><span class="n">totalprice</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5000</span> <span class="k">THEN</span> <span class="k">TRUE</span>
-       <span class="k">ELSE</span> <span class="k">FALSE</span>
-   <span class="k">END</span>
-<span class="k">FROM</span> <span class="nv">"tpch"</span><span class="p">.</span><span class="nv">"tiny"</span><span class="p">.</span><span class="nv">"orders"</span>
-</code></pre></div></div>
+</code></pre></div>    </div>
+  </li>
+</ul>
 
 <p>You can author checks for a single column attribute, multiple attribute checks
 across multiple columns, or attribute checks at the row level.</p>
