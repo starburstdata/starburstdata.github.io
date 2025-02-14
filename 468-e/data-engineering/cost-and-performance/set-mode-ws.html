@@ -264,7 +264,13 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#index-and-cache-usage">Index and cache usage</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#index-and-cache-resiliency">Index and cache resiliency <a name="resiliency"></a></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fast-warmup">Fast warmup</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#enable-the-feature">Enable the feature</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#set-up-a-backup-location">Set up a backup location</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#edit-aws-privileges">Edit AWS privileges</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#lifecycle-policies">Lifecycle Policies</a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#automated-clean-up">Automated clean up</a></li>
 </ul>
 </li>
@@ -371,7 +377,17 @@
         </li>
         <li class="md-nav__item"><a href="#index-and-cache-usage" class="md-nav__link">Index and cache usage</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#index-and-cache-resiliency" class="md-nav__link">Index and cache resiliency <a name="resiliency"></a></a>
+        <li class="md-nav__item"><a href="#fast-warmup" class="md-nav__link">Fast warmup</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#enable-the-feature" class="md-nav__link">Enable the feature</a>
+        </li>
+        <li class="md-nav__item"><a href="#set-up-a-backup-location" class="md-nav__link">Set up a backup location</a>
+        </li>
+        <li class="md-nav__item"><a href="#edit-aws-privileges" class="md-nav__link">Edit AWS privileges</a>
+        </li>
+        <li class="md-nav__item"><a href="#lifecycle-policies" class="md-nav__link">Lifecycle Policies</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#automated-clean-up" class="md-nav__link">Automated clean up</a>
         </li></ul>
@@ -604,25 +620,19 @@ configure text search acceleration for a specific column with the REST API.</p>
 details and other summary statistics on the <strong>Index and cache usage</strong> tab in the
 Starburst Enterprise web UI.</p>
 <p>For more information, see the <a class="reference internal" href="../../insights/query-details.html#insights-query-details-warp-speed"><span class="std std-ref">reference documentation</span></a>.</p>
-<section id="index-and-cache-resiliency">
-<h3 id="index-and-cache-resiliency">Index and cache resiliency <a name="resiliency"></a><a class="headerlink" href="#index-and-cache-resiliency" title="Link to this heading">#</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Index and cache resiliency is a <a class="reference internal" href="../../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> feature. Contact
-<a class="external reference" href="../../support.html">Starburst support</a> with questions or feedback.</p>
-</div>
-<p>Starburst Warp Speed optionally provides index and cache resiliency. When a new
-index is created or data is cached, it is stored on the SSD NVMe (nonvolatile
-memory express) drives attached to each worker by default, and in addition on a
-dedicated, shared bucket in your object storage. When you scale the cluster,
-the indexes and data cache remain available in the shared storage.</p>
-<p>The resiliency feature enables fast warmup when scaling up by adding worker
-nodes to a cluster. This also eliminates the need for keeping instances idling
-when a cluster is not in use. Instead, when a cluster needs to warm an index or
-data cache, it first accesses the designated bucket on the object storage to
-check if the indexes or cache are ready and loads them accordingly. If the
-indexes or cache are not available in the shared object storage or cannot be
-loaded for any reason, the data is warmed as usual.</p>
+<section id="fast-warmup">
+<span id="id1"></span><h3 id="fast-warmup">Fast warmup<a class="headerlink" href="#fast-warmup" title="Link to this heading">#</a></h3>
+<p>Starburst Warp Speed includes a “fast warmup” feature, formerly known as index and cache
+resiliency. Fast warmup is optional but highly recommended. When a new index is
+created or data is cached, it is stored on the SSD NVMe (nonvolatile memory
+express) drives attached to each worker by default, and in addition on a
+dedicated, shared bucket in your object storage. When you scale the cluster, the
+indexes and data cache remain available in the shared storage.</p>
+<p>The fast warmup feature eliminates the need for keeping instances idling when a
+cluster is not in use, by selectively warming the designated bucket on the
+object storage to check if the indexes or cache are ready and loads them
+accordingly. If the indexes or cache are not available in the shared object
+storage or cannot be loaded for any reason, the data is warmed as usual.</p>
 <p>There are three storage tiers accessed for queries:</p>
 <ul class="simple">
 <li><p><strong>Hot data and index:</strong> Uses SSD NVMe attached to the workers in a cluster to
@@ -638,10 +648,33 @@ warmup of indexes and caches.</p></li>
 <li><p><strong>Cold data:</strong> Direct access of your object storage.</p></li>
 </ul>
 <p>With this tiered approach, you can continue using your existing scaling and
-auto-scaling policies.</p>
-<p>To use Starburst Warp Speed index and cache resiliency, you must include read/write
-permissions to a backup location in object storage. The following shows a
-privilege example for read/write access to S3:</p>
+auto scaling policies.</p>
+<p>As a best practice, allocate at least the average available SSD storage of your
+cluster.</p>
+<section id="enable-the-feature">
+<h4 id="enable-the-feature">Enable the feature<a class="headerlink" href="#enable-the-feature" title="Link to this heading">#</a></h4>
+<p>To enable fast warmup, use the following property:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">warp-speed.enable.import-export=true</span>
+</pre></div>
+</div>
+<p>For a complete list of properties, see <a class="reference internal" href="#catalog-configuration-properties"><span class="std std-ref">Catalog configuration properties</span></a>.</p>
+</section>
+<section id="set-up-a-backup-location">
+<h4 id="set-up-a-backup-location">Set up a backup location<a class="headerlink" href="#set-up-a-backup-location" title="Link to this heading">#</a></h4>
+<p>To set a backup location in your object storage for index or data caches,
+use the following property:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">warp-speed.store.path=&lt;backup-location-bucket&gt;</span>
+</pre></div>
+</div>
+<p>In most use cases, this location can reside in the catalog’s bucket. For more
+complex, cross-region deployments this bucket should be located in the same
+region as the compute account.</p>
+</section>
+<section id="edit-aws-privileges">
+<h4 id="edit-aws-privileges">Edit AWS privileges<a class="headerlink" href="#edit-aws-privileges" title="Link to this heading">#</a></h4>
+<p>To use fast warmup, you must include read/write permissions to a backup location
+in object storage. The following shows a privilege example for read/write access
+to S3:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"Version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2012-10-17"</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">"Statement"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -677,16 +710,19 @@ privilege example for read/write access to S3:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
+</section>
+<section id="lifecycle-policies">
+<h4 id="lifecycle-policies">Lifecycle Policies<a class="headerlink" href="#lifecycle-policies" title="Link to this heading">#</a></h4>
 <p>Storing the indexes and data caches can fill up your object storage. Setting a
-lifecycle policy to control the associated cost is highly recommended. Refer to
-the following lifecycle documentation for your cloud provider:</p>
+lifecycle policy to control the associated cost is highly recommended when using
+fast warmup. Refer to the following lifecycle documentation for your cloud
+provider:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/how-to-set-lifecycle-configuration-intro.html">AWS S3</a></p></li>
-<li><p><a class="reference external" href="https://learn.microsoft.com/en-us/azure/storage/blobs/lifecycle-management-policy-configure?tabs=azure-portal">Azure Storage</a></p></li>
+<li><p><a class="reference external" href="https://learn.microsoft.com/azure/storage/blobs/lifecycle-management-policy-configure?tabs=azure-portal">Azure Storage</a></p></li>
 <li><p><a class="reference external" href="https://cloud.google.com/storage/docs/lifecycle">Google Cloud Storage</a></p></li>
 </ul>
-<p>As a best practice, allocate at least the average available SSD storage of your
-cluster.</p>
+</section>
 </section>
 <section id="automated-clean-up">
 <h3 id="automated-clean-up">Automated clean up<a class="headerlink" href="#automated-clean-up" title="Link to this heading">#</a></h3>
@@ -975,11 +1011,11 @@ configuration of a catalog and update it:</p>
 catalog names. However, existing scripts and statements that include the old
 catalog name <code class="docutils literal notranslate"><span class="pre">example</span></code> are not accelerated.</p>
 <section id="catalog-configuration-properties">
-<h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Link to this heading">#</a></h3>
+<span id="id2"></span><h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Link to this heading">#</a></h3>
 <p>The following table provides more information about the available catalog
 configuration properties:</p>
-<table id="id4">
-<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Catalog configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -1225,7 +1261,7 @@ also called the <a class="reference internal" href="#warp-speed-default-accelera
 <p>The <a class="reference internal" href="../../insights/query-details.html#insights-query-details-warp-speed"><span class="std std-ref">Index and cache usage</span></a> tab
 provides summary statistics that indicate performance gains from using Starburst Warp Speed.</p>
 <section id="rest-api-access">
-<span id="id1"></span><h3 id="rest-api-access">REST API access<a class="headerlink" href="#rest-api-access" title="Link to this heading">#</a></h3>
+<span id="id3"></span><h3 id="rest-api-access">REST API access<a class="headerlink" href="#rest-api-access" title="Link to this heading">#</a></h3>
 <p>The Starburst Warp Speed REST API is available on the coordinator with a separate context for
 each catalog on the same port and domain as the SEP web UI, the Starburst Enterprise
 REST API and the Trino REST API.</p>
@@ -1264,7 +1300,7 @@ calls use plain curl calls to the endpoints for the <code class="docutils litera
 cluster at <code class="docutils literal notranslate"><span class="pre">sep.example.com</span></code> using HTTPS and omitting any authentication.</p>
 </section>
 <section id="warming-status">
-<span id="id2"></span><h3 id="warming-status">Warming status<a class="headerlink" href="#warming-status" title="Link to this heading">#</a></h3>
+<span id="id4"></span><h3 id="warming-status">Warming status<a class="headerlink" href="#warming-status" title="Link to this heading">#</a></h3>
 <p>You can determine the status of the warmup for Starburst Warp Speed with a GET operation of the
 <code class="docutils literal notranslate"><span class="pre">/warming/status</span></code> endpoint. It measures the warmup progress for splits across
 workers and if warming is currently taking place.</p>
@@ -1378,9 +1414,9 @@ the <code class="docutils literal notranslate"><span class="pre">tmp</span></cod
 <a class="reference internal" href="#warmup-rule-properties"><span class="std std-ref">Warmup rule properties</span></a>.</p>
 </section>
 <section id="warmup-rule-properties">
-<span id="id3"></span><h4 id="warmup-rule-properties">Warmup rule properties<a class="headerlink" href="#warmup-rule-properties" title="Link to this heading">#</a></h4>
-<table id="id5">
-<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<span id="id5"></span><h4 id="warmup-rule-properties">Warmup rule properties<a class="headerlink" href="#warmup-rule-properties" title="Link to this heading">#</a></h4>
+<table id="id7">
+<caption><span class="caption-text">Warmup rule properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
