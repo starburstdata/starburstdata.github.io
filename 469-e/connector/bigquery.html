@@ -285,6 +285,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#table-statistics">Table statistics</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#managed-statistics">Managed statistics</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#bigquery-storage-api">BigQuery Storage API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#security">Security</a><ul>
@@ -425,6 +426,8 @@
         <li class="md-nav__item"><a href="#managed-statistics" class="md-nav__link">Managed statistics</a>
         </li>
         <li class="md-nav__item"><a href="#bigquery-storage-api" class="md-nav__link">BigQuery Storage API</a>
+        </li>
+        <li class="md-nav__item"><a href="#pushdown" class="md-nav__link">Pushdown</a>
         </li></ul>
             </nav>
         </li>
@@ -584,7 +587,7 @@ You need to add the following property to the SEP <a class="reference internal" 
 <td><p>Taken from the service account</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.views-enabled</span></code></p></td>
-<td><p>Enables the connector to read from views and not only tables. Please read
+<td><p>Enables the connector to read from views and not only tables. Read
 <a class="reference internal" href="#bigquery-reading-from-views"><span class="std std-ref">this section</span></a> before enabling this feature.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
@@ -649,41 +652,99 @@ cache</a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.arrow-serialization.enabled</span></code></p></td>
 <td><p>Enable using Apache Arrow serialization when reading data from BigQuery.
-Please read this <a class="reference internal" href="#bigquery-arrow-serialization-support"><span class="std std-ref">section</span></a> before
-using this feature.</p></td>
+Read this <a class="reference internal" href="#bigquery-arrow-serialization-support"><span class="std std-ref">section</span></a> before using this
+feature.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.channel-pool.initial-size</span></code></p></td>
+<td><p>The initial size of the connection pool, also known as a channel pool,
+used for gRPC communication.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.channel-pool.min-size</span></code></p></td>
+<td><p>The minimum number of connections in the connection pool, also known as a
+channel pool, used for gRPC communication.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.channel-pool.max-size</span></code></p></td>
+<td><p>The maximum number of connections in the connection pool, also known as a
+channel pool, used for gRPC communication.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.channel-pool.min-rpc-per-channel</span></code></p></td>
+<td><p>Threshold to start scaling down the channel pool.
+When the average of outstanding RPCs in a single minute drop below this
+threshold, channels are removed from the pool.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.channel-pool.max-rpc-per-channel</span></code></p></td>
+<td><p>Threshold to start scaling up the channel pool.
+When the average of outstanding RPCs in a single minute surpass this
+threshold, channels are added to the pool.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2147483647</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code></p></td>
+<td><p>The maximum number of retry attempts to perform for the RPC calls. If this
+value is set to <code class="docutils literal notranslate"><span class="pre">0</span></code>, the value from <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-timeout</span></code> is used. Retry is
+deactivated when both <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code> and <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-timeout</span></code> are
+<code class="docutils literal notranslate"><span class="pre">0</span></code>. If this value is positive, and the number of attempts exceeds
+<code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code> limit, retries stop even if the total retry time is
+still lower than <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-timeout</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-timeout</span></code></p></td>
+<td><p>Timeout <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> on when the retries for the RPC call
+should be given up completely. The higher the timeout, the more retries can
+be attempted. If this value is <code class="docutils literal notranslate"><span class="pre">0s</span></code>, then <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code> is used to
+determine retries. Retry is deactivated when <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code> and
+<code class="docutils literal notranslate"><span class="pre">bigquery.rpc-timeout</span></code> are both <code class="docutils literal notranslate"><span class="pre">0</span></code>. If this value is positive, and the
+retry duration has reached the timeout value, retries stop even if the
+number of attempts is lower than the <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retries</span></code> value.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retry-delay</span></code></p></td>
+<td><p>The delay <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> before the first retry attempt
+for RPC calls.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0s</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retry-delay-multiplier</span></code></p></td>
+<td><p>Controls the change in delay before the next retry.
+The retry delay of the previous call is multiplied by the
+<code class="docutils literal notranslate"><span class="pre">bigquery.rpc-retry-delay-multiplier</span></code> to calculate the retry delay
+for the next RPC call.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.0</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.enabled</span></code></p></td>
 <td><p>Use a proxy for communication with BigQuery.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.uri</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.uri</span></code></p></td>
 <td><p>Proxy URI to use, if connecting through a proxy.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.username</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.username</span></code></p></td>
 <td><p>Proxy user name to use, if connecting through a proxy.</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.password</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.password</span></code></p></td>
 <td><p>Proxy password to use, if connecting through a proxy.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.keystore-path</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.keystore-path</span></code></p></td>
 <td><p>Keystore containing client certificates to present to proxy, if connecting
 through a proxy. Only required if proxy uses mutual TLS.</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.keystore-password</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.keystore-password</span></code></p></td>
 <td><p>Password of the keystore specified by <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.keystore-path</span></code>.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.truststore-path</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.truststore-path</span></code></p></td>
 <td><p>Truststore containing certificates of the proxy server, if connecting
 through a proxy.</p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.truststore-password</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.truststore-password</span></code></p></td>
 <td><p>Password of the truststore specified by
 <code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.truststore-path</span></code>.</p></td>
 <td></td>
@@ -1039,6 +1100,16 @@ Dataflow</a>.</p>
 </dl>
 <p>For information about BigQuery pricing, see the <a class="reference external" href="https://cloud.google.com/bigquery/pricing#storage-api">BigQuery pricing
 documentation</a>.</p>
+</section>
+<section id="pushdown">
+<span id="bigquery-pushdown"></span><h3 id="pushdown">Pushdown<a class="headerlink" href="#pushdown" title="Link to this heading">#</a></h3>
+<p>The connector supports pushdown for a number of operations:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../optimizer/pushdown.html#limit-pushdown"><span class="std std-ref">Limit pushdown</span></a> for access to tables and other objects when using the REST
+API to reduce CPU consumption in BigQuery and performance overall. Pushdown is
+not supported by the Storage API, used for the more common Trino-managed
+tables, and therefore not used for access with it.</p></li>
+</ul>
 </section>
 </section>
 <section id="security">

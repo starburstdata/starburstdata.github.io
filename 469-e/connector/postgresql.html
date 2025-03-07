@@ -288,8 +288,10 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#querying-postgresql">Querying PostgreSQL</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sql-support">SQL support</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#postgresql-insert">Non-transactional INSERT</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#update-limitation">UPDATE limitation</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#delete-limitation">DELETE limitation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#postgresql-merge">Non-transactional MERGE</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#collect-statistics">collect_statistics</a></li>
 </ul>
@@ -335,7 +337,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#password-credential-pass-through">Password credential pass-through</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#dynamic-connection-passthrough">Dynamic connection passthrough</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#aws-iam-authentication">AWS IAM authentication</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#id1">Configuration</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#id3">Configuration</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#authentication">Authentication</a></li>
 </ul>
 </li>
@@ -448,9 +450,13 @@
         </li>
         <li class="md-nav__item"><a href="#sql-support" class="md-nav__link">SQL support</a><nav class="md-nav">
               <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#postgresql-insert" class="md-nav__link">Non-transactional INSERT</a>
+        </li>
         <li class="md-nav__item"><a href="#update-limitation" class="md-nav__link">UPDATE limitation</a>
         </li>
         <li class="md-nav__item"><a href="#delete-limitation" class="md-nav__link">DELETE limitation</a>
+        </li>
+        <li class="md-nav__item"><a href="#postgresql-merge" class="md-nav__link">Non-transactional MERGE</a>
         </li>
         <li class="md-nav__item"><a href="#alter-table-execute" class="md-nav__link">ALTER TABLE EXECUTE</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -526,7 +532,7 @@
         </li>
         <li class="md-nav__item"><a href="#aws-iam-authentication" class="md-nav__link">AWS IAM authentication</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#id3" class="md-nav__link">Configuration</a>
         </li>
         <li class="md-nav__item"><a href="#authentication" class="md-nav__link">Authentication</a>
         </li></ul>
@@ -918,8 +924,8 @@ each direction.</p>
 <h3 id="postgresql-type-to-trino-type-mapping">PostgreSQL type to Trino type mapping<a class="headerlink" href="#postgresql-type-to-trino-type-mapping" title="Link to this heading">#</a></h3>
 <p>The connector maps PostgreSQL types to the corresponding Trino types following
 this table:</p>
-<table id="id2">
-<caption><span class="caption-text">PostgreSQL type to Trino type mapping</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">PostgreSQL type to Trino type mapping</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -1037,8 +1043,8 @@ this table:</p>
 <h3 id="trino-type-to-postgresql-type-mapping">Trino type to PostgreSQL type mapping<a class="headerlink" href="#trino-type-to-postgresql-type-mapping" title="Link to this heading">#</a></h3>
 <p>The connector maps Trino types to the corresponding PostgreSQL types following
 this table:</p>
-<table id="id3">
-<caption><span class="caption-text">Trino type to PostgreSQL type mapping</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Trino type to PostgreSQL type mapping</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -1224,17 +1230,38 @@ that catalog name instead of <code class="docutils literal notranslate"><span cl
 <section id="sql-support">
 <span id="postgresql-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Link to this heading">#</a></h2>
 <p>The connector provides read access and write access to data and metadata in
-PostgreSQL. In addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a>
-statements, the connector supports the following features:</p>
+PostgreSQL. In addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and
+<a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a> statements, the connector supports the
+following features:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/update.html"><span class="doc">UPDATE</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/delete.html"><span class="doc">DELETE</span></a></p></li>
-<li><p><a class="reference internal" href="../sql/truncate.html"><span class="doc">TRUNCATE</span></a></p></li>
-<li><p><a class="reference internal" href="../language/sql-support.html#sql-schema-table-management"><span class="std std-ref">Schema and table management</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc std std-doc">INSERT</span></a>, see also <a class="reference internal" href="#postgresql-insert"><span class="std std-ref">Non-transactional INSERT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/update.html"><span class="doc std std-doc">UPDATE</span></a>, see also <a class="reference internal" href="#postgresql-update"><span class="std std-ref">UPDATE limitation</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/delete.html"><span class="doc std std-doc">DELETE</span></a>, see also <a class="reference internal" href="#postgresql-delete"><span class="std std-ref">DELETE limitation</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/merge.html"><span class="doc std std-doc">MERGE</span></a>, see also <a class="reference internal" href="#postgresql-merge"><span class="std std-ref">Non-transactional MERGE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/truncate.html"><span class="doc std std-doc">TRUNCATE</span></a></p></li>
+<li><p><a class="reference internal" href="../language/sql-support.html#sql-schema-table-management"><span class="std std-ref">Schema and table management</span></a>, see also:</p>
+<ul>
+<li><p><a class="reference internal" href="#postgresql-alter-table"><span class="std std-ref">ALTER TABLE RENAME TO limitation</span></a></p></li>
+<li><p><a class="reference internal" href="#postgresql-alter-schema"><span class="std std-ref">ALTER SCHEMA limitation</span></a></p></li>
 </ul>
+</li>
+<li><p><a class="reference internal" href="#postgresql-procedures"><span class="std std-ref">Procedures</span></a></p></li>
+<li><p><a class="reference internal" href="#postgresql-table-functions"><span class="std std-ref">Table functions</span></a></p></li>
+</ul>
+<section id="postgresql-insert">
+<span id="id1"></span><h3 id="postgresql-insert">Non-transactional INSERT<a class="headerlink" href="#postgresql-insert" title="Link to this heading">#</a></h3>
+<p>The connector supports adding rows using <a class="reference internal" href="../sql/insert.html"><span class="doc">INSERT statements</span></a>.
+By default, data insertion is performed by writing data to a temporary table.
+You can skip this step to improve performance and write directly to the target
+table. Set the <code class="docutils literal notranslate"><span class="pre">insert.non-transactional-insert.enabled</span></code> catalog property
+or the corresponding <code class="docutils literal notranslate"><span class="pre">non_transactional_insert</span></code> catalog session property to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<p>Note that with this property enabled, data can be corrupted in rare cases where
+exceptions occur during the insert operation. With transactions disabled, no
+rollback can be performed.</p>
+</section>
 <section id="update-limitation">
-<h3 id="update-limitation">UPDATE limitation<a class="headerlink" href="#update-limitation" title="Link to this heading">#</a></h3>
+<span id="postgresql-update"></span><h3 id="update-limitation">UPDATE limitation<a class="headerlink" href="#update-limitation" title="Link to this heading">#</a></h3>
 <p>Only <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> statements with constant assignments and predicates are
 supported. For example, the following statement is supported because the values
 assigned are constants:</p>
@@ -1255,9 +1282,19 @@ column table, the following statement is not supported:</p>
 </div>
 </section>
 <section id="delete-limitation">
-<h3 id="delete-limitation">DELETE limitation<a class="headerlink" href="#delete-limitation" title="Link to this heading">#</a></h3>
+<span id="postgresql-delete"></span><h3 id="delete-limitation">DELETE limitation<a class="headerlink" href="#delete-limitation" title="Link to this heading">#</a></h3>
 <p>If a <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause is specified, the <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> operation only works if the
 predicate in the clause can be fully pushed down to the data source.</p>
+</section>
+<section id="postgresql-merge">
+<span id="id2"></span><h3 id="postgresql-merge">Non-transactional MERGE<a class="headerlink" href="#postgresql-merge" title="Link to this heading">#</a></h3>
+<p>The connector supports adding, updating, and deleting rows using <a class="reference internal" href="../sql/merge.html"><span class="doc std std-doc">MERGE
+statements</span></a>, if the <code class="docutils literal notranslate"><span class="pre">merge.non-transactional-merge.enabled</span></code> catalog
+property or the corresponding <code class="docutils literal notranslate"><span class="pre">non_transactional_merge_enabled</span></code> catalog session
+property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>. Merge is only supported for directly modifying target
+tables.</p>
+<p>In rare cases, expections occur during the merge operation, potentially
+resulting in a partial update.</p>
 </section>
 <section id="alter-table-execute">
 <span id="postgre-collect-statistics"></span><h3 id="alter-table-execute">ALTER TABLE EXECUTE<a class="headerlink" href="#alter-table-execute" title="Link to this heading">#</a></h3>
@@ -1284,7 +1321,7 @@ array of column names. For example:</p>
 </section>
 </section>
 <section id="alter-table-rename-to-limitation">
-<h3 id="alter-table-rename-to-limitation">ALTER TABLE RENAME TO limitation<a class="headerlink" href="#alter-table-rename-to-limitation" title="Link to this heading">#</a></h3>
+<span id="postgresql-alter-table"></span><h3 id="alter-table-rename-to-limitation">ALTER TABLE RENAME TO limitation<a class="headerlink" href="#alter-table-rename-to-limitation" title="Link to this heading">#</a></h3>
 <p>The connector does not support renaming tables across multiple schemas. For
 example, the following statement is supported:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">schema_one</span><span class="p">.</span><span class="n">table_one</span><span class="w"> </span><span class="k">RENAME</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">schema_one</span><span class="p">.</span><span class="n">table_two</span>
@@ -1297,12 +1334,12 @@ is not supported:</p>
 </div>
 </section>
 <section id="alter-schema-limitation">
-<h3 id="alter-schema-limitation">ALTER SCHEMA limitation<a class="headerlink" href="#alter-schema-limitation" title="Link to this heading">#</a></h3>
+<span id="postgresql-alter-schema"></span><h3 id="alter-schema-limitation">ALTER SCHEMA limitation<a class="headerlink" href="#alter-schema-limitation" title="Link to this heading">#</a></h3>
 <p>The connector supports renaming a schema with the <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">RENAME</span></code>
 statement. <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">SET</span> <span class="pre">AUTHORIZATION</span></code> is not supported.</p>
 </section>
 <section id="procedures">
-<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
+<span id="postgresql-procedures"></span><h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
 <section id="system-flush-metadata-cache">
 <h4 id="system-flush-metadata-cache"><code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code><a class="headerlink" href="#system-flush-metadata-cache" title="Link to this heading">#</a></h4>
 <p>Flush JDBC metadata caches. For example, the following system call
@@ -1339,7 +1376,7 @@ version.</p>
 </section>
 </section>
 <section id="table-functions">
-<h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Link to this heading">#</a></h3>
+<span id="postgresql-table-functions"></span><h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Link to this heading">#</a></h3>
 <p>The connector provides specific <a class="reference internal" href="../functions/table.html"><span class="doc">table functions</span></a> to
 access PostgreSQL.</p>
 <section id="query-varchar-table">
@@ -1616,8 +1653,8 @@ catalog configuration file:</p>
 </div>
 <p>The following catalog configuration properties can be used to tune
 connection pooling:</p>
-<table id="id4">
-<caption><span class="caption-text">JDBC connection pooling catalog configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">JDBC connection pooling catalog configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 40%"/>
@@ -1784,8 +1821,8 @@ following format: <code class="docutils literal notranslate"><span class="pre">j
 <p>When the PostgreSQL database is deployed as an <a class="reference external" href="https://aws.amazon.com/rds/">AWS RDS
 instance</a>, the connector can use IAM
 authentication. This enhancement allows you to manage access control from SEP with IAM policies.</p>
-<section id="id1">
-<h4 id="id1">Configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
+<section id="id3">
+<h4 id="id3">Configuration<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
 <p>To enable IAM authentication, add the following configuration properties to the
 catalog configuration file:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">postgresql.authentication.type</span><span class="o">=</span><span class="s">AWS</span>
@@ -1806,8 +1843,8 @@ properties:</p>
 </div>
 <p>This table describes the configuration properties for IAM
 authentication:</p>
-<table id="id5">
-<caption><span class="caption-text">IAM configuration properties</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<table id="id7">
+<caption><span class="caption-text">IAM configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
