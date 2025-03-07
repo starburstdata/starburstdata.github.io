@@ -242,6 +242,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#run-schema-discovery">Run schema discovery</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#run-in-the-ui">Run in the UI</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#run-with-sql">Run with SQL</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#incremental-discovery">Incremental discovery</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#multiple-tables">Multiple tables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#column-type-conversion">Column type conversion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#default-options">Default options</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#standard-options">Standard options</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#csv-and-text-file-options">CSV and text file Options</a></li>
@@ -337,6 +340,12 @@
         <li class="md-nav__item"><a href="#run-in-the-ui" class="md-nav__link">Run in the UI</a>
         </li>
         <li class="md-nav__item"><a href="#run-with-sql" class="md-nav__link">Run with SQL</a>
+        </li>
+        <li class="md-nav__item"><a href="#incremental-discovery" class="md-nav__link">Incremental discovery</a>
+        </li>
+        <li class="md-nav__item"><a href="#multiple-tables" class="md-nav__link">Multiple tables</a>
+        </li>
+        <li class="md-nav__item"><a href="#column-type-conversion" class="md-nav__link">Column type conversion</a>
         </li>
         <li class="md-nav__item"><a href="#default-options" class="md-nav__link">Default options</a>
         </li>
@@ -536,6 +545,48 @@ URI and schema along with any options as follows:</p>
 </div>
 <p>The following sections describe the available options.</p>
 </section>
+<section id="incremental-discovery">
+<h3 id="incremental-discovery">Incremental discovery<a class="headerlink" href="#incremental-discovery" title="Link to this heading">#</a></h3>
+<p>To run incremental discovery in SQL mode, include the <code class="docutils literal notranslate"><span class="pre">previous_metadata_json</span></code>
+parameter in your SQL statement. Use the <code class="docutils literal notranslate"><span class="pre">metadata_json</span></code> value from a previous
+discovery run as a value for this parameter.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">sql</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">hive</span><span class="p">.</span><span class="n">schema_discovery</span><span class="p">.</span><span class="n">discovery</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">uri</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'hdfs://hadoop-master:9000/user/hive/warehouse/customer_orders'</span>
+<span class="k">AND</span><span class="w"> </span><span class="k">schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'starburst_demo'</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">previous_metadata_json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'[metadata_json from previous run]'</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may overwrite any custom modifications you made to schemas or tables since
+the last discovery run. Your modifications may also cause incremental discovery
+to fail if they conflict with the table structures from previous discovery runs.</p>
+</div>
+</section>
+<section id="multiple-tables">
+<h3 id="multiple-tables">Multiple tables<a class="headerlink" href="#multiple-tables" title="Link to this heading">#</a></h3>
+<p>When a directory contains multiple tables, schema discovery:</p>
+<ul class="simple">
+<li><p>Scans the directory structure</p></li>
+<li><p>Locates folders with metadata that indicates Iceberg and Delta Lake tables</p></li>
+<li><p>Locates directory partitions that indicate Hive tables, considering the first
+non-partition directory up the tree as the table root</p></li>
+<li><p>Scans files</p></li>
+<li><p>Creates queryable tables</p></li>
+</ul>
+<p>Schema discovery detects:</p>
+<ul class="simple">
+<li><p>Multiple tables under a single schema</p></li>
+<li><p>Multiple schemas, when you specify a scan location above the level of
+individual schemas in the directory hierarchy</p></li>
+</ul>
+</section>
+<section id="column-type-conversion">
+<h3 id="column-type-conversion">Column type conversion<a class="headerlink" href="#column-type-conversion" title="Link to this heading">#</a></h3>
+<p>When combining schemas, schema discovery attempts to match column values to the
+most appropriate Trino data type. If discovery does not locate a compatible
+type, it defaults to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>.</p>
+</section>
 <section id="default-options">
 <h3 id="default-options">Default options<a class="headerlink" href="#default-options" title="Link to this heading">#</a></h3>
 <p>Schema discovery is run by default with the following options and their default
@@ -731,6 +782,11 @@ hiveSkipHiddenFiles Whether to skip files/directories starting with _ or.</p></t
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Some options do not apply to file formats with embedded schema information, such
+as Parquet. These options are primarily useful for JSON and CSV files.</p>
+</div>
 </section>
 <section id="csv-and-text-file-options">
 <h3 id="csv-and-text-file-options">CSV and text file Options<a class="headerlink" href="#csv-and-text-file-options" title="Link to this heading">#</a></h3>
