@@ -185,7 +185,8 @@
 <h1 id="sql-select--page-root">SELECT<a class="headerlink" href="#sql-select--page-root" title="Permalink to this heading">#</a></h1>
 
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">#</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[ WITH FUNCTION udf ]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[ WITH SESSION [ name = expression [, ...] ]
+[ WITH [ FUNCTION udf ] [, ...] ]
 [ WITH [ RECURSIVE ] with_query [, ...] ]
 SELECT [ ALL | DISTINCT ] select_expression [, ...]
 [ FROM from_item [, ...] ]
@@ -238,6 +239,27 @@ ROLLUP ( column [, ...] )
 
 <h2 id="description">Description<a class="headerlink" href="#description" title="Permalink to this heading">#</a></h2>
 <p>Retrieve rows from zero or more tables.</p>
+
+
+<span id="select-with-session"></span><h2 id="with-session-clause">WITH SESSION clause<a class="headerlink" href="#with-session-clause" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">WITH</span> <span class="pre">SESSION</span></code> clause allows you to <a class="reference internal" href="set-session.html"><span class="doc std std-doc">set session and catalog session
+property values</span></a> applicable for the processing of the current
+SELECT statement only. The defined values override any other configuration and
+session property settings. Multiple properties are separated by commas.</p>
+<p>The following example overrides the global configuration property
+<code class="docutils literal notranslate"><span class="pre">query.max-execution-time</span></code> with the session property <code class="docutils literal notranslate"><span class="pre">query_max_execution_time</span></code>
+to reduce the time to <code class="docutils literal notranslate"><span class="pre">2h</span></code>. It also overrides the catalog property
+<code class="docutils literal notranslate"><span class="pre">iceberg.query-partition-filter-required</span></code> from the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog by setting
+the catalog session property <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span>
+  <span class="k">SESSION</span>
+    <span class="n">query_max_execution_time</span><span class="o">=</span><span class="s1">'2h'</span><span class="p">,</span>
+    <span class="n">example</span><span class="p">.</span><span class="n">query_partition_filter_required</span><span class="o">=</span><span class="k">true</span>
+<span class="k">SELECT</span> <span class="o">*</span>
+<span class="k">FROM</span> <span class="n">example</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">thetable</span>
+<span class="k">LIMIT</span> <span class="mi">100</span><span class="p">;</span>
+</pre></div>
+</div>
 
 
 <h2 id="with-function-clause">WITH FUNCTION clause<a class="headerlink" href="#with-function-clause" title="Permalink to this heading">#</a></h2>
@@ -1070,7 +1092,7 @@ as established by the ordering in the <code class="docutils literal notranslate"
 </div>
 
 
-<h2 id="tablesample">TABLESAMPLE<a class="headerlink" href="#tablesample" title="Permalink to this heading">#</a></h2>
+<span id="id5"></span><h2 id="tablesample">TABLESAMPLE<a class="headerlink" href="#tablesample" title="Permalink to this heading">#</a></h2>
 <p>There are multiple sample methods:</p>
 <dl class="simple myst docutils">
 <dt><code class="docutils literal notranslate"><span class="pre">BERNOULLI</span></code></dt><dd><p>Each row is selected to be in the table sample with a probability of
@@ -1115,7 +1137,7 @@ independent sampling probabilities.</p>
 </div>
 
 
-<span id="id5"></span><h2 id="unnest">UNNEST<a class="headerlink" href="#unnest" title="Permalink to this heading">#</a></h2>
+<span id="id6"></span><h2 id="unnest">UNNEST<a class="headerlink" href="#unnest" title="Permalink to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">UNNEST</span></code> can be used to expand an <a class="reference internal" href="../language/types.html#array-type"><span class="std std-ref">ARRAY</span></a> or <a class="reference internal" href="../language/types.html#map-type"><span class="std std-ref">MAP</span></a> into a relation.
 Arrays are expanded into a single column:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="k">UNNEST</span><span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="nb">number</span><span class="p">);</span>
