@@ -2708,23 +2708,47 @@ security</code> privilege.</p>
 sensitive data. They ensure that column data is only visible to those who have
 permission to see the data by masking the values returned by the query.</p>
 
-<p>One or more column masks can be added to a policy whose target is a table or
-view. Column masks function similar to <a href="#row-level-filters">row filters</a> in that
-when Starburst Galaxy fetches privileges for a table or view, and that table
-or view matches the policy target and the policy’s matching expression is <code class="language-plaintext highlighter-rouge">true</code>
-for the table or view’s tags, then the policy’s column masks are included in
-the table or view privileges.</p>
+<p>One or more column masks can be added to a policy scope. Column masks function
+similar to <a href="#row-level-filters">row filters</a> in that when Starburst Galaxy
+fetches privileges for a column, and that column is contained in the policy’s
+scope and the policy’s matching expression is <code class="language-plaintext highlighter-rouge">true</code>, then the policy’s column
+masks are included in the column privileges.</p>
 
 <p>Column masks are evaluated using the privileges of the role that owns the column
 mask, which may not be the same as the current role of the user running a query
-to which the column mask is applied. This means that the column mask in general
-has privileges to reference tables the user running a query does not have the
-privileges to access.</p>
+to which the column mask is applied. This means that the owner of the column
+mask must have privileges to reference tables that the role running a query may
+not have privileges to access.</p>
 
 <p>When you execute a query, Galaxy automatically rewrites your query
 and applies a column mask expression to the specified column. The column
 rewrite applies the mask expression everywhere the column appears in the query.
 Users see masked data based on the conditions you define.</p>
+      <h3 id="choosing-column-masks-during-policy-evaluation">
+        
+        
+          Choosing column masks during policy evaluation <a href="#choosing-column-masks-during-policy-evaluation" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>There can be more than one column mask defined for a policy scope. Each mask
+in the scope must have a different data type. If a policy with multiple column
+masks evaluates to <code class="language-plaintext highlighter-rouge">true</code> for a column, the system chooses the column mask
+based on the following criteria:</p>
+
+<ol>
+  <li>If the column mask type exactly matches the column’s data type,
+Galaxy uses that column mask.</li>
+  <li>If #1 does not apply, Galaxy uses the first column mask in the
+list that is coercible with the column’s data type.
+<a href="https://trino.io/docs/current/functions/conversion.html">Read more about how Trino handles type coercion.</a></li>
+  <li>If neither #1 nor #2 apply, but there is a column mask in the list with data
+type <code class="language-plaintext highlighter-rouge">ANY</code>, Galaxy uses that mask.</li>
+  <li>If none of the above criteria apply, Galaxy does not apply any
+column mask.</li>
+</ol>
       <h3 id="when-to-use-masking-vs-hashing">
         
         
@@ -2875,7 +2899,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#access-control-policy-types">Access control policy types</a><ul><li><a href="#role-based-access-control">Role-based access control</a></li><li><a href="#attribute-based-access-control">Attribute-based access control</a></li><li><a href="#matching-expressions">Matching expressions</a></li><li><a href="#policy-grants">Policy grants</a></li><li><a href="#defining-policies">Defining policies</a></li><li><a href="#policy-grants-and-privilege-checking">Policy grants and privilege checking</a></li><li><a href="#policy-grants-and-catalog-schema-table-and-view-visibility">Policy grants and catalog, schema, table, and view visibility</a></li><li><a href="#row-level-filters">Row-level filters</a><ul><li><a href="#creating-row-level-filters">Creating row-level filters</a></li></ul></li><li><a href="#column-masks">Column masks</a><ul><li><a href="#when-to-use-masking-vs-hashing">When to use masking vs hashing</a></li><li><a href="#creating-column-masks">Creating column masks</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#access-control-policy-types">Access control policy types</a><ul><li><a href="#role-based-access-control">Role-based access control</a></li><li><a href="#attribute-based-access-control">Attribute-based access control</a></li><li><a href="#matching-expressions">Matching expressions</a></li><li><a href="#policy-grants">Policy grants</a></li><li><a href="#defining-policies">Defining policies</a></li><li><a href="#policy-grants-and-privilege-checking">Policy grants and privilege checking</a></li><li><a href="#policy-grants-and-catalog-schema-table-and-view-visibility">Policy grants and catalog, schema, table, and view visibility</a></li><li><a href="#row-level-filters">Row-level filters</a><ul><li><a href="#creating-row-level-filters">Creating row-level filters</a></li></ul></li><li><a href="#column-masks">Column masks</a><ul><li><a href="#choosing-column-masks-during-policy-evaluation">Choosing column masks during policy evaluation</a></li><li><a href="#when-to-use-masking-vs-hashing">When to use masking vs hashing</a></li><li><a href="#creating-column-masks">Creating column masks</a></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
