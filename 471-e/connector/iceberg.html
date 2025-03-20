@@ -280,6 +280,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#schema-evolution">Schema evolution</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul>
 <li class="toctree-l7"><a class="reference internal" href="#optimize">optimize</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#optimize-manifests">optimize_manifests</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#expire-snapshots">expire_snapshots</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#remove-orphan-files">remove_orphan_files</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#drop-extended-stats">drop_extended_stats</a></li>
@@ -297,6 +298,7 @@
 <li class="toctree-l7"><a class="reference internal" href="#manifests-table"><code class="docutils literal notranslate"><span class="pre">$manifests</span></code> table</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#partitions-table"><code class="docutils literal notranslate"><span class="pre">$partitions</span></code> table</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#files-table"><code class="docutils literal notranslate"><span class="pre">$files</span></code> table</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#entries-and-all-entries-tables"><code class="docutils literal notranslate"><span class="pre">$entries</span></code> and <code class="docutils literal notranslate"><span class="pre">$all_entries</span></code> tables</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#refs-table"><code class="docutils literal notranslate"><span class="pre">$refs</span></code> table</a></li>
 </ul>
 </li>
@@ -445,6 +447,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#optimize" class="md-nav__link">optimize</a>
         </li>
+        <li class="md-nav__item"><a href="#optimize-manifests" class="md-nav__link">optimize_manifests</a>
+        </li>
         <li class="md-nav__item"><a href="#expire-snapshots" class="md-nav__link">expire_snapshots</a>
         </li>
         <li class="md-nav__item"><a href="#remove-orphan-files" class="md-nav__link">remove_orphan_files</a>
@@ -474,6 +478,8 @@
         <li class="md-nav__item"><a href="#partitions-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$partitions</span></code> table</a>
         </li>
         <li class="md-nav__item"><a href="#files-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$files</span></code> table</a>
+        </li>
+        <li class="md-nav__item"><a href="#entries-and-all-entries-tables" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$entries</span></code> and <code class="docutils literal notranslate"><span class="pre">$all_entries</span></code> tables</a>
         </li>
         <li class="md-nav__item"><a href="#refs-table" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">$refs</span></code> table</a>
         </li></ul>
@@ -1317,6 +1323,14 @@ dates, and uses a comparison to only optimize partitions with data from the year
 </pre></div>
 </div>
 </section>
+<section id="optimize-manifests">
+<span id="iceberg-optimize-manifests"></span><h5 id="optimize-manifests">optimize_manifests<a class="headerlink" href="#optimize-manifests" title="Link to this heading">#</a></h5>
+<p>Optimize table manifests to speed up planning.</p>
+<p><code class="docutils literal notranslate"><span class="pre">optimize_manifests</span></code> can be run as follows:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">test_table</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">optimize_manifests</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
 <section id="expire-snapshots">
 <span id="iceberg-expire-snapshots"></span><h5 id="expire-snapshots">expire_snapshots<a class="headerlink" href="#expire-snapshots" title="Link to this heading">#</a></h5>
 <p>The <code class="docutils literal notranslate"><span class="pre">expire_snapshots</span></code> command removes all snapshots and all related metadata
@@ -1368,6 +1382,7 @@ TABLE SET PROPERTIES</span></a>.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">format_version</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">partitioning</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">sorted_by</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_commit_retry</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">object_store_layout_enabled</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">data_location</span></code></p></li>
 </ul>
@@ -1423,29 +1438,34 @@ and not the entire dataset.</p></td>
 for new tables; either <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">2</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">2</span></code>. Version <code class="docutils literal notranslate"><span class="pre">2</span></code> is required
 for row level deletes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_columns</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_commit_retry</span></code></p></td>
+<td><p>Number of times to retry a commit before failing. Defaults to the value of
+the <code class="docutils literal notranslate"><span class="pre">iceberg.max-commit-retry</span></code> catalog configuration property, which
+defaults to <code class="docutils literal notranslate"><span class="pre">4</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_columns</span></code></p></td>
 <td><p>Comma-separated list of columns to use for ORC bloom filter. It improves the
 performance of queries using Equality and IN predicates when reading ORC
 files. Requires ORC format. Defaults to <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_fpp</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orc_bloom_filter_fpp</span></code></p></td>
 <td><p>The ORC bloom filters false positive probability. Requires ORC format.
 Defaults to <code class="docutils literal notranslate"><span class="pre">0.05</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">parquet_bloom_filter_columns</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">parquet_bloom_filter_columns</span></code></p></td>
 <td><p>Comma-separated list of columns to use for Parquet bloom filter. It improves
 the performance of queries using Equality and IN predicates when reading
 Parquet files. Requires Parquet format. Defaults to <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">object_store_layout_enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">object_store_layout_enabled</span></code></p></td>
 <td><p>Whether Iceberg’s <a class="reference external" href="https://iceberg.apache.org/docs/latest/aws/#object-store-file-layout">object store file
 layout</a>
 is enabled. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">data_location</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data_location</span></code></p></td>
 <td><p>Optionally specifies the file system location URI for the table’s data files</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">extra_properties</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">extra_properties</span></code></p></td>
 <td><p>Additional properties added to a Iceberg table. The properties are not used
 by Trino, and are available in the <code class="docutils literal notranslate"><span class="pre">$properties</span></code> metadata table. The
 properties are not included in the output of <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">TABLE</span></code> statements.</p></td>
@@ -1940,6 +1960,72 @@ the file.</p></td>
 </tbody>
 </table>
 </section>
+<section id="entries-and-all-entries-tables">
+<h5 id="entries-and-all-entries-tables"><code class="docutils literal notranslate"><span class="pre">$entries</span></code> and <code class="docutils literal notranslate"><span class="pre">$all_entries</span></code> tables<a class="headerlink" href="#entries-and-all-entries-tables" title="Link to this heading">#</a></h5>
+<p>The <code class="docutils literal notranslate"><span class="pre">$entries</span></code> and <code class="docutils literal notranslate"><span class="pre">$all_entries</span></code> tables provide the table’s manifest entries
+for both data and delete files. The <code class="docutils literal notranslate"><span class="pre">$entries</span></code> table contains data for the
+current snapshot. The <code class="docutils literal notranslate"><span class="pre">$all_entries</span></code> table contains data for all snapshots.</p>
+<p>To retrieve the information about the entries of the Iceberg table
+<code class="docutils literal notranslate"><span class="pre">test_table</span></code>, use the following query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"test_table$entries"</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Abbreviated sample output:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> status |   snapshot_id  | sequence_number | file_sequence_number |              data_file              |                readable_metrics                |
+--------+----------------+-----------------+----------------------+-------------------------------------+------------------------------------------------+
+      2 | 57897183625154 |              0  |                   0  | {"content":0,...,"sort_order_id":0} | {"c1":{"column_size":103,...,"upper_bound":3}} |
+</pre></div>
+</div>
+<p>The metadata tables include the following columns:</p>
+<table id="id12">
+<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25%"/>
+<col style="width: 30%"/>
+<col style="width: 45%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">status</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></p></td>
+<td><p>Numeric status indication to track additions and deletions. Deletes are
+informational only and not used in scans:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EXISTING(0)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ADDED(1)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DELETED(2)</span></code></p></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snapshot_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>The snapshot ID of the reference.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sequence_number</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>Data sequence number of the file. Inherited when null and status is 1.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">file_sequence_number</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>File sequence number indicating when the file was added. Inherited when null
+and status is 1.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data_file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ROW</span></code></p></td>
+<td><p>Metadata including file path, file format, file size and other information.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">readable_metrics</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></td>
+<td><p>JSON-formatted file metrics such as column size, value count, and others.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="refs-table">
 <h5 id="refs-table"><code class="docutils literal notranslate"><span class="pre">$refs</span></code> table<a class="headerlink" href="#refs-table" title="Link to this heading">#</a></h5>
 <p>The <code class="docutils literal notranslate"><span class="pre">$refs</span></code> table provides information about Iceberg references including
@@ -1956,8 +2042,8 @@ example_branch  | BRANCH | 20000000000 | 20000                   | 2            
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id12">
-<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -2059,8 +2145,8 @@ on existing entities.</p>
 <p>Iceberg supports partitioning by specifying transforms over the table columns. A
 partition is created for each unique tuple value produced by the transforms.
 Identity transforms are simply the column name. Other transforms are:</p>
-<table id="id13">
-<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -2555,8 +2641,8 @@ when the values do not appear in any clustered order naturally.</p>
 network is further reduced. You get access to higher query performance and a
 reduced cost.</p>
 <p>You can use the following properties to configure dynamic row filtering:</p>
-<table id="id14">
-<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
+<table id="id15">
+<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 45%"/>
 <col style="width: 55%"/>
@@ -2599,8 +2685,8 @@ authorization at the catalog level.</p>
 <p>You can enable authorization checks for the connector by setting the
 <code class="docutils literal notranslate"><span class="pre">iceberg.security</span></code> property in the catalog properties file. This property must
 be one of the following values:</p>
-<table id="id15">
-<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
+<table id="id16">
+<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
