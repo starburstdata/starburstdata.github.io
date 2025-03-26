@@ -368,7 +368,7 @@ example, the <code class="docutils literal notranslate"><span class="pre">mysale
 </div>
 </section>
 <section id="automatically-refresh-materialized-views-in-hive">
-<h2 id="automatically-refresh-materialized-views-in-hive">Automatically refresh materialized views in Hive<a class="headerlink" href="#automatically-refresh-materialized-views-in-hive" title="Link to this heading">#</a></h2>
+<span id="mv-auto-refresh"></span><h2 id="automatically-refresh-materialized-views-in-hive">Automatically refresh materialized views in Hive<a class="headerlink" href="#automatically-refresh-materialized-views-in-hive" title="Link to this heading">#</a></h2>
 <p>Hive catalogs in SEP configured to allow materialized views
 provide several <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause properties to configure refresh schedules and how
 new data is imported:</p>
@@ -381,6 +381,11 @@ before failing.</p></li>
 an expiring snapshot.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">incremental_column</span></code>: Specifies the column to be used to identify new data
 since the last refresh. If you do not use this field, SEP performs a full refresh.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">failed_refresh_limit</span></code>: Specifies the maximum number of consecutive refresh
+failures allowed before refresh operations are temporarily disabled. By
+default, there is no set limit for consecutive refresh failures. The counter
+resets after a successful refresh, a change to the refresh limit value, or
+when the refresh is re-enabled at the next scheduled refresh time.</p></li>
 </ul>
 <p>We suggest that you review the <a class="reference internal" href="../connector/starburst-hive.html#sb-hive-mv-automatic-refresh"><span class="std std-ref">Hive connector documentation</span></a> , which has more information about these
 properties.</p>
@@ -391,7 +396,8 @@ statement initially runs:</p>
 <span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
 <span class="w">  </span><span class="n">refresh_interval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'24h'</span><span class="p">,</span>
 <span class="w">  </span><span class="n">grace_period</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'5m'</span><span class="p">,</span>
-<span class="w">  </span><span class="n">max_import_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30m'</span>
+<span class="w">  </span><span class="n">max_import_duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30m'</span><span class="p">,</span>
+<span class="w">  </span><span class="n">failed_refresh_limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'2'</span>
 <span class="p">)</span><span class="w"> </span><span class="k">AS</span>
 <span class="w">    </span><span class="k">SELECT</span>
 <span class="w">      </span><span class="n">sr_customer_sk</span><span class="w"> </span><span class="n">ctr_customer_sk</span><span class="p">,</span>
@@ -405,10 +411,12 @@ statement initially runs:</p>
 <span class="p">;</span>
 </pre></div>
 </div>
-<p>In this example, the refresh runs for a maximum of 30 minutes. Unless the
-<code class="docutils literal notranslate"><span class="pre">cron</span></code> property is specified, the time at which data in a materialized view is
+<p>In this example, the refresh runs for a maximum of 30 minutes. Unless the <code class="docutils literal notranslate"><span class="pre">cron</span></code>
+property is specified, the time at which data in a materialized view is
 refreshed is based on the moment the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement first
-runs, plus the <code class="docutils literal notranslate"><span class="pre">refresh_interval</span></code>.</p>
+runs, plus the <code class="docutils literal notranslate"><span class="pre">refresh_interval</span></code>. In addition, the refresh has a
+<code class="docutils literal notranslate"><span class="pre">failed_refresh_limit</span></code> set to <code class="docutils literal notranslate"><span class="pre">2</span></code>. If the refresh fails two times, it is
+temporarily disabled.</p>
 <p>You can run refreshes on a set schedule by using the <code class="docutils literal notranslate"><span class="pre">cron</span></code> property instead.
 The <code class="docutils literal notranslate"><span class="pre">cron</span></code> property uses normal cron expressions. Here is the same materialized
 view, created with a <code class="docutils literal notranslate"><span class="pre">cron</span></code> schedule and an incremental column:</p>
