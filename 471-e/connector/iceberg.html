@@ -317,7 +317,10 @@
 <li class="toctree-l6"><a class="reference internal" href="#not-null-column-constraint"><code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code> column constraint</a></li>
 </ul>
 </li>
-<li class="toctree-l5"><a class="reference internal" href="#materialized-views">Materialized views</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#materialized-views">Materialized views</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#automatic-refresh">Automatic refresh</a></li>
+</ul>
+</li>
 <li class="toctree-l5"><a class="reference internal" href="#table-functions">Table functions</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#table-changes">table_changes</a></li>
 </ul>
@@ -510,7 +513,11 @@
         </li></ul>
             </nav>
         </li>
-        <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a>
+        <li class="md-nav__item"><a href="#materialized-views" class="md-nav__link">Materialized views</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#automatic-refresh" class="md-nav__link">Automatic refresh</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#table-functions" class="md-nav__link">Table functions</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -2385,6 +2392,119 @@ tables, the connector can determine if the data has not changed and continue to
 use the data from the storage tables, even after the grace period expired.</p>
 <p>Dropping a materialized view with <a class="reference internal" href="../sql/drop-materialized-view.html"><span class="doc std std-doc">DROP MATERIALIZED VIEW</span></a> removes
 the definition and the storage table.</p>
+<section id="automatic-refresh">
+<span id="iceberg-automatic-refresh"></span><h4 id="automatic-refresh">Automatic refresh<a class="headerlink" href="#automatic-refresh" title="Link to this heading">#</a></h4>
+<p>You can configure automatic refreshes on both new and existing Iceberg
+materialized views. Automatic refresh is only available for deployments using
+<a class="reference internal" href="../security/biac-overview.html#biac-iceberg-mv"><span class="std std-ref">Built-in access control</span></a> and the Hive metastore or AWS Glue
+catalog.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Materialized view automatic refresh is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public
+preview</span></a> in Starburst Enterprise. Contact your Starburst account
+team for questions or feedback.</p>
+</div>
+<p>Iceberg catalogs in SEP configured to support materialized views provide
+several <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause properties to configure refresh schedules and control how
+new data is imported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">refresh_schedule</span></code>: Cron expression that specifies the refresh job schedule.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">refresh_schedule_timezone</span></code>: (Optional) Specifies the timezone against which
+the refresh schedule is evaluated. Defaults to <code class="docutils literal notranslate"><span class="pre">UTC</span></code>. The default can be
+configured for the entire cluster using the <code class="docutils literal notranslate"><span class="pre">jobs.default-timezone</span></code>
+property. This affects all future scheduled jobs, such as iceberg table
+maintenance, but does not impact jobs that have already been created.</p></li>
+</ul>
+<p>To enable automatic refresh on an Iceberg materialized view, set the
+<code class="docutils literal notranslate"><span class="pre">refresh_schedule</span></code> configuration property with the frequency of the refresh as a
+cron expression. The following example creates a new materialized view with the
+automatic refresh scheduled at 04:30 on Sunday:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">refresh_schedule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30 04 * * 0'</span><span class="p">)</span>
+<span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">nation</span>
+</pre></div>
+</div>
+<p>You can configure or update the jobs for an automatic refresh using <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span> <span class="pre">...</span> <span class="pre">SET</span> <span class="pre">PROPERTIES</span></code>.</p>
+<p>Set the timezone for the <code class="docutils literal notranslate"><span class="pre">test_mv</span></code> view:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">refresh_schedule_timezone</span><span class="o">=</span><span class="s1">'America/Los_Angeles'</span>
+</pre></div>
+</div>
+<p>To reset the timezone to the system default, set
+<code class="docutils literal notranslate"><span class="pre">refresh_schedule_timezone=DEFAULT</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">refresh_schedule_timezone</span><span class="o">=</span><span class="k">DEFAULT</span>
+</pre></div>
+</div>
+<p>To remove an existing automatic refresh job, set the <code class="docutils literal notranslate"><span class="pre">refresh_schedule=DEFAULT</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">refresh_schedule</span><span class="o">=</span><span class="k">DEFAULT</span>
+</pre></div>
+</div>
+<p>The following example creates a materialized view called <code class="docutils literal notranslate"><span class="pre">test_mv_update</span></code> and
+then sets the automatic refresh schedule for 04:30 on Monday.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv_update</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tpch</span><span class="p">.</span><span class="n">sf1</span><span class="p">.</span><span class="n">nation</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">test_mv_update</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">refresh_schedule</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30 04 * * 1'</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>To stop automatic refreshes, remove the <code class="docutils literal notranslate"><span class="pre">refresh_schedule</span></code> configuration
+property from the view definition.</p>
+<p>To change the role that a refresh job uses, first remove the existing refresh
+schedule. Then, create a new refresh schedule within a session that has the
+desired role assumed. Use the BIAC <strong>Switch role</strong> menu or run the <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">ROLE</span> <span class="pre">&lt;role&gt;</span></code> statement to select the role. This role is then used to execute the
+<code class="docutils literal notranslate"><span class="pre">REFRESH</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> statement during job execution.</p>
+<!-- In Progress: System table to see history of refreshes
+
+You can view the history of all Iceberg materialized views refreshes using the
+`iceberg.system.materilized_view_refreshes` system table. The table lists
+automatic refresh attempts for Iceberg materialized views.
+
+```sql
+SELECT * FROM  iceberg.system.materialized_view_refreshes
+```
+
+```text
+ schema_name |           materialized_view_name           |  status   |          query_id           |           scheduled_at            |             queued_at             |            started_at             |            updated_at             |                                          error_message
+-------------+--------------------------------------------+-----------+-----------------------------+-----------------------------------+-----------------------------------+-----------------------------------+-----------------------------------+--------------------------------------------------------------------------------------------------
+ default     | mv1_test_refreshes_system_table_jvhgnhll17 | Completed | 20250224_151603_00005_3ywp5 | 2025-02-23 16:00:00.000000000 UTC | 2025-02-24 15:16:03.058000000 UTC | 2025-02-24 15:16:03.530000000 UTC | 2025-02-24 15:16:03.742000000 UTC | NULL
+ default     | mv1_test_refreshes_system_table_jvhgnhll17 | Error     | 20250224_151606_00010_3ywp5 | 2025-02-23 16:00:00.000000000 UTC | 2025-02-24 15:16:06.113000000 UTC | 2025-02-24 15:16:06.544000000 UTC | 2025-02-24 15:16:06.566000000 UTC | line 3:3: Table 'iceberg.default.mv_source_test_refreshes_system_table4mbjq4ozoj' does not exist
+ default     | mv1_test_refreshes_system_table_jvhgnhll17 | Completed | 20250224_151607_00012_3ywp5 | 2025-02-23 16:00:00.000000000 UTC | 2025-02-24 15:16:07.130000000 UTC | 2025-02-24 15:16:07.551000000 UTC | 2025-02-24 15:16:07.694000000 UTC | NULL
+ default     | mv2_test_refreshes_system_table_dg11oz49rd | Completed | 20250224_151604_00006_3ywp5 | 2025-02-23 16:00:00.000000000 UTC | 2025-02-24 15:16:04.079000000 UTC | 2025-02-24 15:16:04.528000000 UTC | 2025-02-24 15:16:04.640000000 UTC | NULL
+ default     | mv3_test_refreshes_system_table_wsbsxgld4u | Completed | 20250224_151605_00007_3ywp5 | 2025-02-23 16:00:00.000000000 UTC | 2025-02-24 15:16:05.097000000 UTC | 2025-02-24 15:16:05.535000000 UTC | 2025-02-24 15:16:05.641000000 UTC | NULL
+```
+
+The system table returns the following columns:
+
+:::{list-table}
+:widths: 30, 60
+:header-rows: 1
+
+* - Column
+  - Description
+* - `schema_name`
+  - Name of the schema that contains the materialized view.
+* - `materialized_view_name`
+  - Name of the materialized view.
+* - `status`
+  - Status of the refresh attempt.
+    - Queued: the refresh is queued for execution.
+    - Running: the refresh is running.
+    - Completed: the refresh finished successfully.
+    - Shutdown: the refresh did not finish because the coordinator was restarted.
+    - Error: the refresh failed.
+* - `query_id`
+  - ID of the query that executed the refresh.
+* - `scheduled_at`
+  - The timestamp when the refresh was scheduled.
+* - `queued_at`
+  - The timestamp when the refresh job was placed in queue.
+* - `started_at`
+  - The timestamp when the refresh job started.
+* - `updated_at`
+  - The timestamp when the refresh job's status was last updated.
+* - `error_message`
+  - The reason the refresh job failed.
+:::
+
+-- End of comment-->
+</section>
 </section>
 <section id="table-functions">
 <h3 id="table-functions">Table functions<a class="headerlink" href="#table-functions" title="Link to this heading">#</a></h3>
