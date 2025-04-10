@@ -253,6 +253,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#multiple-gcp-projects">Multiple GCP projects</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#billing-and-data-projects">Billing and data projects</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#reading-from-views">Reading from views</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#arrow-serialization-support">Arrow serialization support</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#configuration-properties">Configuration properties</a></li>
@@ -272,6 +273,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#collect-statistics">collect_statistics</a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="#wildcard-table">Wildcard table</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#procedures">Procedures</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#system-execute-query"><code class="docutils literal notranslate"><span class="pre">system.execute('query')</span></code></a></li>
 </ul>
@@ -374,6 +376,8 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#multiple-gcp-projects" class="md-nav__link">Multiple GCP projects</a>
         </li>
+        <li class="md-nav__item"><a href="#billing-and-data-projects" class="md-nav__link">Billing and data projects</a>
+        </li>
         <li class="md-nav__item"><a href="#reading-from-views" class="md-nav__link">Reading from views</a>
         </li>
         <li class="md-nav__item"><a href="#arrow-serialization-support" class="md-nav__link">Arrow serialization support</a>
@@ -405,6 +409,8 @@
         <li class="md-nav__item"><a href="#collect-statistics" class="md-nav__link">collect_statistics</a>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#wildcard-table" class="md-nav__link">Wildcard table</a>
         </li>
         <li class="md-nav__item"><a href="#procedures" class="md-nav__link">Procedures</a><nav class="md-nav">
               <ul class="md-nav__list">
@@ -531,12 +537,54 @@ The default is <code class="docutils literal notranslate"><span class="pre">30m<
 <section id="multiple-gcp-projects">
 <h3 id="multiple-gcp-projects">Multiple GCP projects<a class="headerlink" href="#multiple-gcp-projects" title="Link to this heading">#</a></h3>
 <p>The BigQuery connector can only access a single GCP project. If you have data in
-multiple GCP projects, you need to create several catalogs that each point to a
+multiple GCP projects, you must create several catalogs that each point to a
 different GCP project.</p>
 <p>For example, if you have two GCP projects, one called <code class="docutils literal notranslate"><span class="pre">sales</span></code> and one called
 <code class="docutils literal notranslate"><span class="pre">analytics</span></code>, create two properties files in <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named
 <code class="docutils literal notranslate"><span class="pre">sales.properties</span></code> and <code class="docutils literal notranslate"><span class="pre">analytics.properties</span></code>. They both need to include the
 <code class="docutils literal notranslate"><span class="pre">connector.name=bigquery</span></code>property but with different <code class="docutils literal notranslate"><span class="pre">project-id</span></code>.</p>
+</section>
+<section id="billing-and-data-projects">
+<span id="bigquery-project-id-resolution"></span><h3 id="billing-and-data-projects">Billing and data projects<a class="headerlink" href="#billing-and-data-projects" title="Link to this heading">#</a></h3>
+<p>The BigQuery connector determines the <a class="reference external" href="https://cloud.google.com/resource-manager/docs/creating-managing-projects">project
+ID</a>
+to use based on the configuration settings. This behavior provides users with
+flexibility in selecting both the project to query and the project to bill for
+BigQuery operations. The following table explains how project IDs are resolved
+in different scenarios:</p>
+<table id="id3">
+<caption><span class="caption-text">Billing and data project ID resolution</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 31%"/>
+<col style="width: 34%"/>
+<col style="width: 34%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Configured properties</p></th>
+<th class="head"><p>Billing project</p></th>
+<th class="head"><p>Data project</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Only <code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key</span></code></p></td>
+<td><p>The project ID from the credentials key is used for billing.</p></td>
+<td><p>The project ID from the credentials key is used for querying data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key</span></code> and <code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code></p></td>
+<td><p>The project ID from the credentials key is used for billing.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code> is used for querying data.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key</span></code> and <code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code> is used for billing.</p></td>
+<td><p>The project ID from the credentials key is used for querying data.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key</span></code> and <code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code>
+and <code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code> is used for billing.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code> is used for querying data.</p></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="reading-from-views">
 <span id="bigquery-reading-from-views"></span><h3 id="reading-from-views">Reading from views<a class="headerlink" href="#reading-from-views" title="Link to this heading">#</a></h3>
@@ -565,8 +613,8 @@ additional JVM argument to the <a class="reference internal" href="../installati
 </section>
 <section id="configuration-properties">
 <h3 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h3>
-<table id="id3">
-<caption><span class="caption-text">BigQuery configuration properties</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">BigQuery configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 55%"/>
@@ -580,12 +628,14 @@ additional JVM argument to the <a class="reference internal" href="../installati
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code></p></td>
-<td><p>The Google Cloud Project ID where the data resides.</p></td>
-<td><p>Taken from the service account</p></td>
+<td><p>The project ID of the Google Cloud account used to store the data,
+see also <a class="reference internal" href="#bigquery-project-id-resolution"><span class="std std-ref">Billing and data projects</span></a></p></td>
+<td><p>Taken from the service account or from <code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code>, if set</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code></p></td>
-<td><p>The project ID Google Cloud Project to bill for the export.</p></td>
-<td><p>Taken from the service account</p></td>
+<td><p>The project ID of the Google Cloud account used to store the data,
+see also <a class="reference internal" href="#bigquery-project-id-resolution"><span class="std std-ref">Billing and data projects</span></a></p></td>
+<td><p>Taken from the service account or from <code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code>, if set</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.views-enabled</span></code></p></td>
 <td><p>Enables the connector to read from views and not only tables. Read
@@ -770,8 +820,8 @@ each direction.</p>
 <h3 id="bigquery-type-to-trino-type-mapping">BigQuery type to Trino type mapping<a class="headerlink" href="#bigquery-type-to-trino-type-mapping" title="Link to this heading">#</a></h3>
 <p>The connector maps BigQuery types to the corresponding Trino types following
 this table:</p>
-<table id="id4">
-<caption><span class="caption-text">BigQuery type to Trino type mapping</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">BigQuery type to Trino type mapping</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 27%"/>
 <col style="width: 27%"/>
@@ -856,8 +906,8 @@ format.</p></td>
 <h3 id="trino-type-to-bigquery-type-mapping">Trino type to BigQuery type mapping<a class="headerlink" href="#trino-type-to-bigquery-type-mapping" title="Link to this heading">#</a></h3>
 <p>The connector maps Trino types to the corresponding BigQuery types following
 this table:</p>
-<table id="id5">
-<caption><span class="caption-text">Trino type to BigQuery type mapping</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Trino type to BigQuery type mapping</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 27%"/>
 <col style="width: 27%"/>
@@ -990,6 +1040,16 @@ array of column names. For example:</p>
 </pre></div>
 </div>
 </section>
+</section>
+<section id="wildcard-table">
+<h3 id="wildcard-table">Wildcard table<a class="headerlink" href="#wildcard-table" title="Link to this heading">#</a></h3>
+<p>The connector provides support to query multiple tables using a concise
+<a class="reference external" href="https://cloud.google.com/bigquery/docs/querying-wildcard-tables">wildcard table</a>
+notation.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">web</span><span class="p">.</span><span class="ss">"page_views_*"</span><span class="p">;</span>
+</pre></div>
+</div>
 </section>
 <section id="procedures">
 <h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
