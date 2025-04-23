@@ -263,7 +263,7 @@
 <li class="toctree-l4"><a class="reference internal" href="dist-sort.html">Distributed sort</a></li>
 <li class="toctree-l4 current"><a class="current reference internal" href="#">Dynamic filtering</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#analysis-and-confirmation">Analysis and confirmation</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#dynamic-filter-collection-thresholds">Dynamic filter collection thresholds</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#dynamic-filter-collection-requirements">Dynamic filter collection requirements</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#dimension-tables-layout">Dimension tables layout</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
@@ -326,7 +326,7 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#analysis-and-confirmation" class="md-nav__link">Analysis and confirmation</a>
         </li>
-        <li class="md-nav__item"><a href="#dynamic-filter-collection-thresholds" class="md-nav__link">Dynamic filter collection thresholds</a>
+        <li class="md-nav__item"><a href="#dynamic-filter-collection-requirements" class="md-nav__link">Dynamic filter collection requirements</a>
         </li>
         <li class="md-nav__item"><a href="#dimension-tables-layout" class="md-nav__link">Dimension tables layout</a>
         </li>
@@ -346,64 +346,66 @@
   <section id="dynamic-filtering">
 <h1 id="admin-dynamic-filtering--page-root">Dynamic filtering<a class="headerlink" href="#admin-dynamic-filtering--page-root" title="Link to this heading">#</a></h1>
 <p>Dynamic filtering optimizations significantly improve the performance of queries
-with selective joins by avoiding reading of data that would be filtered by join condition.</p>
-<p>Consider the following query which captures a common pattern of a fact table <code class="docutils literal notranslate"><span class="pre">store_sales</span></code>
-joined with a filtered dimension table <code class="docutils literal notranslate"><span class="pre">date_dim</span></code>:</p>
+with selective joins by avoiding reading of data that would be filtered by join
+condition.</p>
+<p>Consider the following query which captures a common pattern of a fact table
+<code class="docutils literal notranslate"><span class="pre">store_sales</span></code> joined with a filtered dimension table <code class="docutils literal notranslate"><span class="pre">date_dim</span></code>:</p>
 <blockquote>
-<div><p>SELECT count(*)
-FROM store_sales
-JOIN date_dim ON store_sales.ss_sold_date_sk = date_dim.d_date_sk
-WHERE d_following_holiday=’Y’ AND d_year = 2000;</p>
+<div><p>SELECT count(*) FROM store_sales JOIN date_dim ON store_sales.ss_sold_date_sk
+= date_dim.d_date_sk WHERE d_following_holiday=’Y’ AND d_year = 2000;</p>
 </div></blockquote>
-<p>Without dynamic filtering, Trino pushes predicates for the dimension table to the
-table scan on <code class="docutils literal notranslate"><span class="pre">date_dim</span></code>, and it scans all the data in the fact table since there
-are no filters on <code class="docutils literal notranslate"><span class="pre">store_sales</span></code> in the query. The join operator ends up throwing away
-most of the probe-side rows as the join criteria is highly selective.</p>
-<p>When dynamic filtering is enabled, Trino collects candidate values for join condition
-from the processed dimension table on the right side of join. In the case of broadcast joins,
-the runtime predicates generated from this collection are pushed into the local table scan
-on the left side of the join running on the same worker.</p>
-<p>Additionally, these runtime predicates are communicated to the coordinator over the network
-so that dynamic filtering can also be performed on the coordinator during enumeration of
-table scan splits.</p>
-<p>For example, in the case of the Hive connector, dynamic filters are used
-to skip loading of partitions which don’t match the join criteria.
-This is known as <strong>dynamic partition pruning</strong>.</p>
-<p>After completing the collection of dynamic filters, the coordinator also distributes them
-to worker nodes over the network for partitioned joins. This allows push down of dynamic
-filters from partitioned joins into the table scans on the left side of that join.</p>
-<p>The results of dynamic filtering optimization can include the following benefits:</p>
+<p>Without dynamic filtering, Trino pushes predicates for the dimension table to
+the table scan on <code class="docutils literal notranslate"><span class="pre">date_dim</span></code>, and it scans all the data in the fact table since
+there are no filters on <code class="docutils literal notranslate"><span class="pre">store_sales</span></code> in the query. The join operator ends up
+throwing away most of the probe-side rows as the join criteria is highly
+selective.</p>
+<p>When dynamic filtering is enabled, Trino collects candidate values for join
+condition from the processed dimension table on the right side of join. In the
+case of broadcast joins, the runtime predicates generated from this collection
+are pushed into the local table scan on the left side of the join running on the
+same worker.</p>
+<p>Additionally, these runtime predicates are communicated to the coordinator over
+the network so that dynamic filtering can also be performed on the coordinator
+during enumeration of table scan splits.</p>
+<p>For example, in the case of the Hive connector, dynamic filters are used to skip
+loading of partitions which don’t match the join criteria. This is known as
+<strong>dynamic partition pruning</strong>.</p>
+<p>After completing the collection of dynamic filters, the coordinator also
+distributes them to worker nodes over the network for partitioned joins. This
+allows push down of dynamic filters from partitioned joins into the table scans
+on the left side of that join.</p>
+<p>The results of dynamic filtering optimization can include the following
+benefits:</p>
 <ul class="simple">
 <li><p>improved overall query performance</p></li>
 <li><p>reduced network traffic between Trino and the data source</p></li>
 <li><p>reduced load on the remote data source</p></li>
 </ul>
-<p>Dynamic filtering is enabled by default. It can be disabled by setting either the
-<code class="docutils literal notranslate"><span class="pre">enable-dynamic-filtering</span></code> configuration property, or the session property
+<p>Dynamic filtering is enabled by default. It can be disabled by setting either
+the <code class="docutils literal notranslate"><span class="pre">enable-dynamic-filtering</span></code> configuration property, or the session property
 <code class="docutils literal notranslate"><span class="pre">enable_dynamic_filtering</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
-<p>Support for push down of dynamic filters is specific to each connector,
-and the relevant underlying database or storage system. The documentation for
-specific connectors with support for dynamic filtering includes further details,
-for example the <a class="reference internal" href="../connector/hive.html#hive-dynamic-filtering"><span class="std std-ref">Hive connector</span></a>
-or the <a class="reference internal" href="../connector/memory.html#memory-dynamic-filtering"><span class="std std-ref">Memory connector</span></a>.</p>
+<p>Support for push down of dynamic filters is specific to each connector, and the
+relevant underlying database or storage system. The documentation for specific
+connectors with support for dynamic filtering includes further details, for
+example the <a class="reference internal" href="../connector/hive.html#hive-dynamic-filtering"><span class="std std-ref">Hive connector</span></a> or the <a class="reference internal" href="../connector/memory.html#memory-dynamic-filtering"><span class="std std-ref">Memory connector</span></a>.</p>
 <section id="analysis-and-confirmation">
 <h2 id="analysis-and-confirmation">Analysis and confirmation<a class="headerlink" href="#analysis-and-confirmation" title="Link to this heading">#</a></h2>
 <p>Dynamic filtering depends on a number of factors:</p>
 <ul class="simple">
 <li><p>Planner support for dynamic filtering for a given join operation in Trino.
-Currently inner and right joins with <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> or
-<code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">DISTINCT</span> <span class="pre">FROM</span></code> join conditions, and
-semi-joins with <code class="docutils literal notranslate"><span class="pre">IN</span></code> conditions are supported.</p></li>
-<li><p>Connector support for utilizing dynamic filters pushed into the table scan at runtime.
-For example, the Hive connector can push dynamic filters into ORC and Parquet readers
-to perform stripe or row-group pruning.</p></li>
-<li><p>Connector support for utilizing dynamic filters at the splits enumeration stage.</p></li>
+Currently inner and right joins with <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> or <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">DISTINCT</span> <span class="pre">FROM</span></code> join conditions, and semi-joins with <code class="docutils literal notranslate"><span class="pre">IN</span></code> conditions are
+supported.</p></li>
+<li><p>Connector support for utilizing dynamic filters pushed into the table scan at
+runtime. For example, the Hive connector can push dynamic filters into ORC and
+Parquet readers to perform stripe or row-group pruning.</p></li>
+<li><p>Connector support for utilizing dynamic filters at the splits enumeration
+stage.</p></li>
 <li><p>Size of right (build) side of the join.</p></li>
 </ul>
-<p>You can take a closer look at the <a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN plan</span></a> of the query
-to analyze if the planner is adding dynamic filters to a specific query’s plan.
-For example, the explain plan for the above query can be obtained by running
-the following statement:</p>
+<p>You can take a closer look at the <a class="reference internal" href="../sql/explain.html"><span class="doc">EXPLAIN plan</span></a> of the
+query to analyze if the planner is adding dynamic filters to a specific query’s
+plan. For example, the explain plan for the above query can be obtained by
+running the following statement:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">store_sales</span>
@@ -412,11 +414,11 @@ the following statement:</p>
 </pre></div>
 </div>
 <p>The explain plan for this query shows <code class="docutils literal notranslate"><span class="pre">dynamicFilterAssignments</span></code> in the
-<code class="docutils literal notranslate"><span class="pre">InnerJoin</span></code> node with dynamic filter <code class="docutils literal notranslate"><span class="pre">df_370</span></code> collected from build symbol <code class="docutils literal notranslate"><span class="pre">d_date_sk</span></code>.
-You can also see the <code class="docutils literal notranslate"><span class="pre">dynamicFilter</span></code> predicate as part of the Hive <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code>
-operator where <code class="docutils literal notranslate"><span class="pre">df_370</span></code> is associated with probe symbol <code class="docutils literal notranslate"><span class="pre">ss_sold_date_sk</span></code>.
-This shows you that the planner is successful in pushing dynamic filters
-down to the connector in the query plan.</p>
+<code class="docutils literal notranslate"><span class="pre">InnerJoin</span></code> node with dynamic filter <code class="docutils literal notranslate"><span class="pre">df_370</span></code> collected from build symbol
+<code class="docutils literal notranslate"><span class="pre">d_date_sk</span></code>. You can also see the <code class="docutils literal notranslate"><span class="pre">dynamicFilter</span></code> predicate as part of the Hive
+<code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> operator where <code class="docutils literal notranslate"><span class="pre">df_370</span></code> is associated with probe symbol
+<code class="docutils literal notranslate"><span class="pre">ss_sold_date_sk</span></code>. This shows you that the planner is successful in pushing
+dynamic filters down to the connector in the query plan.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>...
 
 Fragment 1 [SOURCE]
@@ -455,9 +457,9 @@ Fragment 2 [SOURCE]
 </div>
 <p>During execution of a query with dynamic filters, Trino populates statistics
 about dynamic filters in the QueryInfo JSON available through the
-<a class="reference internal" href="web-interface.html"><span class="doc">Trino web UI</span></a>.
-In the <code class="docutils literal notranslate"><span class="pre">queryStats</span></code> section, statistics about dynamic filters collected
-by the coordinator can be found in the <code class="docutils literal notranslate"><span class="pre">dynamicFiltersStats</span></code> structure.</p>
+<a class="reference internal" href="web-interface.html"><span class="doc">Trino web UI</span></a>. In the <code class="docutils literal notranslate"><span class="pre">queryStats</span></code> section, statistics about
+dynamic filters collected by the coordinator can be found in the
+<code class="docutils literal notranslate"><span class="pre">dynamicFiltersStats</span></code> structure.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>"dynamicFiltersStats" : {
       "dynamicFilterDomainStats" : [ {
         "dynamicFilterId" : "df_370",
@@ -473,8 +475,8 @@ by the coordinator can be found in the <code class="docutils literal notranslate
 </div>
 <p>Push down of dynamic filters into a table scan on the worker nodes can be
 verified by looking at the operator statistics for that table scan.
-<code class="docutils literal notranslate"><span class="pre">dynamicFilterSplitsProcessed</span></code> records the number of splits
-processed after a dynamic filter is pushed down to the table scan.</p>
+<code class="docutils literal notranslate"><span class="pre">dynamicFilterSplitsProcessed</span></code> records the number of splits processed after a
+dynamic filter is pushed down to the table scan.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>"operatorType" : "ScanFilterAndProjectOperator",
 "totalDrivers" : 1,
 "addInputCalls" : 762,
@@ -486,9 +488,7 @@ processed after a dynamic filter is pushed down to the table scan.</p>
 "dynamicFilterSplitsProcessed" : 1,
 </pre></div>
 </div>
-<p>Dynamic filters are reported as a part of the
-<a class="reference internal" href="../sql/explain-analyze.html"><span class="doc">EXPLAIN ANALYZE plan</span></a> in the statistics for
-<code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> nodes.</p>
+<p>Dynamic filters are reported as a part of the <a class="reference internal" href="../sql/explain-analyze.html"><span class="doc">EXPLAIN ANALYZE plan</span></a> in the statistics for <code class="docutils literal notranslate"><span class="pre">ScanFilterProject</span></code> nodes.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>...
 
  └─ InnerJoin[("ss_sold_date_sk" = "d_date_sk")][$hashvalue, $hashvalue_4]
@@ -514,73 +514,38 @@ processed after a dynamic filter is pushed down to the table scan.</p>
 </pre></div>
 </div>
 </section>
-<section id="dynamic-filter-collection-thresholds">
-<h2 id="dynamic-filter-collection-thresholds">Dynamic filter collection thresholds<a class="headerlink" href="#dynamic-filter-collection-thresholds" title="Link to this heading">#</a></h2>
-<p>In order for dynamic filtering to work, the smaller dimension table
-needs to be chosen as a join’s build side. The cost-based optimizer can automatically
-do this using table statistics provided by connectors. Therefore, it is recommended
-to keep <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">table statistics</span></a> up to date and rely on the
-CBO to correctly choose the smaller table on the build side of join.</p>
-<p>Collection of values of the join key columns from the build side for
-dynamic filtering may incur additional CPU overhead during query execution.
-Therefore, to limit the overhead of collecting dynamic filters
-to the cases where the join operator is likely to be selective,
-Trino defines thresholds on the size of dynamic filters collected from build side tasks.
-Collection of dynamic filters for joins with large build sides can be enabled
-using the <code class="docutils literal notranslate"><span class="pre">enable-large-dynamic-filters</span></code> configuration property or the
-<code class="docutils literal notranslate"><span class="pre">enable_large_dynamic_filters</span></code> session property.</p>
-<p>When large dynamic filters are enabled, limits on the size of dynamic filters can
-be configured using the configuration properties
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large.max-distinct-values-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large.max-size-per-driver</span></code> ,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large.range-row-limit-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large-partitioned.max-distinct-values-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large-partitioned.max-size-per-driver</span></code> and
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large-partitioned.range-row-limit-per-driver</span></code>.</p>
-<p>Similarly, limits for dynamic filters when <code class="docutils literal notranslate"><span class="pre">enable-large-dynamic-filters</span></code>
-is not enabled can be configured using configuration properties like
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small.max-distinct-values-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small.max-size-per-driver</span></code> ,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small.range-row-limit-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small-partitioned.max-distinct-values-per-driver</span></code>,
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small-partitioned.max-size-per-driver</span></code> and
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small-partitioned.range-row-limit-per-driver</span></code>.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large.*</span></code> and <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small.*</span></code> limits are applied
-when dynamic filters are collected before build side is partitioned on join
-keys (when broadcast join is chosen or when fault tolerant execution is enabled). The
-<code class="docutils literal notranslate"><span class="pre">dynamic-filtering.large-partitioned.*</span></code> and <code class="docutils literal notranslate"><span class="pre">dynamic-filtering.small-partitioned.*</span></code>
-limits are applied when dynamic filters are collected after build side is partitioned
-on join keys (when partitioned join is chosen and fault tolerant execution is disabled).</p>
-<p>The properties based on <code class="docutils literal notranslate"><span class="pre">max-distinct-values-per-driver</span></code> and <code class="docutils literal notranslate"><span class="pre">max-size-per-driver</span></code>
-define thresholds for the size up to which dynamic filters are collected in a
-distinct values data structure. When the build side exceeds these thresholds,
-Trino switches to collecting min and max values per column to reduce overhead.
-This min-max filter has much lower granularity than the distinct values filter.
-However, it may still be beneficial in filtering some data from the probe side,
-especially when a range of values is selected from the build side of the join.
-The limits for min-max filters collection are defined by the properties
-based on <code class="docutils literal notranslate"><span class="pre">range-row-limit-per-driver</span></code>.</p>
+<section id="dynamic-filter-collection-requirements">
+<h2 id="dynamic-filter-collection-requirements">Dynamic filter collection requirements<a class="headerlink" href="#dynamic-filter-collection-requirements" title="Link to this heading">#</a></h2>
+<p>In order for dynamic filtering to work, the smaller dimension table needs to be
+chosen as a join’s build side. The cost-based optimizer can automatically do
+this using table statistics provided by connectors. Therefore, it is recommended
+to keep <a class="reference internal" href="../optimizer/statistics.html"><span class="doc">table statistics</span></a> up to date and rely on
+the CBO to correctly choose the smaller table on the build side of join.</p>
 </section>
 <section id="dimension-tables-layout">
 <h2 id="dimension-tables-layout">Dimension tables layout<a class="headerlink" href="#dimension-tables-layout" title="Link to this heading">#</a></h2>
-<p>Dynamic filtering works best for dimension tables where
-table keys are correlated with columns.</p>
-<p>For example, a date dimension key column should be correlated with a date column,
-so the table keys monotonically increase with date values.
-An address dimension key can be composed of other columns such as
-<code class="docutils literal notranslate"><span class="pre">COUNTRY-STATE-ZIP-ADDRESS_ID</span></code> with an example value of <code class="docutils literal notranslate"><span class="pre">US-NY-10001-1234</span></code>.
-This usage allows dynamic filtering to succeed even with a large number
-of selected rows from the dimension table.</p>
+<p>Dynamic filtering works best for dimension tables where table keys are
+correlated with columns.</p>
+<p>For example, a date dimension key column should be correlated with a date
+column, so the table keys monotonically increase with date values. An address
+dimension key can be composed of other columns such as
+<code class="docutils literal notranslate"><span class="pre">COUNTRY-STATE-ZIP-ADDRESS_ID</span></code> with an example value of <code class="docutils literal notranslate"><span class="pre">US-NY-10001-1234</span></code>. This
+usage allows dynamic filtering to succeed even with a large number of selected
+rows from the dimension table.</p>
 </section>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p>Min-max dynamic filter collection is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and unorderable data types.</p></li>
-<li><p>Dynamic filtering is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> and <code class="docutils literal notranslate"><span class="pre">REAL</span></code> data types when using <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">DISTINCT</span> <span class="pre">FROM</span></code> predicate.</p></li>
-<li><p>Dynamic filtering is supported when the join key contains a cast from the build key type to the
-probe key type. Dynamic filtering is also supported in limited scenarios when there is an implicit
-cast from the probe key type to the build key type. For example, dynamic filtering is supported when
-the build side key is of <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> type and the probe side key is of <code class="docutils literal notranslate"><span class="pre">REAL</span></code> or <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code> type.</p></li>
+<li><p>Min-max dynamic filter collection is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and
+unorderable data types.</p></li>
+<li><p>Dynamic filtering is not supported for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> and <code class="docutils literal notranslate"><span class="pre">REAL</span></code> data types when
+using <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">DISTINCT</span> <span class="pre">FROM</span></code> predicate.</p></li>
+<li><p>Dynamic filtering is supported when the join key contains a cast from the
+build key type to the probe key type. Dynamic filtering is also supported in
+limited scenarios when there is an implicit cast from the probe key type to
+the build key type. For example, dynamic filtering is supported when the build
+side key is of <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> type and the probe side key is of <code class="docutils literal notranslate"><span class="pre">REAL</span></code> or <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>
+type.</p></li>
 </ul>
 </section>
 </section>
