@@ -2406,8 +2406,8 @@
 maintenance</strong>.</p>
 
 <p>Data maintenance jobs run tasks that improve performance and reduce storage in
-Apache Iceberg tables. Supported tasks include: <strong>Compaction</strong>, <strong>Profile and
-statistics</strong>, <strong>Snapshot expiration</strong>, and <strong>Delete orphan files</strong>.</p>
+Apache Iceberg tables. Supported tasks include data file compaction, statistics
+collection, and deletion of outdated snapshots and orphaned files.</p>
 
 <p>To perform data maintenance operations on live tables, see <a href="../../../working-with-data/data-ingest/kafka-streaming-ingestion.html#data-maintenance">data maintenance for
 Kafka streaming
@@ -2426,27 +2426,28 @@ questions or feedback.</div>
 <p>The <strong>Data maintenance</strong> pane has the following levels:</p>
 
 <ul>
-  <li><a href="#top-level-details">Top level</a>, which shows a list of catalogs that include
-at least one maintenance task.</li>
-  <li><a href="#catalog-level-details">Catalog level</a>. Click the name of a catalog to see
-the schemas with maintenance tasks.</li>
-  <li><a href="#schema-level-details">Schema level</a>. Click the name of a schema to see the
-tables with maintenance tasks.</li>
-  <li><a href="#table-level-details">Table level</a>. Click the name of a table to see its
-defined maintenance tasks. From this level, you can run, edit, or delete a
-task and can view the task’s run history.</li>
+  <li><a href="#top-level-details">Top</a>: Shows a list of catalogs that include at least one
+maintenance task.</li>
+  <li><a href="#catalog-level-details">Catalog</a>: For the current catalog, shows a list of
+its schemas with maintenance tasks.</li>
+  <li><a href="#schema-level-details">Schema</a>: For the current schema, shows a list of its
+tables with maintenance tasks. You can create, edit, or delete tasks that
+apply to the entire schema from this level.</li>
+  <li><a href="#table-level-details">Table</a>: Shows the current table’s defined maintenance
+tasks and run history. From this level, you can run, edit, or delete the
+current data maintenance job.</li>
 </ul>
-      <h2 id="create-data-maintenance-task">
+      <h2 id="create-data-maintenance-job">
         
         
-          Create data maintenance task <a href="#create-data-maintenance-task" class="titleAnchor">#</a>
+          Create data maintenance job <a href="#create-data-maintenance-job" class="titleAnchor">#</a>
         
         
       </h2>
     
 
-<p>To schedule a data maintenance task, click <strong>Create maintenance task</strong> in the
-top, catalog, or schema levels.</p>
+<p>To create a data maintenance job, click <strong>Create maintenance task</strong> in the top,
+catalog, or schema details levels.</p>
 
 <p>Provide the following information in the <strong>Configure data maintenance</strong> dialog:</p>
 
@@ -2454,18 +2455,16 @@ top, catalog, or schema levels.</p>
   <li>In the <strong>Maintenance target</strong> section:
     <ul>
       <li>Specify a catalog and schema from the respective drop-down menus. If you
-opened this dialog from the catalog or schema levels. those fields are
-pre-selected.</li>
-      <li>Specify one or multiple tables to perform maintenance tasks on:
-        <ul>
-          <li>Select the <strong>All tables</strong> radio button to include all tables. This
+opened this dialog from the catalog or schema details levels, those fields
+are pre-selected.</li>
+      <li>Select the <strong>All tables</strong> radio button to include all tables. This
 selection automatically applies maintenance tasks to all future Iceberg
-tables created as part of this schema. To include tables with separate
-schedules, see <a href="#edit-data-maintenance-jobs">Edit data maintenance jobs</a>.</li>
-          <li>Select the <strong>Select tables</strong> radio button to invoke the table
-drop-down menu. Expand the menu, and select one or multiple tables.</li>
-        </ul>
-      </li>
+tables created as part of this schema. This selection also automatically
+stops maintenance jobs for tables that are removed. To include tables with
+separate schedules, see <a href="#edit-data-maintenance-jobs">Edit data maintenance
+jobs</a>.</li>
+      <li>Select the <strong>Select tables</strong> radio button to invoke the table
+drop-down menu. Expand the menu, and select one or multiple tables.<br /><br /></li>
     </ul>
   </li>
   <li>In the <strong>Maintenance tasks</strong> section, select at least one maintenance
@@ -2495,7 +2494,8 @@ task:</li>
     </tr>
     <tr>
       <td><strong>Delete orphan files</strong></td>
-      <td>Reduces storage by deleting orphaned data files.</td>
+      <td>Reduces storage by deleting orphaned data files. This rule
+          includes files that are not part of a table.</td>
     </tr>
   </tbody>
 </table>
@@ -2518,10 +2518,10 @@ schedule from the drop-down menu. The corresponding values depend on the
 schedule:</p>
 
     <ul>
-      <li><strong>Hourly:</strong> Enter a value between 1 minute and 59 minutes.</li>
+      <li><strong>Hourly:</strong> Enter a value between 0 minutes and 59 minutes.</li>
       <li><strong>Daily:</strong> Enter a time in the format <code class="language-plaintext highlighter-rouge">hh:mm</code>, then specify AM or PM.</li>
       <li><strong>Weekly:</strong> Enter a time in the format <code class="language-plaintext highlighter-rouge">hh:mm</code>, specify AM or PM, then
-select a day of the week.</li>
+select one or more days of the week.</li>
       <li><strong>Monthly:</strong> Enter a time in the format <code class="language-plaintext highlighter-rouge">hh:mm</code>, specify AM or PM, then
 select a date.</li>
       <li><strong>Annually:</strong> Enter a month, day, hour, and minutes in the format <code class="language-plaintext highlighter-rouge">MM/DD
@@ -2568,11 +2568,38 @@ cycle scheduled to run weekly at 9:30 AM on Monday, Wednesday, and Friday:</p>
     
 
 <p>All scheduled data maintenance jobs are listed in the <strong>Data maintenance</strong> pane
-beginning at the top level.</p>
+beginning at the top details level.</p>
 
 <p>As with other panes in Starburst Galaxy, the top row of this pane provides
-catalog-schema-table breadcrumbs to show which detail level you are on. Click
-names in the breadcrumb list to navigate among the levels.</p>
+catalog &gt; schema &gt; table breadcrumbs to show which detail level you are on.
+Click the names in the breadcrumb list to navigate among the levels.</p>
+      <h3 id="header-sections">
+        
+        
+          Header sections <a href="#header-sections" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The header for the catalog and schema details levels include the symbol key,
+which explains the task symbols:</p>
+
+<ul>
+  <li><i class="material-symbols-rounded" style="color:#495A92">compress</i> <strong>Compaction</strong></li>
+  <li><i class="material-symbols-rounded" style="color:#495A92">search_insights</i> <strong>Profile and statistics</strong></li>
+  <li><i class="material-symbols-rounded" style="color:#495A92">deployed_code_history</i> <strong>Snapshot expiration</strong></li>
+  <li><i class="material-symbols-rounded" style="color:#495A92">vacuum</i> <strong>Delete orphan files</strong></li>
+</ul>
+
+<p>The <strong>Search</strong> field at the top, catalog, and schema details levels let you
+restrict the list to matching values.</p>
+
+<p>The <strong>Last run status</strong> drop-down menu at the schema details level lets you
+restrict the list to jobs that are scheduled, running, completed, or failed.</p>
+
+<p>The <strong>Maintenance task</strong> drop-down menu at the catalog and schema details levels
+lets you restrict the list to a single task type.</p>
       <h3 id="top-level-details">
         
         
@@ -2582,9 +2609,9 @@ names in the breadcrumb list to navigate among the levels.</p>
       </h3>
     
 
-<p>The header for the top level shows the total number of catalogs with tasks, and
-provides a search bar and drop-down menus that let you customize which details
-appear in the list of catalogs.</p>
+<p>The header for the top details level shows the total number of catalogs with
+tasks, and provides a search bar and drop-down menus that let you customize
+which details appear in the list of catalogs.</p>
 
 <p>To view data maintenance jobs of a certain status, use the <strong>Last run status</strong>
 drop-down menu. Use the search bar to find catalogs.</p>
@@ -2614,25 +2641,6 @@ drop-down menu. Use the search bar to find catalogs.</p>
 </div>
   </li>
 </ul>
-      <h3 id="filters-available">
-        
-        
-          Filters available <a href="#filters-available" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<p>The <strong>Search</strong> field at the top, catalog, and schema levels lets you restrict the
-list below to matching values.</p>
-
-<p>The <strong>Last run status</strong> drop-down menu at the top, catalog, and schema levels
-lets your restrict the list to tasks that are scheduled, running, completed, or
-failed. The default setting is to show all statuses.</p>
-
-<p>The <strong>Maintenance task</strong> drop-down menu at the catalog and schema levels lets
-you restrict the list to one of the four task types. The default setting is to
-show all task types.</p>
       <h3 id="catalog-level-details">
         
         
@@ -2642,20 +2650,15 @@ show all task types.</p>
       </h3>
     
 
-<p>To view catalog level details, click the name of a catalog from the top level.</p>
+<p>To view catalog level details, click the name of a catalog from the top details
+level.</p>
 
 <p>Catalog level details are organized in the following columns:</p>
 
 <ul>
   <li><strong>Location:</strong> The specified schema.</li>
-  <li><strong>Tasks:</strong> The key explains the task type symbols:
-    <ul>
-      <li><strong>Compaction</strong> <i class="material-symbols-rounded">compress</i></li>
-      <li><strong>Profile and statistics</strong> <i class="material-symbols-rounded">search_insights</i></li>
-      <li><strong>Snapshot expiration</strong> <i class="material-symbols-rounded">deployed_code_history</i></li>
-      <li><strong>Delete orphan files</strong> <i class="material-symbols-rounded">vacuum</i></li>
-    </ul>
-  </li>
+  <li><strong>Tasks:</strong> The symbols representing the tasks included in the data maintenance
+job.</li>
   <li><strong>Last run:</strong> The date and time the data maintenance job was last run.</li>
   <li>
     <p><strong>Schedule:</strong> The next scheduled run time.</p>
@@ -2686,9 +2689,9 @@ show all task types.</p>
       </h3>
     
 
-<p>To view schema level details, click the name of a schema from the catalog level.
-The schema level list can include individual tables or maintenance tasks set up
-to run for all tables in a schema.</p>
+<p>To view schema level details, click the name of a schema from the catalog
+details level. The schema level details list can include individual tables or
+maintenance tasks set up to run for all tables in a schema.</p>
 
 <p>Schema level details have the following columns:</p>
 
@@ -2696,26 +2699,22 @@ to run for all tables in a schema.</p>
   <li><strong>Location:</strong> The tables with defined maintenance tasks.</li>
   <li><strong>Status:</strong> An icon showing status of the data maintenance job:
     <ul>
-      <li><i class="material-symbols-rounded" style="color:green">check_circle</i> Success</li>
-      <li><i class="material-symbols-rounded" style="color:red">error</i> Failed</li>
-      <li><i class="material-symbols-rounded" style="color:gold">schedule</i> Scheduled to run</li>
-      <li><i class="material-symbols-rounded" style="color:green">sync</i> Currently running</li>
+      <li><i class="material-symbols-rounded" style="color:#00A2B0">hourglass_top</i>Queued</li>
+      <li><i class="material-symbols-rounded" style="color:#44A654">check_circle</i> Completed</li>
+      <li><i class="material-symbols-rounded" style="color:#CC051D">error</i> Failed</li>
+      <li><i class="material-symbols-rounded" style="color:#fec84c">schedule</i> Scheduled to run</li>
+      <li><i class="material-symbols-rounded" style="color:#00A2B0">sync</i> Currently running</li>
     </ul>
   </li>
-  <li><strong>Tasks:</strong> The key explains the task symbols:
-    <ul>
-      <li><strong>Compaction</strong> <i class="material-symbols-rounded">compress</i></li>
-      <li><strong>Profile and statistics</strong> <i class="material-symbols-rounded">search_insights</i></li>
-      <li><strong>Snapshot expiration</strong> <i class="material-symbols-rounded">deployed_code_history</i></li>
-      <li><strong>Delete orphan files</strong> <i class="material-symbols-rounded">vacuum</i></li>
-    </ul>
-  </li>
+  <li><strong>Tasks:</strong> The symbols representing the tasks included in the data maintenance
+job.</li>
   <li><strong>Last run:</strong> The date and time the data maintenance job was last run.</li>
   <li><strong>Schedule:</strong> The next scheduled run time.</li>
-  <li>The <i class="material-symbols-rounded">more_vert</i>Options menu.</li>
+  <li>The <i class="material-symbols-rounded">more_vert</i>options menu.</li>
 </ul>
 
-<p>The <strong>Status</strong> and <strong>Tasks</strong> columns are empty until a task’s first run.</p>
+<p>The <strong>Status</strong> and <strong>Tasks</strong> columns remain blank until a task has been executed
+at least once.</p>
 
 <p>Use the options menu to <a href="#manage-data-maintenance-jobs">edit</a> the task or to run
 it now without waiting for its start time.</p>
@@ -2745,11 +2744,11 @@ it now without waiting for its start time.</p>
     
 
 <p>For more information on individual data maintenance jobs, click a table name
-from the schema level.</p>
+from the schema details level.</p>
 
-<p>The title of table level task panes is the name of the table. The top portion at
-the table level provides a summary of the selected data maintenance job, a <strong>Run
-now</strong> button, and an options menu that allows you to
+<p>The title of the table details level task pane is the name of the table. The top
+portion at the pane provides a summary of the selected data maintenance job, a
+<strong>Run now</strong> button, and an options menu that allows you to
 <a href="#manage-data-maintenance-jobs">edit</a> the task.</p>
 
 <p>The <strong>Task history</strong> section is organized in the following columns:</p>
@@ -2760,10 +2759,14 @@ view <a href="../../../working-with-data/query-performance-and-monitoring/view-q
 details</a>.</li>
   <li><strong>Task:</strong> The selected data maintenance task.</li>
   <li><strong>Run ID:</strong> The unique identifier for the task run.</li>
-  <li><strong>Status:</strong> The status of the data maintenance job. A green <i class="material-symbols-rounded" style="color:green">check</i> check indicates
-a successful maintenance task run. A circled <i class="material-symbols-rounded" style="color:red">error</i> exclamation mark
-indicates an error condition; the <strong>Debug</strong> link opens a dialog with
-information about the failed task.</li>
+  <li><strong>Status:</strong> The status of the data maintenance job.
+    <ul>
+      <li><i class="material-symbols-rounded" style="color:#44A654">check</i>
+Completed.</li>
+      <li><i class="material-symbols-rounded" style="color:#CC051D">error</i> Failed;
+the <strong>Debug</strong> link opens a dialog with information about the failed task.</li>
+    </ul>
+  </li>
   <li><strong>Started:</strong> When the data maintenance job started.</li>
   <li>
     <p><strong>Elapsed time:</strong> The duration of data maintenance job.</p>
@@ -2794,9 +2797,9 @@ information about the failed task.</li>
       </h2>
     
 
-<p>All editing is performed at the schema and table levels. The schema level allows
-for bulk and individual edits, while the table level allows for individual task
-edits only.</p>
+<p>All editing is performed at the schema and table details levels. The schema
+details level allows for bulk and individual job edits, while the table details
+level allows for individual job edits only.</p>
       <h3 id="edit-data-maintenance-jobs">
         
         
@@ -2806,30 +2809,31 @@ edits only.</p>
       </h3>
     
 
-<p>To make bulk edits, go to the schema level, and follow these steps:</p>
+<p>To make bulk edits, go to the schema details level, and follow these steps:</p>
 
 <ul>
   <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in the
 header.</li>
-  <li>Click <strong>Edit tasks</strong>.</li>
-  <li>Click the top checkbox to select all tables or click the checkboxes beside
-the tables of interest to select individually.</li>
-  <li>Click <strong>Bulk edit</strong>to invoke the <strong>Edit data maintenance</strong> dialog.</li>
-  <li>Make changes, then click <strong>Save</strong>.</li>
+  <li>Click <strong>Edit jobs</strong>.</li>
+  <li>Click the top checkbox to select all tables or select individual tables by
+clicking their checkboxes.</li>
+  <li>Click <strong>Bulk edit</strong> to invoke the <strong>Edit data maintenance</strong> dialog.</li>
+  <li>Make changes and resolve any discrepancies in tasks and schedules in the
+selected set of tables.</li>
+  <li>Click <strong>Save</strong>.</li>
 </ul>
 
 <p>To make individual edits:</p>
 
 <ul>
-  <li>At the schema level:
+  <li>At the schema details level:
     <ul>
-      <li>Select a table name from list of tables.</li>
       <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in
 the row, then select <strong>Edit</strong>.</li>
-      <li>Make changes, then click <strong>Save</strong>.</li>
+      <li>Make changes, then click <strong>Save</strong>.<br /><br /></li>
     </ul>
   </li>
-  <li>At the table level:
+  <li>At the table details level:
     <ul>
       <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in
 the header, then select <strong>Edit</strong>.</li>
@@ -2838,10 +2842,10 @@ the header, then select <strong>Edit</strong>.</li>
   </li>
 </ul>
 
-<p>Existing data maintenance jobs exclude tables with separate maintenance
+<p>Existing data maintenance jobs exclude tables that have separate maintenance
 schedules. To include these tables, <a href="#delete-data-maintenance-jobs">delete the data maintenance
-job</a> associated with the table. The tables are
-automatically included in the data maintenance job as part of the schema.</p>
+job</a> associated with them. After you delete the
+job, the previously excluded tables are included in the data maintenance job.</p>
       <h3 id="delete-data-maintenance-jobs">
         
         
@@ -2851,21 +2855,39 @@ automatically included in the data maintenance job as part of the schema.</p>
       </h3>
     
 
-<p>To delete tasks:</p>
+<p>To delete jobs in bulk, go to the schema details level, and follow these steps:</p>
 
 <ul>
-  <li>At the schema level:
+  <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in the
+header.</li>
+  <li>Click <strong>Delete jobs</strong>.</li>
+  <li>Click the top checkbox to select all tables or select individual tables by
+clicking their checkboxes.</li>
+  <li>Select <strong>Bulk delete</strong>.</li>
+  <li>In the dialog, <strong>Yes, delete</strong>.</li>
+</ul>
+
+<p>To make individual deletes:</p>
+
+<ul>
+  <li>
+    <p>At the schema details level:</p>
+
     <ul>
       <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in
-the row.</li>
-      <li>Select <strong>Delete tasks</strong>, the click <strong>Yes, delete</strong>.</li>
+the row of the table of interest.</li>
+      <li>Select <strong>Delete job</strong>.</li>
+      <li>In the dialog, <strong>Yes, delete</strong>.<br /><br /></li>
     </ul>
   </li>
-  <li>At the table level:
+  <li>
+    <p>At the table details level:</p>
+
     <ul>
       <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu in
-the header, then select <strong>Edit</strong>.</li>
-      <li>Select <strong>Delete tasks</strong>, the click <strong>Yes, delete</strong>.</li>
+the header.</li>
+      <li>Select <strong>Delete job</strong>.</li>
+      <li>In the dialog, <strong>Yes, delete</strong>.</li>
     </ul>
   </li>
 </ul>
@@ -2971,7 +2993,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#data-maintenance">Data maintenance</a><ul><li><a href="#create-data-maintenance-task">Create data maintenance task</a></li><li><a href="#data-maintenance-job-details">Data maintenance job details</a><ul><li><a href="#top-level-details">Top level details</a></li><li><a href="#filters-available">Filters available</a></li><li><a href="#catalog-level-details">Catalog level details</a></li><li><a href="#schema-level-details">Schema level details</a></li><li><a href="#table-level-details">Table level details</a></li></ul></li><li><a href="#manage-data-maintenance-jobs">Manage data maintenance jobs</a><ul><li><a href="#edit-data-maintenance-jobs">Edit data maintenance jobs</a></li><li><a href="#delete-data-maintenance-jobs">Delete data maintenance jobs</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#data-maintenance">Data maintenance</a><ul><li><a href="#create-data-maintenance-job">Create data maintenance job</a></li><li><a href="#data-maintenance-job-details">Data maintenance job details</a><ul><li><a href="#header-sections">Header sections</a></li><li><a href="#top-level-details">Top level details</a></li><li><a href="#catalog-level-details">Catalog level details</a></li><li><a href="#schema-level-details">Schema level details</a></li><li><a href="#table-level-details">Table level details</a></li></ul></li><li><a href="#manage-data-maintenance-jobs">Manage data maintenance jobs</a><ul><li><a href="#edit-data-maintenance-jobs">Edit data maintenance jobs</a></li><li><a href="#delete-data-maintenance-jobs">Delete data maintenance jobs</a></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
