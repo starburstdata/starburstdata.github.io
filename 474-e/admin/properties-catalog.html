@@ -297,15 +297,27 @@
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#catalog-management" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.management</span></code></a>
         </li>
-        <li class="md-nav__item"><a href="#catalog-prune-update-interval" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.prune.update-interval</span></code></a>
-        </li>
         <li class="md-nav__item"><a href="#catalog-store" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.store</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#catalog-prune-update-interval" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.prune.update-interval</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#catalog-config-dir" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.config-dir</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#catalog-disabled-catalogs" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.disabled-catalogs</span></code></a>
         </li>
         <li class="md-nav__item"><a href="#catalog-read-only" class="md-nav__link"><code class="docutils literal notranslate"><span class="pre">catalog.read-only</span></code></a>
+        </li>
+        <li class="md-nav__item"><a href="#migration-to-dynamic-catalogs" class="md-nav__link">Migration to Dynamic catalogs</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#prerequisites" class="md-nav__link">Prerequisites</a>
+        </li>
+        <li class="md-nav__item"><a href="#considerations" class="md-nav__link">Considerations</a>
+        </li>
+        <li class="md-nav__item"><a href="#migrate" class="md-nav__link">Migrate</a>
+        </li>
+        <li class="md-nav__item"><a href="#revert-dynamic-catalog-management" class="md-nav__link">Revert dynamic catalog management</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li>
@@ -321,20 +333,21 @@
   <section id="catalog-management-properties">
 <h1 id="admin-properties-catalog--page-root">Catalog management properties<a class="headerlink" href="#admin-properties-catalog--page-root" title="Link to this heading">#</a></h1>
 <p>The following properties are used to configure catalog management with further
-controls for dynamic catalog management.</p>
+controls for dynamic catalog management. See also, <a class="reference internal" href="#migrate-dynamic-catalogs"><span class="std std-ref">Migration to Dynamic catalogs</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Dynamic catalog management is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> in Starburst Enterprise. Contact <a class="external reference" href="../../support.html">Starburst
-Support</a> with questions or feedback.</p>
+<p>Dynamic catalog management is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public
+preview</span></a> in Starburst Enterprise. Contact your Starburst account
+team with questions or feedback.</p>
 </div>
 <p>All properties described in this page are defined as follows, depending on the
 deployment type:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-additional-properties"><span class="std std-ref">Kubernetes</span></a>: In the
-<code class="docutils literal notranslate"><span class="pre">additionalProperties</span></code> section of the the top-level <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and
-<code class="docutils literal notranslate"><span class="pre">worker</span></code> nodes in the <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file.</p></li>
-<li><p><a class="reference internal" href="../starburst-admin/playbook-reference.html#pb-push-configs"><span class="std std-ref">Starburst Admin</span></a>
-In the <code class="docutils literal notranslate"><span class="pre">files/coordinator/config.properties.j2</span></code> and
+<li><p><a class="reference internal" href="../k8s/sep-config-examples.html#k8s-ex-additional-properties"><span class="std std-ref">Kubernetes</span></a>: In the <code class="docutils literal notranslate"><span class="pre">additionalProperties</span></code>
+section of the the top-level <code class="docutils literal notranslate"><span class="pre">coordinator</span></code> and <code class="docutils literal notranslate"><span class="pre">worker</span></code> nodes in the
+<code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file.</p></li>
+<li><p><a class="reference internal" href="../starburst-admin/playbook-reference.html#pb-push-configs"><span class="std std-ref">Starburst Admin</span></a>: In the
+<code class="docutils literal notranslate"><span class="pre">files/coordinator/config.properties.j2</span></code> and
 <code class="docutils literal notranslate"><span class="pre">files/worker/config.properties.j2</span></code> files.</p></li>
 </ul>
 <section id="catalog-management">
@@ -351,28 +364,17 @@ configuration can also be managed using <a class="reference internal" href="../s
 catalog configuration from the coordinator node.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>Some connectors do not support dynamic catalog management, including the
-Prometheus connector.</p>
-<p>Some connectors are known not to release all resources when dropping a catalog
-that uses such connector. This includes all connectors that can read data from
-HDFS, S3, GCS, or Azure, which are <a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive connector</span></a>,
-<a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg connector</span></a>, <a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta Lake connector</span></a>, and
-<a class="reference internal" href="../connector/hudi.html"><span class="doc std std-doc">Hudi connector</span></a>.</p>
+<p>Several connectors do not support dynamic catalog management, including the
+Prometheus and <code class="docutils literal notranslate"><span class="pre">deprecated_hive</span></code> connectors.</p>
+<p>When you drop a catalog that uses connectors capable of reading from HDFS, such
+as the <a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive connector</span></a>, <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg connector</span></a>, <a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta Lake connector</span></a>,
+and <a class="reference internal" href="../connector/hudi.html"><span class="doc std std-doc">Hudi connector</span></a> connectors, some resources may not be fully released.
+Restart the coordinator and workers after dropping these catalogs to ensure
+proper cleanup.</p>
 </div>
-<p>The complete <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> query is logged and visible in the
-Starburst Enterprise web UI. It is strongly recommended to use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> rather
+<p>The complete <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> query is logged and visible in the Starburst Enterprise web UI. It
+is strongly recommended to use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> rather
 than pass any credentials in plain text.</p>
-</section>
-<section id="catalog-prune-update-interval">
-<h2 id="catalog-prune-update-interval"><code class="docutils literal notranslate"><span class="pre">catalog.prune.update-interval</span></code><a class="headerlink" href="#catalog-prune-update-interval" title="Link to this heading">#</a></h2>
-<ul class="simple">
-<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">duration</span></a></p></li>
-<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">5s</span></code></p></li>
-<li><p><strong>Minimum value:</strong> <code class="docutils literal notranslate"><span class="pre">1s</span></code></p></li>
-</ul>
-<p>Requires <a class="reference internal" href="#prop-catalog-management"><span class="std std-ref">catalog.management</span></a> to be set to <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>. Interval for
-pruning dropped catalogs. Dropping a catalog does not interrupt any running
-queries that use it, but makes it unavailable to any new queries.</p>
 </section>
 <section id="catalog-store">
 <span id="prop-catalog-store"></span><h2 id="catalog-store"><code class="docutils literal notranslate"><span class="pre">catalog.store</span></code><a class="headerlink" href="#catalog-store" title="Link to this heading">#</a></h2>
@@ -398,6 +400,17 @@ entire value set to reference a secret manager, so a configuration like
 <code class="docutils literal notranslate"><span class="pre">mongo.connection-url=mongodb://${vault:user}:${vault:password}@example.host:27017/</span></code>
 is invalid. The whole URL would instead need to be stored and specified as
 <code class="docutils literal notranslate"><span class="pre">mongo.connection-url=${vault:connection-url}</span></code>.</p>
+</section>
+<section id="catalog-prune-update-interval">
+<h2 id="catalog-prune-update-interval"><code class="docutils literal notranslate"><span class="pre">catalog.prune.update-interval</span></code><a class="headerlink" href="#catalog-prune-update-interval" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">duration</span></a></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">5s</span></code></p></li>
+<li><p><strong>Minimum value:</strong> <code class="docutils literal notranslate"><span class="pre">1s</span></code></p></li>
+</ul>
+<p>Requires <a class="reference internal" href="#prop-catalog-management"><span class="std std-ref">catalog.management</span></a> to be set to <code class="docutils literal notranslate"><span class="pre">dynamic</span></code>. Interval for
+pruning dropped catalogs. Dropping a catalog does not interrupt running queries,
+but prevents new ones from using it.</p>
 </section>
 <section id="catalog-config-dir">
 <h2 id="catalog-config-dir"><code class="docutils literal notranslate"><span class="pre">catalog.config-dir</span></code><a class="headerlink" href="#catalog-config-dir" title="Link to this heading">#</a></h2>
@@ -428,6 +441,129 @@ ignore on startup.</p>
 property files cannot be removed with <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">CATALOG</span></code>, and no new catalog files
 can be written with identical names with <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>. As a result, a
 coordinator restart resets the known catalogs to the existing files only.</p>
+</section>
+<section id="migration-to-dynamic-catalogs">
+<span id="migrate-dynamic-catalogs"></span><h2 id="migration-to-dynamic-catalogs">Migration to Dynamic catalogs<a class="headerlink" href="#migration-to-dynamic-catalogs" title="Link to this heading">#</a></h2>
+<p>Dynamic catalog management lets you define and manage catalogs directly through
+SQL statements, eliminating the need to manually update catalog configuration
+files. The following migration guide details how to transition from static to
+dynamic catalogs.</p>
+<section id="prerequisites">
+<h3 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h3>
+<p>Before migrating to dynamic catalog management, you must meet the following
+requirements:</p>
+<ul>
+<li><p>Configure a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secret manager</span></a>. See also,
+<a class="reference internal" href="#migrate-dynamic-considerations"><span class="std std-ref">Considerations</span></a>.</p></li>
+<li><p>Ensure you are not using one of the following connectors:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">deprecated_hive</span></code></p></li>
+<li><p><a class="reference internal" href="../connector/prometheus.html"><span class="doc std std-doc">Prometheus</span></a></p></li>
+</ul>
+<p>Additionally, using a connector that is not included in a SEP release may
+cause catalog management queries to fail.</p>
+</li>
+<li><p>Avoid using connectors that rely on HDFS libraries, including:</p>
+<ul class="simple">
+<li><p>Hive, Delta Lake, Iceberg, or Hudi with HDFS or legacy file system enabled.</p></li>
+<li><p>MapR connector</p></li>
+<li><p>HBase connector</p></li>
+<li><p>Hive connector with Hadoop-based SerDes such as
+<code class="docutils literal notranslate"><span class="pre">org.apache.hadoop.hive.serde2.JsonSerDe</span></code>.</p></li>
+</ul>
+<p>These connectors may fail to clean up properly when performing operations like
+<code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">CATALOG</span></code> or <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">CATALOG</span></code>.</p>
+</li>
+</ul>
+</section>
+<section id="considerations">
+<span id="migrate-dynamic-considerations"></span><h3 id="considerations">Considerations<a class="headerlink" href="#considerations" title="Link to this heading">#</a></h3>
+<p>Take the following considerations into account when migrating from static to
+dynamic catalog management:</p>
+<ul class="simple">
+<li><p>Ensure your catalog configuration files do not contain security-sensitive
+properties with plaintext values. Security-sensitive values are values that
+are not printed in the server’s startup log and are instead replaced with
+<code class="docutils literal notranslate"><span class="pre">***</span></code> to mask the values. Security-sensitive properties such as private keys
+and passwords cannot be passed as plaintext in <code class="docutils literal notranslate"><span class="pre">CREATE</span></code> and <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">CATALOG</span></code>
+catalog management statements. If you provide these properties in plaintext,
+the server displays an error prompting you to reference these properties using
+a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a>.</p></li>
+<li><p>Minimize the use of <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">CATALOG</span></code> statements when using caching mechanisms
+such as metadata caching or connection pooling. These statements do not
+directly clear the caches. However, they can create the perception of cleared
+caches.</p></li>
+</ul>
+</section>
+<section id="migrate">
+<h3 id="migrate">Migrate<a class="headerlink" href="#migrate" title="Link to this heading">#</a></h3>
+<p>Follow these steps to migrate from a statically managed catalog to dynamic
+catalog management:</p>
+<ol class="arabic">
+<li><p>Enable dynamic catalog management and store definitions in the SEP backend
+database by setting <code class="docutils literal notranslate"><span class="pre">catalog.management=dynamic</span></code> and
+<code class="docutils literal notranslate"><span class="pre">catalog.store=starburst</span></code>. Upon cluster startup, catalog configuration files
+are ignored. Only the <code class="docutils literal notranslate"><span class="pre">system</span></code> catalog is accessible until additional
+catalogs are created using <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>. See also,
+<a class="reference internal" href="#prop-catalog-management"><span class="std std-ref">catalog.management</span></a> and <a class="reference internal" href="#prop-catalog-store"><span class="std std-ref">catalog.store</span></a>.</p></li>
+<li><p>Convert catalog configuration files to <a class="reference internal" href="../sql/create-catalog.html"><span class="doc std std-doc">CREATE CATALOG</span></a>
+statements, ensuring security-sensitive properties use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
+manager</span></a>. For example,
+<code class="docutils literal notranslate"><span class="pre">${vault:secret/postgres:password}</span></code>.</p>
+<p>The following example converts a configuration file definition called
+<code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> into a new catalog using <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">postgresql</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:postgresql://example.net:5432/database</span>
+<span class="na">connection-user</span><span class="o">=</span><span class="s">root</span>
+<span class="na">connection-password</span><span class="o">=</span><span class="s">&lt;secret-password&gt;</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">CATALOG</span><span class="w"> </span><span class="n">my_postgres</span>
+<span class="k">USING</span><span class="w"> </span><span class="n">postgresql</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="ss">"connection-url"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jdbc:postgresql://example.net:5432/database'</span><span class="p">,</span>
+<span class="w">   </span><span class="ss">"connection-user"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'root'</span><span class="p">,</span>
+<span class="w">   </span><span class="ss">"connection-password"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'${vault:secret/postgres:password}'</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> to create variables for your
+sensitive properties and to avoid errors.</p>
+</li>
+<li><p>After creating the catalogs, run queries against them to validate that they
+are working correctly.</p></li>
+<li><p>Create a backup of your catalog configuration files so you can <a class="reference internal" href="#dynamic-migration-rollback"><span class="std std-ref">revert to
+static catalog management</span></a> if needed.</p></li>
+<li><p>Remove the catalog configuration files from the deployment/helm chart. These
+files are not used when <a class="reference internal" href="#prop-catalog-store"><span class="std std-ref">catalog.store</span></a> is set to <code class="docutils literal notranslate"><span class="pre">starburst</span></code>.</p></li>
+<li><p>Restart your SEP cluster and verify that the catalogs initialize
+successfully.</p></li>
+</ol>
+</section>
+<section id="revert-dynamic-catalog-management">
+<span id="dynamic-migration-rollback"></span><h3 id="revert-dynamic-catalog-management">Revert dynamic catalog management<a class="headerlink" href="#revert-dynamic-catalog-management" title="Link to this heading">#</a></h3>
+<p>To revert from dynamic to static catalog management in your SEP cluster,
+follow these steps:</p>
+<ol class="arabic simple">
+<li><p>Compare your catalog configuration files with the backend database
+definitions. Run the <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> query and verify that the output
+matches your existing configuration files.</p></li>
+<li><p>If the configuration does not match, update the catalog configuration files
+using information from the output of <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>.</p></li>
+<li><p>Switch to static catalog management by editing your configuration to do one
+of the following:</p>
+<ul class="simple">
+<li><p>Delete <code class="docutils literal notranslate"><span class="pre">catalog.management=dynamic</span></code> and <code class="docutils literal notranslate"><span class="pre">catalog.store=starburst</span></code> to use
+default settings.</p></li>
+<li><p>Explicitly set <code class="docutils literal notranslate"><span class="pre">catalog.management=static</span></code> and remove the
+<code class="docutils literal notranslate"><span class="pre">catalog.store</span></code> property.</p></li>
+</ul>
+</li>
+<li><p>Restart your SEP cluster to apply these changes.</p></li>
+</ol>
+</section>
 </section>
 </section>
 
