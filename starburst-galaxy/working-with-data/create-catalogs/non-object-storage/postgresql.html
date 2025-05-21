@@ -2798,6 +2798,7 @@ see <a href="#schema-and-table-management-details">Schema and table management
 details</a></li>
     </ul>
   </li>
+  <li><a href="#pgvector-support">pgvector extension</a></li>
 </ul>
 
 <p>The following sections provide PostgreSQL catalog-specific information regarding
@@ -2836,6 +2837,90 @@ is not supported:</p>
 
 <p>The catalog supports renaming a schema with the <code class="language-plaintext highlighter-rouge">ALTER SCHEMA RENAME</code>
 statement. <code class="language-plaintext highlighter-rouge">ALTER SCHEMA SET AUTHORIZATION</code> is not supported.</p>
+      <h3 id="pgvector-extension">
+        
+        
+          Pgvector extension <a href="#pgvector-extension" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The catalog provides support for a number of functions and data types using the
+<a href="https://github.com/pgvector/pgvector/">pgvector extension</a>. The pgvector
+<code class="language-plaintext highlighter-rouge">vector</code> type is mapped to the Starburst <code class="language-plaintext highlighter-rouge">array(real)</code> type.</p>
+
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  This is a <a href="/starburst-galaxy/get-started/feature-release-types.html">public preview
+feature</a>. Contact
+<a href="/starburst-galaxy/get-started/get-support.html">Starburst support</a> with
+questions or feedback.</div>
+
+<p>In addition to reading the <code class="language-plaintext highlighter-rouge">vector</code> data type, the catalog supports the
+following functions:</p>
+
+<ul>
+  <li><a href="../../../reference/sql/ref/functions/math.html#geometric-functions">Cosine distance</a></li>
+  <li><a href="../../../reference/sql/ref/functions/array.html">Dot product</a></li>
+  <li><a href="../../../reference/sql/ref/functions/array.html">Euclidean distance</a></li>
+</ul>
+
+<p>The catalog supports pushdown for these functions. See the table below for the
+syntax required:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>pgvector expression</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>euclidean_distance(x, y)</td>
+      <td>x &lt;-&gt; y</td>
+    </tr>
+    <tr>
+      <td>-dot_product(x, y)</td>
+      <td>x &lt;#&gt; y</td>
+    </tr>
+    <tr>
+      <td>cosine_distance(x, y)</td>
+      <td>x &lt;=&gt; y</td>
+    </tr>
+  </tbody>
+</table>
+      <h4 id="example-usage">
+        
+        
+          Example usage <a href="#example-usage" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Euclidean distance (L2 distance): &lt;-&gt;</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">postgresql</span><span class="p">.</span><span class="n">tpch</span><span class="p">.</span><span class="n">items</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">euclidean_distance</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">ARRAY</span><span class="p">[</span><span class="mi">1</span><span class="p">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">.</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">.</span><span class="mi">3</span><span class="p">])</span> <span class="k">LIMIT</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Cosine distance: &lt;=&gt;</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">postgresql</span><span class="p">.</span><span class="n">tpch</span><span class="p">.</span><span class="n">items</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="n">cosine_distance</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">ARRAY</span><span class="p">[</span><span class="mi">1</span><span class="p">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">.</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">.</span><span class="mi">3</span><span class="p">])</span> <span class="k">LIMIT</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Dot product: &lt;#&gt;</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">postgresql</span><span class="p">.</span><span class="n">tpch</span><span class="p">.</span><span class="n">items</span>
+<span class="k">ORDER</span> <span class="k">BY</span> <span class="o">-</span><span class="n">dot_product</span><span class="p">(</span><span class="n">embedding</span><span class="p">,</span> <span class="n">ARRAY</span><span class="p">[</span><span class="mi">1</span><span class="p">.</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">.</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">.</span><span class="mi">3</span><span class="p">])</span> <span class="k">LIMIT</span> <span class="mi">1</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Pushdown is not supported for <code class="language-plaintext highlighter-rouge">-1 * dot_product</code> expressions. Use
+<code class="language-plaintext highlighter-rouge">-dot_product.</code></p>
 
         <div class="feedback-container">
   <div class="feedback-thumbs">
@@ -2938,7 +3023,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#postgresql-catalogs">PostgreSQL catalogs</a><ul><li><a href="#select-a-cloud-provider">Select a cloud provider</a></li><li><a href="#define-catalog-name-and-description">Define catalog name and description</a></li><li><a href="#multiple-connections">Multiple connections</a></li><li><a href="#configure-the-connection">Configure the connection</a></li><li><a href="#amazon-rds-configuration">Amazon RDS configuration</a></li><li><a href="#azure-database-configuration">Azure Database configuration</a></li><li><a href="#google-cloud-configuration">Google Cloud configuration</a></li><li><a href="#test-the-connection">Test the connection</a></li><li><a href="#connect-catalog">Connect catalog</a></li><li><a href="#set-permissions">Set permissions</a></li><li><a href="#add-to-cluster">Add to cluster</a></li></ul></li><li><a href="#sql-support">SQL support</a><ul><li><a href="#data-management-details">Data management details</a></li><li><a href="#schema-and-table-management-details">Schema and table management details</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#postgresql-catalogs">PostgreSQL catalogs</a><ul><li><a href="#select-a-cloud-provider">Select a cloud provider</a></li><li><a href="#define-catalog-name-and-description">Define catalog name and description</a></li><li><a href="#multiple-connections">Multiple connections</a></li><li><a href="#configure-the-connection">Configure the connection</a></li><li><a href="#amazon-rds-configuration">Amazon RDS configuration</a></li><li><a href="#azure-database-configuration">Azure Database configuration</a></li><li><a href="#google-cloud-configuration">Google Cloud configuration</a></li><li><a href="#test-the-connection">Test the connection</a></li><li><a href="#connect-catalog">Connect catalog</a></li><li><a href="#set-permissions">Set permissions</a></li><li><a href="#add-to-cluster">Add to cluster</a></li></ul></li><li><a href="#sql-support">SQL support</a><ul><li><a href="#data-management-details">Data management details</a></li><li><a href="#schema-and-table-management-details">Schema and table management details</a></li><li><a href="#pgvector-extension">Pgvector extension</a><ul><li><a href="#example-usage">Example usage</a></li></ul></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
