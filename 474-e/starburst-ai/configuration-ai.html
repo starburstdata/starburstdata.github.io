@@ -292,23 +292,51 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#starburst-ai-configuration-ai--page-root" class="md-nav__link">Configure Starburst AI</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#prerequisites" class="md-nav__link">Prerequisites</a>
+        </li>
+        <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#catalog-configuration-properties" class="md-nav__link">Catalog configuration properties</a>
+        </li></ul>
+            </nav>
         </li>
         <li class="md-nav__item"><a href="#providers" class="md-nav__link">Providers</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#aws-bedrock" class="md-nav__link">AWS Bedrock</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#id1" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#supported-models" class="md-nav__link">Supported models</a>
         </li></ul>
             </nav>
         </li>
         <li class="md-nav__item"><a href="#openai" class="md-nav__link">OpenAI</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#id2" class="md-nav__link">Configuration</a>
+        <li class="md-nav__item"><a href="#ai-openai-models" class="md-nav__link">Supported models</a>
         </li></ul>
             </nav>
         </li></ul>
             </nav>
+        </li>
+        <li class="md-nav__item"><a href="#compatible-apis" class="md-nav__link">Compatible APIs</a>
+        </li>
+        <li class="md-nav__item"><a href="#model-configuration" class="md-nav__link">Model configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#select-a-provider-and-model" class="md-nav__link">Select a provider and model</a>
+        </li>
+        <li class="md-nav__item"><a href="#model-id-and-description" class="md-nav__link">Model ID and description</a>
+        </li>
+        <li class="md-nav__item"><a href="#connection-details" class="md-nav__link">Connection details</a>
+        </li>
+        <li class="md-nav__item"><a href="#advanced-configuration-options" class="md-nav__link">Advanced configuration options</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#general-system-prompts" class="md-nav__link">General system prompts</a>
+        </li>
+        <li class="md-nav__item"><a href="#prompt-overrides" class="md-nav__link">Prompt overrides</a>
+        </li></ul>
+            </nav>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#access-control" class="md-nav__link">Access control</a>
         </li></ul>
             </nav>
         </li>
@@ -332,23 +360,55 @@ provider.</p>
 preview</span></a>. Contact your Starburst account team for
 further information.</p>
 </div>
+<section id="prerequisites">
+<span id="sb-ai-prerequisites"></span><h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">#</a></h2>
+<p>To use and configure external AI models, consider the following:</p>
+<ul class="simple">
+<li><p>To access the <strong>AI models</strong> tab, you must have the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ui"><span class="std std-ref">AI models</span></a>
+SEP user interface entities feature privilege.</p></li>
+<li><p>To connect a new model, you must have the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ai-models"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">CREATE</span></code>
+permission</span></a> and access to <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">AI</span> <span class="pre">models</span></code>.</p></li>
+<li><p>All credentials should be stored using a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a>.
+Keys or secrets cannot be entered as plaintext in the configuration and should
+be provided by secret reference.</p></li>
+<li><p>For AWS Bedrock connections:</p>
+<ul>
+<li><p>The AWS account must have Bedrock service enabled and access to the desired
+models.</p></li>
+<li><p>Users must have the <code class="docutils literal notranslate"><span class="pre">"Action":</span> <span class="pre">["bedrock:InvokeModel"]</span></code> AWS IAM permission
+to use models.</p></li>
+<li><p>To manage models and perform operations as an AWS administrator, you must
+have the <code class="docutils literal notranslate"><span class="pre">"Action":</span> <span class="pre">["bedrock:*"]</span></code> permission.</p></li>
+<li><p>Some models require the use of an inference profile. AWS should indicate
+this requirement in the model card when requesting access. For language
+models, set the <a class="reference internal" href="#sb-ai-model-description"><span class="std std-ref">Model ID</span></a> to the inference profile
+ID. Starburst recommends using the inference profile ID over the ARN. For
+embedding models, set the <strong>Model ID</strong> to the <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html">functional model
+ID</a>,
+and specify the inference profile ID in the <strong>Advanced configuration
+options</strong> section. This is required because each model may have custom
+encoding requirements.</p></li>
+</ul>
+</li>
+</ul>
+</section>
 <section id="configuration">
 <span id="sb-ai-configuration"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>To use the AI functions, configure a JSON file to register the connection
-information for specific models and providers and reference it in the catalog
-configuration file. This JSON file should contain the provider and model
-configuration properties detailed in the following sections.</p>
-<p>For example, create a catalog named <code class="docutils literal notranslate"><span class="pre">starburst</span></code> that references the
-<code class="docutils literal notranslate"><span class="pre">starburst_ai</span></code> connector. Then create a JSON file, <code class="docutils literal notranslate"><span class="pre">etc/ai-providers.json</span></code> to
-configure the providers and models.</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">starburst_ai</span>
-<span class="na">ai.models-file</span><span class="o">=</span><span class="s">etc/ai-providers.json</span>
+<p>To use the AI functions, configure a catalog configuration file to reference the
+<code class="docutils literal notranslate"><span class="pre">sep_ai</span></code> connector and connect AI language or embedding models as detailed
+in the following sections.</p>
+<p>You must create a catalog named <code class="docutils literal notranslate"><span class="pre">starburst</span></code> that references the <code class="docutils literal notranslate"><span class="pre">sep_ai</span></code>
+connector.</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">sep_ai</span>
+<span class="na">ai.client.cache.refresh.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">ai.client.cache.refresh.interval</span><span class="o">=</span><span class="s">1s</span>
+<span class="na">ai.client.cache.ttl</span><span class="o">=</span><span class="s">1h</span>
+<span class="na">ai.client.models.storage</span><span class="o">=</span><span class="s">EXTERNAL</span>
 </pre></div>
 </div>
 <p>You can use an <a class="reference internal" href="index.html#sb-ai-overview-embeddings"><span class="std std-ref">embedding</span></a> or <a class="reference internal" href="index.html#sb-ai-overview-llm"><span class="std std-ref">language
 model</span></a>. The AI functions are available with the <code class="docutils literal notranslate"><span class="pre">ai</span></code> schema
-name. For the preceding example, the functions use the <code class="docutils literal notranslate"><span class="pre">starburst.ai</span></code> catalog
-and schema prefix.</p>
+name. The functions use the <code class="docutils literal notranslate"><span class="pre">starburst.ai</span></code> catalog and schema prefix.</p>
 <p>To avoid needing to reference the functions with their fully qualified name, for
 example, <code class="docutils literal notranslate"><span class="pre">starburst.ai.prompt()</span></code>, configure the <code class="docutils literal notranslate"><span class="pre">sql.path</span></code> <a class="reference internal" href="../sql/set-path.html"><span class="doc std std-doc">SQL environment
 property</span></a> in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file to include the catalog
@@ -358,139 +418,67 @@ prefix:</p>
 </div>
 <p>After configuring the <code class="docutils literal notranslate"><span class="pre">sql.path</span></code>, you can simplify the reference to the function
 as <code class="docutils literal notranslate"><span class="pre">ai.prompt()</span></code>.</p>
-<p>Since a catalog can reference multiple models within the same JSON file, it is
-sufficient to configure a single catalog for AI functions.</p>
+<p>Since the catalog can reference multiple models, it is sufficient to configure a
+single catalog for AI functions.</p>
 <p>In the <code class="docutils literal notranslate"><span class="pre">ai</span></code> schema, there are two tables that list the available embedding and
 language models, <code class="docutils literal notranslate"><span class="pre">embedding_models</span></code> and <code class="docutils literal notranslate"><span class="pre">language_models</span></code>, respectively.</p>
-</section>
-<section id="providers">
-<span id="sb-ai-providers"></span><h2 id="providers">Providers<a class="headerlink" href="#providers" title="Link to this heading">#</a></h2>
-<p><a class="reference internal" href="functions-ai.html"><span class="doc std std-doc">AI functions</span></a> invoke an external LLM. Access to the LLM API
-must be configured in the catalog in a JSON file. Performance, output, and cost
-of all AI function invocations are dependent on the LLM provider and the model
-used. Choose a model that aligns with your specific use case and performance
-requirements. Starburst supports <a class="reference internal" href="#sb-ai-providers-bedrock"><span class="std std-ref">AWS Bedrock</span></a> and
-<a class="reference internal" href="#sb-ai-providers-openai"><span class="std std-ref">OpenAI</span></a> compatible APIs.</p>
-<table id="id3">
-<caption><span class="caption-text">Model configuration properties</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<section id="catalog-configuration-properties">
+<span id="sb-ai-configuration-properties"></span><h3 id="catalog-configuration-properties">Catalog configuration properties<a class="headerlink" href="#catalog-configuration-properties" title="Link to this heading">#</a></h3>
+<p>The following table describes general catalog configuration properties for the
+<code class="docutils literal notranslate"><span class="pre">sep_ai</span></code> connector:</p>
+<table id="id2">
+<caption><span class="caption-text">General catalog configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
 <colgroup>
-<col style="width: 40%"/>
-<col style="width: 60%"/>
+<col style="width: 30%"/>
+<col style="width: 58%"/>
+<col style="width: 12%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property name</p></th>
 <th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">id</span></code></p></td>
-<td><p>The identifier used to reference the model in an AI function. For
-example, <code class="docutils literal notranslate"><span class="pre">"id":</span> <span class="pre">"bedrock_claude35"</span></code>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.client.cache.refresh.enabled</span></code></p></td>
+<td><p>Enables periodic refreshing of the model configuration information cache.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kind</span></code></p></td>
-<td><p>The type of model to use. Possible values are <code class="docutils literal notranslate"><span class="pre">GENERATE</span></code> or <code class="docutils literal notranslate"><span class="pre">EMBED</span></code>.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.client.cache.refresh.interval</span></code></p></td>
+<td><p>Define the interval between automatic cache refreshes. The possible value
+can be <code class="docutils literal notranslate"><span class="pre">1s</span></code> to <code class="docutils literal notranslate"><span class="pre">10s</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1s</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">connectionInfo</span></code></p></td>
-<td><p>The JSON object that contains the specific provider’s model connection
-properties. See the <a class="reference internal" href="#sb-ai-providers-bedrock"><span class="std std-ref">AWS Bedrock</span></a> or
-<a class="reference internal" href="#sb-ai-providers-openai"><span class="std std-ref">OpenAI</span></a> sections for specific connection properties.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">modelName</span></code></p></td>
-<td><p>The identifier used by the specific provider to identify the model. For
-example, <code class="docutils literal notranslate"><span class="pre">"modelName":</span> <span class="pre">"anthropic.claude-3-5-haiku-20241022-v1:0"</span></code>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.client.cache.ttl</span></code></p></td>
+<td><p>The duration model configuration information is cached. The possible
+value can be <code class="docutils literal notranslate"><span class="pre">10m</span></code> to <code class="docutils literal notranslate"><span class="pre">3h</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1h</span></code></p></td>
 </tr>
 </tbody>
 </table>
+</section>
+</section>
+<section id="providers">
+<span id="sb-ai-providers"></span><h2 id="providers">Providers<a class="headerlink" href="#providers" title="Link to this heading">#</a></h2>
+<p><a class="reference internal" href="functions-ai.html"><span class="doc std std-doc">AI functions</span></a> invoke an external LLM. Access to the LLM API
+must be configured in the <a class="reference internal" href="#sb-ai-model-configuration"><span class="std std-ref">AI models tab</span></a>.
+Performance, output, and cost of all AI function invocations are dependent on
+the LLM provider and the model used. Choose a model that aligns with your
+specific use case and performance requirements. Starburst supports <a class="reference internal" href="#sb-ai-providers-bedrock"><span class="std std-ref">AWS
+Bedrock</span></a> and <a class="reference internal" href="#sb-ai-providers-openai"><span class="std std-ref">OpenAI</span></a>
+compatible APIs.</p>
 <section id="aws-bedrock">
 <span id="sb-ai-providers-bedrock"></span><h3 id="aws-bedrock">AWS Bedrock<a class="headerlink" href="#aws-bedrock" title="Link to this heading">#</a></h3>
 <p>The <a class="reference external" href="https://aws.amazon.com/bedrock/">AWS Bedrock</a> provider offers access to a
 suite of foundation models hosted on AWS. Integrating AWS Bedrock models
 requires configuring AWS credentials and specifying the models you wish to use
 for different AI functions. To use AWS Bedrock models, configure the necessary
-model and provider connection configuration properties.</p>
-<section id="id1">
-<h4 id="id1">Configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h4>
-<p>The AWS Bedrock provider has the following connection configuration
-properties:</p>
-<table id="id4">
-<caption><span class="caption-text">Connection configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
-<colgroup>
-<col style="width: 40%"/>
-<col style="width: 60%"/>
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property name</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">provider</span></code></p></td>
-<td><p>Required name of the provider. Must be <code class="docutils literal notranslate"><span class="pre">AWS_BEDROCK</span></code> when using <a class="reference internal" href="#sb-ai-providers-bedrock"><span class="std std-ref">AWS
-Bedrock</span></a>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">awsAccessKey</span></code></p></td>
-<td><p>AWS access key to use for authentication. Required when <code class="docutils literal notranslate"><span class="pre">provider</span></code> is set to
-<code class="docutils literal notranslate"><span class="pre">AWS_BEDROCK</span></code> and not using IAM authentication.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">awsSecretKey</span></code></p></td>
-<td><p>AWS secret key to use for authentication. Required when <code class="docutils literal notranslate"><span class="pre">provider</span></code> is set to
-<code class="docutils literal notranslate"><span class="pre">AWS_BEDROCK</span></code> and not using IAM authentication.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iamRole</span></code></p></td>
-<td><p>The ARN of an IAM role to assume when connecting to AWS. If set, <code class="docutils literal notranslate"><span class="pre">externalId</span></code>
-must be configured as well.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">externalId</span></code></p></td>
-<td><p>External ID for the IAM role trust policy when connecting to AWS.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">region</span></code></p></td>
-<td><p>The AWS region. This property is optional.</p></td>
-</tr>
-</tbody>
-</table>
-<p>To use IAM authentication instead of an access and secret key pair, add the
-following configuration properties to the JSON file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iamRole</span><span class="o">=</span><span class="s">&lt;role-arn&gt;</span>
-<span class="na">externalId</span><span class="o">=</span><span class="s">&lt;external-id&gt;</span>
-</pre></div>
-</div>
-<p>Use <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets</span></a> to avoid exposing API or secret key values in
-the JSON file.</p>
-<p>To use a language model such as <code class="docutils literal notranslate"><span class="pre">anthropic.claude-3-5-haiku-20241022-v1:0</span></code>, add
-the following configuration properties to your JSON file. Replace the properties
-as appropriate for your setup:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bedrock_claude35"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GENERATE"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"connectionInfo"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AWS_BEDROCK"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"awsAccessKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AWS_ACCESS_KEY_ID"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"awsSecretKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ENV:AWS_SECRET_ACCESS_KEY"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"modelName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"arn:aws:bedrock:us-east-2:123456789012:inference-profile/us.anthropic.claude-3-5-haiku-20241022-v1:0"</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>To use an embedding model such as <code class="docutils literal notranslate"><span class="pre">amazon.titan-embed-text-v2:0</span></code>, add the
-following configuration properties to your JSON file. Replace the properties as
-appropriate for your setup:</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"aws_bedrock_titan"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EMBED"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"connectionInfo"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AWS_BEDROCK"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"awsAccessKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AWS_ACCESS_KEY"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"awsSecretKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"AWS_SECRET_ACCESS_KEY"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"region"</span><span class="p">:</span><span class="w"> </span><span class="s2">"us-east-1"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"modelName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"amazon.titan-embed-text-v2:0"</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>The <code class="docutils literal notranslate"><span class="pre">modelName</span></code> property value can be a foundation model name or an <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-use.html">inference
-profile</a>.</p>
-<span id="ai-bedrock-models"></span><table id="id5">
-<caption><span class="caption-text">AWS Bedrock supported models</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+model and provider connection details.</p>
+<section id="supported-models">
+<span id="sb-ai-bedrock-models"></span><h4 id="supported-models">Supported models<a class="headerlink" href="#supported-models" title="Link to this heading">#</a></h4>
+<p>The following models are supported by Starburst:</p>
+<table id="id3">
+<caption><span class="caption-text">AWS Bedrock supported models</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -527,57 +515,13 @@ LLM.</p></td>
 <section id="openai">
 <span id="sb-ai-providers-openai"></span><h3 id="openai">OpenAI<a class="headerlink" href="#openai" title="Link to this heading">#</a></h3>
 <p>The <a class="reference external" href="https://openai.com/">OpenAI</a> provider offers access to a number of language
-and embedding models. To use OpenAI models, configure the necessary API keys and
-select appropriate models for your tasks.</p>
-<section id="id2">
-<h4 id="id2">Configuration<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
-<p>The OpenAI provider has the following connection configuration properties:</p>
-<table id="id6">
-<caption><span class="caption-text">Connection configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
-<colgroup>
-<col style="width: 40%"/>
-<col style="width: 60%"/>
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property name</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">provider</span></code></p></td>
-<td><p>Required name of the provider. Must be <code class="docutils literal notranslate"><span class="pre">OPENAI</span></code> for
-<a class="reference internal" href="#sb-ai-providers-openai"><span class="std std-ref">OpenAI</span></a> and providers offering an OpenAI compatible
-API.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">endpoint</span></code></p></td>
-<td><p>URL for the OpenAI API endpoint. This is optional and defaults to
-<code class="docutils literal notranslate"><span class="pre">https://api.openai.com/v1</span></code>. Specify the endpoint when using another
-provider’s OpenAI compatible API.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">apiKey</span></code></p></td>
-<td><p>API key value for OpenAI API access. Required when <code class="docutils literal notranslate"><span class="pre">provider</span></code> is set to
-<code class="docutils literal notranslate"><span class="pre">OPENAI</span></code>. This property is optional when using a compatible OpenAI API that
-does not require a key.</p></td>
-</tr>
-</tbody>
-</table>
-<p>Use <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets</span></a> to avoid exposing API or secret key values in
-the JSON file.</p>
-<p>To use the <code class="docutils literal notranslate"><span class="pre">gpt-4o-mini</span></code> LLM, add the following to your JSON file.</p>
-<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w"> </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"openai_small"</span><span class="p">,</span>
-<span class="w"> </span><span class="nt">"kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GENERATE"</span><span class="p">,</span>
-<span class="w"> </span><span class="nt">"modelName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span>
-<span class="w"> </span><span class="nt">"connectionInfo"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">   </span><span class="nt">"provider"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OPENAI"</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://api.openai.com/v1"</span><span class="p">,</span>
-<span class="w">   </span><span class="nt">"apiKey"</span><span class="p">:</span><span class="w"> </span><span class="s2">"OPEN_AI_API_KEY"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<span id="ai-openai-models"></span><table id="id7">
-<caption><span class="caption-text">OpenAI supported models</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+and embedding models. To use OpenAI models, configure the necessary connection
+information select appropriate models for your tasks.</p>
+<section id="ai-openai-models">
+<span id="id1"></span><h4 id="ai-openai-models">Supported models<a class="headerlink" href="#ai-openai-models" title="Link to this heading">#</a></h4>
+<p>The following models are supported by Starburst:</p>
+<table id="id4">
+<caption><span class="caption-text">OpenAI supported models</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -605,10 +549,183 @@ version of the standard GPT-4o LLM.</p></td>
 </tr>
 </tbody>
 </table>
+<p>For more information about OpenAI’s models and APIs, read the
+<a class="reference external" href="https://platform.openai.com/docs/models">documentation</a>.</p>
+</section>
+</section>
+</section>
+<section id="compatible-apis">
+<span id="sb-ai-compatible-models"></span><h2 id="compatible-apis">Compatible APIs<a class="headerlink" href="#compatible-apis" title="Link to this heading">#</a></h2>
+<p>Starburst Enterprise supports a number of AI models from Amazon Bedrock and OpenAI.
+Starburst lets you integrate with compatible APIs from these supported providers,
+whether these external models are deployed on-premises or in the cloud. This
+lets you connect to external LLMs for inferencing tasks and embedding models to
+generate vector embeddings for AI search.</p>
+</section>
+<section id="model-configuration">
+<span id="sb-ai-model-configuration"></span><h2 id="model-configuration">Model configuration<a class="headerlink" href="#model-configuration" title="Link to this heading">#</a></h2>
+<p>To access the <strong>AI models</strong> tab in the Starburst Enterprise web UI, you must
+have the AI models SEP UI feature privilege. After configuring the necessary
+privileges and catalog, navigate to the <strong>AI models</strong> tab and click <strong>Connect
+external model</strong>.</p>
+<p>The following sections provide more detail for connecting to an AI model.</p>
+<section id="select-a-provider-and-model">
+<span id="sb-ai-model-provider"></span><h3 id="select-a-provider-and-model">Select a provider and model<a class="headerlink" href="#select-a-provider-and-model" title="Link to this heading">#</a></h3>
+<p>Follow these steps to select one of the supported providers and connect to a
+model using a compatible API.</p>
+<ul>
+<li><p>From the <strong>Provider</strong> drop-down menu, select <code class="docutils literal notranslate"><span class="pre">Amazon</span> <span class="pre">Bedrock</span></code> or <code class="docutils literal notranslate"><span class="pre">OpenAI</span></code>.</p></li>
+<li><p>From the <strong>Model type</strong> drop-down menu, select <code class="docutils literal notranslate"><span class="pre">LLM</span></code> or <code class="docutils literal notranslate"><span class="pre">Embedding</span></code>.</p></li>
+<li><p>In the <strong>Model name</strong> text field, enter the fully qualified name of the model
+from the provider. For example, if using the AWS Bedrock provided Llama 3.2
+LLM, specify <code class="docutils literal notranslate"><span class="pre">meta.llama3-2-3b-instruct-v1:0</span></code>. When the provider is <code class="docutils literal notranslate"><span class="pre">Amazon</span> <span class="pre">Bedrock</span></code> and model type is <code class="docutils literal notranslate"><span class="pre">Embedding</span></code>, the <strong>Model name</strong> field becomes a
+drop-down menu. The Amazon <code class="docutils literal notranslate"><span class="pre">Model</span> <span class="pre">name</span></code> property value can be a foundation
+model name or an <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-use.html">inference
+profile</a>.</p>
+<p>For more information about AWS Bedrock’s providers and models, read the
+<a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html">documentation</a>.</p>
+</li>
+</ul>
+</section>
+<section id="model-id-and-description">
+<span id="sb-ai-model-description"></span><h3 id="model-id-and-description">Model ID and description<a class="headerlink" href="#model-id-and-description" title="Link to this heading">#</a></h3>
+<p>The <strong>Model ID</strong> is the identifier used to reference the model in an AI function
+when writing SQL and or showing the catalog and its nested schemas and tables in
+client applications. The model ID has the following requirements:</p>
+<ul class="simple">
+<li><p>Max length of 64 characters.</p></li>
+<li><p>Only lowercase letters, numbers, and special characters are allowed.</p></li>
+<li><p>No spaces.</p></li>
+</ul>
+<p>If you are configuring a model with the Amazon Bedrock provider, read the
+<a class="reference internal" href="#sb-ai-prerequisites"><span class="std std-ref">prerequisites</span></a> section.</p>
+<p>The <strong>Description</strong> is a short optional paragraph that provides further details
+about the AI model.</p>
+</section>
+<section id="connection-details">
+<span id="sb-ai-model-connection"></span><h3 id="connection-details">Connection details<a class="headerlink" href="#connection-details" title="Link to this heading">#</a></h3>
+<p>Specify the connection credentials for AWS IAM role, AWS access key, or OpenAI.
+Security-sensitive properties such as private keys and passwords cannot be
+passed as plaintext. If you provide the properties in plaintext, you may get an
+error prompting you to reference these properties using a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
+manager</span></a>.</p>
+<ul class="simple">
+<li><p><strong>AWS IAM role</strong> connection details:</p>
+<ul>
+<li><p><strong>AWS IAM role arn</strong>: Specify the ARN of the IAM role to assume when
+connecting to AWS.</p></li>
+<li><p><strong>STS AWS access key ID</strong>: Specify the Security Token Service (STS) AWS access
+key to use for authentication for the specified role.</p></li>
+<li><p><strong>STS AWS secret access key</strong>: Specify the Security Token Service (STS) AWS
+secret key to use for authentication for the specified role.</p></li>
+<li><p><strong>AWS region code</strong>: The AWS region code. For example, the region code for
+US East (Ohio) is <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+<p>For more information about AWS regions and region codes, read the <a class="reference external" href="https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html#available-regions">AWS
+documentation</a>.</p>
+<ul class="simple">
+<li><p><strong>AWS access key</strong> connection details:</p>
+<ul>
+<li><p><strong>AWS access key ID</strong>: Specify the AWS access key to use for authentication.</p></li>
+<li><p><strong>AWS secret access key</strong>: Specify the AWS secret key to use for
+authentication</p></li>
+<li><p><strong>AWS region code</strong>: The AWS region code. For example, the region code for
+US East (Ohio) is <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>.</p></li>
+</ul>
+</li>
+<li><p><strong>OpenAI</strong> connection details:</p>
+<ul>
+<li><p><strong>OpenAI endpoint</strong>: Specify the URL for the OpenAI API endpoint. For
+example, <code class="docutils literal notranslate"><span class="pre">https://api.openai.com/</span></code>.</p></li>
+<li><p><strong>OpenAI key</strong>: Specify the API key value for OpenAI API access. This
+property is optional when using a compatible OpenAI API that does not
+require a key.</p></li>
+</ul>
+</li>
+</ul>
+<p>Use <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> to avoid exposing API or secret key
+values.</p>
+</section>
+<section id="advanced-configuration-options">
+<span id="sb-ai-model-advanced-configuration"></span><h3 id="advanced-configuration-options">Advanced configuration options<a class="headerlink" href="#advanced-configuration-options" title="Link to this heading">#</a></h3>
+<p>In addition to the basic connection details for an external AI model, you can
+specify additional configuration options to fine-tune and control model
+behavior. The advanced configuration options available change depending on the
+<strong>Model type</strong>.</p>
+<ul class="simple">
+<li><p>When the model type is set to <code class="docutils literal notranslate"><span class="pre">LLM</span></code>, the following options are available:</p>
+<ul>
+<li><p><strong>Max Tokens</strong>: The maximum number of tokens expected to be returned by the
+model in its output. This generally includes words, punctuation, spaces, and
+special formatting.</p></li>
+<li><p><strong>Temperature</strong>: Given a value from <code class="docutils literal notranslate"><span class="pre">0.1</span></code> and higher, this controls the
+perceived randomness or creativity of the model’s output. A lower value
+makes the output more deterministic.</p></li>
+<li><p><strong>Top P</strong>: Controls the diversity of the output. An alternative to
+temperature sampling. The model selects tokens from the smallest group whose
+cumulative probability mass exceeds the specified threshold. For example, if
+the specified value is <code class="docutils literal notranslate"><span class="pre">0.1</span></code>, only the combined tokens that make up the top
+ten percent of the probability mass are considered for the next word
+generation.</p></li>
+</ul>
+</li>
+<li><p>When the model type is set to <code class="docutils literal notranslate"><span class="pre">Embedding</span></code>, the following options are available:</p>
+<ul>
+<li><p><strong>Dimensions</strong>: The number of numerical components in each embedding vector.
+This determines the size and complexity of the vector space.</p></li>
+<li><p><strong>Inference profile</strong>: A profile of preset configuration settings. Read the
+<a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/inference-profiles-use.html">AWS
+documentation</a>.
+to learn more about inference profiles in AWS Bedrock.</p></li>
+</ul>
+</li>
+</ul>
+<section id="general-system-prompts">
+<span id="sb-ai-model-advanced-configuration-system"></span><h4 id="general-system-prompts">General system prompts<a class="headerlink" href="#general-system-prompts" title="Link to this heading">#</a></h4>
+<p>Use a system prompt to customize and improve the output of your language
+model by providing instructions or messages that define its behavior, role,
+tone, or context before any interaction takes place.</p>
+<p>To add add a general system prompt, follow these steps:</p>
+<ol class="arabic simple">
+<li><p>Click <strong>Add general system prompts</strong>.</p></li>
+<li><p>Click <strong>Add general system prompt</strong>.</p></li>
+<li><p>In the text field, define a specific action or behavior for the LLM.</p></li>
+<li><p>If you want to add additional system prompts, click <strong>Add general system
+prompt</strong>.</p></li>
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+<p>For more information about system prompts, see the <a class="reference internal" href="functions-ai.html#sb-ai-system-prompts"><span class="std std-ref">general system
+prompts</span></a>.</p>
+</section>
+<section id="prompt-overrides">
+<span id="sb-ai-model-advanced-configuration-overrides"></span><h4 id="prompt-overrides">Prompt overrides<a class="headerlink" href="#prompt-overrides" title="Link to this heading">#</a></h4>
+<p>Prompt overrides let you override general system prompts or use a different
+model to further refine the output from your LLM.</p>
+<p>To add a prompt override, follow these steps:</p>
+<ol class="arabic simple">
+<li><p>Click <strong>Add prompt override</strong>.</p></li>
+<li><p>Select the function you would like to add the override to, and specify the
+parameters for either <strong>User</strong> or <strong>System</strong>. You can add overrides to
+multiple functions at the same time.</p></li>
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+<p>For more information about prompt overrides, see the <a class="reference internal" href="functions-ai.html#sb-ai-prompt-overrides"><span class="std std-ref">prompt
+overrides</span></a> section.</p>
 <p>Read more about <a class="reference internal" href="functions-ai.html"><span class="doc std std-doc">Starburst AI functions</span></a> to see a list of the
 supported functions and use cases.</p>
 </section>
 </section>
+</section>
+<section id="access-control">
+<span id="sb-ai-access-control"></span><h2 id="access-control">Access control<a class="headerlink" href="#access-control" title="Link to this heading">#</a></h2>
+<p>Starburst AI lets you connect to a number of supported models, invoke functions,
+and embeddings. Starburst Enterprise enables administrators to configure access and
+<a class="reference internal" href="../security/biac-privileges.html"><span class="doc std std-doc">privileges</span></a> to these <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ai-models"><span class="std std-ref">models</span></a>
+and <a class="reference internal" href="../security/biac-privileges.html#biac-entity-functions"><span class="std std-ref">functions</span></a> for specific roles.</p>
+<p>For more information about roles and privileges in Starburst Enterprise, see
+<a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">Built-in access control overview</span></a>.</p>
 </section>
 </section>
 
