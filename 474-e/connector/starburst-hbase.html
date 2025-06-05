@@ -296,7 +296,21 @@
         </li>
         <li class="md-nav__item"><a href="#configuration" class="md-nav__link">Configuration</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#configuration-properties" class="md-nav__link">Configuration properties</a>
+        <li class="md-nav__item"><a href="#general-configuration-properties" class="md-nav__link">General configuration properties</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-metadata-storage-options" class="md-nav__link">Table metadata storage options</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#hbase-table-store" class="md-nav__link">HBase table store</a>
+        </li>
+        <li class="md-nav__item"><a href="#file-based-table-store" class="md-nav__link">File-based table store</a>
+        </li>
+        <li class="md-nav__item"><a href="#table-store-configuration-properties" class="md-nav__link">Table store configuration properties</a>
+        </li></ul>
+            </nav>
+        </li>
+        <li class="md-nav__item"><a href="#migrating-from-file-based-to-hbase-table-store" class="md-nav__link">Migrating from file-based to HBase table store</a>
+        </li>
+        <li class="md-nav__item"><a href="#create-new-metadata" class="md-nav__link">Create new metadata</a>
         </li>
         <li class="md-nav__item"><a href="#table-descriptions" class="md-nav__link">Table descriptions</a>
         </li></ul>
@@ -353,9 +367,9 @@
 external <a class="reference external" href="https://hbase.apache.org/">Apache HBase database</a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The HBase connector is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">private preview</span></a>.
-Contact <a class="external reference" href="../../support.html">Starburst support</a> with questions or
-feedback.</p>
+<p>The HBase connector is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">private
+preview</span></a>. Contact
+<a class="external reference" href="../../support.html">Starburst support</a> with questions or feedback.</p>
 </div>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
@@ -364,29 +378,31 @@ feedback.</p>
 <li><p>Apache HBase version 2.3.x</p></li>
 <li><p>Network access from the coordinator and workers to the HBase and
 Zookeeper servers. The default port is 2181.</p></li>
-<li><p>A valid <a class="reference internal" href="../license-requirements.html"><span class="doc">Starburst Enterprise license</span></a></p></li>
+<li><p>A valid <a class="reference internal" href="../license-requirements.html"><span class="doc std std-doc">Starburst Enterprise license</span></a>.</p></li>
 </ul>
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>Create a catalog properties file in <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named, for example,
-<code class="docutils literal notranslate"><span class="pre">example.properties</span></code> to access the configured HBase database in the
-<code class="docutils literal notranslate"><span class="pre">example</span></code> catalog. Configure the connector by specifying <code class="docutils literal notranslate"><span class="pre">hbase</span></code> as the
-connector name, and replace the connection properties as appropriate for your
-setup.</p>
+<p>This section describes how to configure the HBase connector and create a catalog
+properties file that specifies both the HBase connector and the metadata store
+type.</p>
+<p>To configure the HBase connector, create a catalog properties file that
+specifies the HBase connector by setting the <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> to <code class="docutils literal notranslate"><span class="pre">hbase</span></code>.</p>
+<p>For example, to access a database as the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog, create the file
+<code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code>. Replace the connection properties as
+appropriate for your setup:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">hbase</span>
 <span class="na">hbase.zookeeper.quorum</span><span class="o">=</span><span class="s">host1,host2</span>
 <span class="na">hbase.zookeeper.port</span><span class="o">=</span><span class="s">2181</span>
 <span class="na">hbase.zookeeper.znode</span><span class="o">=</span><span class="s">/hbase</span>
-<span class="na">hbase.table-description-dir</span><span class="o">=</span><span class="s">/path/to/table-description-dir</span>
 </pre></div>
 </div>
-<section id="configuration-properties">
-<span id="sb-hbase-config-properties"></span><h3 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h3>
-<p>The following configuration properties are available for the connector, to be
-used in catalog properties files:</p>
+<section id="general-configuration-properties">
+<span id="sb-hbase-config-properties"></span><h3 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Link to this heading">#</a></h3>
+<p>The following configuration properties can be set in the catalog properties
+file:</p>
 <table id="id1">
-<caption><span class="caption-text">HBase connector configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<caption><span class="caption-text">HBase connector general configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -411,58 +427,165 @@ used in catalog properties files:</p>
 <td><p>The root znode containing all znodes created and/or used by HBase.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-description-dir</span></code></p></td>
-<td><p>Directory path that holds JSON description files for HBase tables.
-See <a class="reference internal" href="#sb-hbase-table-descriptions"><span class="std std-ref">Table descriptions</span></a> for more information.</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.config.resources</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.config.resources</span></code></p></td>
 <td><p>Comma-separated paths to HBase configuration files for HBase clients.
 In the event of conflicting configuration options, the SEP connector
 catalog configuration overrides these files.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.authentication.type</span></code></p></td>
-<td><p>HBase authentication mechanism type, either <code class="docutils literal notranslate"><span class="pre">UNSECURED</span></code> or
-<code class="docutils literal notranslate"><span class="pre">KERBEROS</span></code>.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.authentication.type</span></code></p></td>
+<td><p>HBase authentication mechanism type, either <code class="docutils literal notranslate"><span class="pre">UNSECURED</span></code> or <code class="docutils literal notranslate"><span class="pre">KERBEROS</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">UNSECURED</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.impersonation.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.impersonation.enabled</span></code></p></td>
 <td><p>When set to true, enables session user impersonation.</p></td>
 <td><p>false</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.projection-pushdown.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.projection-pushdown.enabled</span></code></p></td>
 <td><p>When set to true, enables projection pushdown. See
-<a class="reference internal" href="#sb-hbase-projection-pushdown"><span class="std std-ref">Projection pushdown</span></a>.</p></td>
+<a class="reference internal" href="#sb-hbase-projection-pushdown"><span class="std std-ref">projection pushdown</span></a>.</p></td>
 <td><p>false</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code></p></td>
-<td><p>When set to true, enables  <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code>, <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">SCHEMA</span></code> SQL statements. See <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT support</span></a>.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code></p></td>
+<td><p>When set to true, enables  <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code>, <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code>, and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">SCHEMA</span></code> SQL statements. See <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT
+support</span></a>.</p></td>
 <td><p>false</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-drop</span></code></p></td>
-<td><p>When set to true, enables <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">TABLE</span></code> and <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">SCHEMA</span></code> SQL
-statements. See <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT support</span></a>.</p></td>
-<td><p>false</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-insert</span></code></p></td>
-<td><p>When set to true, enables <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> SQL statements. See
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-drop</span></code></p></td>
+<td><p>When set to true, enables <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">TABLE</span></code> and <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">SCHEMA</span></code> SQL statements. See
 <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT support</span></a>.</p></td>
 <td><p>false</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.connection-pool.enabled</span></code></p></td>
-<td><p>Enable connection pooling. When set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the connector attempts
-to re-use connections to HBase instead of establishing a new connection.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.allow-insert</span></code></p></td>
+<td><p>When set to true, enables <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> SQL statements. See <a class="reference internal" href="#sb-hbase-allow-sql">CREATE, DROP, and
+INSERT support</a>.</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.connection-pool.enabled</span></code></p></td>
+<td><p>Enable connection pooling. When set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, the connector attempts to
+re-use connections to HBase instead of establishing a new connection.</p></td>
 <td><p>true</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.connection-pool.ttl</span></code></p></td>
-<td><p>If connection pooling is enabled, determines how long in seconds to
-keep a connection alive when not in active use.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.connection-pool.ttl</span></code></p></td>
+<td><p>If connection pooling is enabled, determines how long in seconds to keep a
+connection alive when not in active use.</p></td>
 <td><p>30</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="table-metadata-storage-options">
+<span id="sb-hbase-table-metadata-storage-options"></span><h3 id="table-metadata-storage-options">Table metadata storage options<a class="headerlink" href="#table-metadata-storage-options" title="Link to this heading">#</a></h3>
+<p>The HBase connector supports two types of table stores for metadata options:</p>
+<ul class="simple">
+<li><p>HBase native table store (default)</p></li>
+<li><p>File-based table store (legacy)</p></li>
+</ul>
+<p>Specify the desired table store using the <code class="docutils literal notranslate"><span class="pre">hbase.table-store.type</span></code> property.</p>
+<section id="hbase-table-store">
+<h4 id="hbase-table-store">HBase table store<a class="headerlink" href="#hbase-table-store" title="Link to this heading">#</a></h4>
+<p>The HBase table store is now the default option for metadata storage in HBase.</p>
+<p>The following example specifies the HBase table store:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hbase.table-store.type</span><span class="o">=</span><span class="s">hbase</span>
+</pre></div>
+</div>
+</section>
+<section id="file-based-table-store">
+<h4 id="file-based-table-store">File-based table store<a class="headerlink" href="#file-based-table-store" title="Link to this heading">#</a></h4>
+<p>The file-based table store is the legacy option and requires <code class="docutils literal notranslate"><span class="pre">.json</span></code> file
+configuration. See <a class="reference internal" href="#sb-hbase-table-descriptions"><span class="std std-ref">table descriptions</span></a>.</p>
+<p>The following example specifies the file-based table store:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hbase.table-store.type</span><span class="o">=</span><span class="s">file</span>
+</pre></div>
+</div>
+</section>
+<section id="table-store-configuration-properties">
+<span id="sb-hbase-table-store-configuration-properties"></span><h4 id="table-store-configuration-properties">Table store configuration properties<a class="headerlink" href="#table-store-configuration-properties" title="Link to this heading">#</a></h4>
+<p>The following table store-related properties can be set in the catalog
+properties file:</p>
+<table id="id2">
+<caption><span class="caption-text">HBase connector table configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-description-dir</span></code></p></td>
+<td><p>Directory path that holds JSON description files for file-based HBase
+tables. See <a class="reference internal" href="#sb-hbase-table-descriptions"><span class="std std-ref">table descriptions</span></a> for more
+information.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-store.type</span></code></p></td>
+<td><p>The store type for metadata, either <code class="docutils literal notranslate"><span class="pre">file</span></code> or <code class="docutils literal notranslate"><span class="pre">hbase</span></code>. See
+<a class="reference internal" href="#sb-hbase-table-metadata-storage-options"><span class="std std-ref">metadata storage options</span></a>.</p></td>
+<td><p>hbase</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-store.hbase.user</span></code></p></td>
+<td><p>Specifies the user of the Hbase table store.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-store.schema-name</span></code></p></td>
+<td><p>Specifies the schema where the HBase table store is located.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-store.table-name</span></code></p></td>
+<td><p>Specifies the table for the HBase table store.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hbase.table-store.hbase.migrate-from-file-based-table-store</span></code></p></td>
+<td><p>When set to true, enables the stored procedure to migrate from the
+file-based table store to the HBase table store. This property requires the
+<code class="docutils literal notranslate"><span class="pre">hbase.table-description-dir</span></code> property.</p></td>
+<td><p>false</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="migrating-from-file-based-to-hbase-table-store">
+<span id="sb-migrating-file-based-hbase-table-store"></span><h3 id="migrating-from-file-based-to-hbase-table-store">Migrating from file-based to HBase table store<a class="headerlink" href="#migrating-from-file-based-to-hbase-table-store" title="Link to this heading">#</a></h3>
+<p>To migrate metadata from the file-based table store to the HBase native table
+store, enable the migration procedure using the following property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hbase.table-store.hbase.migrate-from-file-based-table-store.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>Then execute the migration procedure:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CALL</span><span class="w"> </span><span class="k">system</span><span class="p">.</span><span class="n">migrate_from_file_table_store</span><span class="p">(</span>
+<span class="w">  </span><span class="k">SCHEMA_NAME</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'my_schema'</span><span class="p">,</span>
+<span class="w">  </span><span class="k">TABLE_NAME</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'my_table'</span><span class="p">,</span>
+<span class="w">  </span><span class="n">OVERRIDE_IF_EXISTS</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">  </span><span class="n">REMOVE_ORIGINAL_AFTER_MIGRATION</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>After the migration is complete, metadata is stored in the HBase table store and
+is discoverable without the need for JSON files.</p>
+</section>
+<section id="create-new-metadata">
+<h3 id="create-new-metadata">Create new metadata<a class="headerlink" href="#create-new-metadata" title="Link to this heading">#</a></h3>
+<p>To create new metadata mapped to an existing table, use the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code>
+statement with the <code class="docutils literal notranslate"><span class="pre">external_table</span></code> configuration property:</p>
+<p>The following example creates new table metadata using the existing table and
+specifies columns using column options:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">hbase</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="k">table_name</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ID</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">remote_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ID'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">ID2</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">remote_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ID2'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">ID3</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">remote_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ID3'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">VALUE1</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">family</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'CF'</span><span class="p">,</span><span class="w"> </span><span class="n">remote_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'VALUE1'</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">external_table</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">    </span><span class="n">key_column_names</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'ID'</span><span class="p">,</span><span class="w"> </span><span class="s1">'ID2'</span><span class="p">,</span><span class="w"> </span><span class="s1">'ID3'</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="table-descriptions">
 <span id="sb-hbase-table-descriptions"></span><h3 id="table-descriptions">Table descriptions<a class="headerlink" href="#table-descriptions" title="Link to this heading">#</a></h3>
@@ -492,8 +615,8 @@ If the HBase database has multiple tables with the same name in different cases,
 they cannot be mapped to SEP tables and therefore cause query failures.</p>
 </div>
 <p>Table description files use the following format:</p>
-<table id="id2">
-<caption><span class="caption-text">HBase table description file format</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">HBase table description file format</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -558,7 +681,7 @@ SQL statement in SEP.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">SCHEMA</span></code> statements are disabled by default, but can be enabled
-with the <code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code> configuration property.  See
+with the <code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code> configuration property. See
 <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT support</span></a> for more information.</p>
 </div>
 </section>
@@ -572,10 +695,11 @@ changed in the table’s description <code class="docutils literal notranslate">
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> statements are disabled by default, but can be enabled
-with the <code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code> configuration property.  See
+with the <code class="docutils literal notranslate"><span class="pre">hbase.allow-create</span></code> configuration property. See
 <a class="reference internal" href="#sb-hbase-allow-sql"><span class="std std-ref">CREATE, DROP, and INSERT support</span></a> for more information.</p>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> statements support the same properties as the <a class="reference internal" href="#sb-hbase-table-descriptions"><span class="std std-ref">table description files</span></a>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code> statements support the same properties as the <a class="reference internal" href="#sb-hbase-table-descriptions">table
+descriptions</a>.</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">hbase</span><span class="p">.</span><span class="k">default</span><span class="p">.</span><span class="n">test</span><span class="w"> </span><span class="p">(</span>
 <span class="w">  </span><span class="n">id1</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span>
 <span class="w">  </span><span class="n">id2</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span>
@@ -610,9 +734,10 @@ with the <code class="docutils literal notranslate"><span class="pre">hbase.allo
 </section>
 <section id="sql-support">
 <span id="sb-hbase-sql-support"></span><h2 id="sql-support">SQL support<a class="headerlink" href="#sql-support" title="Link to this heading">#</a></h2>
-<p>The connector provides read and write access to data and metadata in
-HBase. In addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read operation</span></a>
-statements, the connector supports the following features:</p>
+<p>The connector provides read and write access to data and metadata in HBase. In
+addition to the <a class="reference internal" href="../language/sql-support.html#sql-globally-available"><span class="std std-ref">globally available</span></a> and <a class="reference internal" href="../language/sql-support.html#sql-read-operations"><span class="std std-ref">read
+operation</span></a> statements, the connector supports the
+following features:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../sql/update.html"><span class="doc">UPDATE</span></a></p></li>
 <li><p><a class="reference internal" href="../sql/alter-table.html"><span class="doc">ALTER TABLE</span></a></p></li>
@@ -670,8 +795,8 @@ regions for better performance.</p>
 row keys increase monotonically. SEP supports <a class="reference external" href="https://hbase.apache.org/book.html#rowkey.design">salting
 tables</a> as a way to
 mitigate this problem.</p>
-<p>If a table is not created through SEP and doesn’t follow the one byte salt key
-prefix, the connector won’t be able to distinguish the salt prefix from the
+<p>If a table is not created through SEP and doesn’t follow the one byte salt
+key prefix, the connector won’t be able to distinguish the salt prefix from the
 actual key. In this case, resultant data includes the salt prefix as part of the
 row key column.</p>
 </section>
@@ -700,17 +825,17 @@ to <code class="docutils literal notranslate"><span class="pre">true</span></cod
 following sections.</p>
 <section id="user-impersonation">
 <h3 id="user-impersonation">User impersonation<a class="headerlink" href="#user-impersonation" title="Link to this heading">#</a></h3>
-<p>The connector supports <a class="reference internal" href="../security/impersonation.html"><span class="doc">user impersonation</span></a>.
-Enable user impersonation by setting the <code class="docutils literal notranslate"><span class="pre">hbase.impersonation.enabled</span></code>
-property in the catalog properties file to <code class="docutils literal notranslate"><span class="pre">true</span></code>:</p>
+<p>The connector supports <a class="reference internal" href="../security/impersonation.html"><span class="doc std std-doc">user impersonation</span></a>.
+Enable user impersonation by setting the <code class="docutils literal notranslate"><span class="pre">hbase.impersonation.enabled</span></code> property
+in the catalog properties file to <code class="docutils literal notranslate"><span class="pre">true</span></code>:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>hbase.impersonation.enabled=true
 </pre></div>
 </div>
 </section>
 <section id="kerberos-authentication">
 <h3 id="kerberos-authentication">Kerberos authentication<a class="headerlink" href="#kerberos-authentication" title="Link to this heading">#</a></h3>
-<p>The connector supports <a class="reference internal" href="../security/kerberos.html"><span class="doc">Kerberos authentication</span></a>. Use the following properties
-in the catalog properties file to configure it.</p>
+<p>The connector supports <a class="reference internal" href="../security/kerberos.html"><span class="doc std std-doc">Kerberos authentication</span></a>. Use the
+following properties in the catalog properties file to configure it.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">hbase.authentication.type</span><span class="o">=</span><span class="s">KERBEROS</span>
 <span class="na">hbase.master.kerberos.principal</span><span class="o">=</span><span class="s">hbase/_HOST@example.com</span>
 <span class="na">hbase.regionserver.kerberos.principal</span><span class="o">=</span><span class="s">hbase/_HOST@example.com</span>
