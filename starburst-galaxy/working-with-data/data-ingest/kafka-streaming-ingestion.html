@@ -2441,7 +2441,7 @@ Support</a>.</li>
     </ul>
   </li>
   <li>A known working Kafka stream with at least one active topic.</li>
-  <li>A Kafka topic with a minimum data retention period of seven days.</li>
+  <li>A Kafka topic with a minimum data retention threshold of seven days.</li>
 </ul>
 
 <p>Starburst Galaxy supports streaming data from the following Kafka streaming
@@ -2476,8 +2476,9 @@ Starburst Support</a>.</p>
 
 <ul>
   <li>Step 1: <a href="#connect-to-a-stream-source">Connect to a stream source</a></li>
-  <li>Step 2: <a href="#select-a-target-and-topic">Select a target and topic</a></li>
-  <li>Step 3: <a href="#map-to-columns">Map to columns</a></li>
+  <li>Step 2: <a href="#land-your-data-in-a-raw-table">Land your data in a raw table</a></li>
+  <li>Step 3: <a href="#create-a-transform-table-and-schematize-data">Create a transform table and schematize
+data</a></li>
 </ul>
       <h3 id="connect-to-a-stream-source">
         
@@ -2488,17 +2489,24 @@ Starburst Support</a>.</p>
       </h3>
     
 
-<p>From the navigation menu, go to <strong>Data</strong> &gt; <strong>Data ingest</strong>, then click <strong>Connect
-new source</strong>.</p>
+<p>From the navigation menu, go to <strong>Data</strong> &gt; <strong>Data ingest</strong>. Click <strong>Connect new
+source</strong>, then select a Kafka data source.</p>
 
-<p>Select a Kafka data source, then click <strong>Next</strong>.</p>
-
-<p>In the <strong>Connect new source</strong> dialog:</p>
+<p>In the <strong>Connect new Kafka source</strong> dialog, provide the following details:</p>
 
 <ul>
   <li>
     <p>In the <strong>Source details</strong> section, enter a name for this stream source and
 a description.</p>
+  </li>
+  <li>
+    <p>In the <strong>Private link connectivity</strong> section:</p>
+
+    <ul>
+      <li>If the kafka cluster is secured with private link, click the toggle to
+enable a private connection.</li>
+      <li>Select an AWS region from the drop-down menu.<br /><br /></li>
+    </ul>
   </li>
   <li>
     <p>In the <strong>Configure connection to Kafka</strong> section:</p>
@@ -2508,12 +2516,22 @@ a description.</p>
         <p>Enter one or more Kafka brokers as <code class="language-plaintext highlighter-rouge">host:port</code>. Separate multiple brokers
 with a comma.</p>
       </li>
-      <li>
-        <p>Authenticate with an API key and API
-secret or select <strong>Cross account IAM role (MSK)</strong>, and select a
-cross-account IAM role from the drop-down menu. For MSK streams, you must
-select the IAM role option. The cross-account role must contain a
-<a href="#msk-policy-for-the-cross-account-iam-role">policy</a> for MSK.</p>
+      <li>To authenticate with an API key/API secret pairing:
+        <ul>
+          <li>Select
+<a href="https://docs.confluent.io/platform/current/security/authentication/sasl/plain/overview.html">SASL/PLAIN</a>
+or a
+<a href="https://docs.confluent.io/platform/current/security/authentication/sasl/scram/overview.html">SASL/SCRAM</a>
+mechanism option. SASL/SCRAM-SHA-256 and SASL/SCRAM-SHA-512 are supported.</li>
+          <li>Enter an API key and an API secret in the respective fields.<br /><br /></li>
+        </ul>
+      </li>
+      <li>To authenticate with a cross-account IAM role:
+        <ul>
+          <li>Select a role from the drop-down menu.</li>
+          <li>To configure a cross-account IAM role, click <i class="material-symbols-rounded" style="color:#ca2bbf">add</i> <strong>Configure
+a cross account IAM role</strong>.<br /><br /></li>
+        </ul>
       </li>
     </ul>
   </li>
@@ -2523,67 +2541,73 @@ the test fails, check your entries, correct any errors, and try again.</p>
   </li>
   <li>
     <p>If the connection is successful, click <strong>Save new source</strong>.</p>
-  </li>
-  <li>
-    <p>You can create a live table now or at a later time.</p>
 
-    <p>In the dialog, click <strong>No, do this later</strong> to create a live table at a later
-time and exit the configuration. To create a <a href="#live-table-management">live
-table</a> now, click <strong>Yes, select topic</strong>.</p>
-
-    <p><img src="/assets/img/galaxy/data-ingest-kafka-connect-new-source.png" alt="Data ingest kafka connect new source" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
+    <p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-connect-new-source">
+  <img src="/assets/img/galaxy/data-ingest-kafka-connect-new-source.png" alt="Data ingest kafka connect new source" class="img-fluid" description="" width="px" /><br />
+</button></p>
+    <div class="modal fade" id="data-ingest-kafka-connect-new-source" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="data-ingest-kafka-connect-new-source">
+        <div class="modal-header" style="border:none;">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        <img src="/assets/img/galaxy/data-ingest-kafka-connect-new-source.png" class="img-fluid center-block" />
+    </div>
+  </div>
+</div>
   </li>
 </ul>
-      <h3 id="select-a-target-and-topic">
+      <h3 id="land-your-data-in-a-raw-table">
         
         
-          Select a target and topic <a href="#select-a-target-and-topic" class="titleAnchor">#</a>
+          Land your data in a raw table <a href="#land-your-data-in-a-raw-table" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>To create a live table anytime, select a data source from the <a href="#connected-sources"><strong>Connected
-sources</strong></a> section. Click <strong>Create live table</strong> to open the
-<strong>Create new live table</strong> dialog:</p>
-
 <ul>
-  <li>
-    <p>In the <strong>Source</strong> section, you can select a different data source using the
-<strong>Select existing connection</strong> drop-down menu or click <strong>Connect new source</strong>
-to create a new data source.</p>
-  </li>
-  <li>
-    <p>In the <strong>Live table target</strong> section, select a <strong>Catalog</strong> and <strong>Schema</strong> from
-the respective drop-down menus, and provide a <strong>Table name</strong>.</p>
-  </li>
   <li>
     <p>In the <strong>Select Kafka topic</strong>, section select the <strong>Topic name</strong> from the
 drop-down menu.</p>
   </li>
   <li>
-    <p>In the <strong>Data retention</strong> section, set a data retention threshold. By default,
-<strong>Retain forever</strong> is preselected to specify that all data is to be stored
-in the live table indefinitely. Select a different value to specify how long
-data is retained before it is automatically purged: <strong>1 day</strong>, <strong>7 days</strong>,
-<strong>14 days</strong>, <strong>30 days</strong>, or <strong>90 days</strong>.</p>
-  </li>
-  <li>
-    <p>Expand the <strong>Advanced configuration options</strong> section:</p>
+    <p>In the <strong>Raw table target</strong> section:</p>
 
     <ul>
-      <li>Set a <a href="#throughput-and-sizing">throughput</a> limit: <strong>1MB/s</strong>, <strong>2MB/s</strong>,
-<strong>4MB/s</strong>, <strong>8MB/s</strong>, or <strong>16MB/s</strong>. By default, 8MB/s is preselected.</li>
+      <li>Select a <strong>Catalog</strong> and <strong>Schema</strong> from the respective drop-down menus.</li>
+      <li>Provide a <strong>Table name</strong> and <strong>Description</strong>.<br /><br /></li>
+    </ul>
+  </li>
+  <li>
+    <p>In the <strong>Table configuration</strong> section:</p>
+
+    <ul>
       <li>
-        <p>Choose an error handling policy: <strong>Continue</strong> continues the ingestion
-process and writes and records that fail to parse to the errors table.
+        <p>Set a data <strong>Retention threshold</strong>: By default, <strong>Retain forever</strong> is
+preselected to specify that all data is to be stored in the live table
+indefinitely. Select a different value to specify how long data is retained
+before it is automatically purged: <strong>1 day</strong>, <strong>7 days</strong>, <strong>14 days</strong>, <strong>30
+days</strong>, or <strong>90 days</strong>.</p>
+      </li>
+      <li>
+        <p>Choose an <strong>Error handling policy</strong>: <strong>Continue</strong> continues the ingestion
+process and writes any records that fail to parse to the errors table.
 <strong>Pause and notify</strong> stops the ingestion process if any parsing errors
 occur.</p>
       </li>
-      <li>Select a streaming ingest start point<strong>: **Start from latest
-message</strong> streams new data. <strong>Start from earliest messages</strong>
-ingests existing data plus new data. New data is delayed until existing data
-is ingested.</li>
+      <li>
+        <p>Set a <a href="#throughput-and-sizing"><strong>Throughput limit</strong></a>: <strong>1MB/s</strong>, <strong>2MB/s</strong>,
+<strong>4MB/s</strong>, <strong>8MB/s</strong>, or <strong>16MB/s</strong>. By default, 8MB/s is preselected.</p>
+      </li>
+      <li>
+        <p>Select a <strong>Streaming ingest start point</strong>: <strong>Start from latest
+message</strong> streams new data. <strong>Start from earliest messages</strong> ingests
+existing data plus new data. New data is delayed until existing data is
+ingested.</p>
+      </li>
     </ul>
   </li>
   <li>
@@ -2591,100 +2615,163 @@ is ingested.</li>
 test fails, check your entries, correct any errors, and try again.</p>
   </li>
   <li>
-    <p>If the connection is successful, click <strong>Map columns</strong>.</p>
+    <p>If the connection is successful, click <strong>Save raw table</strong>.</p>
 
-    <p><button type="button" class="button-img" data-toggle="modal" data-target="#dataingestkafkaselectatargetandtopic">
-  <img src="/assets/img/galaxy/data-ingest-kafka-select-a-target-and-topic.png" alt="Data ingest kafka select a target and topic" class="img-fluid" description="" width="600px" /><br />
+    <p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-land-your-data-in-a-raw-table">
+  <img src="/assets/img/galaxy/data-ingest-kafka-land-your-data-in-a-raw-table.png" alt="Data ingest kafka land your data in a raw table" class="img-fluid" description="" width="600px" /><br />
 </button></p>
-    <div class="modal fade" id="dataingestkafkaselectatargetandtopic" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal fade" id="data-ingest-kafka-land-your-data-in-a-raw-table" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content" id="dataingestkafkaselectatargetandtopic">
+    <div class="modal-content" id="data-ingest-kafka-land-your-data-in-a-raw-table">
         <div class="modal-header" style="border:none;">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">×</span>
             </button>
         </div>
-        <img src="/assets/img/galaxy/data-ingest-kafka-select-a-target-and-topic.png" class="img-fluid center-block" />
+        <img src="/assets/img/galaxy/data-ingest-kafka-land-your-data-in-a-raw-table.png" class="img-fluid center-block" />
     </div>
   </div>
 </div>
   </li>
 </ul>
-      <h3 id="map-to-columns">
+      <h3 id="create-a-transform-table-and-schematize-data">
         
         
-          Map to columns <a href="#map-to-columns" class="titleAnchor">#</a>
+          Create a transform table and schematize data <a href="#create-a-transform-table-and-schematize-data" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>Configure the mapping from the JSON-formatted Kafka message to the target live
-Iceberg table.</p>
-
-<p>Starburst Galaxy automatically suggests a schema by inferring from the Kafka
-messages on the topic. Modify the inferred schema by changing field entries and
-adding and removing columns.</p>
+<p>You can create a transform table at a later time as part of <a href="#raw-table-options">raw table
+options</a> in live table management. To create a live table
+now, proceed to <a href="#create-a-transform-table">create a transform table</a>.</p>
+      <h4 id="create-a-transform-table">
+        
+        
+          Create a transform table <a href="#create-a-transform-table" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
 
 <ul>
   <li>
-    <p>Use the <strong>Edit column mapping</strong> panel to map using the following columns:</p>
+    <p>In the <strong>Transform table target</strong> section:</p>
 
     <ul>
-      <li><strong>Source path:</strong> The location of the record information within the JSON row.</li>
-      <li><strong>Column name:</strong> Provide a column name for the live table.</li>
-      <li><strong>Data type:</strong> Specify a data type for the live table column.</li>
-      <li><strong>Varchar type:</strong> For a <code class="language-plaintext highlighter-rouge">VARCHAR</code> type, specify a <code class="language-plaintext highlighter-rouge">SCALAR</code> or JSON <code class="language-plaintext highlighter-rouge">VARCHAR</code>
-type. For <code class="language-plaintext highlighter-rouge">TIMESTAMP</code> and <code class="language-plaintext highlighter-rouge">TIMESTAMP WITH TIMEZONE</code> types, specify a
-<code class="language-plaintext highlighter-rouge">iso601</code> or <code class="language-plaintext highlighter-rouge">unixtime</code> type.<br /></li>
+      <li>Select a <strong>Catalog</strong> and <strong>Schema</strong> from the respective drop-down menus.</li>
+      <li>Provide a <strong>Table name</strong> and <strong>Description</strong>.<br /><br /></li>
     </ul>
   </li>
-</ul>
-
-<p>The <i class="material-symbols-rounded">more_vert</i> options menu in the header
-section includes a <strong>Reload detected columns</strong> option that lets you restore any
-altered field entries to the original inferred values.</p>
-
-<p>Use the <i class="material-symbols-rounded">more_vert</i> options menu at the
-end of each row to add or remove columns.</p>
-
-<p>Click <i class="material-symbols-rounded" style="color:var(--fusion-fuchsia)">visibility</i> to show and hide any nested
-columns.</p>
-
-<ul>
   <li>
-    <p>The <strong>Record sample</strong> panel shows the JSON message sample used to generate
-the columns. If your Kafka topic is new and does not have any messages for
-Galaxy to infer, you can manually enter a new JSON sample by
-clicking <i class="material-symbols-rounded" style="color:var(--fusion-fuchsia)">upload_2</i>. Type or paste the new JSON
-sample in the text area then click <strong>Load sample</strong>.</p>
+    <p>In the <strong>Table configuration</strong> section:</p>
+
+    <ul>
+      <li>
+        <p>Set a data <strong>Retention threshold</strong>: By default, <strong>Retain forever</strong> is
+preselected to specify that all data is to be stored in the live table
+indefinitely. Select a different value to specify how long data is retained
+before it is automatically purged: <strong>1 day</strong>, <strong>7 days</strong>, <strong>14 days</strong>, <strong>30
+days</strong>, or <strong>90 days</strong>.</p>
+      </li>
+      <li>
+        <p>Choose an <strong>Error handling policy</strong>: <strong>Continue</strong> continues the ingestion
+process and writes any records that fail to parse to the errors table.
+<strong>Pause and notify</strong> stops the ingestion process if any parsing errors
+occur.</p>
+      </li>
+    </ul>
   </li>
   <li>
-    <p>The <strong>Table sample</strong> panel previews the mapped table.</p>
+    <p>Click <strong>Validate data</strong>. If the test fails, check your entries, correct any
+errors, and try again.</p>
   </li>
   <li>
-    <p>To complete the configuration, click <strong>Create schema</strong>.</p>
+    <p>Click <strong>Next</strong>.</p>
 
-    <p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-map-columns">
-  <img src="/assets/img/galaxy/data-ingest-map-columns.png" alt="Data ingest map columns" class="img-fluid" description="" width="600px" /><br />
+    <p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-create-a-transform-table">
+  <img src="/assets/img/galaxy/data-ingest-kafka-create-a-transform-table.png" alt="Data ingest kafka create a transform table" class="img-fluid" description="" width="600px" /><br />
 </button></p>
-    <div class="modal fade" id="data-ingest-map-columns" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal fade" id="data-ingest-kafka-create-a-transform-table" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content" id="data-ingest-map-columns">
+    <div class="modal-content" id="data-ingest-kafka-create-a-transform-table">
         <div class="modal-header" style="border:none;">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">×</span>
             </button>
         </div>
-        <img src="/assets/img/galaxy/data-ingest-map-columns.png" class="img-fluid center-block" />
+        <img src="/assets/img/galaxy/data-ingest-kafka-create-a-transform-table.png" class="img-fluid center-block" />
     </div>
   </div>
 </div>
   </li>
 </ul>
+      <h4 id="schematize-data">
+        
+        
+          Schematize data <a href="#schematize-data" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Starburst Galaxy automatically suggests a schema by inferring from the Kafka
+messages on the topic. Modify the inferred schema by changing field entries and
+adding and removing columns.</p>
+
+<p>Use the <strong>Edit column mapping</strong> panel to map the following columns:</p>
+
+<ul>
+  <li><strong>Source path:</strong> The location of the record information within the JSON row.</li>
+  <li><strong>Column name:</strong> Provide a column name for the live table.</li>
+  <li><strong>Data type:</strong> Specify a data type for the live table column.</li>
+  <li><strong>Varchar type:</strong> For a <code class="language-plaintext highlighter-rouge">VARCHAR</code> type, specify a <code class="language-plaintext highlighter-rouge">SCALAR</code> or JSON <code class="language-plaintext highlighter-rouge">VARCHAR</code>
+type. For <code class="language-plaintext highlighter-rouge">TIMESTAMP</code> and <code class="language-plaintext highlighter-rouge">TIMESTAMP WITH TIMEZONE</code> types, specify a
+<code class="language-plaintext highlighter-rouge">iso601</code> or <code class="language-plaintext highlighter-rouge">unixtime</code> type.<br /></li>
+</ul>
+
+<p>The<i class="material-symbols-rounded">more_vert</i>options menu in the header
+section includes options to:</p>
+
+<ul>
+  <li><strong>Reload detected columns</strong>: This option lets you restore any altered field
+entries to the original inferred values.</li>
+  <li><strong>Sort columns</strong>: Click the option, and use the <strong>Sort columns</strong> dialog to
+sort files by the specified column.</li>
+</ul>
+
+<p>Use the<i class="material-symbols-rounded">more_vert</i>options menu at the
+end of each row to add or remove columns.</p>
+
+<p>The <strong>Record sample</strong> panel shows the JSON message sample used to generate the
+columns. If your Kafka topic is new and does not have any messages for
+Galaxy to infer, you can manually enter a new JSON sample by clicking
+<i class="material-symbols-rounded" style="color:#ca2bbf">upload_2</i>. Type or
+paste the new JSON sample in the text area then click <strong>Load sample</strong>.</p>
+
+<p>The <strong>Table sample</strong> panel previews the mapped table.</p>
+
+<p>To complete the configuration, click <strong>Create transform table</strong>.</p>
 
 <p>Data ingest begins in approximately 1-2 minutes. You can run <code class="language-plaintext highlighter-rouge">SELECT</code> queries on
 the live table like you would on any other table.</p>
+
+<p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-schematize-data">
+    <img src="/assets/img/galaxy/data-ingest-kafka-schematize-data.png" alt="Data ingest kafka schematize data" class="img-fluid" description="" width="600px" /><br />
+  </button></p>
+<div class="modal fade" id="data-ingest-kafka-schematize-data" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content" id="data-ingest-kafka-schematize-data">
+          <div class="modal-header" style="border:none;">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">×</span>
+              </button>
+          </div>
+          <img src="/assets/img/galaxy/data-ingest-kafka-schematize-data.png" class="img-fluid center-block" />
+      </div>
+    </div>
+  </div>
       <h2 id="connected-sources">
         
         
@@ -2705,21 +2792,31 @@ created.</p>
       </h3>
     
 
-<p>Deleting an ingest source decommissions all associated <a href="#live-table-management">live
-tables</a> and converts them into unmanaged Iceberg tables.</p>
-
-<p>To delete a data ingest source, follow these steps:</p>
+<p>To delete an ingest source, you must first <a href="#decommission-a-live-table">decommission all live
+tables</a> associated with it, then follow these steps:</p>
 
 <ul>
   <li>In the <strong>Connected sources</strong> section, locate the data source of interest.</li>
   <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu.</li>
-  <li>Select<i class="material-symbols-rounded" style="color:var(--red)">delete</i><strong>Delete ingest source</strong>.</li>
-  <li>In the <strong>Delete ingest source</strong> dialog, click <strong>Yes, delete</strong>.</li>
+  <li>Select<i class="material-symbols-rounded" style="color:#CC051D">delete</i><strong>Delete ingest source</strong>.</li>
   <li>
-    <p>If a live table is associated with the data ingest source you must <a href="#decommission-a-live-table">delete
-it</a> first.</p>
+    <p>In the dialog, click <strong>Yes, delete</strong>.</p>
 
-    <p><img src="/assets/img/galaxy/data-ingest-kafka-connected-ingest-sources.png" alt="Data ingest kafka connected ingest sources" class="img-fluid img-screenshot" description="" width="600px" style="" /></p>
+    <p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-connected-ingest-sources">
+  <img src="/assets/img/galaxy/data-ingest-kafka-connected-ingest-sources.png" alt="Data ingest kafka connected ingest sources" class="img-fluid" description="" width="600px" /><br />
+</button></p>
+    <div class="modal fade" id="data-ingest-kafka-connected-ingest-sources" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="data-ingest-kafka-connected-ingest-sources">
+        <div class="modal-header" style="border:none;">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+            </button>
+        </div>
+        <img src="/assets/img/galaxy/data-ingest-kafka-connected-ingest-sources.png" class="img-fluid center-block" />
+    </div>
+  </div>
+</div>
   </li>
 </ul>
       <h2 id="live-table-management">
@@ -2731,59 +2828,25 @@ it</a> first.</p>
       </h2>
     
 
-<p>Manage live tables from the list of live tables, which shows the following
-columns:</p>
+<p>Manage all live table types from the list of live tables, which shows the
+following columns:</p>
 
 <ul>
   <li><strong>Table name:</strong> The name of the table.</li>
-  <li><strong>Catalog name:</strong> The name of the catalog.</li>
-  <li><strong>Schema name:</strong> The name of the schema.</li>
-  <li><strong>Source:</strong> The icon representing the data source.</li>
   <li><strong>Status:</strong> The status of the live table.</li>
+  <li><strong>Catalog:</strong> The name of the catalog.</li>
+  <li><strong>Schema:</strong> The name of the schema.</li>
+  <li><strong>Source:</strong> The icon representing the data source.</li>
 </ul>
 
-<p>The total number of tables appears next to the search field. By default,
+<p>The total number of tables appears next to the search field and also reflects
+the number of results returned according your search criteria. By default,
 Starburst Galaxy limits an account to five live tables and 120 MB/s of total
 throughput. To increase your quota limit, <a href="../../../support.html">contact
 Starburst Support</a>.</p>
 
-<p>The following sections detail important management and operational information
-about live tables.</p>
-
-<p><button type="button" class="button-img" data-toggle="modal" data-target="#dataingestkafkalivetables">
-    <img src="/assets/img/galaxy/data-ingest-kafka-live-tables.png" alt="Data ingest kafka live tables.png" class="img-fluid" description="" width="600px" /><br />
-  </button></p>
-<div class="modal fade" id="dataingestkafkalivetables" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content" id="dataingestkafkalivetables">
-          <div class="modal-header" style="border:none;">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">×</span>
-              </button>
-          </div>
-          <img src="/assets/img/galaxy/data-ingest-kafka-live-tables.png" class="img-fluid center-block" />
-      </div>
-    </div>
-  </div>
-      <h3 id="connect-a-live-table">
-        
-        
-          Connect a live table <a href="#connect-a-live-table" class="titleAnchor">#</a>
-        
-        
-      </h3>
-    
-
-<p>To connect a live table, click <strong>Connect new live table</strong>, then choose one
-of the following options in the <strong>Source</strong> section:</p>
-
-<ul>
-  <li>To select an existing connection, select a source from the <strong>Select existing
-connection</strong> drop-down menu, then follow the steps in <a href="#select-a-target-and-topic">Select a target and
-topic</a>.</li>
-  <li>To connect a new source, click <strong>Create new source</strong>. Follow the
-steps in <a href="#connect-to-a-source">Connect to a source</a>.</li>
-</ul>
+<p>View <strong>All tables</strong> or narrow the live tables list to view only <strong>Raw tables</strong>
+or <strong>Transform tables</strong>.</p>
       <h3 id="start-and-stop-ingestion">
         
         
@@ -2793,38 +2856,87 @@ steps in <a href="#connect-to-a-source">Connect to a source</a>.</li>
       </h3>
     
 
-<p>You can start and stop data ingestion from the live tables list. <strong>Stop</strong>
-prevents data from being ingested into the live table. <strong>Start</strong> resumes
-ingestion from where it left off.</p>
+<p>Stopping data ingestion for longer than your data retention threshold results in
+data ingestion starting from the earliest point in the Kafka topic to include
+missed messages. To prevent missed messages, resume data ingestion before you
+hit your Kafka retention threshold or choose a longer data retention threshold.</p>
 
-<p>Stopping data ingestion for longer than your <a href="#select-a-target-and-topic">data retention
-period</a> results in data ingestion starting from the
-earliest point in the Kafka topic to include missed messages. To prevent missed
-messages, resume data ingestion before you hit your Kafka retention threshold or
-choose a longer data retention period.</p>
-      <h3 id="ddl-and-dml">
+<p><strong>Stop</strong> prevents data from being ingested into the live table. <strong>Start</strong>
+resumes ingestion from where it left off.</p>
+      <h3 id="live-table-options-menus">
         
         
-          DDL and DML <a href="#ddl-and-dml" class="titleAnchor">#</a>
+          Live table options menus <a href="#live-table-options-menus" class="titleAnchor">#</a>
         
         
       </h3>
     
 
-<p>You cannot directly modify the live table definition or delete or update data
-with SQL statements. See <a href="#update-schema">Update schema</a> to learn how to alter
-the schema through the UI.</p>
+<p>The following options menu selections are available for all live tables:</p>
+<ul>
+  <li><strong>Edit configurations</strong> to change configuration settings.</li>
+  <li><strong>Delete live table</strong> to <a href="#decommission-a-live-table">decommision</a>.</li>
+</ul>
 
-<p>To delete data, set a <a href="#select-a-target-and-topic">data retention threshold</a> to
-purge data from the live table at a specified interval. To filter out unwanted
-data, create a view on the live table with a predicate to filter out the data
-you do not want, or perform the filtering as part of a data pipeline for the
-table.</p>
+<p>Additional selections for transform tables include:</p>
+<ul>
+  <li><strong>Update schema</strong> to <a href="#update-schema">make changes to the schema</a>.</li>
+  <li><strong>Rewind to savepoint</strong> to restore the table to a previous state. See the
+rewind table to savepoint and backfill instructions in <a href="#update-schema">Update
+schema</a>.</li>
+</ul>
+      <h3 id="raw-table-options">
+        
+        
+          Raw table options <a href="#raw-table-options" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
 
-<p>If you still need to perform DML and DDL operations as done on any other Iceberg
-table, you can <a href="#decommission-a-live-table">decommission</a> the live table. Note
-that once you decommission the table, you can no longer use it with streaming
-ingestion.</p>
+<p>Here, you can create a transform table at any time. Click <strong>Create transform
+table</strong>, and follow the steps in <a href="#create-a-transform-table-and-schematize-data">Create a transform table and schematize
+data</a>.</p>
+      <h3 id="transform-table-options">
+        
+        
+          Transform table options <a href="#transform-table-options" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>You can query a transform table  by clicking <strong>Query table</strong>. This action opens
+the query editor with a prepared <code class="language-plaintext highlighter-rouge">SELECT</code> statement you can run.</p>
+      <h3 id="create-a-live-table">
+        
+        
+          Create a live table <a href="#create-a-live-table" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>To create a live table, click <strong>Create live table</strong>, then choose one of the
+following options in the <strong>Source</strong> section:</p>
+
+<ul>
+  <li>To create a new raw table:
+    <ul>
+      <li>Select <strong>Create a new raw table</strong>, then choose a source from the drop-down
+menu.</li>
+      <li>Click <strong>Next</strong>, then follow the steps in <a href="#land-your-data-in-a-raw-table">Land your data in a raw table</a>.<br /><br /></li>
+    </ul>
+  </li>
+  <li>To create a new transform table:
+    <ul>
+      <li>Select <strong>Create a new transform table</strong>, then choose a raw table from the
+drop-down menu.</li>
+      <li>Follow the steps in <a href="#create-a-transform-table-and-schematize-data">Create a transform table and schematize
+data</a>.</li>
+    </ul>
+  </li>
+</ul>
       <h3 id="update-schema">
         
         
@@ -2834,8 +2946,9 @@ ingestion.</p>
       </h3>
     
 
-<p>To make changes to the schema, click the<i class="material-symbols-rounded" style="color:var(--fusion-fuchsia)">more_vert</i>options menu, and select
-<strong>Update schema</strong> to go to <a href="#map-to-columns">Map to columns</a>.</p>
+<p>To make changes to the schema, click the<i class="material-symbols-rounded">more_vert</i>options menu, and select <strong>Update
+schema</strong> to go to <a href="#create-a-transform-table-and-schematize-data">Create a transform table and schematize
+data</a>.</p>
 
 <p>When you click <strong>Save changes</strong>, the option to roll back your ingested table to
 a previous state and backfill data appears in the <strong>Backfill Options</strong> dialog.</p>
@@ -2850,15 +2963,15 @@ a previous state and backfill data appears in the <strong>Backfill Options</stro
 unchanged and the schema is updated with newly ingested data only.</p>
       </li>
       <li>
-        <p><strong>Rewind table to savepoint and backfill:</strong> Select a date and a savepoint
-from the drop-down menus. The table now appears as it did at the chosen time.
-Messages previously read off Kafka after the chosen time are reread and
+        <p><strong>Rewind table to savepoint and backfill:</strong> Select a date within the last 30
+days and a savepoint from the drop-down menus. The table now appears as it did
+at the chosen time. Messages that were previously read are reread and
 rewritten with the updated schema.</p>
       </li>
     </ul>
 
     <p>The backfill process carries out across the ingestion processes, the output
-table, and errors table, ensuring data is not lost or duplicated.</p>
+table, and the errors table, ensuring data is not lost or duplicated.</p>
 
     <ul>
       <li>Click <strong>Save</strong>.</li>
@@ -2872,6 +2985,47 @@ prior to the column changes have NULL values in the newly added columns. Removed
 columns are no longer accessible to query.</p>
 
 <p>Column changes may take 1-2 minutes to become active.</p>
+
+<p><button type="button" class="button-img" data-toggle="modal" data-target="#data-ingest-kafka-live-tables">
+    <img src="/assets/img/galaxy/data-ingest-kafka-live-tables.png" alt="Data ingest kafka live tables.png" class="img-fluid" description="" width="600px" /><br />
+  </button></p>
+<div class="modal fade" id="data-ingest-kafka-live-tables" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content" id="data-ingest-kafka-live-tables">
+          <div class="modal-header" style="border:none;">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">×</span>
+              </button>
+          </div>
+          <img src="/assets/img/galaxy/data-ingest-kafka-live-tables.png" class="img-fluid center-block" />
+      </div>
+    </div>
+  </div>
+
+<p>The following sections detail important management and operational information
+about live tables.</p>
+      <h3 id="ddl-and-dml">
+        
+        
+          DDL and DML <a href="#ddl-and-dml" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>You cannot directly modify the live table definition or delete or update data
+with SQL statements. See <a href="#update-schema">Update schema</a> to learn how to alter
+the schema through the UI.</p>
+
+<p>To delete data, set a data retention threshold to purge data from the live table
+at a specified interval. To filter out unwanted data, create a view on the live
+table with a predicate to filter out the data you do not want, or perform the
+filtering as part of a data pipeline for the table.</p>
+
+<p>If you still need to perform DML and DDL operations as done on any other Iceberg
+table, you can <a href="#decommission-a-live-table">decommission</a> the live table. Note
+that once you decommission the table, you can no longer use it with streaming
+ingestion.</p>
       <h3 id="adjust-throughput-size">
         
         
@@ -2882,8 +3036,8 @@ columns are no longer accessible to query.</p>
     
 
 <p>To adjust the <a href="#throughput-and-sizing">read throughput limit per partition</a>,
-click the<i class="material-symbols-rounded" style="color:var(--fusion-fuchsia)">more_vert</i>options menu, select a size
-from the drop-down menu, and click <strong>Update throughput</strong>.</p>
+click the<i class="material-symbols-rounded">more_vert</i>options menu, select a
+size from the drop-down menu, and click <strong>Update throughput</strong>.</p>
       <h3 id="data-maintenance">
         
         
@@ -2904,7 +3058,7 @@ maintenance operations on live tables automatically:</p>
        several times per day and expires snapshots older than 30 days.</dd>
    <dt>Data retention</dt>
    <dd>Reduces storage by deleting data snapshots according to the
-       retention period you specify.</dd>
+       retention threshold you specify.</dd>
    <dt>Vacuuming</dt>
    <dd>Reduces storage by deleting orphaned data files.</dd>
   </dl>
@@ -2942,9 +3096,9 @@ as an unmanaged Iceberg table.</p>
 
 <ul>
   <li>Locate the table of interest.</li>
-  <li>Click the<i class="material-symbols-rounded" style="color:var(--fusion-fuchsia)">more_vert</i>options menu, and select
- <i class="material-symbols-rounded" style="color:var(--red)">delete</i><strong>Delete live table</strong>.</li>
-  <li>In the <strong>Delete stream</strong> dialog, click <strong>Yes, delete</strong>.</li>
+  <li>Click the<i class="material-symbols-rounded">more_vert</i>options menu, and
+select <i class="material-symbols-rounded" style="color:#CC051D">delete</i><strong>Delete live table</strong>.</li>
+  <li>In the dialog, click <strong>Yes, delete</strong>.</li>
 </ul>
       <h2 id="best-practices">
         
@@ -3151,7 +3305,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#kafka-streaming-ingestion">Kafka streaming ingestion</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#getting-started">Getting started</a><ul><li><a href="#connect-to-a-stream-source">Connect to a stream source</a></li><li><a href="#select-a-target-and-topic">Select a target and topic</a></li><li><a href="#map-to-columns">Map to columns</a></li></ul></li><li><a href="#connected-sources">Connected sources</a><ul><li><a href="#delete-an-ingest-source">Delete an ingest source</a></li></ul></li><li><a href="#live-table-management">Live table management</a><ul><li><a href="#connect-a-live-table">Connect a live table</a></li><li><a href="#start-and-stop-ingestion">Start and stop ingestion</a></li><li><a href="#ddl-and-dml">DDL and DML</a></li><li><a href="#update-schema">Update schema</a></li><li><a href="#adjust-throughput-size">Adjust throughput size</a></li><li><a href="#data-maintenance">Data maintenance</a></li><li><a href="#errors-table">Errors table</a></li><li><a href="#decommission-a-live-table">Decommission a live table</a></li></ul></li><li><a href="#best-practices">Best practices</a><ul><li><a href="#throughput-and-sizing">Throughput and sizing</a></li><li><a href="#security">Security</a></li></ul></li><li><a href="#msk-policy-for-the-cross-account-iam-role">MSK policy for the cross-account IAM role</a></li></ul></li></ul>
+          <ul><li><a href="#kafka-streaming-ingestion">Kafka streaming ingestion</a><ul><li><a href="#before-you-begin">Before you begin</a></li><li><a href="#getting-started">Getting started</a><ul><li><a href="#connect-to-a-stream-source">Connect to a stream source</a></li><li><a href="#land-your-data-in-a-raw-table">Land your data in a raw table</a></li><li><a href="#create-a-transform-table-and-schematize-data">Create a transform table and schematize data</a><ul><li><a href="#create-a-transform-table">Create a transform table</a></li><li><a href="#schematize-data">Schematize data</a></li></ul></li></ul></li><li><a href="#connected-sources">Connected sources</a><ul><li><a href="#delete-an-ingest-source">Delete an ingest source</a></li></ul></li><li><a href="#live-table-management">Live table management</a><ul><li><a href="#start-and-stop-ingestion">Start and stop ingestion</a></li><li><a href="#live-table-options-menus">Live table options menus</a></li><li><a href="#raw-table-options">Raw table options</a></li><li><a href="#transform-table-options">Transform table options</a></li><li><a href="#create-a-live-table">Create a live table</a></li><li><a href="#update-schema">Update schema</a></li><li><a href="#ddl-and-dml">DDL and DML</a></li><li><a href="#adjust-throughput-size">Adjust throughput size</a></li><li><a href="#data-maintenance">Data maintenance</a></li><li><a href="#errors-table">Errors table</a></li><li><a href="#decommission-a-live-table">Decommission a live table</a></li></ul></li><li><a href="#best-practices">Best practices</a><ul><li><a href="#throughput-and-sizing">Throughput and sizing</a></li><li><a href="#security">Security</a></li></ul></li><li><a href="#msk-policy-for-the-cross-account-iam-role">MSK policy for the cross-account IAM role</a></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
