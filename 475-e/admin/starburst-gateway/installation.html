@@ -299,19 +299,25 @@
         </li>
         <li class="md-nav__item"><a href="#starburst-clusters" class="md-nav__link">Starburst clusters</a>
         </li>
-        <li class="md-nav__item"><a href="#sep-configuration" class="md-nav__link">SEP Configuration</a>
+        <li class="md-nav__item"><a href="#sep-configuration" class="md-nav__link">SEP Configuration</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#enable-forward-processing" class="md-nav__link">Enable forward processing</a>
         </li>
-        <li class="md-nav__item"><a href="#secrets-in-configuration-file" class="md-nav__link">Secrets in configuration file</a>
+        <li class="md-nav__item"><a href="#configure-header-forwarding" class="md-nav__link">Configure header forwarding</a>
         </li>
-        <li class="md-nav__item"><a href="#configure-routing-rules" class="md-nav__link">Configure routing rules</a>
+        <li class="md-nav__item"><a href="#environment-variables" class="md-nav__link">Environment variables</a>
+        </li></ul>
+            </nav>
         </li>
-        <li class="md-nav__item"><a href="#configure-logging" class="md-nav__link">Configure logging <a name="logging"></a></a>
+        <li class="md-nav__item"><a href="#routing-rules" class="md-nav__link">Routing rules</a>
         </li>
-        <li class="md-nav__item"><a href="#configure-additional-v1-statement-like-paths" class="md-nav__link">Configure additional v1/statement-like paths</a>
+        <li class="md-nav__item"><a href="#logging" class="md-nav__link">Logging <a name="logging"></a></a>
         </li>
-        <li class="md-nav__item"><a href="#configure-behind-a-load-balancer" class="md-nav__link">Configure behind a load balancer</a>
+        <li class="md-nav__item"><a href="#additional-statement-maths" class="md-nav__link">Additional statement maths</a>
         </li>
-        <li class="md-nav__item"><a href="#configure-larger-proxy-response-size" class="md-nav__link">Configure larger proxy response size</a>
+        <li class="md-nav__item"><a href="#load-balancer" class="md-nav__link">Load balancer</a>
+        </li>
+        <li class="md-nav__item"><a href="#proxy-response-size" class="md-nav__link">Proxy response size</a>
         </li></ul>
             </nav>
         </li>
@@ -325,9 +331,9 @@
         </li>
         <li class="md-nav__item"><a href="#install-starburst-gateway" class="md-nav__link">Install Starburst Gateway</a>
         </li>
-        <li class="md-nav__item"><a href="#access-the-starburst-gateway-ui" class="md-nav__link">Access the Starburst Gateway UI</a>
+        <li class="md-nav__item"><a href="#access-the-gateway-ui" class="md-nav__link">Access the Gateway UI</a>
         </li>
-        <li class="md-nav__item"><a href="#additional-options" class="md-nav__link">Additional options</a>
+        <li class="md-nav__item"><a href="#configure-routing-rules" class="md-nav__link">Configure routing rules</a>
         </li></ul>
             </nav>
         </li>
@@ -360,18 +366,18 @@
             
   <section id="installation">
 <h1 id="admin-starburst-gateway-installation--page-root">Installation<a class="headerlink" href="#admin-starburst-gateway-installation--page-root" title="Link to this heading">#</a></h1>
+<p>This page provides instructions for installing and configuring Starburst Gateway.</p>
 <p>Install Starburst Gateway with <a class="reference internal" href="#gateway-helm">Helm</a>.</p>
-<p>Use the following instructions to configure and deploy Starburst Gateway.</p>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>The following sections describe the things you need for your configuration.</p>
-<p>Each component of the Starburst Gateway has a corresponding node in the
+<p>The following sections describe the configuration requirements for Starburst
+Gateway.</p>
+<p>Each component of Starburst Gateway has a corresponding node in the
 configuration YAML file.</p>
 <section id="backend-database">
 <span id="gateway-backend-database"></span><h3 id="backend-database">Backend database<a class="headerlink" href="#backend-database" title="Link to this heading">#</a></h3>
-<p>Starburst Gateway requires a MySQL, PostgreSQL, or Oracle database. Database
-initialization is performed automatically when the Starburst Gateway process
-starts.</p>
+<p>Starburst Gateway requires a MySQL, PostgreSQL, or Oracle database.</p>
+<p>The Gateway automatically initializes your database when you start it.</p>
 </section>
 <section id="starburst-clusters">
 <h3 id="starburst-clusters">Starburst clusters<a class="headerlink" href="#starburst-clusters" title="Link to this heading">#</a></h3>
@@ -384,43 +390,45 @@ with Starburst Gateway.</p>
 </section>
 <section id="sep-configuration">
 <h3 id="sep-configuration">SEP Configuration<a class="headerlink" href="#sep-configuration" title="Link to this heading">#</a></h3>
-<p>From a users perspective Starburst Gateway acts as a transparent proxy for one
-or more clusters. The following configuration tips should be
-taken into account for all clusters behind the Starburst Gateway.</p>
-<p>If all client and server communication is routed through Starburst Gateway,
-then process forwarded HTTP headers must be enabled:</p>
+<p>Starburst Gateway acts as a transparent proxy for one or more clusters.</p>
+<p>Configure all clusters behind Starburst Gateway with the following settings.</p>
+<section id="enable-forward-processing">
+<h4 id="enable-forward-processing">Enable forward processing<a class="headerlink" href="#enable-forward-processing" title="Link to this heading">#</a></h4>
+<p>If you route all client and server communication through Starburst Gateway, enable
+process forwarded HTTP headers:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.process-forwarded</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
-<p>Without this setting, first requests go from the user to Starburst Gateway and then
-to SEP correctly. However, the URL for subsequent next URIs for more results
-in a query provided by SEP is then using the local URL of the cluster,
-and not the URL of the Starburst Gateway. This circumvents the Starburst Gateway for all
-these requests. In scenarios, where the local URL of the SEP cluster is private
-to the cluster on the network level, these following calls do not work
-at all for users.</p>
-<p>This setting is also required for SEP to authenticate in the case TLS is
-terminated at the Starburst Gateway. Normally it refuses to authenticate plain HTTP
-requests, but if <code class="docutils literal notranslate"><span class="pre">http-server.process-forwarded=true</span></code> it authenticates over
-HTTP if the request includes <code class="docutils literal notranslate"><span class="pre">X-Forwarded-Proto:</span> <span class="pre">HTTPS</span></code>.</p>
-<p>Starburst Galaxy requires setting</p>
+<p>Without this setting, initial requests may route correctly from your client to
+Starburst Gateway and then to Starburst Enterprise. However, subsequent requests for quests
+for query results use the cluster’s local URL instead of the Gateway URL,
+bypassing the Gateway entirely. If the cluster’s local URL is private to the
+network, these subsequent calls fail.</p>
+<p>This setting is also required for SEP to authenticate when TLS terminates at
+the Gateway. Normally, SEP refuses to authenticate plain HTTP requests, but
+with <code class="docutils literal notranslate"><span class="pre">http-server.process-forwarded=true</span></code>, SEP authenticates over HTTP when
+the request includes <code class="docutils literal notranslate"><span class="pre">X-Forwarded-Proto:</span> <span class="pre">HTTPS</span></code>.</p>
+</section>
+<section id="configure-header-forwarding">
+<h4 id="configure-header-forwarding">Configure header forwarding<a class="headerlink" href="#configure-header-forwarding" title="Link to this heading">#</a></h4>
+<p>To prevent Starburst Gateway from sending <code class="docutils literal notranslate"><span class="pre">X-Forwarded-*</span></code> headers, set the
+following configuration property:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">routing</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">addXForwardedHeaders</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </pre></div>
 </div>
-<p>to prevent Starburst Gateway from sending <code class="docutils literal notranslate"><span class="pre">X-Forwarded-*</span></code> headers. This setting
-is required to be <code class="docutils literal notranslate"><span class="pre">true</span></code> when proxying clusters that are behind firewalls or
-otherwise not directly routable from the SQL client.</p>
+<p>When proxying clusters that are behind firewalls or otherwise not directly
+routable from your client, set this property to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
 </section>
-<section id="secrets-in-configuration-file">
-<h3 id="secrets-in-configuration-file">Secrets in configuration file<a class="headerlink" href="#secrets-in-configuration-file" title="Link to this heading">#</a></h3>
-<p>Environment variables can be used as values in the configuration file.
-You can manually set an environment variable on the command line.</p>
+<section id="environment-variables">
+<h4 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Link to this heading">#</a></h4>
+<p>Set environment variables in the command line or in your configuration file.</p>
+<p>To manually set an environment variable in the command line:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DB_PASSWORD</span><span class="o">=</span>my-super-secret-pwd
 </pre></div>
 </div>
-<p>To use this variable in the configuration file, you reference it with the
-syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VARIABLE}</span></code>. For example:</p>
+<p>To use an environment variable in your configuratoin file, reference it using
+the syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VARIABLE}</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">dataStore</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">jdbcUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jdbc:postgresql://localhost:5432/gateway</span>
 <span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
@@ -428,48 +436,45 @@ syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VARIAB
 </pre></div>
 </div>
 </section>
-<section id="configure-routing-rules">
-<h3 id="configure-routing-rules">Configure routing rules<a class="headerlink" href="#configure-routing-rules" title="Link to this heading">#</a></h3>
+</section>
+<section id="routing-rules">
+<h3 id="routing-rules">Routing rules<a class="headerlink" href="#routing-rules" title="Link to this heading">#</a></h3>
 <p>Find more information in the <a class="reference internal" href="routing-rules.html"><span class="std std-doc">routing rules documentation</span></a>.</p>
 </section>
-<section id="configure-logging">
-<h3 id="configure-logging">Configure logging <a name="logging"><a class="headerlink" href="#configure-logging" title="Link to this heading">#</a></a></h3>
-<p>To configure the logging level for various classes, specify the path to the
-<code class="docutils literal notranslate"><span class="pre">log.properties</span></code> file by setting <code class="docutils literal notranslate"><span class="pre">log.levels-file</span></code> in <code class="docutils literal notranslate"><span class="pre">serverConfig</span></code>.</p>
-<p>For additional configurations, use the <code class="docutils literal notranslate"><span class="pre">log.*</span></code> properties from the
-<a class="reference internal" href="../properties-logging.html"><span class="doc">logging properties documentation</span></a> and specify
-the properties in <code class="docutils literal notranslate"><span class="pre">serverConfig</span></code>.</p>
+<section id="logging">
+<h3 id="logging">Logging <a name="logging"><a class="headerlink" href="#logging" title="Link to this heading">#</a></a></h3>
+<p>To configure the logging level for classes, specify the path to the
+<code class="docutils literal notranslate"><span class="pre">log.properties</span></code> file by using <code class="docutils literal notranslate"><span class="pre">log.levels-file</span></code> in <code class="docutils literal notranslate"><span class="pre">serverConfig</span></code>.</p>
+<p>For additional configurations, use the <code class="docutils literal notranslate"><span class="pre">log.*</span></code> properties from the <a class="reference internal" href="../properties-logging.html"><span class="doc">logging properties documentation</span></a> and specify the properties
+in <code class="docutils literal notranslate"><span class="pre">serverConfig</span></code>.</p>
 </section>
-<section id="configure-additional-v1-statement-like-paths">
-<h3 id="configure-additional-v1-statement-like-paths">Configure additional v1/statement-like paths<a class="headerlink" href="#configure-additional-v1-statement-like-paths" title="Link to this heading">#</a></h3>
-<p>The SEP client protocol specifies that queries are initiated by a POST to <code class="docutils literal notranslate"><span class="pre">v1/statement</span></code>.
-The Starburst Gateway incorporates this into its routing logic by extracting and recording the
-query id from responses to such requests. If you use an experimental or commercial build of
-SEP that supports additional endpoints, you can cause Starburst Gateway to treat them
-equivalently to <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> by adding them under the <code class="docutils literal notranslate"><span class="pre">additionalStatementPaths</span></code>
-configuration node. They must be absolute, and no path can be a prefix to any other path.
-The standard <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> path is always included and does not need to be configured.
-For example:</p>
+<section id="additional-statement-maths">
+<h3 id="additional-statement-maths">Additional statement maths<a class="headerlink" href="#additional-statement-maths" title="Link to this heading">#</a></h3>
+<p>The SEP client protocol initiates queries with a <code class="docutils literal notranslate"><span class="pre">POST</span></code> to <code class="docutils literal notranslate"><span class="pre">v1/statement</span></code>.
+Starburst Gateway in incorporates this into its routing logic by extracting and
+recording the query ID from responses to these requests.</p>
+<p>If you use a build of SEP that supports additional endpoints, configure {sb}
+Gateway to treat them like <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> by adding them under
+<code class="docutils literal notranslate"><span class="pre">additionalStatementPaths</span></code>. The standard <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> path is always
+included:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalStatementPaths</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'/ui/api/insights/ide/statement'</span>
 </pre></div>
 </div>
 </section>
-<section id="configure-behind-a-load-balancer">
-<h3 id="configure-behind-a-load-balancer">Configure behind a load balancer<a class="headerlink" href="#configure-behind-a-load-balancer" title="Link to this heading">#</a></h3>
-<p>A possible deployment of Starburst Gateway is to run multiple instances of Starburst
-Gateway behind another generic load balancer, such as a load balancer from
-your cloud hosting provider. In this deployment you must configure the
-<code class="docutils literal notranslate"><span class="pre">serverConfig</span></code> to include enabling process forwarded HTTP headers:</p>
+<section id="load-balancer">
+<h3 id="load-balancer">Load balancer<a class="headerlink" href="#load-balancer" title="Link to this heading">#</a></h3>
+<p>To deploy multiple instances of Starburst Gateway behind a generic load balancer,
+you must the <code class="docutils literal notranslate"><span class="pre">serverConfig</span></code> to enable process forwarded HTTP headers:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">serverConfig</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">http-server.process-forwarded</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
 </section>
-<section id="configure-larger-proxy-response-size">
-<h3 id="configure-larger-proxy-response-size">Configure larger proxy response size<a class="headerlink" href="#configure-larger-proxy-response-size" title="Link to this heading">#</a></h3>
-<p>Starburst Gateway reads the response from SEP in bytes (up to 32MB by default).
-It can be configured by setting:</p>
+<section id="proxy-response-size">
+<h3 id="proxy-response-size">Proxy response size<a class="headerlink" href="#proxy-response-size" title="Link to this heading">#</a></h3>
+<p>Starburst Gateway reads responses from SEP in bytes (up to 32MB by default).
+To configure a larger size, set the following configuration property:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">proxyResponseConfiguration</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">responseSize</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50MB</span>
 </pre></div>
@@ -520,18 +525,18 @@ helm<span class="w"> </span>pull<span class="w"> </span>oci://harbor.starburstda
 </pre></div>
 </div>
 </section>
-<section id="access-the-starburst-gateway-ui">
-<h3 id="access-the-starburst-gateway-ui">Access the Starburst Gateway UI<a class="headerlink" href="#access-the-starburst-gateway-ui" title="Link to this heading">#</a></h3>
+<section id="access-the-gateway-ui">
+<h3 id="access-the-gateway-ui">Access the Gateway UI<a class="headerlink" href="#access-the-gateway-ui" title="Link to this heading">#</a></h3>
 <p>User the following command to access the Starburst Gateway UI:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>port-forward<span class="w"> </span>service/starburst-gateway<span class="w"> </span><span class="m">8080</span>:8080
 </pre></div>
 </div>
-<p>Then, access the UI at http://localhost:8080.</p>
+<p>Access the UI at http://localhost:8080.</p>
 </section>
-<section id="additional-options">
-<h3 id="additional-options">Additional options<a class="headerlink" href="#additional-options" title="Link to this heading">#</a></h3>
-<p>To implement static routing rules, create a ConfigMap from your routing rules yaml
-definition:</p>
+<section id="configure-routing-rules">
+<h3 id="configure-routing-rules">Configure routing rules<a class="headerlink" href="#configure-routing-rules" title="Link to this heading">#</a></h3>
+<p>To implement static routing rules, create a <code class="docutils literal notranslate"><span class="pre">configMap</span></code> from your routing rules
+YAML definition:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>create<span class="w"> </span>cm<span class="w"> </span>routing-rules<span class="w"> </span>--from-file<span class="w"> </span>your-routing-rules.yaml
 </pre></div>
 </div>
@@ -550,39 +555,36 @@ definition:</p>
 <span class="w">      </span><span class="nt">subPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">your-routing-rules.yaml</span>
 </pre></div>
 </div>
-<p>Ensure that the <code class="docutils literal notranslate"><span class="pre">mountPath</span></code> matches the <code class="docutils literal notranslate"><span class="pre">rulesConfigPath</span></code> specified in your
-configuration. Note that the <code class="docutils literal notranslate"><span class="pre">subPath</span></code> is not strictly necessary, and if it
-is not specified the file is mounted at <code class="docutils literal notranslate"><span class="pre">mountPath/&lt;configMap</span> <span class="pre">key&gt;</span></code>.</p>
+<p>Ensure the <code class="docutils literal notranslate"><span class="pre">mountPath</span></code> matches the <code class="docutils literal notranslate"><span class="pre">rulesConfigPath</span></code> you specify in your
+configuration. The <code class="docutils literal notranslate"><span class="pre">subPath</span></code> is optional. Without the <code class="docutils literal notranslate"><span class="pre">subPath</span></code>, the file
+mounts at <code class="docutils literal notranslate"><span class="pre">mountPath/&lt;configMap</span> <span class="pre">key&gt;</span></code>.</p>
 <p>Standard Helm options such as <code class="docutils literal notranslate"><span class="pre">replicaCount</span></code>, <code class="docutils literal notranslate"><span class="pre">image</span></code>, <code class="docutils literal notranslate"><span class="pre">imagePullSecrets</span></code>,
-<code class="docutils literal notranslate"><span class="pre">service</span></code>, <code class="docutils literal notranslate"><span class="pre">ingress</span></code> and <code class="docutils literal notranslate"><span class="pre">resources</span></code> are supported. These are defined in
-<code class="docutils literal notranslate"><span class="pre">helm/values.yaml</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">service</span></code>, <code class="docutils literal notranslate"><span class="pre">ingress</span></code> and <code class="docutils literal notranslate"><span class="pre">resources</span></code> are supported in <code class="docutils literal notranslate"><span class="pre">helm/values.yaml</span></code>.</p>
 </section>
 </section>
 <section id="health-checks">
 <h2 id="health-checks">Health checks<a class="headerlink" href="#health-checks" title="Link to this heading">#</a></h2>
 <p>Starburst Gateway periodically performs health checks and maintains an in-memory
-health status for each backend. If a backend fails a health check, it is marked
-as <code class="docutils literal notranslate"><span class="pre">UNHEALTHY</span></code>, and Starburst Gateway stops routing requests to it.</p>
-<p>It is important to distinguish health status from the active/inactive
-state of a backend. The active/inactive state indicates whether a backend is
-manually turned on or off, whereas health status is programmatically determined
-by the health check process. Health checks are only performed on backends
-that are marked as active.</p>
+health status for each backend. When a backend fails a health check, the Gateway
+marks it as <code class="docutils literal notranslate"><span class="pre">UNHEALTHY</span></code> and stops routing requests to it.</p>
+<p>The health status differs from the active/inactive state of a backend. The
+active/inactive state indicates whether a backend is on or off, while health
+status is determined programmatically by the health check process. Health checks
+only run on active backends.</p>
 <p>Starburst recommends using either <code class="docutils literal notranslate"><span class="pre">INFO_API</span></code> or <code class="docutils literal notranslate"><span class="pre">METRICS</span></code> for your health check.
 Other options may be deprecated in the future.</p>
-<p>See <a class="reference internal" href="routing-rules.html#gateway-healthstatus"><span class="std std-ref">health status</span></a> for more details on
-what each status means.</p>
-<p>The type of health check is configured by setting</p>
+<p>For more details, see the <a class="reference internal" href="routing-rules.html#gateway-healthstatus"><span class="std std-ref">health status</span></a> section.</p>
+<p>To select the type of health check, set the following configuration property:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clusterStatsConfiguration</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">monitorType</span><span class="p">:</span><span class="w"> </span><span class="s">""</span>
 </pre></div>
 </div>
-<p>to one of the following values.</p>
+<p>Choose from the following health check types.</p>
 <section id="info-api-default">
 <h3 id="info-api-default">INFO_API (default)<a class="headerlink" href="#info-api-default" title="Link to this heading">#</a></h3>
-<p>By default Starburst Gateway uses the <code class="docutils literal notranslate"><span class="pre">v1/info</span></code> REST endpoint. A successful check is
-defined as a 200 response with <code class="docutils literal notranslate"><span class="pre">starting:</span> <span class="pre">false</span></code>. Connection timeout parameters
-can be defined through the <code class="docutils literal notranslate"><span class="pre">monitor</span></code> node, for example</p>
+<p>By default, Starburst Gateway uses the <code class="docutils literal notranslate"><span class="pre">v1/info</span></code> REST endpoint. A successful
+requires a <code class="docutils literal notranslate"><span class="pre">200</span></code> response with <code class="docutils literal notranslate"><span class="pre">starting:</span> <span class="pre">false</span></code>. Configure connection timeout
+parameters through the <code class="docutils literal notranslate"><span class="pre">monitor</span></code> node:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">connectTimeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
 <span class="w">  </span><span class="nt">requestTimeoutSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
@@ -594,38 +596,37 @@ can be defined through the <code class="docutils literal notranslate"><span clas
 </section>
 <section id="metrics">
 <h3 id="metrics">METRICS<a class="headerlink" href="#metrics" title="Link to this heading">#</a></h3>
-<p>This pulls statistics from Trino’s <a class="reference external" href="https://openmetrics.io/">OpenMetrics</a> endpoint.
-It retrieves the number of running and queued queries for use with
-the <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code> (either <code class="docutils literal notranslate"><span class="pre">METRICS</span></code> or <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> must be enabled if
-<code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code> is used).</p>
-<p>By default, it uses the <code class="docutils literal notranslate"><span class="pre">trino_execution_name_QueryManager_RunningQueries</span></code> and
-<code class="docutils literal notranslate"><span class="pre">trino_execution_name_QueryManager_QueuedQueries</span></code> to track the number of running
-and queued queries respectively, however these metrics can be configured as follows:</p>
+<p>This method pulls statistics from the <a class="reference external" href="https://openmetrics.io/">OpenMetrics</a>
+endpoint and retrieves the number of running and queued queries for use with
+<code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code>.</p>
+<p>You must enable either <code class="docutils literal notranslate"><span class="pre">METRICS</span></code> or <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> if you use <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code>.</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">METRICS</span></code> uses <code class="docutils literal notranslate"><span class="pre">trino_execution_name_QueryManager_RunningQueries</span></code>
+and <code class="docutils literal notranslate"><span class="pre">trino_execution_name_QueryManager_QueuedQueries</span></code> to track the number of
+running and queued queries. See the following example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">runningQueriesMetricName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">io_starburst_galaxy_name_GalaxyMetrics_RunningQueries</span>
 <span class="w">    </span><span class="nt">queuedQueriesMetricName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">io_starburst_galaxy_name_GalaxyMetrics_QueuedQueries</span>
 </pre></div>
 </div>
-<p>Similarly, by default the monitor pulls the metrics using the <code class="docutils literal notranslate"><span class="pre">/metrics</span></code> endpoint, but it
-can be updated to use another one:</p>
+<p>By default the monitor pulls metrics using the <code class="docutils literal notranslate"><span class="pre">/metrics</span></code> endpoint. To configure
+an alternative endpoint, use the <code class="docutils literal notranslate"><span class="pre">metricsEndpoint</span></code> property.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">metricsEndpoint</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/v1/metrics</span>
 </pre></div>
 </div>
-<p>This monitor allows customizing health definitions by comparing metrics to fixed
-values. This is configured through two maps: <code class="docutils literal notranslate"><span class="pre">metricMinimumValues</span></code> and
-<code class="docutils literal notranslate"><span class="pre">metricMaximumValues</span></code>. The keys of these maps are the metric names, and the values
-are the minimum or maximum values (inclusive) that are considered healthy. By default,
-the only metric populated is:</p>
+<p>This monitor supports custom health definitions by comparing metrics using two
+maps: <code class="docutils literal notranslate"><span class="pre">metricMinimumValues</span></code> and <code class="docutils literal notranslate"><span class="pre">metricMaximumValues</span></code>. The keys metric names,
+and the values are minimum or maximum values (inclusive) considered healthy. By
+default, the only metric populated is
+<code class="docutils literal notranslate"><span class="pre">trino_metadata_name_DiscoveryNodeManager_ActiveNodeCount</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">metricMinimumValues</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">trino_metadata_name_DiscoveryNodeManager_ActiveNodeCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 </pre></div>
 </div>
-<p>This requires the cluster to have at least one active worker node in order to be considered
-healthy. The map is overwritten if configured explicitly. For example, to increase the minimum
-worker count to 10 and disqualify clusters that have been experiencing frequent major Garbage
-Collections, set</p>
+<p>For the cluster to be considered healthy, one worker node must be active. To
+increase the minimum worker count to <code class="docutils literal notranslate"><span class="pre">10</span></code> and disqualify clusters experiencing
+frequent major garbage collections, set the following configuration properties:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">metricMinimumValues</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">trino_metadata_name_DiscoveryNodeManager_ActiveNodeCount</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
@@ -636,44 +637,50 @@ Collections, set</p>
 </section>
 <section id="jdbc">
 <h3 id="jdbc">JDBC<a class="headerlink" href="#jdbc" title="Link to this heading">#</a></h3>
-<p>This uses a JDBC connection to query <code class="docutils literal notranslate"><span class="pre">system.runtime</span></code> tables for cluster
-information. It is required for the query count based routing strategy. This is
-recommended over <code class="docutils literal notranslate"><span class="pre">UI_API</span></code> since it does not restrict the Web UI authentication
-method of backend clusters. Configure a username and password by adding
-<code class="docutils literal notranslate"><span class="pre">backendState</span></code> to your configuration. The username and password must be valid
-across all backends.</p>
+<p>This method uses a JDBC connection to query <code class="docutils literal notranslate"><span class="pre">system.runtime</span></code> tables for cluster
+information. It is required for the query count-based routing strategy.</p>
+<p>This method is recommended over <code class="docutils literal notranslate"><span class="pre">UI_API</span></code> since it does not restrict the
+Starburst Enterprise web UI authentication method of backend clusters.</p>
+<p>Configure a username and password by adding <code class="docutils literal notranslate"><span class="pre">backendState</span></code> to your
+configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">backendState</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">"user"</span>
 <span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">"password"</span>
 </pre></div>
 </div>
-<p>Starburst Gateway uses <code class="docutils literal notranslate"><span class="pre">explicitPrepare=false</span></code> by default. This property was introduced
-in Trino 431, and uses a single query for prepared statements, instead of a
-<code class="docutils literal notranslate"><span class="pre">PREPARE/EXECUTE</span></code> pair. If you are using the JDBC health check option with older
-versions of Trino, set</p>
+<p>The credentials must be valid across all backends.</p>
+<p>Starburst Gateway uses <code class="docutils literal notranslate"><span class="pre">explicitPrepare=false</span></code> by default. This property uses a
+single query for prepared statements instead of a <code class="docutils literal notranslate"><span class="pre">PREPARE/EXECUTE</span></code> pair. If you
+are using the JDBC health check option with older versions of Trino, set the
+following configuration property:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">   </span><span class="nt">explicitPrepare</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </pre></div>
 </div>
-<p>The query timeout can be set through</p>
+<p>To set the query timeout, set the following configuration property:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">monitor</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">queryTimeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
 </pre></div>
 </div>
-<p>Other timeout parameters are not applicable to the JDBC connection.</p>
+<p>Other timeout parameters do not apply to the JDBC connection.</p>
 </section>
 <section id="jmx">
 <h3 id="jmx">JMX<a class="headerlink" href="#jmx" title="Link to this heading">#</a></h3>
-<p>The monitor type <code class="docutils literal notranslate"><span class="pre">JMX</span></code> can be used as an alternative to collect cluster information,
-which is required for the <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouterProvider</span></code>. This uses the <code class="docutils literal notranslate"><span class="pre">v1/jmx/mbean</span></code>
-endpoint on clusters.</p>
-<p>To enable this, you must activate <a class="reference internal" href="../jmx.html"><span class="doc">JMX monitoring</span></a> on all Trino clusters:</p>
+<p>The method collects cluster information, required for
+<code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouterProvider</span></code> using the <code class="docutils literal notranslate"><span class="pre">v1/jmx/mbean</span></code> endpoint on clusters.</p>
+<p>To enable JMX monitoring, complete the following steps:</p>
+<ol class="arabic simple">
+<li><p>Activate <a class="reference internal" href="../jmx.html"><span class="doc">JMX monitoring</span></a> on all Trino clusters:</p></li>
+</ol>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">jmx.rmiregistry.port</span><span class="o">=</span><span class="s">&lt;port&gt;</span>
 <span class="na">jmx.rmiserver.port</span><span class="o">=</span><span class="s">&lt;port&gt;</span>
 </pre></div>
 </div>
-<p>Allow JMX endpoint access by adding rules to your <a class="reference external" href="https://trino.io/docs/current/security/file-system-access-control.html">file-based access control</a>
-configuration. Example for <code class="docutils literal notranslate"><span class="pre">user</span></code>:</p>
+<ol class="arabic simple" start="2">
+<li><p>Allow JMX endpoint access by adding rules to your <a class="reference external" href="https://trino.io/docs/current/security/file-system-access-control.html">file-based access
+control</a>
+configuration:</p></li>
+</ol>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">  </span><span class="nt">"catalogs"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
@@ -691,24 +698,26 @@ configuration. Example for <code class="docutils literal notranslate"><span clas
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Ensure that a username and password are configured by adding the <code class="docutils literal notranslate"><span class="pre">backendState</span></code>
-section to your configuration. The credentials must be consistent across all
-backend clusters and have <code class="docutils literal notranslate"><span class="pre">read</span></code> rights on the <code class="docutils literal notranslate"><span class="pre">system_information</span></code>.</p>
+<ol class="arabic simple" start="3">
+<li><p>Configure a username and password in the the <code class="docutils literal notranslate"><span class="pre">backendState</span></code> section:</p></li>
+</ol>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">backendState</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="s">"user"</span>
 <span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">"password"</span>
 </pre></div>
 </div>
-<p>The JMX monitor will use these credentials to authenticate against the
-JMX endpoint of each cluster and collect metrics like running queries,
-queued queries, and worker nodes information.</p>
+<p>The credentials must be consistent across all backend clusters and have <code class="docutils literal notranslate"><span class="pre">read</span></code>
+rights on <code class="docutils literal notranslate"><span class="pre">system_information</span></code>. The JMX monitor uses these credentials to
+authenticate against the JMX endpoint of each cluster and collect metrics like
+running queries, queued queries, and worker nodes information.</p>
 </section>
 <section id="ui-api">
 <h3 id="ui-api">UI_API<a class="headerlink" href="#ui-api" title="Link to this heading">#</a></h3>
-<p>This pulls cluster information from the <code class="docutils literal notranslate"><span class="pre">ui/api/stats</span></code> REST endpoint. This is
-supported for legacy reasons and may be deprecated in the future. It is only
-supported for backend clusters with <code class="docutils literal notranslate"><span class="pre">web-ui.authentication.type=FORM</span></code>. Set
-a username and password using <code class="docutils literal notranslate"><span class="pre">backendState</span></code> as with the <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> option.</p>
+<p>This method pulls cluster information from the <code class="docutils literal notranslate"><span class="pre">ui/api/stats</span></code> REST endpoint.
+Starburst supports this method for legacy reasons, and it may be deprecated in the
+future. It only works with backend clusters using
+<code class="docutils literal notranslate"><span class="pre">web-ui.authentication.type=FORM</span></code>. Set a username and password using
+<code class="docutils literal notranslate"><span class="pre">backendState</span></code> as with the <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> option.</p>
 </section>
 <section id="noop">
 <h3 id="noop">NOOP<a class="headerlink" href="#noop" title="Link to this heading">#</a></h3>

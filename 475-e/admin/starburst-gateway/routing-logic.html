@@ -59,7 +59,7 @@
 </script>
   
   
-    <title>Routing Logic &#8212; Starburst Enterprise</title>
+    <title>Routing logic &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=bbebba6e" />
     <link rel="stylesheet" type="text/css" href="../../_static/material.css?v=79c92029" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -128,7 +128,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 475-e STS</a>
-          <span class="md-header-nav__topic"> Routing Logic </span>
+          <span class="md-header-nav__topic"> Routing logic </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -291,15 +291,21 @@
 <nav class="md-nav md-nav--secondary">
     <label class="md-nav__title" for="__toc">"Contents"</label>
   <ul class="md-nav__list" data-md-scrollfix="">
-        <li class="md-nav__item"><a href="#admin-starburst-gateway-routing-logic--page-root" class="md-nav__link">Routing Logic</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#admin-starburst-gateway-routing-logic--page-root" class="md-nav__link">Routing logic</a><nav class="md-nav">
               <ul class="md-nav__list">
         <li class="md-nav__item"><a href="#overview" class="md-nav__link">Overview</a>
         </li>
         <li class="md-nav__item"><a href="#sticky-routing" class="md-nav__link">Sticky routing</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#routing-based-on-query-identifier-default" class="md-nav__link">Routing based on query identifier (default)</a>
+        <li class="md-nav__item"><a href="#query-identifier-routing" class="md-nav__link">Query identifier routing</a>
         </li>
-        <li class="md-nav__item"><a href="#routing-based-on-cookies" class="md-nav__link">Routing based on cookies</a>
+        <li class="md-nav__item"><a href="#cookie-based-routing" class="md-nav__link">Cookie-based routing</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#basic-configuration" class="md-nav__link">Basic configuration</a>
+        </li>
+        <li class="md-nav__item"><a href="#advanced-configuration" class="md-nav__link">Advanced configuration</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -315,64 +321,81 @@
           <article class="md-content__inner md-typeset" role="main">
             
   <section id="routing-logic">
-<h1 id="admin-starburst-gateway-routing-logic--page-root">Routing Logic<a class="headerlink" href="#admin-starburst-gateway-routing-logic--page-root" title="Link to this heading">#</a></h1>
+<h1 id="admin-starburst-gateway-routing-logic--page-root">Routing logic<a class="headerlink" href="#admin-starburst-gateway-routing-logic--page-root" title="Link to this heading">#</a></h1>
 <section id="overview">
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
-<p>Starburst Gateway checks incoming requests to see if they’re related to previous
-ones it handled. If they are, then Starburst Gateway sends them to the same backend
-that dealt with the earlier requests.</p>
-<p>If it is a new request, the Starburst Gateway refers to <a class="reference internal" href="routing-rules.html"><span class="std std-doc">Routing rules</span></a>
-to decide which group of backends, called a ‘Routing Group,’ should handle it.
-It then picks a backend from that Routing Group to handle the request using
-either an adaptive or round-robin strategy.</p>
-<!-- ![Request Routing Flow](assets/gateway-routing-flow.svg) -->
+<p>Starburst Gateway routes requests differently depending on whether they are related
+to previous requests:</p>
+<ul class="simple">
+<li><p>If a request is related to a previous request, the Gateway routes it to the
+same backend that handled the previous request.</p></li>
+<li><p>If a request is unrelated to a previous request, the Gateway uses <a class="reference internal" href="routing-rules.html"><span class="doc std std-doc">routing
+rules</span></a> to select a routing group, then chooses a backend
+from that group.</p></li>
+</ul>
 </section>
 <section id="sticky-routing">
 <h2 id="sticky-routing">Sticky routing<a class="headerlink" href="#sticky-routing" title="Link to this heading">#</a></h2>
-<p>A request related to an ongoing process, or to state maintained on a single
-backend cluster, must be routed to that backend for proper handling. Two
-mechanisms for identifying related requests are currently implemented. By default,
-only routing based on query identifier is enabled.</p>
-<section id="routing-based-on-query-identifier-default">
-<h3 id="routing-based-on-query-identifier-default">Routing based on query identifier (default)<a class="headerlink" href="#routing-based-on-query-identifier-default" title="Link to this heading">#</a></h3>
-<p>When a query is initiated through the Starburst Gateway, the query id will be
-extracted from the response and mapped to the backend that provided the
-response. Any subsequent request containing that query id will be forwarded
-to that backend. For example, to retrieve query results, the trino client
-polls a URI of the form
-<code class="docutils literal notranslate"><span class="pre">v1/statement/executing/queryid/nonce/counter</span></code>. Starburst Gateway will extract
-the queryid from this URI.</p>
+<p>Requests that are part of ongoing processes or depend on backend-managed state
+must be routed to the same backend cluster that initiated or maintains that
+state.</p>
+<p>Starburst Gateway uses two methods to identify and route related requests.</p>
+<section id="query-identifier-routing">
+<h3 id="query-identifier-routing">Query identifier routing<a class="headerlink" href="#query-identifier-routing" title="Link to this heading">#</a></h3>
+<p>The default query routing mechanism is query identifier routing.</p>
+<p>With this method, when you submit a query, the Gateway extracts the query ID
+from your backend’s response. The Gateway then routes all subsequent requests
+that reference this query ID to the same backend.</p>
+<p>For example, when retrieving query results, the client polls URIs like
+<code class="docutils literal notranslate"><span class="pre">v1/statement/executing/queryid/nonce/counter</span></code> to check if results are
+available. Starburst Gateway extracts the query ID from these URIs and routes the
+requests accordingly.</p>
 </section>
-<section id="routing-based-on-cookies">
-<h3 id="routing-based-on-cookies">Routing based on cookies<a class="headerlink" href="#routing-based-on-cookies" title="Link to this heading">#</a></h3>
-<p>OAuth2 authentication requires that the same backend is used for each step of
-the handshake. When <code class="docutils literal notranslate"><span class="pre">gatewayCookieConfiguration.enabled</span></code> is set to true, a cookie
-will be added to requests made to paths beginning with <code class="docutils literal notranslate"><span class="pre">/oauth2</span></code> unless they already have
-a cookie present, which is used to route further <code class="docutils literal notranslate"><span class="pre">/oauth2/*</span></code> requests to the correct backend.
-Cookies are not added to requests to <code class="docutils literal notranslate"><span class="pre">v1/*</span></code> and other Trino endpoints.</p>
-<p>Starburst Gateway signs its cookies to ensure that they are not tampered with. You
-must set a <code class="docutils literal notranslate"><span class="pre">cookieSigningSecret</span></code> string in your configuration</p>
+<section id="cookie-based-routing">
+<h3 id="cookie-based-routing">Cookie-based routing<a class="headerlink" href="#cookie-based-routing" title="Link to this heading">#</a></h3>
+<p>OAuth2 authentication requires the same backend for each step of the
+authentication process. Enable cookie-based routing to ensure consistent backend
+selection during OAuth2 flows.</p>
+<section id="basic-configuration">
+<h4 id="basic-configuration">Basic configuration<a class="headerlink" href="#basic-configuration" title="Link to this heading">#</a></h4>
+<p>Enable cookie-based routing by setting the <code class="docutils literal notranslate"><span class="pre">gatewayCookieConfiguration.enabled</span></code>
+property to <code class="docutils literal notranslate"><span class="pre">true</span></code> and providing a signing secret:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">gatewayCookieConfiguration</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<span class="w">    </span><span class="nt">cookieSigningSecret</span><span class="p">:</span><span class="w"> </span><span class="s">"ahighentropystring"</span>
+<span class="w">    </span><span class="nt">cookieSigningSecret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-high-entropy-secret-string"</span>
 </pre></div>
 </div>
-<p>when making use of this feature. If you load balance request across multiple Starburst Gateway
-instances, ensure each instance has the same <code class="docutils literal notranslate"><span class="pre">cookieSigningSecret</span></code>.</p>
-<p>The Starburst Gateway handles standard Trino OAuth2 handshakes with no additional
-configuration. If you are using a customized or commercial Trino distribution, then
-the paths used to define the OAuth handshake may be modified.</p>
-<p><code class="docutils literal notranslate"><span class="pre">routingPaths</span></code>: If the request URI starts with a path in this list, then</p>
+<p>When you enable this property, Starburst Gateway adds a signed cookie to requests
+sent to URLs that start with <code class="docutils literal notranslate"><span class="pre">/oauth2</span></code> (unless a cookie is already present).
+This cookie routes subsequent <code class="docutils literal notranslate"><span class="pre">/oauth2/*</span></code> requests to the correct backend.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you load balance requests across multiple Starburst Gateway instances, use
+the same <code class="docutils literal notranslate"><span class="pre">cookieSigningSecret</span></code> value on all instances.</p>
+</div>
+</section>
+<section id="advanced-configuration">
+<h4 id="advanced-configuration">Advanced configuration<a class="headerlink" href="#advanced-configuration" title="Link to this heading">#</a></h4>
+<p>For SEP distributions that modify OAuth2 paths, configure additional routing
+behavior. Use the following configuration properties:</p>
 <ul class="simple">
-<li><p>If no cookie is present, add a routing cookie</p></li>
-<li><p>If a cookie is present, route the request to the backend defined by that cookie</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">routingPaths</span></code>: The request URIs that trigger cookie-based routing</p>
+<ul>
+<li><p>If a cookie exists, the Gateway routes to the backend that the cookie
+specifies</p></li>
+<li><p>If no cookie exists, the Gateway adds a routing cookie</p></li>
 </ul>
-<p><code class="docutils literal notranslate"><span class="pre">deletePaths</span></code>: If the request URI starts with a path in this list,
-return a response that instructs the client to delete the cookie.</p>
-<p>Additionally, the <code class="docutils literal notranslate"><span class="pre">lifetime</span></code> property sets the duration for which a cookie remains in
-effect after creation. Ensure that it is greater than
-the time required to complete the handshake. Default <code class="docutils literal notranslate"><span class="pre">lifetime</span></code> is 10 minutes.</p>
-<p>These properties are defined under the <code class="docutils literal notranslate"><span class="pre">oauth2GatewayCookieConfiguration</span></code> node:</p>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">deletePaths</span></code>: The request URIs that return a response instructing the client
+to delete the cookie</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lifetime</span></code>: The duration for which the cookies are valid</p>
+<ul>
+<li><p>Defaults to <code class="docutils literal notranslate"><span class="pre">10m</span></code></p></li>
+<li><p>Ensure this exceeds the time needed to complete OAuth2 handshakes</p></li>
+</ul>
+</li>
+</ul>
+<p>See the following example configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">oauth2GatewayCookieConfiguration</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">routingPaths</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"/oauth2"</span>
@@ -383,6 +406,13 @@ the time required to complete the handshake. Default <code class="docutils liter
 <span class="w">  </span><span class="nt">lifetime</span><span class="p">:</span><span class="w"> </span><span class="s">"5m"</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Starburst Gateway handles standard OAuth2 handshakes without additional
+configuration. Only customize these settings if you are using modified OAuth2
+paths.</p>
+</div>
+</section>
 </section>
 </section>
 </section>

@@ -77,7 +77,7 @@
     <link rel="icon" href="../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Routing Logic" href="routing-logic.html" />
+    <link rel="next" title="Routing logic" href="routing-logic.html" />
     <link rel="prev" title="Operation" href="operation.html" />
 
   
@@ -293,15 +293,19 @@
   <ul class="md-nav__list" data-md-scrollfix="">
         <li class="md-nav__item"><a href="#admin-starburst-gateway-routers--page-root" class="md-nav__link">Routers</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#stochasticroutingmanager" class="md-nav__link">StochasticRoutingManager</a>
+        <li class="md-nav__item"><a href="#random-routing" class="md-nav__link">Random routing</a>
         </li>
-        <li class="md-nav__item"><a href="#querycountbasedrouterprovider" class="md-nav__link">QueryCountBasedRouterProvider</a><nav class="md-nav">
+        <li class="md-nav__item"><a href="#load-based-routing" class="md-nav__link">Load-based routing</a>
+        </li>
+        <li class="md-nav__item"><a href="#custom-routing" class="md-nav__link">Custom routing</a><nav class="md-nav">
               <ul class="md-nav__list">
-        <li class="md-nav__item"><a href="#add-router-provider-module" class="md-nav__link">Add router Provider module</a>
+        <li class="md-nav__item"><a href="#create-a-router-provider-module" class="md-nav__link">Create a router provider module</a>
         </li>
-        <li class="md-nav__item"><a href="#add-router-class" class="md-nav__link">Add router class</a>
-        </li>
-        <li class="md-nav__item"><a href="#configuration-file-reference" class="md-nav__link">Configuration file reference</a>
+        <li class="md-nav__item"><a href="#create-a-router-class" class="md-nav__link">Create a router class</a><nav class="md-nav">
+              <ul class="md-nav__list">
+        <li class="md-nav__item"><a href="#cluster-statistics" class="md-nav__link">Cluster statistics</a>
+        </li></ul>
+            </nav>
         </li></ul>
             </nav>
         </li></ul>
@@ -318,62 +322,62 @@
             
   <section id="routers">
 <h1 id="admin-starburst-gateway-routers--page-root">Routers<a class="headerlink" href="#admin-starburst-gateway-routers--page-root" title="Link to this heading">#</a></h1>
-<p>Starburst Gateway offers two entry-level router options, providing users with a
-straightforward and easy-to-use starting point for their routing needs. The
-routers make the decision based on the clusters load reported in
+<p>Starburst Gateway provides routing options to distribute queries across backend
+clusters.</p>
+<section id="random-routing">
+<h2 id="random-routing">Random routing<a class="headerlink" href="#random-routing" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">StochasticRoutingManager</span></code> is the default routing mechanism. This option
+randomly distributes incoming queries across available clusters.</p>
+</section>
+<section id="load-based-routing">
+<h2 id="load-based-routing">Load-based routing<a class="headerlink" href="#load-based-routing" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouterProvider</span></code> routing mechanism uses real-time, user-level
+load statistics reported in
 <a class="reference external" href="https://github.com/trinodb/trino-gateway/blob/main/gateway-ha/src/main/java/io/trino/gateway/ha/clustermonitor/ClusterStats.java">ClusterStats</a>.</p>
-<section id="stochasticroutingmanager">
-<h2 id="stochasticroutingmanager">StochasticRoutingManager<a class="headerlink" href="#stochasticroutingmanager" title="Link to this heading">#</a></h2>
-<p>This primary routing mechanism employs a straightforward, decentralized
-approach, dispatching incoming queries in a random manner without utilizing
-advanced optimization techniques.</p>
+<p>This option analyzes running query counts and queue lengths to direct incoming
+queries to the backend with the fewest queries running or queued from a
+particular user.</p>
 </section>
-<section id="querycountbasedrouterprovider">
-<h2 id="querycountbasedrouterprovider">QueryCountBasedRouterProvider<a class="headerlink" href="#querycountbasedrouterprovider" title="Link to this heading">#</a></h2>
-<p>This routing mechanism utilizes near real-time, user-level cluster load
-statistics. It uses running queries count and query queue lengths to determine
-the most suitable cluster for each individual user. With is information it
-directs queries to the least loaded cluster for that user, optimizing the
-likelihood of successful execution.</p>
-<section id="add-router-provider-module">
-<h3 id="add-router-provider-module">Add router Provider module<a class="headerlink" href="#add-router-provider-module" title="Link to this heading">#</a></h3>
-<p>Use the following steps to incorporate a new routing mechanism with advanced
-capabilities:</p>
+<section id="custom-routing">
+<h2 id="custom-routing">Custom routing<a class="headerlink" href="#custom-routing" title="Link to this heading">#</a></h2>
+<p>Use the following steps to create a custom routing mechanism.</p>
+<section id="create-a-router-provider-module">
+<h3 id="create-a-router-provider-module">Create a router provider module<a class="headerlink" href="#create-a-router-provider-module" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p>Create a class derived from <code class="docutils literal notranslate"><span class="pre">RouterBaseModule</span></code>.</p></li>
+<li><p>Instantiate the router. The module must contain a reference to the router.</p></li>
+<li><p>Add the module name to the <code class="docutils literal notranslate"><span class="pre">modules</span></code> section of your configuration provider.</p></li>
+</ol>
+<p>See the following example configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">modules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">io.trino.gateway.ha.module.QueryCountBasedRouterProvider</span>
+</pre></div>
+</div>
+</section>
+<section id="create-a-router-class">
+<h3 id="create-a-router-class">Create a router class<a class="headerlink" href="#create-a-router-class" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p>Create a class derived from <code class="docutils literal notranslate"><span class="pre">StochasticRoutingManager</span></code>.</p></li>
+<li><p>Override the routing methods <code class="docutils literal notranslate"><span class="pre">provideAdhocBackend</span></code> and
+<code class="docutils literal notranslate"><span class="pre">provideBackendForRoutingGroup</span></code> and implement your custom logic.</p></li>
+</ol>
+<section id="cluster-statistics">
+<h4 id="cluster-statistics">Cluster statistics<a class="headerlink" href="#cluster-statistics" title="Link to this heading">#</a></h4>
 <ul class="simple">
-<li><p>Derive a class from <code class="docutils literal notranslate"><span class="pre">RouterBaseModule</span></code></p></li>
-<li><p>The module must instantiate the router and hold a reference to it.</p></li>
-<li><p>Add the module name to the <code class="docutils literal notranslate"><span class="pre">modules</span></code> section of the configuration file to load
-the provider module and make the new router available.</p></li>
-<li><p>For example, <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouterProvider</span></code> and refer to the config file in
-the following sections.</p></li>
+<li><p>The router class receives cluster load information through the
+<code class="docutils literal notranslate"><span class="pre">updateBackEndStats</span></code> method.</p></li>
+<li><p>Statistics update at intervals you define in the <code class="docutils literal notranslate"><span class="pre">monitor.taskDelaySeconds</span></code>
+property.</p></li>
+<li><p>Only healthy clusters report statistics. If you have three backends and one is
+unhealthy, the statistics list contains only two elements.</p></li>
+<li><p>Set the parameter
+<code class="docutils literal notranslate"><span class="pre">clusterStatsConfiguration.monitorType</span></code> property to either <code class="docutils literal notranslate"><span class="pre">UI_API</span></code> or <code class="docutils literal notranslate"><span class="pre">JDBC</span></code>.</p></li>
+<li><p>You must also configure the properties in the <code class="docutils literal notranslate"><span class="pre">backendState</span></code> section of your
+configuration file.</p></li>
 </ul>
-</section>
-<section id="add-router-class">
-<h3 id="add-router-class">Add router class<a class="headerlink" href="#add-router-class" title="Link to this heading">#</a></h3>
-<p>Use the following steps to create a new router:</p>
-<ul class="simple">
-<li><p>Derive a class from <code class="docutils literal notranslate"><span class="pre">StochasticRoutingManager</span></code> to create the router that
-does the actual work.</p></li>
-<li><p>Override the methods <code class="docutils literal notranslate"><span class="pre">provideAdhocBackend</span></code> and <code class="docutils literal notranslate"><span class="pre">provideBackendForRoutingGroup</span></code>
-and implement the new smarter logic</p></li>
-<li><p>The router listens to the list of <code class="docutils literal notranslate"><span class="pre">ClusterStats</span></code> via the<code class="docutils literal notranslate"><span class="pre">updateBackEndStats</span></code>
-method.</p></li>
-<li><p>This method is called on regular intervals defined in the config
-parameter <code class="docutils literal notranslate"><span class="pre">monitor=&gt;taskDelaySeconds</span></code>.</p></li>
-<li><p>Each element in the list corresponds to each backend cluster.</p></li>
-<li><p>Only the stats from the healthy cluster are reported, unhealthy clusters are
-not included in the list. If you have three cluster backends and one is
-unhealthy, then the parameter <code class="docutils literal notranslate"><span class="pre">List&lt;ClusterStats&gt;</span> <span class="pre">stats</span></code> has only two
-elements.</p></li>
-<li><p>To get the cluster stats set the parameter
-<code class="docutils literal notranslate"><span class="pre">clusterStatsConfiguration=&gt;monitorType</span></code> to <code class="docutils literal notranslate"><span class="pre">UI_API</span></code> or <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> which in turn
-needs the setup of <code class="docutils literal notranslate"><span class="pre">backendState</span></code> section in the config file.</p></li>
-</ul>
-</section>
-<section id="configuration-file-reference">
-<h3 id="configuration-file-reference">Configuration file reference<a class="headerlink" href="#configuration-file-reference" title="Link to this heading">#</a></h3>
+<p>See the following example configuration:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">backendState</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;usernme&gt;</span>
+<span class="w">  </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;username&gt;</span>
 <span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;password&gt;</span>
 <span class="w">  </span><span class="nt">ssl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;false/true&gt;</span>
 
@@ -387,6 +391,7 @@ needs the setup of <code class="docutils literal notranslate"><span class="pre">
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">io.trino.gateway.ha.module.QueryCountBasedRouterProvider</span>
 </pre></div>
 </div>
+</section>
 </section>
 </section>
 </section>
@@ -522,12 +527,12 @@ feedback();
             </a>
           
           
-            <a href="routing-logic.html" title="Routing Logic"
+            <a href="routing-logic.html" title="Routing logic"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> Routing Logic </span>
+                class="md-footer-nav__direction"> "Next" </span> Routing logic </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
