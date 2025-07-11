@@ -277,6 +277,11 @@
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#data-management">Data management</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#write-modes">Write modes</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#copy-on-write">Copy-on-write</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#merge-on-read">Merge-on-read</a></li>
+</ul>
+</li>
 <li class="toctree-l6"><a class="reference internal" href="#deletion-by-partition">Deletion by partition</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#row-level-deletion">Row level deletion</a></li>
 </ul>
@@ -438,6 +443,11 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#data-management">Data management</a><ul>
+<li><a class="reference internal" href="#write-modes">Write modes</a><ul>
+<li><a class="reference internal" href="#copy-on-write">Copy-on-write</a></li>
+<li><a class="reference internal" href="#merge-on-read">Merge-on-read</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#deletion-by-partition">Deletion by partition</a></li>
 <li><a class="reference internal" href="#row-level-deletion">Row level deletion</a></li>
 </ul>
@@ -1404,6 +1414,50 @@ bucket:</p>
 <span id="iceberg-data-management"></span><h3 id="data-management">Data management<a class="headerlink" href="#data-management" title="Link to this heading">#</a></h3>
 <p>The <a class="reference internal" href="../language/sql-support.html#sql-data-management"><span class="std std-ref">Data management</span></a> functionality includes support for <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>,
 <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, and <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> statements.</p>
+<section id="write-modes">
+<span id="iceberg-write-modes"></span><h4 id="write-modes">Write modes<a class="headerlink" href="#write-modes" title="Link to this heading">#</a></h4>
+<p>The connector supports two write modes: <a class="reference internal" href="#iceberg-cow-mode"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">copy-on-write</span></code></span></a> and
+<a class="reference internal" href="#iceberg-mor-mode"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code></span></a>. These modes determine how data is modified
+during write operations. To set the mode, use the <code class="docutils literal notranslate"><span class="pre">merge_mode</span></code> <a class="reference internal" href="#iceberg-table-properties"><span class="std std-ref">table
+property</span></a>. The default is <code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code>.</p>
+<section id="copy-on-write">
+<span id="iceberg-cow-mode"></span><h5 id="copy-on-write">Copy-on-write<a class="headerlink" href="#copy-on-write" title="Link to this heading">#</a></h5>
+<p>The <code class="docutils literal notranslate"><span class="pre">copy-on-write</span></code> mode rewrites the affected data files. When you delete rows,
+the connector rewrites the entire data file containing those rows. It does not
+create a separate delete file.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">copy-on-write</span></code> mode has the following characteristics:</p>
+<ul class="simple">
+<li><p>Optimized for read performance because there are no delete files to evaluate.</p></li>
+<li><p>Higher write amplification due to full file rewrites.</p></li>
+<li><p>Simple file layout for downstream readers.</p></li>
+</ul>
+</section>
+<section id="merge-on-read">
+<span id="iceberg-mor-mode"></span><h5 id="merge-on-read">Merge-on-read<a class="headerlink" href="#merge-on-read" title="Link to this heading">#</a></h5>
+<p>The <code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code> mode writes delete files, also known as position delete
+files, instead of rewriting data files. When you query the table, reads must
+apply these deletes at query time to produce the correct result set.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code> mode has the following characteristics:</p>
+<ul class="simple">
+<li><p>Optimized for write performance due to lower write amplification.</p></li>
+<li><p>Read performance may be slower due to delete file evaluation.</p></li>
+<li><p>Suitable for workloads with frequent small updates or deletes.</p></li>
+</ul>
+<p>Configure the write mode when creating a new table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">example_table</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="p">)</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">merge_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'copy-on-write'</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Configure the write mode on an existing table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">example_table</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">merge_mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'copy-on-write'</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="deletion-by-partition">
 <span id="iceberg-delete"></span><h4 id="deletion-by-partition">Deletion by partition<a class="headerlink" href="#deletion-by-partition" title="Link to this heading">#</a></h4>
 <p>For partitioned tables, the Iceberg connector supports the deletion of entire
@@ -1567,6 +1621,7 @@ TABLE SET PROPERTIES</span></a>.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">max_commit_retry</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">object_store_layout_enabled</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">data_location</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">merge_mode</span></code></p></li>
 </ul>
 <p>For example, to update a table from v1 of the Iceberg specification to v2:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">PROPERTIES</span><span class="w"> </span><span class="n">format_version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
@@ -1651,6 +1706,11 @@ is enabled. Defaults to <code class="docutils literal notranslate"><span class="
 <td><p>Additional properties added to a Iceberg table. The properties are not used
 by Trino, and are available in the <code class="docutils literal notranslate"><span class="pre">$properties</span></code> metadata table. The
 properties are not included in the output of <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">TABLE</span></code> statements.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">merge_mode</span></code></p></td>
+<td><p>Determines how data is modified during write operations. Possible values are
+<code class="docutils literal notranslate"><span class="pre">copy-on-write</span></code> and <code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">merge-on-read</span></code>. See also,
+<a class="reference internal" href="#iceberg-write-modes"><span class="std std-ref">Write modes</span></a>.</p></td>
 </tr>
 </tbody>
 </table>
