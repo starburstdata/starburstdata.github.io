@@ -225,20 +225,14 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../data-products.html">Data products</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Data products overview</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#data-products-in-iceberg-format">Data products in Iceberg format</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#prerequisites-for-materialized-views">Prerequisites for materialized views</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="#built-in-access-control">Built-in access control</a></li>
-</ul>
-</li>
+<li class="toctree-l4"><a class="reference internal" href="#access-control-for-data-products">Access control for data products</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#views-and-materialized-views">Views and materialized views</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#configuration-properties">Configuration properties</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#access-control-for-data-products">Access control for data products</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#access-control-for-data-products-underlying-data">Access control for data products underlying data</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#access-control-for-underlying-data">Access control for underlying data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#api">API</a></li>
 </ul>
 </li>
@@ -318,20 +312,14 @@
     <ul>
 <li><a class="reference internal" href="#">Data products overview</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements</a><ul>
-<li><a class="reference internal" href="#data-products-in-iceberg-format">Data products in Iceberg format</a><ul>
-<li><a class="reference internal" href="#prerequisites-for-materialized-views">Prerequisites for materialized views</a><ul>
-<li><a class="reference internal" href="#built-in-access-control">Built-in access control</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#access-control-for-data-products">Access control for data products</a><ul>
+<li><a class="reference internal" href="#views-and-materialized-views">Views and materialized views</a></li>
 <li><a class="reference internal" href="#configuration-properties">Configuration properties</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a class="reference internal" href="#access-control-for-data-products">Access control for data products</a><ul>
-<li><a class="reference internal" href="#access-control-for-data-products-underlying-data">Access control for data products underlying data</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#access-control-for-underlying-data">Access control for underlying data</a></li>
 <li><a class="reference internal" href="#api">API</a></li>
 </ul>
 </li>
@@ -348,10 +336,10 @@
             
   <section id="data-products-overview">
 <h1 id="data-products-index--page-root">Data products overview<a class="headerlink" href="#data-products-index--page-root" title="Link to this heading">#</a></h1>
-<p>Data products are available in the <a class="reference internal" href="../overview/sep-ui.html"><span class="doc">Starburst Enterprise web UI</span></a>. The <strong>Data
-products</strong> tab allows you to publish, find, and manage curated data assets in
-your organization. Use data products as a semantic layer to abstract the
-technical complexity of your underlying data sources.</p>
+<p>Data products are available in the <a class="reference internal" href="../overview/sep-ui.html"><span class="doc std std-doc">Starburst Enterprise web UI</span></a>. The <strong>Data products</strong>
+tab allows you to publish, find, and manage curated data assets in your
+organization. Use data products as a semantic layer to abstract the technical
+complexity of your underlying data sources.</p>
 <p>A <em>data product</em> is a schema. It can have one or more <em>datasets</em>, which are
 views or materialized views (if supported by the catalog). Data products are
 not limited in the number of datasets that they can contain.</p>
@@ -363,9 +351,8 @@ with a brief description and their status:</p>
 has changes in its datasets definitions that were not yet published</p></li>
 <li><p>[No status] - this data product is published to SEP and ready for use</p></li>
 </ul>
-<p>You can use the <a class="reference internal" href="../client/query-editor.html"><span class="doc">query editor</span></a> to develop, test,
-and vet your data product. Be sure to mark your data product before publishing
-it into production as a data product.</p>
+<p>You can use the <a class="reference internal" href="../client/query-editor.html"><span class="doc std std-doc">query editor</span></a> to develop, test, and vet
+your data product.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>You cannot directly register pre-existing data as data products. Instead,
@@ -375,12 +362,17 @@ create a view for that data using a simple <code class="docutils literal notrans
 <span id="dp-requirements"></span><h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <p>Data products require the following:</p>
 <ul>
-<li><p>A catalog using the <a class="reference internal" href="../connector/hive.html"><span class="doc">Hive connector</span></a> with a Hive
-metastore to manage views. You can optionally <a class="reference internal" href="../connector/hive.html#sb-hive-materialized-views"><span class="std std-ref">enable materialized views support</span></a> for the catalog to provide performance
-benefits for data product consumers.</p></li>
+<li><p>A catalog that uses either</p>
+<ul class="simple">
+<li><p>The <a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive connector</span></a> with a Hive metastore. Optionally,
+<a class="reference internal" href="../connector/hive.html#sb-hive-materialized-views"><span class="std std-ref">enable materialized views</span></a>.</p></li>
+<li><p>The <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg connector</span></a> with any supported metastore (to
+use materialized views, you must configure an Iceberg catalog with a
+metastore that supports materialized views)</p></li>
+</ul>
+</li>
 <li><p>A SEP user with appropriate access privileges to impersonate other users</p></li>
-<li><p>A configured and operational
-<a class="reference internal" href="../admin/backend-service.html"><span class="doc">backend service</span></a>.</p></li>
+<li><p>A configured and operational <a class="reference internal" href="../admin/backend-service.html"><span class="doc std std-doc">backend service</span></a>.</p></li>
 <li><p>The following property in your coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">insights.persistence-enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
@@ -389,40 +381,48 @@ benefits for data product consumers.</p></li>
 </ul>
 <p>If you are unsure whether these requirements have been met, ask your data
 engineer.</p>
-<section id="data-products-in-iceberg-format">
-<span id="iceberg-data-products"></span><h3 id="data-products-in-iceberg-format">Data products in Iceberg format<a class="headerlink" href="#data-products-in-iceberg-format" title="Link to this heading">#</a></h3>
-<p>SEP supports creating and managing data products in Iceberg
-format.</p>
-<p>You can create data products for Iceberg catalogs either as views or
-materialized views.</p>
-<section id="prerequisites-for-materialized-views">
-<h4 id="prerequisites-for-materialized-views">Prerequisites for materialized views<a class="headerlink" href="#prerequisites-for-materialized-views" title="Link to this heading">#</a></h4>
-<p>To use materialized views with Iceberg data products, you must:</p>
+<section id="access-control-for-data-products">
+<h3 id="access-control-for-data-products">Access control for data products<a class="headerlink" href="#access-control-for-data-products" title="Link to this heading">#</a></h3>
+<p>The supported access control systems depend on your catalog type:</p>
 <ul class="simple">
-<li><p>Use an Iceberg catalog and metastore that supports materialized views, such as
-Thrift, Glue, or the Starburst embedded catalog. JDBC, Nessie, REST, and
-Snowflake catalogs do not support materialized views.</p></li>
-<li><p>Configure the catalog with <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a> and enable <a class="reference internal" href="../security/biac-overview.html#biac-iceberg-mv"><span class="std std-ref">ownership</span></a> for
-the catalog</p></li>
+<li><p><strong>Hive catalogs:</strong> Use either <a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">built-in access
+control</span></a> or <a class="reference internal" href="../security/ranger-overview.html"><span class="doc std std-doc">Apache
+Ranger</span></a>.</p></li>
+<li><p><strong>Iceberg catalogs:</strong> Use <a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">built-in access control</span></a>.
+In your BIAC configuration, you must:</p>
+<ul>
+<li><p>Enable <a class="reference internal" href="../security/biac-overview.html#biac-iceberg-mv"><span class="std std-ref">ownership</span></a> for the catalog.</p></li>
+<li><p>Ensure that the user that creates the data product has only a single role
+enabled in the Starburst Enterprise web UI.</p></li>
+<li><p>Ensure that the role has <code class="docutils literal notranslate"><span class="pre">REFRESH</span></code> privileges for the Iceberg catalog that
+contains the data product.</p></li>
 </ul>
-<section id="built-in-access-control">
-<h5 id="built-in-access-control">Built-in access control<a class="headerlink" href="#built-in-access-control" title="Link to this heading">#</a></h5>
-<p>You must enable built-in access control (BIAC) to use Iceberg data products.
-In your BIAC configuration, ensure that:</p>
-<ul class="simple">
-<li><p>The user that creates the data product has only a single role enabled in the
-Starburst Enterprise web UI</p></li>
-<li><p>The role has <code class="docutils literal notranslate"><span class="pre">REFRESH</span></code> privileges for the Iceberg catalog containing the data
-product</p></li>
+</li>
 </ul>
-</section>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Support for data products with Iceberg is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public
+preview</span></a> in Starburst Enterprise. Contact <a class="external reference" href="../../support.html">Starburst
+Support</a> with questions or feedback.</p>
+</div>
+<p>For more information, see the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">built-in access
+control</span></a> and <a class="reference internal" href="../security/ranger-overview.html#ranger-concepts"><span class="std std-ref">Ranger</span></a> documentation.</p>
+<section id="views-and-materialized-views">
+<h4 id="views-and-materialized-views">Views and materialized views<a class="headerlink" href="#views-and-materialized-views" title="Link to this heading">#</a></h4>
+<p>Create data products as either views or materialized views.</p>
+<p>To use materialized views with Hive data products, see the <a class="reference internal" href="../connector/hive.html#sb-hive-materialized-views"><span class="std std-ref">Hive connector
+documentation</span></a>.</p>
+<p>To use materialized views with Iceberg data products, you must configure an
+Iceberg catalog with a metastore that supports materialized views, such as HMS,
+Thrift, Glue, or the Starburst embedded catalog. JDBC, Nessie, REST, and Snowflake
+catalogs do not support materialized views.</p>
 </section>
 <section id="configuration-properties">
 <h4 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h4>
 <p>When you create a data product as a materialized view, the following properties
 are available:</p>
 <table id="id1">
-<caption><span class="caption-text">Iceberg data product configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<caption><span class="caption-text">Materialized view data product configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 55%"/>
@@ -453,40 +453,29 @@ view</p></td>
 </section>
 </section>
 </section>
-<section id="access-control-for-data-products">
-<h2 id="access-control-for-data-products">Access control for data products<a class="headerlink" href="#access-control-for-data-products" title="Link to this heading">#</a></h2>
-<p>If a role-based access control system like <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a> or <a class="reference internal" href="../security/ranger-overview.html"><span class="doc">Apache Ranger</span></a>
-is enabled, you must set roles and privileges for data products. You can control
-which users are able to see, edit, create, delete, and publish data products.
-You can set privileges that apply globally (across all domains), privileges that
-apply to a specific domain, and privileges that apply to a specific data
-product. For details, see the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">built-in access control</span></a> and <a class="reference internal" href="../security/ranger-overview.html#ranger-concepts"><span class="std std-ref">Ranger</span></a> documentation.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>With access control enabled, only users that you explicitly allow are able
-to see existing data products.</p>
-</div>
-<section id="access-control-for-data-products-underlying-data">
-<h3 id="access-control-for-data-products-underlying-data">Access control for data products underlying data<a class="headerlink" href="#access-control-for-data-products-underlying-data" title="Link to this heading">#</a></h3>
-<p>Data product privileges do not imply any <a class="reference internal" href="../security/biac-privileges.html#biac-entity-tables"><span class="std std-ref">table privileges</span></a> for the underlying data objects defined by its datasets.
-This means a user can be allowed to see a data product in the <a class="reference internal" href="dashboard.html"><span class="doc">data products dashboard</span></a> while not being allowed to query
-its datasets and vice-versa.</p>
+<section id="access-control-for-underlying-data">
+<h2 id="access-control-for-underlying-data">Access control for underlying data<a class="headerlink" href="#access-control-for-underlying-data" title="Link to this heading">#</a></h2>
+<p>Data product privileges do not imply any <a class="reference internal" href="../security/biac-privileges.html#biac-entity-tables"><span class="std std-ref">table privileges</span></a>
+for the underlying data objects defined by its datasets. This means a user can
+be allowed to see a data product in the <a class="reference internal" href="dashboard.html"><span class="doc std std-doc">data products
+dashboard</span></a> while not being allowed to query its
+datasets and vice-versa.</p>
 <p>Make sure you define appropriate access control privileges for the data objects
 defined by your data products. While data product privileges can only be managed
-by <a class="reference internal" href="../security/biac-overview.html"><span class="doc">built-in access control</span></a> and <a class="reference internal" href="../security/ranger-overview.html"><span class="doc">Apache Ranger</span></a>, the privileges for the data objects it
+by <a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">built-in access control</span></a> and <a class="reference internal" href="../security/ranger-overview.html"><span class="doc std std-doc">Apache
+Ranger</span></a>, the privileges for the data objects it
 creates in SEP (schemas, views, and materialized views) can be managed by
-other supported <a class="reference internal" href="../security.html"><span class="doc">access control systems</span></a>.</p>
+other supported <a class="reference internal" href="../security.html"><span class="doc std std-doc">access control systems</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Data product views are created and stored in the Hive metastore with the
 permissions and ownership of the user who published the data product.</p>
 </div>
 </section>
-</section>
 <section id="api">
 <h2 id="api">API<a class="headerlink" href="#api" title="Link to this heading">#</a></h2>
 <p>Data products, domains and associated tags can be managed programmatically with
-the <a class="reference internal" href="../starburst-rest-api.html"><span class="doc">Starburst Enterprise REST API</span></a>.</p>
+the <a class="reference internal" href="../starburst-rest-api.html"><span class="doc std std-doc">Starburst Enterprise REST API</span></a>.</p>
 </section>
 </section>
 
