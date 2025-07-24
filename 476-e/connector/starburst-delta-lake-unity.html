@@ -254,7 +254,10 @@
 <li class="toctree-l3"><a class="reference internal" href="starburst-iceberg-unity.html">Iceberg Unity catalog</a></li>
 <li class="toctree-l3"><a class="reference internal" href="starburst-hive-unity.html">Hive Unity catalog</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Delta Lake Unity catalog</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#unity-catalog-owned-tables">Unity Catalog-owned tables</a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#enable-oauth-2-0-token-passthrough">Enable OAuth 2.0 token passthrough</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#location-alias-mapping">Location alias mapping</a></li>
 </ul>
@@ -310,7 +313,10 @@
     <strong>Contents</strong>
     <ul>
 <li><a class="reference internal" href="#">Unity catalog with Delta Lake</a><ul>
-<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#unity-catalog-owned-tables">Unity Catalog-owned tables</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#enable-oauth-2-0-token-passthrough">Enable OAuth 2.0 token passthrough</a></li>
 <li><a class="reference internal" href="#location-alias-mapping">Location alias mapping</a></li>
 </ul>
@@ -328,13 +334,42 @@
             
   <section id="unity-catalog-with-delta-lake">
 <h1 id="connector-starburst-delta-lake-unity--page-root">Unity catalog with Delta Lake<a class="headerlink" href="#connector-starburst-delta-lake-unity--page-root" title="Link to this heading">#</a></h1>
-<p>The Delta Lake connector supports the <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, <code class="docutils literal notranslate"><span class="pre">MERGE</span></code>, and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>
-write operations for
-<a class="reference external" href="https://docs.databricks.com/aws/tables/tables#managed-tables">managed</a> and
-<a class="reference external" href="https://docs.databricks.com/aws/tables/tables#external-tables">external
-tables</a>, and
-supports reading from both managed and external tables when using the Databricks
-Unity Catalog as a metastore on AWS, Azure, or Google Cloud.</p>
+<p>The Delta Lake connector supports a subset of operations across
+<a class="reference external" href="https://docs.databricks.com/aws/tables/tables#managed-tables">managed</a>,
+<a class="reference external" href="https://docs.databricks.com/aws/tables/tables#external-tables">external</a>, and
+Databricks Unity Catalog-owned tables when using the Databricks Unity Catalog as
+a metastore on AWS, Azure, or Google Cloud. The following table outlines which
+operations are supported.</p>
+<table id="id1">
+<caption><span class="caption-text">Supported operations for Unity Catalog with Delta Lake</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 30%"/>
+<col style="width: 40%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Supported for</p></th>
+<th class="head"><p>Operation</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>External tables</p></td>
+<td><p>CREATE TABLE, INSERT, UPDATE, MERGE, DELETE, DROP TABLE, READ</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Unity Catalog-owned tables</p></td>
+<td><p>INSERT, UPDATE, MERGE, DELETE, DROP, READ</p></td>
+<td><p>A Unity Catalog-owned table is a managed table specific to Unity. These
+tables are created in Databricks and require the
+<code class="docutils literal notranslate"><span class="pre">delta.feature.catalogOwned-preview</span></code> table feature.</p></td>
+</tr>
+<tr class="row-even"><td><p>Managed tables</p></td>
+<td><p>READ-only</p></td>
+<td><p>Managed tables that are not Unity Catalog-owned tables are read only.</p></td>
+</tr>
+</tbody>
+</table>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
 <p>To use Unity Catalog metastore, add the following configuration properties to
@@ -345,23 +380,10 @@ your catalog configuration file:</p>
 <span class="na">hive.metastore.unity.catalog-name</span><span class="o">=</span><span class="s">main</span>
 </pre></div>
 </div>
-<p>When using Unity Catalog with <a class="reference external" href="https://docs.databricks.com/aws/tables/tables#managed-tables">managed
-tables</a>, add
-<code class="docutils literal notranslate"><span class="pre">hive.metastore.unity.catalog-owned-table-enabled=true</span></code> to your catalog
-configuration file. Then add the following table properties on the
-Delta Lake table in Databricks to ensure compatibility with SEP:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span>
-<span class="p">)</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">delta</span>
-<span class="n">TBLPROPERTIES</span><span class="w"> </span><span class="p">(</span>
-<span class="w">  </span><span class="s1">'delta.enableRowTracking'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'false'</span><span class="p">,</span>
-<span class="w">  </span><span class="s1">'delta.checkpointPolicy'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'classic'</span>
-<span class="p">)</span>
-</pre></div>
-</div>
 <p>The following table shows the configuration properties used to connect SEP
 to Unity Catalog as a metastore.</p>
-<table id="id1">
-<caption><span class="caption-text">Unity configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Unity configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -390,6 +412,32 @@ documentation</a>.</p></td>
 </tr>
 </tbody>
 </table>
+<section id="unity-catalog-owned-tables">
+<h3 id="unity-catalog-owned-tables">Unity Catalog-owned tables<a class="headerlink" href="#unity-catalog-owned-tables" title="Link to this heading">#</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Write support for Unity Catalog-owned tables is currently in private preview and
+considered experimental by Databricks. While SEP provides limited support for
+this functionality, it relies on specific table configurations that may change
+without notice.</p>
+</div>
+<p>When using Unity Catalog with <a class="reference external" href="https://docs.databricks.com/aws/tables/tables#managed-tables">managed
+tables</a>, add
+<code class="docutils literal notranslate"><span class="pre">hive.metastore.unity.catalog-owned-table-enabled=true</span></code> to your catalog
+configuration file. This property enables SEP to recognize and write to
+catalog-owned tables within Unity Catalog.</p>
+<p>Then add the following table properties on the Delta Lake table in Databricks to
+ensure compatibility with SEP:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">catalog_name</span><span class="p">.</span><span class="k">schema_name</span><span class="p">.</span><span class="k">table_name</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="w"> </span><span class="nb">int</span>
+<span class="p">)</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">delta</span>
+<span class="n">TBLPROPERTIES</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="s1">'delta.feature.catalogOwned-preview'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'supported'</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">'delta.enableRowTracking'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'false'</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">'delta.checkpointPolicy'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'classic'</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
 </section>
 <section id="enable-oauth-2-0-token-passthrough">
 <span id="unity-oath2-passthrough"></span><h2 id="enable-oauth-2-0-token-passthrough">Enable OAuth 2.0 token passthrough<a class="headerlink" href="#enable-oauth-2-0-token-passthrough" title="Link to this heading">#</a></h2>
