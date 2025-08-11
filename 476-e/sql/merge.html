@@ -230,6 +230,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../language.html">SQL language</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../sql.html">SQL statement syntax</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="alter-catalog.html">ALTER CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="alter-branch.html">ALTER BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-materialized-view.html">ALTER MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-schema.html">ALTER SCHEMA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-table.html">ALTER TABLE</a></li>
@@ -239,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="comment.html">COMMENT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="commit.html">COMMIT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-catalog.html">CREATE CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="create-branch.html">CREATE BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-function.html">CREATE FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-materialized-view.html">CREATE MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-role.html">CREATE ROLE</a></li>
@@ -253,6 +255,7 @@
 <li class="toctree-l2"><a class="reference internal" href="describe-input.html">DESCRIBE INPUT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="describe-output.html">DESCRIBE OUTPUT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-catalog.html">DROP CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drop-branch.html">DROP BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-function.html">DROP FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-materialized-view.html">DROP MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-role.html">DROP ROLE</a></li>
@@ -288,6 +291,7 @@
 <li class="toctree-l2"><a class="reference internal" href="set-session-authorization.html">SET SESSION AUTHORIZATION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="set-time-zone.html">SET TIME ZONE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-catalogs.html">SHOW CATALOGS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="show-branch.html">SHOW BRANCHES</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-columns.html">SHOW COLUMNS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-create-function.html">SHOW CREATE FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-create-materialized-view.html">SHOW CREATE MATERIALIZED VIEW</a></li>
@@ -392,7 +396,7 @@
 <h1 id="sql-merge--page-root">MERGE<a class="headerlink" href="#sql-merge--page-root" title="Link to this heading">#</a></h1>
 <section id="synopsis">
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading">#</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>MERGE INTO target_table [ [ AS ]  target_alias ]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>MERGE INTO target_table [ @ branch_name ] [ [ AS ]  target_alias ]
 USING { source_table | query } [ [ AS ] source_alias ]
 ON search_condition
 when_clause [...]
@@ -426,9 +430,9 @@ Additional conditions can narrow down the affected rows.</p>
 <p>For each source row, the <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses are processed in order. Only the first
 matching <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause is executed and subsequent clauses are ignored. The query
 fails if a single target table row matches more than one source row.</p>
-<p>In <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses with <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operations, the column value expressions
-can depend on any field of the target or the source. In the <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">MATCHED</span></code>
-case, the <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> expressions can depend on any field of the source.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses with <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> operations, the column value expressions can
+depend on any field of the target or the source. In the <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">MATCHED</span></code> case, the
+<code class="docutils literal notranslate"><span class="pre">INSERT</span></code> expressions can depend on any field of the source.</p>
 <p>Typical usage of <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> involves two tables with similar structure, containing
 different data. For example, the source table is part of a transactional usage
 in a production system, while the target table is located in a data warehouse
@@ -439,15 +443,15 @@ different tables.</p>
 </section>
 <section id="examples">
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
-<p>Delete all customers mentioned in the source table:</p>
+<p>Delete all customers mentioned in t he source table:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">MERGE</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">accounts</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">monthly_accounts_update</span><span class="w"> </span><span class="n">s</span>
 <span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">MATCHED</span>
 <span class="w">        </span><span class="k">THEN</span><span class="w"> </span><span class="k">DELETE</span>
 </pre></div>
 </div>
-<p>For matching customer rows, increment the purchases, and if there is no
-match, insert the row from the source table:</p>
+<p>For matching customer rows, increment the purchases, and if there is no match,
+insert the row from the source table:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">MERGE</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">accounts</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">monthly_accounts_update</span><span class="w"> </span><span class="n">s</span>
 <span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer</span><span class="p">)</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">MATCHED</span>
@@ -473,13 +477,17 @@ there is no match in the target table, insert the source table row:</p>
 <span class="w">              </span><span class="k">VALUES</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">customer</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">purchases</span><span class="p">,</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">address</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Delete all customers mentioned in <code class="docutils literal notranslate"><span class="pre">audit</span></code> branch of the source table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">MERGE</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">accounts</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">audit</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">monthly_accounts_update</span><span class="w"> </span><span class="n">s</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">customer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">customer</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">MATCHED</span>
+<span class="w">        </span><span class="k">THEN</span><span class="w"> </span><span class="k">DELETE</span>
+</pre></div>
+</div>
 </section>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
-<p>Any connector can be used as a source table for a <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> statement.
-Only connectors which support the <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> statement can be the target of a
-merge operation. See the <a class="reference internal" href="../connector.html"><span class="doc">connector documentation</span></a> for more
-information.</p>
+<p>Any connector can be used as a source table for a <code class="docutils literal notranslate"><span class="pre">MERGE</span></code> statement.</p>
 </section>
 </section>
 

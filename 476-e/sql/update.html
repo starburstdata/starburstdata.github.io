@@ -230,6 +230,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../language.html">SQL language</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../sql.html">SQL statement syntax</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="alter-catalog.html">ALTER CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="alter-branch.html">ALTER BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-materialized-view.html">ALTER MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-schema.html">ALTER SCHEMA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="alter-table.html">ALTER TABLE</a></li>
@@ -239,6 +240,7 @@
 <li class="toctree-l2"><a class="reference internal" href="comment.html">COMMENT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="commit.html">COMMIT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-catalog.html">CREATE CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="create-branch.html">CREATE BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-function.html">CREATE FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-materialized-view.html">CREATE MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="create-role.html">CREATE ROLE</a></li>
@@ -253,6 +255,7 @@
 <li class="toctree-l2"><a class="reference internal" href="describe-input.html">DESCRIBE INPUT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="describe-output.html">DESCRIBE OUTPUT</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-catalog.html">DROP CATALOG</a></li>
+<li class="toctree-l2"><a class="reference internal" href="drop-branch.html">DROP BRANCH</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-function.html">DROP FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-materialized-view.html">DROP MATERIALIZED VIEW</a></li>
 <li class="toctree-l2"><a class="reference internal" href="drop-role.html">DROP ROLE</a></li>
@@ -282,6 +285,7 @@
 <li class="toctree-l2"><a class="reference internal" href="set-session-authorization.html">SET SESSION AUTHORIZATION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="set-time-zone.html">SET TIME ZONE</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-catalogs.html">SHOW CATALOGS</a></li>
+<li class="toctree-l2"><a class="reference internal" href="show-branch.html">SHOW BRANCHES</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-columns.html">SHOW COLUMNS</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-create-function.html">SHOW CREATE FUNCTION</a></li>
 <li class="toctree-l2"><a class="reference internal" href="show-create-materialized-view.html">SHOW CREATE MATERIALIZED VIEW</a></li>
@@ -392,18 +396,20 @@
 <h1 id="sql-update--page-root">UPDATE<a class="headerlink" href="#sql-update--page-root" title="Link to this heading">#</a></h1>
 <section id="synopsis">
 <h2 id="synopsis">Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading">#</a></h2>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>UPDATE table_name SET [ ( column = expression [, ... ] ) ] [ WHERE condition ]
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>UPDATE table_name [ @ branch_name ]
+SET [ ( column = expression [, ... ] ) ] [ WHERE condition ]
 </pre></div>
 </div>
 </section>
 <section id="description">
 <h2 id="description">Description<a class="headerlink" href="#description" title="Link to this heading">#</a></h2>
 <p>Update selected columns values in existing rows in a table.</p>
-<p>The columns named in the <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">=</span> <span class="pre">expression</span></code> assignments will be updated
-for all rows that match the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> condition.  The values of all column update
+<p>The columns named in the <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">=</span> <span class="pre">expression</span></code> assignments will be updated for
+all rows that match the <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> condition.  The values of all column update
 expressions for a matching row are evaluated before any column value is changed.
-When the type of the expression and the type of the column differ, the usual implicit
-CASTs, such as widening numeric fields, are applied to the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code> expression values.</p>
+When the type of the expression and the type of the column differ, the usual
+implicit CASTs, such as widening numeric fields, are applied to the <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>
+expression values.</p>
 </section>
 <section id="examples">
 <h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
@@ -438,11 +444,20 @@ CASTs, such as widening numeric fields, are applied to the <code class="docutils
 <span class="w">  </span><span class="p">);</span>
 </pre></div>
 </div>
+<p>Update the status of all purchases that haven’t been assigned a ship date
+in the <code class="docutils literal notranslate"><span class="pre">audit</span></code> branch:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">UPDATE</span>
+<span class="w">  </span><span class="n">purchases</span><span class="w"> </span><span class="o">@</span><span class="w"> </span><span class="n">audit</span>
+<span class="k">SET</span>
+<span class="w">  </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'OVERDUE'</span>
+<span class="k">WHERE</span>
+<span class="w">  </span><span class="n">ship_date</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</pre></div>
+</div>
 </section>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
-<p>Some connectors have limited or no support for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>.
-See connector documentation for more details.</p>
+<p>Some connectors have limited or no support for <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>.</p>
 </section>
 </section>
 
