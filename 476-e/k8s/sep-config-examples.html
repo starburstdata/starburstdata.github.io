@@ -348,6 +348,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#k8s-defaults-additionalvolumes">Default</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#adding-volumes-examples">Adding volumes examples</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#adding-files-examples">Adding files examples</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#using-persistent-volumes">Using persistent volumes</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#prometheus">Prometheus</a><ul>
@@ -464,6 +465,7 @@
 <li><a class="reference internal" href="#k8s-defaults-additionalvolumes">Default</a></li>
 <li><a class="reference internal" href="#adding-volumes-examples">Adding volumes examples</a></li>
 <li><a class="reference internal" href="#adding-files-examples">Adding files examples</a></li>
+<li><a class="reference internal" href="#using-persistent-volumes">Using persistent volumes</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#prometheus">Prometheus</a><ul>
@@ -1720,6 +1722,39 @@ and add the file as a <code class="docutils literal notranslate"><span class="pr
 in the location provided in <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p>
 <p>Large binaries, such as drivers, are added at cluster start time in the
 <code class="docutils literal notranslate"><span class="pre">initFile:</span></code> <a class="reference internal" href="#k8s-ex-startup-script"><span class="std std-ref">top level node</span></a>.</p>
+</section>
+<section id="using-persistent-volumes">
+<h3 id="using-persistent-volumes">Using persistent volumes<a class="headerlink" href="#using-persistent-volumes" title="Link to this heading">#</a></h3>
+<p>Use persistent storage to persist data beyond the lifecycle of individual
+SEP pods. To create a persistent volume, mount a <code class="docutils literal notranslate"><span class="pre">persistentVolumeClaim</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep-persistent-storage</span>
+<span class="w">    </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/data</span>
+<span class="w">    </span><span class="nt">volume</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep-pvc</span>
+</pre></div>
+</div>
+<p>Before you create a persistent volume, you must create a <code class="docutils literal notranslate"><span class="pre">persistentVolumeClaim</span></code>
+in a Kubernetes manifest file before deploying SEP. The following example
+manifest file creates a <code class="docutils literal notranslate"><span class="pre">persistentVolumeClaim</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PersistentVolumeClaim</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep-pvc</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">storageClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;my-storage-class&gt;</span>
+<span class="w">  </span><span class="nt">accessModes</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ReadWriteMany</span>
+<span class="w">  </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">requests</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">storage</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1Gi</span>
+</pre></div>
+</div>
+<p>Deploy the manifest with <code class="docutils literal notranslate"><span class="pre">kubectl</span></code>:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>pvc-manifest.yaml<span class="w"> </span>-n<span class="w"> </span>&lt;namespace-name&gt;
+</pre></div>
+</div>
 </section>
 </section>
 <section id="prometheus">
