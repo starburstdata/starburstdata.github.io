@@ -905,27 +905,33 @@ Helm, and lets you run self-managed SEP clusters with Glue-compatible
 metadata management without requiring access to AWS infrastructure.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Starburst data catalog is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">private
+<p>Starburst data catalog is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public
 preview</span></a>. Contact your Starburst account team with
 questions or feedback.</p>
 </div>
 <section id="installation">
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h3>
-<p>Deploy Starburst data catalog with Helm. You can install from the OCI registry with
+<p>Deploy Starburst data catalog with Helm. As of version 476-e, Starburst data catalog
+and Starburst Gateway are deployed together using a unified Helm chart called
+<code class="docutils literal notranslate"><span class="pre">starburst-portal</span></code>. This new deployment artifact simplifies installation and
+ensures compatibility with the latest features and fixes. Standalone
+installation of Starburst data catalog using the old <code class="docutils literal notranslate"><span class="pre">starburst-catalog</span></code> chart is
+no longer supported.</p>
+<p>You can install from the OCI registry with
 the following command, replacing <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> with the appropriate Helm chart
 version:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>install<span class="w"> </span>starburst-catalog<span class="w"> </span>oci://harbor.starburstdata.net/starburstdata/charts/starburst-catalog<span class="w"> </span>--version<span class="w"> </span>&lt;version&gt;<span class="w"> </span>--values<span class="w"> </span>registry-access.yaml<span class="w"> </span>--values<span class="w"> </span>&lt;your-values-file&gt;.yaml<span class="w"> </span>--namespace<span class="w"> </span>&lt;namespace&gt;
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>install<span class="w"> </span>starburst-portal<span class="w"> </span>oci://harbor.starburstdata.net/starburstdata/charts/starburst-portal<span class="w"> </span>--version<span class="w"> </span>&lt;version&gt;<span class="w"> </span>--values<span class="w"> </span>registry-access.yaml<span class="w"> </span>--values<span class="w"> </span>&lt;your-values-file&gt;.yaml<span class="w"> </span>--namespace<span class="w"> </span>&lt;namespace&gt;
 </pre></div>
 </div>
 <p>Alternatively, you can install from a local chart file using the following
 command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>install<span class="w"> </span>starburst-catalog<span class="w"> </span>starburst-catalog-&lt;version&gt;.tgz
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>install<span class="w"> </span>starburst-portal<span class="w"> </span>starburst-portal-&lt;version&gt;.tgz
 </pre></div>
 </div>
 </section>
 <section id="configuration">
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file defines how <code class="docutils literal notranslate"><span class="pre">starburst-catalog</span></code> is configured during Helm
+<p>The <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file defines how Starburst data catalog is configured during Helm
 deployment. You must specify settings such as the metadata backend, service
 ports, and credentials. The following example shows a basic configuration that
 sets the service environment and HTTP port, points to a PostgreSQL database used
@@ -940,9 +946,9 @@ the Glue-compatible API:</p>
 <span class="w">    </span><span class="no">credentials-provider.type=file</span>
 <span class="w">    </span><span class="no">credentials-provider.credentials-file-path=/opt/starburst/etc/catalog-credentials.json</span>
 <span class="w">    </span><span class="no">catalog.database.schema=&lt;db/schema name&gt;</span>
-<span class="w">    </span><span class="no">catalog.database.url=jdbc:postgresql://postgresql:5432/&lt;db/schema name&gt;</span>
-<span class="w">    </span><span class="no">catalog.database.user=&lt;db username&gt;</span>
-<span class="w">    </span><span class="no">catalog.database.password=&lt;db password&gt;</span>
+<span class="w">    </span><span class="no">persistence.database.url=jdbc:postgresql://postgresql:5432/&lt;db/schema name&gt;</span>
+<span class="w">    </span><span class="no">persistence.database.user=&lt;db username&gt;</span>
+<span class="w">    </span><span class="no">persistence.database.password=&lt;db password&gt;</span>
 
 <span class="w">  </span><span class="nt">catalogCredentials</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">    </span><span class="no">[</span>
@@ -990,16 +996,16 @@ the Glue-compatible API:</p>
 <td><p>Specifies the path to the credentials file when using file-based credentials
 provider.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">catalog.database.url</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.database.url</span></code></p></td>
 <td><p>Specifies the JDBC URL for the metadata database connection.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">catalog.database.schema</span></code></p></td>
 <td><p>Sets the database schema to use when connecting to the metadata database.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">catalog.database.user</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.database.user</span></code></p></td>
 <td><p>Sets the username for authenticating to the metadata database.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">catalog.database.password</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.database.password</span></code></p></td>
 <td><p>Sets the password for authenticating to the metadata database.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">catalog.default.catalog.id</span></code></p></td>

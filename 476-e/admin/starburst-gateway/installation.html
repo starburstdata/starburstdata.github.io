@@ -308,11 +308,12 @@
 <li><a class="reference internal" href="#proxy-response-size">Proxy response size</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#deploy-starburst-gateway">Deploy Starburst Gateway</a><ul>
+<li><a class="reference internal" href="#deploy-gateway-using-starburst-portal">Deploy Gateway using Starburst Portal</a><ul>
 <li><a class="reference internal" href="#access-the-helm-chart">Access the Helm Chart</a></li>
 <li><a class="reference internal" href="#create-a-secret">Create a secret</a></li>
 <li><a class="reference internal" href="#deploy-a-postgresql-database">Deploy a PostgreSQL database</a></li>
 <li><a class="reference internal" href="#install-starburst-gateway">Install Starburst Gateway</a></li>
+<li><a class="reference internal" href="#enable-starburst-gateway">Enable Starburst Gateway</a></li>
 <li><a class="reference internal" href="#access-the-gateway-ui">Access the Gateway UI</a></li>
 <li><a class="reference internal" href="#configure-routing-rules">Configure routing rules</a></li>
 </ul>
@@ -341,6 +342,11 @@
             
   <section id="installation">
 <h1 id="admin-starburst-gateway-installation--page-root">Installation<a class="headerlink" href="#admin-starburst-gateway-installation--page-root" title="Link to this heading">#</a></h1>
+<p>As of version 476-e, Starburst Gateway and Starburst data catalog are deployed
+together using a unified Helm chart called <code class="docutils literal notranslate"><span class="pre">starburst-portal</span></code>. This new
+deployment artifact simplifies installation and ensures compatibility with the
+latest features and fixes. The previous individual Helm chart for
+<code class="docutils literal notranslate"><span class="pre">starburst-gateway</span></code> is no longer supported.</p>
 <p>This page provides instructions for installing and configuring Starburst Gateway.</p>
 <p>Install Starburst Gateway with <a class="reference internal" href="#gateway-helm">Helm</a>.</p>
 <section id="configuration">
@@ -402,14 +408,8 @@ routable from your client, set this property to <code class="docutils literal no
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">DB_PASSWORD</span><span class="o">=</span>my-super-secret-pwd
 </pre></div>
 </div>
-<p>To use an environment variable in your configuratoin file, reference it using
-the syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VARIABLE}</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">dataStore</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">jdbcUrl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jdbc:postgresql://localhost:5432/gateway</span>
-<span class="w">  </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
-<span class="w">  </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ENV:DB_PASSWORD}</span>
-</pre></div>
-</div>
+<p>To use an environment variable in your configuration file, reference it using
+the syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VARIABLE}</span></code>.</p>
 </section>
 </section>
 <section id="routing-rules">
@@ -426,10 +426,10 @@ in <code class="docutils literal notranslate"><span class="pre">serverConfig</sp
 <section id="additional-statement-maths">
 <h3 id="additional-statement-maths">Additional statement maths<a class="headerlink" href="#additional-statement-maths" title="Link to this heading">#</a></h3>
 <p>The SEP client protocol initiates queries with a <code class="docutils literal notranslate"><span class="pre">POST</span></code> to <code class="docutils literal notranslate"><span class="pre">v1/statement</span></code>.
-Starburst Gateway in incorporates this into its routing logic by extracting and
+Starburst Gateway incorporates this into its routing logic by extracting and
 recording the query ID from responses to these requests.</p>
-<p>If you use a build of SEP that supports additional endpoints, configure {sb}
-Gateway to treat them like <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> by adding them under
+<p>If you use a build of SEP that supports additional endpoints, configure
+Starburst Gateway to treat them like <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> by adding them under
 <code class="docutils literal notranslate"><span class="pre">additionalStatementPaths</span></code>. The standard <code class="docutils literal notranslate"><span class="pre">/v1/statement</span></code> path is always
 included:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalStatementPaths</span><span class="p">:</span>
@@ -456,22 +456,18 @@ To configure a larger size, set the following configuration property:</p>
 </div>
 </section>
 </section>
-<section id="deploy-starburst-gateway">
-<span id="gateway-helm"></span><h2 id="deploy-starburst-gateway">Deploy Starburst Gateway<a class="headerlink" href="#deploy-starburst-gateway" title="Link to this heading">#</a></h2>
+<section id="deploy-gateway-using-starburst-portal">
+<span id="gateway-helm"></span><h2 id="deploy-gateway-using-starburst-portal">Deploy Gateway using Starburst Portal<a class="headerlink" href="#deploy-gateway-using-starburst-portal" title="Link to this heading">#</a></h2>
 <p>Use the following steps to deploy Starburst Gateway on Kubernetes with Helm.</p>
-<p>The Starburst Gateway Helm chart includes:</p>
-<ul class="simple">
-<li><p>A <code class="docutils literal notranslate"><span class="pre">config</span></code> node for general configuration</p></li>
-<li><p>Standard Helm options such as <code class="docutils literal notranslate"><span class="pre">replicaCount</span></code>, <code class="docutils literal notranslate"><span class="pre">resources</span></code>, and <code class="docutils literal notranslate"><span class="pre">ingress</span></code></p></li>
-</ul>
 <section id="access-the-helm-chart">
 <h3 id="access-the-helm-chart">Access the Helm Chart<a class="headerlink" href="#access-the-helm-chart" title="Link to this heading">#</a></h3>
-<p>The Starburst Gateway Helm chart is available in the <a class="reference external" href="https://harbor.starburstdata.net/">Starburst Helm chart
-project</a>.</p>
+<p>The Starburst Portal Helm chart is available in the <a class="reference external" href="https://harbor.starburstdata.net/">Starburst Helm chart
+project</a>. It contains both Starburst Gateway and
+Starburst data catalog.</p>
 <p>Use the following commands to access the chart:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>registry<span class="w"> </span>login<span class="w"> </span>harbor.starburstdata.net/starburstdata
 <span class="c1"># Enter your credentials</span>
-helm<span class="w"> </span>pull<span class="w"> </span>oci://harbor.starburstdata.net/starburstdata/charts/starburst-gateway<span class="w"> </span>--version<span class="w"> </span><span class="m">472</span>.0.0
+helm<span class="w"> </span>pull<span class="w"> </span>oci://harbor.starburstdata.net/starburstdata/charts/starburst-portal<span class="w"> </span>--version<span class="w"> </span>&lt;version&gt;
 </pre></div>
 </div>
 </section>
@@ -495,8 +491,33 @@ helm<span class="w"> </span>pull<span class="w"> </span>oci://harbor.starburstda
 </section>
 <section id="install-starburst-gateway">
 <h3 id="install-starburst-gateway">Install Starburst Gateway<a class="headerlink" href="#install-starburst-gateway" title="Link to this heading">#</a></h3>
-<p>Use the following command to install Starburst Gateway:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>starburst-gateway<span class="w"> </span>starburst-gateway-472.0.0.tgz<span class="w"> </span>-f<span class="w"> </span>gateway-config.yaml
+<p>Use the following command to install Starburst Gateway via the Portal chart:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>starburst-portal<span class="w"> </span>starburst-portal-&lt;version&gt;.tgz<span class="w"> </span>-f<span class="w"> </span>gateway-config.yaml
+</pre></div>
+</div>
+</section>
+<section id="enable-starburst-gateway">
+<h3 id="enable-starburst-gateway">Enable Starburst Gateway<a class="headerlink" href="#enable-starburst-gateway" title="Link to this heading">#</a></h3>
+<p>By default, Starburst Gateway is disabled in the Portal deployment.</p>
+<p>To enable it:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="l l-Scalar l-Scalar-Plain">gateway.enabled=true</span>
+<span class="l l-Scalar l-Scalar-Plain">gateway.config.file=config.yaml</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> file defines how Starburst Portal is configured during Helm
+deployment. The following example shows a basic configuration:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">etcFiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">node.environment=starburst_portal</span>
+<span class="w">    </span><span class="no">http-server.http.port=8080</span>
+<span class="w">    </span><span class="no">http-server.http.enabled=true</span>
+<span class="w">    </span><span class="no">http-server.https.port=8443</span>
+<span class="w">    </span><span class="no">http-server.https.enabled=false</span>
+<span class="w">    </span><span class="no">credentials-provider.type=file</span>
+<span class="w">    </span><span class="no">credentials-provider.credentials-file-path=/opt/starburst/etc/catalog-credentials.json</span>
+<span class="w">    </span><span class="no">persistence.database.url=jdbc:postgresql://postgresql:5432/&lt;db/schema name&gt;</span>
+<span class="w">    </span><span class="no">persistence.database.user=&lt;db username&gt;</span>
+<span class="w">    </span><span class="no">persistence.database.password=&lt;db password&gt;</span>
 </pre></div>
 </div>
 </section>
