@@ -271,6 +271,10 @@
 <li class="toctree-l6"><a class="reference internal" href="#rollback-to-snapshot">rollback_to_snapshot</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#migrate-to-iceberg">Migrate to Iceberg</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#add-files">Add files</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#generate-embeddings">generate_embeddings</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#considerations">Considerations</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#functions">Functions</a><ul>
@@ -443,6 +447,10 @@
 <li><a class="reference internal" href="#rollback-to-snapshot">rollback_to_snapshot</a></li>
 <li><a class="reference internal" href="#migrate-to-iceberg">Migrate to Iceberg</a></li>
 <li><a class="reference internal" href="#add-files">Add files</a></li>
+<li><a class="reference internal" href="#generate-embeddings">generate_embeddings</a><ul>
+<li><a class="reference internal" href="#considerations">Considerations</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#functions">Functions</a><ul>
@@ -1276,7 +1284,7 @@ validating new jobs.</p>
 </ul>
 </section>
 <section id="procedures">
-<h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
+<span id="iceberg-procedures"></span><h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
 <p>Use the <a class="reference internal" href="../sql/call.html"><span class="doc std std-doc">CALL</span></a> statement to perform data manipulation or administrative
 tasks. Procedures are available in the system schema of each catalog. The
 following code snippet displays how to call the <code class="docutils literal notranslate"><span class="pre">example_procedure</span></code> in the
@@ -1423,6 +1431,63 @@ Iceberg table. The <code class="docutils literal notranslate"><span class="pre">
 <span class="w">    </span><span class="n">format</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'ORC'</span><span class="p">)</span>
 </pre></div>
 </div>
+</section>
+<section id="generate-embeddings">
+<span id="iceberg-generate-embeddings"></span><h4 id="generate-embeddings">generate_embeddings<a class="headerlink" href="#generate-embeddings" title="Link to this heading">#</a></h4>
+<p>The connector supports bulk generation of embeddings for an entire column in an
+Iceberg table. This procedure requires you to have access to <a class="reference internal" href="../starburst-ai/configuration-ai.html"><span class="doc std std-doc">AI
+models</span></a> and a configured <a class="reference internal" href="../starburst-ai/configuration-ai.html#sb-ai-providers"><span class="std std-ref">embedding
+model</span></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This procedure is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a>.
+Contact your Starburst account team for more information.</p>
+</div>
+<p>To generate embeddings for each row in the specific column and store them in
+your Iceberg table, run the following commands:</p>
+<p>First, add a new column, for example <code class="docutils literal notranslate"><span class="pre">customer_reviews_embeddings</span></code>, to store the
+embeddings:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">example_iceberg_table</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">customer_reviews_embeddings</span><span class="w"> </span><span class="nb">array</span><span class="p">(</span><span class="n">double</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Then, generate the embeddings from the <code class="docutils literal notranslate"><span class="pre">customer_reviews</span></code> column and store them
+in <code class="docutils literal notranslate"><span class="pre">customer_reviews_embeddings</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">example_iceberg_table</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">generate_embeddings</span><span class="p">(</span>
+<span class="w">  </span><span class="n">embedding_column</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'customer_reviews_embeddings'</span><span class="p">,</span>
+<span class="w">  </span><span class="n">data_column</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'customer_reviews'</span><span class="p">,</span>
+<span class="w">  </span><span class="n">model_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'cohere_embedding_model'</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">generate_embeddings</span></code> procedure requires the following arguments:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">embedding_column</span></code>: Name of the column where embeddings are stored.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_column</span></code>: Name of the column containing the data to use when creating the
+embeddings.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_id</span></code>: The model alias to be used for generating embeddings.</p></li>
+</ul>
+<p>Once embeddings are generated, you can use them for tasks such as semantic
+similarity search. The following example uses the phrase <code class="docutils literal notranslate"><span class="pre">great</span> <span class="pre">price</span> <span class="pre">and</span> <span class="pre">fast</span> <span class="pre">shipping</span></code> with the procedure to find the reviews that are most similar.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">review_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_reviews</span>
+<span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">review_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_reviews</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cosine_similarity</span><span class="p">(</span><span class="n">customer_reviews_embeddings</span><span class="p">,</span><span class="w"> </span><span class="n">starburst</span><span class="p">.</span><span class="n">ai</span><span class="p">.</span><span class="n">generate_embedding</span><span class="p">(</span><span class="s1">'great price and fast shipping'</span><span class="p">,</span><span class="w"> </span><span class="s1">'cohere_embedding_model'</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">similarity</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">example_iceberg_table</span>
+<span class="w">  </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">similarity</span><span class="w"> </span><span class="k">DESC</span>
+<span class="w">  </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<section id="considerations">
+<h5 id="considerations">Considerations<a class="headerlink" href="#considerations" title="Link to this heading">#</a></h5>
+<ul class="simple">
+<li><p>The source column used to generate embeddings must be of type <code class="docutils literal notranslate"><span class="pre">varchar</span></code>.</p></li>
+<li><p>The column where embeddings are stored must use one of the following data
+types: <code class="docutils literal notranslate"><span class="pre">array(double)</span></code>, <code class="docutils literal notranslate"><span class="pre">array(real)</span></code>, or <code class="docutils literal notranslate"><span class="pre">varbinary</span></code>. Additionally, the
+column must already be created before executing this procedure.</p></li>
+<li><p>The model used for embedding generation must be an embedding model.</p></li>
+</ul>
+</section>
 </section>
 </section>
 <section id="functions">
