@@ -2983,16 +2983,17 @@ happened in which version:</p>
       </h3>
     
 
-<p>The <a href="../../../reference/sql/ref/sql/alter-table.html">ALTER TABLE EXECUTE</a> statement followed by a
-command and parameters modifies the table according to the specified procedure
-and parameters. For Iceberg tables, <code class="language-plaintext highlighter-rouge">ALTER TABLE EXECUTE</code> supports the
-following commands:</p>
+<p>The <a href="../../../reference/sql/ref/sql/alter-table.html">ALTER TABLE EXECUTE</a>
+statement followed by a command and parameters modifies the table according to
+the specified procedure and parameters. For Iceberg tables,  <code class="language-plaintext highlighter-rouge">ALTER TABLE
+EXECUTE</code> supports the following commands:</p>
 
 <ul>
   <li><a href="#optimize">optimize</a></li>
   <li><a href="#drop_extended_stats">drop_extended_stats</a></li>
   <li><a href="#expire_snapshots">expire_snapshots</a></li>
   <li><a href="#remove_orphan_files">remove_orphan_files</a></li>
+  <li><a href="#generate_embeddings">generate_embeddings</a></li>
 </ul>
 
 <p>Use the <code class="language-plaintext highlighter-rouge">=&gt;</code> operator for passing named parameter values. The left side is
@@ -3101,6 +3102,76 @@ value of <code class="language-plaintext highlighter-rouge">7d</code>. Otherwise
 <blockquote>
   <p>Retention specified (1d) is shorter than the minimum retention    configured in the system (7d). The default value is <code class="language-plaintext highlighter-rouge">7d</code>.</p>
 </blockquote>
+      <h4 id="generate_embeddings">
+        
+        
+          generate_embeddings <a href="#generate_embeddings" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>Supports bulk generation of embeddings for an entire column in an Iceberg table.
+This procedure requires a connection to an <a href="../../../ai-workflows/configure-models.html">AI
+model</a>.</p>
+
+<p>To generate embeddings for each row in the specific column and store them in
+your Iceberg table, run the following commands:</p>
+
+<p>First, add a new column, for example <code class="language-plaintext highlighter-rouge">customer_reviews_embeddings</code>, to store the
+embeddings:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example_iceberg_table</span> <span class="k">ADD</span> <span class="k">COLUMN</span> <span class="n">customer_reviews_embeddings</span> <span class="n">array</span><span class="p">(</span><span class="nb">double</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Then, generate the embeddings from the <code class="language-plaintext highlighter-rouge">customer_reviews</code> column and store them
+in <code class="language-plaintext highlighter-rouge">customer_reviews_embeddings</code>:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example_iceberg_table</span> <span class="k">EXECUTE</span> <span class="n">generate_embeddings</span><span class="p">(</span>
+  <span class="n">embedding_column</span> <span class="o">=&gt;</span> <span class="s1">'customer_reviews_embeddings'</span><span class="p">,</span>
+  <span class="n">data_column</span> <span class="o">=&gt;</span> <span class="s1">'customer_reviews'</span><span class="p">,</span>
+  <span class="n">model_id</span> <span class="o">=&gt;</span> <span class="s1">'cohere_embedding_model'</span>
+<span class="p">);</span>
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">generate_embeddings</code> procedure requires the following arguments:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">embedding_column</code>: Name of the column where embeddings are stored.</li>
+  <li><code class="language-plaintext highlighter-rouge">data_column</code>: Name of the column containing the data to use when creating the
+embeddings.</li>
+  <li><code class="language-plaintext highlighter-rouge">model_id</code>: The model alias to be used for generating embeddings.</li>
+</ul>
+
+<p>Once embeddings are generated, you can use them for tasks such as semantic
+similarity search. The following example uses the phrase <code class="language-plaintext highlighter-rouge">great price and fast
+shipping</code> with the procedure to find the reviews that are most similar.</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="n">review_id</span><span class="p">,</span> <span class="n">customer_reviews</span>
+<span class="k">FROM</span> <span class="p">(</span>
+  <span class="k">SELECT</span> <span class="n">review_id</span><span class="p">,</span> <span class="n">customer_reviews</span><span class="p">,</span>
+    <span class="n">cosine_similarity</span><span class="p">(</span><span class="n">customer_reviews_embeddings</span><span class="p">,</span> <span class="n">starburst</span><span class="p">.</span><span class="n">ai</span><span class="p">.</span><span class="n">generate_embedding</span><span class="p">(</span><span class="s1">'great price and fast shipping'</span><span class="p">,</span> <span class="s1">'cohere_embedding_model'</span><span class="p">))</span> <span class="k">AS</span> <span class="n">similarity</span>
+  <span class="k">FROM</span> <span class="n">example_iceberg_table</span>
+  <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">similarity</span> <span class="k">DESC</span>
+  <span class="k">LIMIT</span> <span class="mi">5</span>
+<span class="p">);</span>
+</code></pre></div></div>
+      <h5 id="considerations">
+        
+        
+          Considerations <a href="#considerations" class="titleAnchor">#</a>
+        
+        
+      </h5>
+    
+
+<ul>
+  <li>The source column used to generate embeddings must be of type <code class="language-plaintext highlighter-rouge">varchar</code>.</li>
+  <li>The column where embeddings are stored must use one of the following data
+types: <code class="language-plaintext highlighter-rouge">array(double)</code>, <code class="language-plaintext highlighter-rouge">array(real)</code>, or <code class="language-plaintext highlighter-rouge">varbinary</code>. Additionally, the
+column must already be created before executing this procedure.</li>
+  <li>The model used for embedding generation must be an embedding model.</li>
+</ul>
       <h2 id="migrate-hive-to-iceberg">
         
         
@@ -3549,7 +3620,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li></ul></li><li><a href="#table-functions">Table functions</a><ul><li><a href="#table_changes">table_changes</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#add-files-to-iceberg">Add files to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a><ul><li><a href="#replacing-tables">Replacing tables</a></li><li><a href="#time-travel-queries">Time travel queries</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li></ul></li><li><a href="#table-functions">Table functions</a><ul><li><a href="#table_changes">table_changes</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li><li><a href="#generate_embeddings">generate_embeddings</a><ul><li><a href="#considerations">Considerations</a></li></ul></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#add-files-to-iceberg">Add files to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a><ul><li><a href="#replacing-tables">Replacing tables</a></li><li><a href="#time-travel-queries">Time travel queries</a></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
