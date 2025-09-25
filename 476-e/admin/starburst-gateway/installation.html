@@ -302,7 +302,11 @@
 <li><a class="reference internal" href="#environment-variables">Environment variables</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#routing-rules">Routing rules</a></li>
+<li><a class="reference internal" href="#routing-rules">Routing rules</a><ul>
+<li><a class="reference internal" href="#querycountbasedrouter">QueryCountBasedRouter</a></li>
+<li><a class="reference internal" href="#user-queue-awareness-and-monitor-support">User queue awareness and monitor support</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#logging">Logging <a name="logging"></a></li>
 <li><a class="reference internal" href="#additional-statement-maths">Additional statement maths</a></li>
 <li><a class="reference internal" href="#load-balancer">Load balancer</a></li>
@@ -416,6 +420,56 @@ the syntax <code class="docutils literal notranslate"><span class="pre">${ENV:VA
 <section id="routing-rules">
 <h3 id="routing-rules">Routing rules<a class="headerlink" href="#routing-rules" title="Link to this heading">#</a></h3>
 <p>Find more information in the <a class="reference internal" href="routing-rules.html"><span class="std std-doc">routing rules documentation</span></a>.</p>
+<section id="querycountbasedrouter">
+<h4 id="querycountbasedrouter">QueryCountBasedRouter<a class="headerlink" href="#querycountbasedrouter" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code> is the main routing algorithm Starburst Gateway uses. It
+routes queries to a backend within a routing group based on live cluster
+statistics and per-user queue pressure.</p>
+<p>The algorithm:</p>
+<ol class="arabic simple">
+<li><p>Filters to healthy backends in the requested routing group</p></li>
+<li><p>Chooses the best backend by comparing:</p>
+<ul class="simple">
+<li><p>The queued query count on each backend (the lowest count wins)</p></li>
+<li><p>If two or more queued query counts are equal, the backend’s total queued
+queries (the lowest count wins)</p></li>
+<li><p>If all of the backend’s total queued queries are equal, the backend’s running
+queries (the lowest count wins)</p></li>
+</ul>
+</li>
+</ol>
+<p>This makes routing user-aware. When you submit a query, the algorithm routes
+it to the backend where it’s likely to start executing soonest. This balances
+query load across backends and optimizes for your individual query latency.</p>
+<p>After selecting a backend, the router updates a local view of stats:</p>
+<ul class="simple">
+<li><p>If there are already queued queries on the selected backend, the router
+increments your queued query count for that backend</p></li>
+<li><p>Otherwise, the router increments the backend’s running query count.</p></li>
+</ul>
+<p>The router’s local adjustments to the usage statistics help it make informed,
+balanced decisions in real-time between the periodic stats refreshes it receives
+from the configured monitor.</p>
+</section>
+<section id="user-queue-awareness-and-monitor-support">
+<h4 id="user-queue-awareness-and-monitor-support">User queue awareness and monitor support<a class="headerlink" href="#user-queue-awareness-and-monitor-support" title="Link to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">UI_API</span></code> monitor is the only monitor type that provides per-user queue
+information. When you set <code class="docutils literal notranslate"><span class="pre">clusterStatsConfiguration.monitorType</span></code> to <code class="docutils literal notranslate"><span class="pre">UI_API</span></code>,
+the router receives a <code class="docutils literal notranslate"><span class="pre">userQueuedCount</span></code> map for each backend. This map
+associates each user with their number of queued queries on that backend. The
+<code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code> algorithm uses this information to prioritize the
+backend where the requesting user has the fewest queued queries, minimizing
+their wait time.</p>
+<p>If you configure a different monitor type (<code class="docutils literal notranslate"><span class="pre">INFO_API</span></code>, <code class="docutils literal notranslate"><span class="pre">JDBC</span></code>, <code class="docutils literal notranslate"><span class="pre">JMX</span></code>, <code class="docutils literal notranslate"><span class="pre">METRICS</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">NOOP</span></code>), the router does not receive per-user queue information. In this
+case, the <code class="docutils literal notranslate"><span class="pre">QueryCountBasedRouter</span></code> falls back to cluster-level metrics and
+selects the backend with:</p>
+<ol class="arabic simple">
+<li><p>The lowest total number of queued queries across all users</p></li>
+<li><p>If two or more queued query counts are equal, the lowest total number of running
+queries across all users</p></li>
+</ol>
+</section>
 </section>
 <section id="logging">
 <h3 id="logging">Logging <a name="logging"><a class="headerlink" href="#logging" title="Link to this heading">#</a></a></h3>
@@ -710,11 +764,9 @@ running queries, queued queries, and worker nodes information.</p>
 </section>
 <section id="ui-api">
 <h3 id="ui-api">UI_API<a class="headerlink" href="#ui-api" title="Link to this heading">#</a></h3>
-<p>This method pulls cluster information from the <code class="docutils literal notranslate"><span class="pre">ui/api/stats</span></code> REST endpoint.
-Starburst supports this method for legacy reasons, and it may be deprecated in the
-future. It only works with backend clusters using
-<code class="docutils literal notranslate"><span class="pre">web-ui.authentication.type=FORM</span></code>. Set a username and password using
-<code class="docutils literal notranslate"><span class="pre">backendState</span></code> as with the <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> option.</p>
+<p>This method pulls cluster information from the <code class="docutils literal notranslate"><span class="pre">ui/api/stats</span></code> REST endpoint. It
+only works with backend clusters using <code class="docutils literal notranslate"><span class="pre">web-ui.authentication.type=FORM</span></code>. Set a
+username and password using <code class="docutils literal notranslate"><span class="pre">backendState</span></code> as with the <code class="docutils literal notranslate"><span class="pre">JDBC</span></code> option.</p>
 </section>
 <section id="noop">
 <h3 id="noop">NOOP<a class="headerlink" href="#noop" title="Link to this heading">#</a></h3>
