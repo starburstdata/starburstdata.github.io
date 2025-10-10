@@ -222,7 +222,17 @@
 <li class="toctree-l4 current"><a class="current reference internal" href="#">Release 477-e STS (XX Oct 2025)</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#general">General</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#security">Security</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#security">Security</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#bigquery-connector">BigQuery connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#clickhouse-connector">ClickHouse connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#delta-lake-connector">Delta Lake connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#hive-connector">Hive connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#kafka-connector">Kafka connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#mongodb-connector">MongoDB connector</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#singlestore-connector">Singlestore connector</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="release-476-e.html">Release 476-e LTS (2 Sep 2025)</a></li>
@@ -324,7 +334,17 @@
 <li><a class="reference internal" href="#">Release 477-e STS (XX Oct 2025)</a><ul>
 <li><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li><a class="reference internal" href="#general">General</a></li>
-<li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#security">Security</a><ul>
+<li><a class="reference internal" href="#bigquery-connector">BigQuery connector</a></li>
+<li><a class="reference internal" href="#clickhouse-connector">ClickHouse connector</a></li>
+<li><a class="reference internal" href="#delta-lake-connector">Delta Lake connector</a></li>
+<li><a class="reference internal" href="#hive-connector">Hive connector</a></li>
+<li><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
+<li><a class="reference internal" href="#kafka-connector">Kafka connector</a></li>
+<li><a class="reference internal" href="#mongodb-connector">MongoDB connector</a></li>
+<li><a class="reference internal" href="#singlestore-connector">Singlestore connector</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -349,12 +369,138 @@ Trino releases:</p>
 <p>This release is a <a class="reference internal" href="../versions.html#lts-sts"><span class="std std-ref">short term support (STS)</span></a> release.</p>
 <section id="breaking-changes">
 <h2 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Manual configuration of the <code class="docutils literal notranslate"><span class="pre">starburst</span></code> catalog using a <code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code>
+file is no longer supported for configuring Starburst AI. You must remove any
+existing <code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code> file to prevent startup failure. Configuration
+values previously placed in <code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code> must now be included in
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code>. This change is not backward compatible.</p></li>
+</ul>
 </section>
 <section id="general">
 <h2 id="general">General<a class="headerlink" href="#general" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Managed statistics are now automatically dropped or updated when certain DDL
+operations are executed within the SEP cluster. This ensures statistics
+remain consistent with the underlying table schema. Supported operations
+include:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">TABLE</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">RENAME</span> <span class="pre">TO</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">DROP</span> <span class="pre">COLUMN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">RENAME</span> <span class="pre">COLUMN</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">SCHEMA</span> <span class="pre">...</span> <span class="pre">CASCADE</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">SCHEMA</span> <span class="pre">...</span> <span class="pre">RENAME</span> <span class="pre">TO</span></code></p></li>
+</ul>
+</li>
+<li><p>Added support for large filter and project expressions that use <code class="docutils literal notranslate"><span class="pre">CASE</span></code>, <code class="docutils literal notranslate"><span class="pre">AND</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">OR</span></code> operators to resolve failures on large queries with complex filters.</p></li>
+<li><p>Added a refresh button to refresh the catalog tree in the catalog explorer in
+the SEP query editor.</p></li>
+<li><p>The <a class="reference internal" href="../data-products/configuration.html"><span class="doc std std-doc">Data Products</span></a> menu entry is now visible by
+default. To hide it, set <code class="docutils literal notranslate"><span class="pre">starburst.data-product.enabled=false</span></code>.</p></li>
+<li><p>Added support for <code class="docutils literal notranslate"><span class="pre">warp_speed</span></code> catalogs in Data Products. Users can now create
+data products from Iceberg and Hive catalogs with <code class="docutils literal notranslate"><span class="pre">warp_speed</span></code>.</p></li>
+<li><p>Fixed an issue where data product deletion failures could occur without a
+visible error. Failures when deleting a data product now return a clear error
+message.</p></li>
+<li><p>Fixed an issue where navigating to query overview from a workload management
+table caused filter controls to become unresponsive.</p></li>
+<li><p>Fixed an issue that prevented the SEP product version from rendering in
+the About dialog.</p></li>
+<li><p>Fixed an issue that caused failures when running more complex Python-based
+UDFs.</p></li>
+<li><p>Limited access to the following table branch operations to <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> users with
+BIAC enabled:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">BRANCH</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">BRANCH</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">BRANCH</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GRANT</span></code>, <code class="docutils literal notranslate"><span class="pre">DENY</span></code>, <code class="docutils literal notranslate"><span class="pre">REVOKE</span></code> privileges on branches like <code class="docutils literal notranslate"><span class="pre">GRANT</span> <span class="pre">SELECT</span> <span class="pre">ON</span> <span class="pre">BRANCH</span> <span class="pre">branch</span> <span class="pre">IN</span> <span class="pre">TABLE</span> <span class="pre">catalog.schema.table</span> <span class="pre">TO</span> <span class="pre">ROLE</span> <span class="pre">role</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GRANT</span> <span class="pre">CREATE</span> <span class="pre">BRANCH</span> <span class="pre">ON</span> <span class="pre">table</span> <span class="pre">TO</span> <span class="pre">ROLE</span> <span class="pre">role</span></code></p></li>
+</ul>
+</li>
+<li><p>Fixed an issue where the cache service could consume excessive memory,
+potentially leading to out-of-memory errors.</p></li>
+</ul>
 </section>
 <section id="security">
 <h2 id="security">Security<a class="headerlink" href="#security" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Updated <code class="docutils literal notranslate"><span class="pre">jinjava</span></code> to <code class="docutils literal notranslate"><span class="pre">2.8.1</span></code> to mitigate <code class="docutils literal notranslate"><span class="pre">CVE-2025-59340</span></code>.</p></li>
+<li><p>Updated <code class="docutils literal notranslate"><span class="pre">starburst-schema-registry</span></code> to version 0.9.1-e.8 to mitigate the
+following CVEs:</p>
+<ul>
+<li><p>CVE-2024-22257</p></li>
+<li><p>CVE-2024-22259</p></li>
+<li><p>CVE-2025-22228</p></li>
+</ul>
+</li>
+</ul>
+<section id="bigquery-connector">
+<h3 id="bigquery-connector">BigQuery connector<a class="headerlink" href="#bigquery-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added support for clearing all metadata caches with the
+<code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache()</span></code> procedure.</p></li>
+</ul>
+</section>
+<section id="clickhouse-connector">
+<h3 id="clickhouse-connector">ClickHouse connector<a class="headerlink" href="#clickhouse-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added support for <code class="docutils literal notranslate"><span class="pre">DateTime64</span></code>.</p></li>
+<li><p>Added support for <code class="docutils literal notranslate"><span class="pre">Date32</span></code>.</p></li>
+</ul>
+</section>
+<section id="delta-lake-connector">
+<h3 id="delta-lake-connector">Delta Lake connector<a class="headerlink" href="#delta-lake-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added support for writing to <code class="docutils literal notranslate"><span class="pre">variant</span></code> columns.</p></li>
+</ul>
+</section>
+<section id="hive-connector">
+<h3 id="hive-connector">Hive connector<a class="headerlink" href="#hive-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added support for automatic type coercion to unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> when length
+exceeds 65535.</p></li>
+<li><p>Added support for reading legacy dates and timestamps written by Hive in Orc
+and Parquet.</p></li>
+</ul>
+</section>
+<section id="iceberg-connector">
+<h3 id="iceberg-connector">Iceberg connector<a class="headerlink" href="#iceberg-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Updated to use v2 of the AWS Glue SDK by default when
+<code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=glue</span></code> is set.</p></li>
+<li><p>Updated to use the <code class="docutils literal notranslate"><span class="pre">hive.metastore.glue.default-warehouse-dir</span></code> configuration
+property when creating a new schema in Glue catalog.</p></li>
+<li><p>Improved handling of materialized view drops by canceling any associated
+refresh jobs, reducing unnecessary resource usage.</p></li>
+<li><p>Fixed failure when reading deletion vectors generated by Databricks.</p></li>
+<li><p>Fixed failure due to column count mismatch when executing the
+<code class="docutils literal notranslate"><span class="pre">add_files_from_table</span></code> procedure.</p></li>
+</ul>
+</section>
+<section id="kafka-connector">
+<h3 id="kafka-connector">Kafka connector<a class="headerlink" href="#kafka-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added support for Confluent’s <a class="reference internal" href="../connector/kafka.html#confluent-table-description-supplier"><span class="std std-ref">JSON Schema
+Registry</span></a>.</p></li>
+</ul>
+</section>
+<section id="mongodb-connector">
+<h3 id="mongodb-connector">MongoDB connector<a class="headerlink" href="#mongodb-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Fixed query failures on nested fields in mixed-type arrays.</p></li>
+</ul>
+</section>
+<section id="singlestore-connector">
+<h3 id="singlestore-connector">Singlestore connector<a class="headerlink" href="#singlestore-connector" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Add support for predicate pushdown on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> types when the
+<code class="docutils literal notranslate"><span class="pre">singlestore.experimental.enable-string-pushdown-with-binary</span></code> configuration
+property is enabled.</p></li>
+</ul>
+</section>
 </section>
 </section>
 
