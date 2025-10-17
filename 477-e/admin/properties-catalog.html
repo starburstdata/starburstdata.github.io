@@ -302,7 +302,14 @@
 <li><a class="reference internal" href="#migration-to-dynamic-catalogs">Migration to Dynamic catalogs</a><ul>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#considerations">Considerations</a></li>
-<li><a class="reference internal" href="#migrate">Migrate</a></li>
+<li><a class="reference internal" href="#migrate">Migrate</a><ul>
+<li><a class="reference internal" href="#convert-configuration-files-to-sql-statements">Convert configuration files to SQL statements</a><ul>
+<li><a class="reference internal" href="#use-the-migration-assistance-table">Use the migration assistance table</a></li>
+<li><a class="reference internal" href="#manually-convert-configuration-files">Manually convert configuration files</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li><a class="reference internal" href="#revert-dynamic-catalog-management">Revert dynamic catalog management</a></li>
 </ul>
 </li>
@@ -494,39 +501,17 @@ caches.</p></li>
 <h3 id="migrate">Migrate<a class="headerlink" href="#migrate" title="Link to this heading">#</a></h3>
 <p>Follow these steps to migrate from a statically managed catalog to dynamic
 catalog management:</p>
-<ol class="arabic">
+<ol class="arabic simple">
 <li><p>Enable dynamic catalog management and store definitions in the SEP backend
 database by setting <code class="docutils literal notranslate"><span class="pre">catalog.management=dynamic</span></code> and
 <code class="docutils literal notranslate"><span class="pre">catalog.store=starburst</span></code>. Upon cluster startup, catalog configuration files
 are ignored. Only the <code class="docutils literal notranslate"><span class="pre">system</span></code> catalog is accessible until additional
 catalogs are created using <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>. See also,
 <a class="reference internal" href="#prop-catalog-management"><span class="std std-ref">catalog.management</span></a> and <a class="reference internal" href="#prop-catalog-store"><span class="std std-ref">catalog.store</span></a>.</p></li>
-<li><p>Convert catalog configuration files to <a class="reference internal" href="../sql/create-catalog.html"><span class="doc std std-doc">CREATE CATALOG</span></a>
-statements, ensuring security-sensitive properties use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
-manager</span></a>. For example,
-<code class="docutils literal notranslate"><span class="pre">${vault:secret/postgres:password}</span></code>.</p>
-<p>The following example converts a configuration file definition called
-<code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> into a new catalog using <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> configuration file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">postgresql</span>
-<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:postgresql://example.net:5432/database</span>
-<span class="na">connection-user</span><span class="o">=</span><span class="s">root</span>
-<span class="na">connection-password</span><span class="o">=</span><span class="s">&lt;secret-password&gt;</span>
-</pre></div>
-</div>
-<p>Use <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">CATALOG</span><span class="w"> </span><span class="n">my_postgres</span>
-<span class="k">USING</span><span class="w"> </span><span class="n">postgresql</span>
-<span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
-<span class="w">   </span><span class="ss">"connection-url"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jdbc:postgresql://example.net:5432/database'</span><span class="p">,</span>
-<span class="w">   </span><span class="ss">"connection-user"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'root'</span><span class="p">,</span>
-<span class="w">   </span><span class="ss">"connection-password"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'${vault:secret/postgres:password}'</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-<p>Use a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> to create variables for your
-sensitive properties and to avoid errors.</p>
-</li>
+<li><p>Convert your catalog configuration files to <a class="reference internal" href="../sql/create-catalog.html"><span class="doc std std-doc">CREATE
+CATALOG</span></a> statements. Ensure that any security-sensitive
+properties reference a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a>. For guidance,
+see <a class="reference internal" href="#convert-files-to-sql"><span class="std std-ref">Convert configuration files to SQL statements</span></a>.</p></li>
 <li><p>After creating the catalogs, run queries against them to validate that they
 are working correctly.</p></li>
 <li><p>Create a backup of your catalog configuration files so you can <a class="reference internal" href="#dynamic-migration-rollback"><span class="std std-ref">revert to
@@ -536,6 +521,60 @@ files are not used when <a class="reference internal" href="#prop-catalog-store"
 <li><p>Restart your SEP cluster and verify that the catalogs initialize
 successfully.</p></li>
 </ol>
+<section id="convert-configuration-files-to-sql-statements">
+<span id="convert-files-to-sql"></span><h4 id="convert-configuration-files-to-sql-statements">Convert configuration files to SQL statements<a class="headerlink" href="#convert-configuration-files-to-sql-statements" title="Link to this heading">#</a></h4>
+<p>Convert your static catalog configuration files to <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> statements
+using one of two methods:</p>
+<section id="use-the-migration-assistance-table">
+<h5 id="use-the-migration-assistance-table">Use the migration assistance table<a class="headerlink" href="#use-the-migration-assistance-table" title="Link to this heading">#</a></h5>
+<p>Enable migration assistance by setting <code class="docutils literal notranslate"><span class="pre">catalog.migration.enabled=true</span></code>.</p>
+<p>Query the migration helper table using the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">system</span><span class="p">.</span><span class="n">runtime</span><span class="p">.</span><span class="n">static_catalog_definitions</span>
+</pre></div>
+</div>
+<p>The table contains the following columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">catalog_name</span></code>: The name of the catalog</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">connector_name</span></code>: The name of the underlying connector</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sql</span></code>: A <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> SQL statement that recreates the catalog dynamically</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">error</span></code>: Any error the system encounters reading the static catalog
+configuration</p></li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Review the <code class="docutils literal notranslate"><span class="pre">sql</span></code> column carefully for any plaintext secrets. If secrets are
+present, replace them with <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> references
+(e.g., <code class="docutils literal notranslate"><span class="pre">${vault:secret/postgres:password}</span></code>) before you execute the statements.
+Running SQL with plaintext secrets exposes them through query history.</p>
+</div>
+</section>
+<section id="manually-convert-configuration-files">
+<h5 id="manually-convert-configuration-files">Manually convert configuration files<a class="headerlink" href="#manually-convert-configuration-files" title="Link to this heading">#</a></h5>
+<p>Manually convert each catalog configuration file to a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>
+statement. Ensure security-sensitive properties reference a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
+manager</span></a>.</p>
+<p>The following example converts a configuration file definition called
+<code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> into a new catalog using a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> statement.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">my_postgres.properties</span></code> configuration file contains the following
+properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">postgresql</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:postgresql://example.net:5432/database</span>
+<span class="na">connection-user</span><span class="o">=</span><span class="s">root</span>
+<span class="na">connection-password</span><span class="o">=</span><span class="s">&lt;secret-password&gt;</span>
+</pre></div>
+</div>
+<p>The equivalent <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> statement is:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">CATALOG</span><span class="w"> </span><span class="n">my_postgres</span>
+<span class="k">USING</span><span class="w"> </span><span class="n">postgresql</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span>
+<span class="w">   </span><span class="ss">"connection-url"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jdbc:postgresql://example.net:5432/database'</span><span class="p">,</span>
+<span class="w">   </span><span class="ss">"connection-user"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'root'</span><span class="p">,</span>
+<span class="w">   </span><span class="ss">"connection-password"</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'${vault:secret/postgres:password}'</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 <section id="revert-dynamic-catalog-management">
 <span id="dynamic-migration-rollback"></span><h3 id="revert-dynamic-catalog-management">Revert dynamic catalog management<a class="headerlink" href="#revert-dynamic-catalog-management" title="Link to this heading">#</a></h3>
