@@ -542,7 +542,10 @@ properties:</p>
 <ul class="simple">
 <li><p>RCText - RCFile using <code class="docutils literal notranslate"><span class="pre">ColumnarSerDe</span></code></p></li>
 <li><p>RCBinary - RCFile using <code class="docutils literal notranslate"><span class="pre">LazyBinaryColumnarSerDe</span></code></p></li>
-<li><p>SequenceFile</p></li>
+<li><p>SequenceFile with <code class="docutils literal notranslate"><span class="pre">org.apache.hadoop.io.Text</span></code></p></li>
+<li><p>SequenceFile with <code class="docutils literal notranslate"><span class="pre">org.apache.hadoop.io.BytesWritable</span></code> containing protocol
+buffer records using
+<code class="docutils literal notranslate"><span class="pre">com.twitter.elephantbird.hive.serde.ProtobufDeserializer</span></code></p></li>
 <li><p>CSV - using <code class="docutils literal notranslate"><span class="pre">org.apache.hadoop.hive.serde2.OpenCSVSerde</span></code></p></li>
 <li><p>JSON - using <code class="docutils literal notranslate"><span class="pre">org.apache.hive.hcatalog.data.JsonSerDe</span></code></p></li>
 <li><p>OPENX_JSON - OpenX JSON SerDe from <code class="docutils literal notranslate"><span class="pre">org.openx.data.jsonserde.JsonSerDe</span></code>. Find
@@ -551,6 +554,7 @@ repository</a>.
 Starburst recommends using the OpenX JSON serde. Existing tables using these
 serdes and all the associated serde properties are handled automatically.</p></li>
 <li><p>TextFile</p></li>
+<li><p>ESRI - using <code class="docutils literal notranslate"><span class="pre">com.esri.hadoop.hive.serde.EsriJsonSerDe</span></code></p></li>
 <li><p>Additional features of the connector require a valid
 <a class="reference internal" href="../license-requirements.html"><span class="doc std std-doc">Starburst Enterprise license</span></a>, unless otherwise noted.</p></li>
 </ul>
@@ -809,13 +813,28 @@ equivalent catalog session property is <code class="docutils literal notranslate
 <a class="reference internal" href="../object-storage/file-formats.html#parquet-format-configuration"><span class="std std-ref">Parquet format configuration properties</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.protobuf.descriptors.location</span></code></p></td>
+<td><p>Path to a directory where binary Protocol Buffer descriptor files are stored
+to be used for reading tables stored in the
+<code class="docutils literal notranslate"><span class="pre">com.twitter.elephantbird.hive.serde.ProtobufDeserializer</span></code> format.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.protobuf.descriptors.cache.max-size</span></code></p></td>
+<td><p>Maximum size of the Protocol Buffer descriptors cache</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">64</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.protobuf.descriptors.cache.refresh-interval</span></code></p></td>
+<td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> after which loaded Protocol Buffer
+descriptors should be reloaded from disk.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1d</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required</span></code></p></td>
 <td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to force a query to use a partition filter. You can use the
 <code class="docutils literal notranslate"><span class="pre">query_partition_filter_required</span></code> catalog session property for temporary,
 catalog specific use.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required-schemas</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required-schemas</span></code></p></td>
 <td><p>Allow specifying the list of schemas for which SEP will enforce that
 queries use a filter on partition keys for source tables. The list can be
 specified using the <code class="docutils literal notranslate"><span class="pre">hive.query-partition-filter-required-schemas</span></code>, or the
@@ -825,23 +844,23 @@ configuration property or the <code class="docutils literal notranslate"><span c
 property is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">[]</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.rcfile.time-zone</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.rcfile.time-zone</span></code></p></td>
 <td><p>Adjusts binary encoded timestamp values to a specific time zone. For Hive
 3.1+, this must be set to UTC.</p></td>
 <td><p>JVM default</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.recursive-directories</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.recursive-directories</span></code></p></td>
 <td><p>Enable reading data from subdirectories of table or partition locations. If
 disabled, subdirectories are ignored. This is equivalent to the
 <code class="docutils literal notranslate"><span class="pre">hive.mapred.supports.subdirectories</span></code> property in Hive.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.respect-table-format</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.respect-table-format</span></code></p></td>
 <td><p>Should new partitions be written using the existing table format or the
 default SEP format?</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.s3-glacier-filter</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.s3-glacier-filter</span></code></p></td>
 <td><p>Filter S3 objects based on their storage class and restored status if
 applicable. Possible values are</p>
 <ul class="simple">
@@ -853,16 +872,16 @@ classes and restored objects from Glacier storage class</p></li>
 </td>
 <td><p><code class="docutils literal notranslate"><span class="pre">READ_ALL</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.single-statement-writes</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.single-statement-writes</span></code></p></td>
 <td><p>Enables auto-commit for all writes. This can be used to disallow
 multi-statement write transactions.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.storage-format</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.storage-format</span></code></p></td>
 <td><p>The default file format used when creating new tables.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ORC</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.table-statistics-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.table-statistics-enabled</span></code></p></td>
 <td><p>Enables <a class="reference internal" href="../optimizer/statistics.html"><span class="doc std std-doc">Table statistics</span></a>. The equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc std std-doc">catalog session
 property</span></a> is <code class="docutils literal notranslate"><span class="pre">statistics_enabled</span></code> for session specific
 use. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to disable statistics. Disabling statistics means that
@@ -870,11 +889,11 @@ use. Set to <code class="docutils literal notranslate"><span class="pre">false</
 the query plan.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.target-max-file-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.target-max-file-size</span></code></p></td>
 <td><p>Best effort maximum size of new files.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1GB</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-enabled</span></code></p></td>
 <td><p>Controls whether the temporary staging directory configured at
 <code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-path</span></code> is used for write operations.
 Temporary staging directory is never used for writes to non-sorted tables on
@@ -884,13 +903,13 @@ disabled, the target storage will be used for staging while writing sorted
 tables which can be inefficient when writing to object stores like S3.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-path</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.temporary-staging-directory-path</span></code></p></td>
 <td><p>Controls the location of temporary staging directory that is used for write
 operations. The <code class="docutils literal notranslate"><span class="pre">${USER}</span></code> placeholder can be used to use a different
 location for each user.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">/tmp/presto-${USER}</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.timestamp-precision</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.timestamp-precision</span></code></p></td>
 <td><p>Specifies the precision to use for Hive columns of type <code class="docutils literal notranslate"><span class="pre">TIMESTAMP</span></code>.
 Possible values are <code class="docutils literal notranslate"><span class="pre">MILLISECONDS</span></code>, <code class="docutils literal notranslate"><span class="pre">MICROSECONDS</span></code> and <code class="docutils literal notranslate"><span class="pre">NANOSECONDS</span></code>. Values
 with higher precision than configured are rounded. The equivalent <a class="reference internal" href="../sql/set-session.html"><span class="doc std std-doc">catalog
@@ -898,12 +917,12 @@ session property</span></a> is <code class="docutils literal notranslate"><span 
 specific use.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">MILLISECONDS</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.validate-bucketing</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.validate-bucketing</span></code></p></td>
 <td><p>Enables validation that data is in the correct bucket when reading bucketed
 tables.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-views.*</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-views.*</span></code></p></td>
 <td><p>Various properties for <a class="reference internal" href="#sb-hive-materialized-views"><span class="std std-ref">materialized view usage and
 configuration</span></a>.</p></td>
 <td></td>
@@ -1058,6 +1077,18 @@ format like this:</p>
 <span class="w">    </span><span class="k">schema_name</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'web'</span><span class="p">,</span>
 <span class="w">    </span><span class="k">table_name</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s1">'page_views'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">partition_values</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'2016-08-09'</span><span class="p">,</span><span class="w"> </span><span class="s1">'US'</span><span class="p">]]);</span>
+</pre></div>
+</div>
+<p>Tables created in Hive with <a class="reference external" href="https://github.com/twitter/elephant-bird/wiki/How-to-use-Elephant-Bird-with-Hive">Twitter
+Elephantbird</a>
+are supported to read. The binary protobuf descriptor as mentioned in the
+<code class="docutils literal notranslate"><span class="pre">serialization.class</span></code> should be stored in a directory that is configured via
+<code class="docutils literal notranslate"><span class="pre">hive.protobuf.descriptors.location</span></code> on every worker.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="p">...</span>
+<span class="k">row</span><span class="w"> </span><span class="n">format</span><span class="w"> </span><span class="n">serde</span><span class="w"> </span><span class="ss">"com.twitter.elephantbird.hive.serde.ProtobufDeserializer"</span>
+<span class="k">with</span><span class="w"> </span><span class="n">serdeproperties</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="ss">"serialization.class"</span><span class="o">=</span><span class="ss">"com.example.proto.gen.Storage$User"</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </section>
