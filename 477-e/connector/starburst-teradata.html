@@ -339,7 +339,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#id4">General configuration properties</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#additional-teradata-configuration-properties">Additional Teradata configuration properties</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#configuring-in-kubernetes-deployments">Configuring in Kubernetes deployments</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#encryption">Encryption</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#https-communication">HTTPS communication</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#native-table-operator">Native table operator</a></li>
 </ul>
 </li>
@@ -461,7 +461,7 @@
 <li><a class="reference internal" href="#id4">General configuration properties</a></li>
 <li><a class="reference internal" href="#additional-teradata-configuration-properties">Additional Teradata configuration properties</a></li>
 <li><a class="reference internal" href="#configuring-in-kubernetes-deployments">Configuring in Kubernetes deployments</a></li>
-<li><a class="reference internal" href="#encryption">Encryption</a></li>
+<li><a class="reference internal" href="#https-communication">HTTPS communication</a></li>
 <li><a class="reference internal" href="#native-table-operator">Native table operator</a></li>
 </ul>
 </li>
@@ -488,6 +488,14 @@ standard connector with a rich feature set, which is easy to install.</p>
 Teradata connector. It combines the connector with a table operator installed on
 the Teradata servers. This makes it more complex to install and update, but can
 produce higher query performance.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>SEP release 477-e includes copies of the connectors for compatibility with
+previous behavior. They are available under the names <code class="docutils literal notranslate"><span class="pre">teradata_direct_legacy</span></code>
+and <code class="docutils literal notranslate"><span class="pre">teradata_legacy</span></code>. To use them, update the <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> property to use
+one of these values. These connectors are intended only as a temporary fallback
+and will be removed in the next LTS release.</p>
+</div>
 <section id="starburst-teradata-connector">
 <span id="id1"></span><h2 id="starburst-teradata-connector">Starburst Teradata connector<a class="headerlink" href="#starburst-teradata-connector" title="Link to this heading">#</a></h2>
 <p>The Starburst Teradata connector is a feature-rich, easy to install connector.</p>
@@ -572,15 +580,21 @@ Defaults to the value of <code class="docutils literal notranslate"><span class=
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metadata.cache-maximum-size</span></code></p></td>
 <td><p>Maximum number of objects stored in the metadata cache. Defaults to <code class="docutils literal notranslate"><span class="pre">10000</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">write.batch-size</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sql-based-metadata.enabled</span></code></p></td>
+<td><p>Controls how the connector retrieves metadata. When <code class="docutils literal notranslate"><span class="pre">true</span></code>, the connector
+uses <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span></code> queries for faster performance. When <code class="docutils literal notranslate"><span class="pre">false</span></code>, it uses the
+standard JDBC metadata API, which avoids <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">*</span></code> but can be slower.
+Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">write.batch-size</span></code></p></td>
 <td><p>Maximum number of statements in a batched execution. Do not change
 this setting from the default. Non-default values may negatively
 impact performance. Defaults to <code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.enabled</span></code></p></td>
 <td><p>Push down dynamic filters into JDBC queries. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic-filtering.wait-timeout</span></code></p></td>
 <td><p>Maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for which Trino waits for dynamic
 filters to be collected from the build side of joins before starting a
 JDBC query. Using a large timeout can potentially result in more detailed
@@ -1493,14 +1507,14 @@ version.</p>
 </section>
 <section id="starburst-teradata-direct-connector">
 <span id="id3"></span><h2 id="starburst-teradata-direct-connector">Starburst Teradata Direct connector<a class="headerlink" href="#starburst-teradata-direct-connector" title="Link to this heading">#</a></h2>
-<p>The Teradata Direct connector is an alternative connector for Teradata
-databases.</p>
+<p>The Teradata Direct connector is an alternative to the standard Starburst Teradata
+connector.</p>
 <p>Compared to the <a class="reference internal" href="#starburst-teradata-connector"><span class="std std-ref">Starburst Teradata connector</span></a>, it requires more advanced
-configuration and is capable of achieving higher performance. It supports all
+configuration and is designed for improved performance. It supports all
 use cases of the Teradata connector, and adds greatly improved performance for
 <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> queries.</p>
-<p>The connector is composed of components running on SEP, and others running on
-Teradata. All components participate in every transmission. A transmission
+<p>The connector is composed of components running on SEP, and others running
+on Teradata. All components participate in every transmission. A transmission
 includes all data transfer related to a single table scan.</p>
 <p>The connector uses JDBC as a control channel to schedule the query in Teradata.
 Any <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> statement run with JDBC is passed to a Teradata table operator,
@@ -1537,7 +1551,8 @@ Teradata Direct connector:</p>
 <li><p><a class="reference internal" href="#teradata-kerberos-passthrough"><span class="std std-ref">Kerberos credential pass-through</span></a></p></li>
 <li><p><a class="reference internal" href="#teradata-user-impersonation"><span class="std std-ref">User impersonation</span></a></p></li>
 </ul>
-<p>The Teradata Direct connector supports parallelism for both tables and views.</p>
+<p>Unlike the standard Teradata connector, the Teradata Direct connector supports
+parallelism for both tables and views.</p>
 <section id="sep-controller-and-receiver-installation">
 <h3 id="sep-controller-and-receiver-installation">SEP controller and receiver installation<a class="headerlink" href="#sep-controller-and-receiver-installation" title="Link to this heading">#</a></h3>
 <p>The Teradata Direct connector must be configured in a catalog
@@ -1563,10 +1578,10 @@ property the cluster fails to start.</p>
 and the relevant JAR files in the <code class="docutils literal notranslate"><span class="pre">teradata</span></code> plugin directory, as discussed in
 <a class="reference internal" href="#starburst-teradata-connector"><span class="std std-ref">Starburst Teradata connector</span></a>.</p>
 <p>You must install the <a class="reference internal" href="#native-table-operator"><span class="std std-ref">native table operator</span></a> on
-Teradata in the queried schema. Specify the required table operator name. SEP automatically calculates values for the optional
-<code class="docutils literal notranslate"><span class="pre">teradata-direct.http.port</span></code> and <code class="docutils literal notranslate"><span class="pre">teradata-direct.http.host</span></code> properties, but
-in more complex network environments we recommend that you manually specify the
-port and host used to connect with a particular node.</p>
+Teradata in the queried schema. Specify the required table operator name. SEP automatically calculates values for the optional <code class="docutils literal notranslate"><span class="pre">teradata-direct.http.port</span></code>
+and <code class="docutils literal notranslate"><span class="pre">teradata-direct.http.host</span></code> properties, but in more complex network
+environments we recommend that you manually specify the port and host used to
+connect with a particular node.</p>
 <table id="id14">
 <caption><span class="caption-text">Required Teradata Direct connector catalog properties</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
 <colgroup>
@@ -1706,16 +1721,35 @@ significant networking and Kubernetes expertise. Contact Starburst Support for
 assistance and help.</p>
 </div>
 </section>
-<section id="encryption">
-<h3 id="encryption">Encryption<a class="headerlink" href="#encryption" title="Link to this heading">#</a></h3>
-<p>The connector can encrypt all data transmissions and use HTTPS. Add the details
-for the Java keystore file to use in the SEP server config.</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">teradata-direct.https.keystore.path</span><span class="o">=</span><span class="s">mykekstore.jks</span>
-<span class="na">teradata-direct.https.keystore.password</span><span class="o">=</span><span class="s">123456</span>
-</pre></div>
+<section id="https-communication">
+<h3 id="https-communication">HTTPS communication<a class="headerlink" href="#https-communication" title="Link to this heading">#</a></h3>
+<p>The Starburst Teradata Direct connector supports secure HTTPS communication between
+Teradata and SEP nodes. Configuration for HTTPS changed in SEP release
+477-e.</p>
+<p>Previously, HTTPS settings were configured directly on the connector itself.
+HTTPS configuration is now inherited from SEP coordinator and worker
+properties.</p>
+<p>A new mandatory property, <code class="docutils literal notranslate"><span class="pre">teradata-direct.root-certificate.path</span></code>, specifies the
+path to the root certificate on the Teradata instance. This root certificate
+must be used to sign all SEP coordinator and worker certificates (For
+example, <code class="docutils literal notranslate"><span class="pre">presto-master.jks</span></code> and <code class="docutils literal notranslate"><span class="pre">presto-worker.jks</span></code>). This certificate should
+be copied to the Teradata instance in the same way as the native table operator
+<code class="docutils literal notranslate"><span class="pre">.so</span></code> file. Without it, Teradata will not be able to communicate with SEP
+nodes over TLS.</p>
+<p>If SEP node communication is non-HTTPS, Teradata Direct
+communication is also non-HTTPS. If SEP node communication is HTTPS,
+Teradata Direct communication uses HTTPS.</p>
+<p>The only available option for encryption is via the SEP keystore. Automatic
+TLS configuration is not supported.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>These HTTPS configuration changes apply to the Teradata Direct connector
+(<code class="docutils literal notranslate"><span class="pre">teradata_direct</span></code>). The temporary fallback connector (<code class="docutils literal notranslate"><span class="pre">teradata_direct_legacy</span></code>)
+continues to use the previous behavior. Additionally, the <code class="docutils literal notranslate"><span class="pre">.so</span></code> files for the
+updated Teradata Direct connector and the <code class="docutils literal notranslate"><span class="pre">teradata_direct_legacy</span></code> fallback
+connector are not compatible. You must install the <code class="docutils literal notranslate"><span class="pre">.so</span></code> file that matches the
+connector version in use.</p>
 </div>
-<p>SEP automatically distributes the keystore to the controller, the receivers,
-the transmitters and the table operator.</p>
 </section>
 <section id="native-table-operator">
 <span id="id5"></span><h3 id="native-table-operator">Native table operator<a class="headerlink" href="#native-table-operator" title="Link to this heading">#</a></h3>
