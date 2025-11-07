@@ -314,6 +314,7 @@
 <li><a class="reference internal" href="#revert-dynamic-catalog-management">Revert dynamic catalog management</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#troubleshoot-dynamic-catalogs">Troubleshoot dynamic catalogs</a></li>
 </ul>
 </li>
 </ul>
@@ -593,6 +594,67 @@ default settings.</p></li>
 <li><p>Restart your SEP cluster to apply these changes.</p></li>
 </ol>
 </section>
+</section>
+<section id="troubleshoot-dynamic-catalogs">
+<span id="id1"></span><h2 id="troubleshoot-dynamic-catalogs">Troubleshoot dynamic catalogs<a class="headerlink" href="#troubleshoot-dynamic-catalogs" title="Link to this heading">#</a></h2>
+<p>Dynamic catalog management with <code class="docutils literal notranslate"><span class="pre">catalog.store</span></code> set to <code class="docutils literal notranslate"><span class="pre">starburst</span></code> stores
+catalog configurations in the backend database. After SEP upgrades,
+some catalogs may fail to load if they contain invalid or deprecated properties.</p>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">system.metadata.broken_catalog_definitions</span></code> table to identify and fix
+these broken catalogs.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This feature requires <a class="reference internal" href="#prop-catalog-management"><span class="std std-ref">catalog.management</span></a> set to <code class="docutils literal notranslate"><span class="pre">dynamic</span></code> and
+<a class="reference internal" href="#prop-catalog-store"><span class="std std-ref">catalog.store</span></a> to <code class="docutils literal notranslate"><span class="pre">starburst</span></code> (the default value). Only users with the
+<code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role can access the table. Users with other roles see an empty table.</p>
+</div>
+<p>Query the broken catalogs table to identify broken catalogs:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">system</span><span class="p">.</span><span class="n">metadata</span><span class="p">.</span><span class="n">broken_catalog_definitions</span>
+</pre></div>
+</div>
+<p>The table contains the following columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">catalog_name</span></code>: The name of the broken catalog</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">connector_name</span></code>: The name of the underlying connector</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sql</span></code>: A <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> SQL statement that contains the catalog’s current
+configuration</p></li>
+</ul>
+<p>Use the following steps to fix a broken catalog:</p>
+<ol class="arabic simple">
+<li><p>Query the <code class="docutils literal notranslate"><span class="pre">broken_catalog_definitions</span></code> table. Save the SQL statement for
+the catalog you want to fix.</p></li>
+<li><p>Drop the broken catalog:</p></li>
+</ol>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DROP</span><span class="w"> </span><span class="k">CATALOG</span><span class="w"> </span><span class="k">catalog_name</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Review your saved SQL statement for any issues:</p>
+<ul class="simple">
+<li><p>Check for deprecated or invalid properties</p></li>
+<li><p>Verify property names and values match the current connector requirements</p></li>
+<li><p>Ensure there are no plaintext secrets (replace plaintext secrets with <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
+manager</span></a> references)</p></li>
+</ul>
+</li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Do not run a <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> statement that contains plaintext secrets. Query
+history stores these statements and exposes your credentials. Use <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
+manager</span></a> references for sensitive values.</p>
+</div>
+<ol class="arabic simple" start="4">
+<li><p>Fix any issues you identify in the SQL statement.</p></li>
+<li><p>Run the corrected <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code> statement to recreate the catalog.</p></li>
+<li><p>Test the catalog to ensure it works correctly.</p></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The SQL statement in the <code class="docutils literal notranslate"><span class="pre">broken_catalog_definitions</span></code> table contains the exact
+configuration that caused the catalog to fail. You must identify and fix the
+problematic properties before running the statement.</p>
+</div>
 </section>
 </section>
 
