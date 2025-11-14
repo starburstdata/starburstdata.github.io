@@ -2588,10 +2588,30 @@ properties as needed:</p>
       <code>ORC</code>, or <code>AVRO</code>. Defaults to <code>ORC</code>.</td>
     </tr>
     <tr>
+      <td><code>compression_codec</code></td>
+      <td>Optionally specifies the compression codec used for writing the table;
+        either <code>NONE</code>, <code>ZSTD</code>,
+        <code>SNAPPY</code>, <code>LZ4</code>,
+        or <code>GZIP</code>.
+        Defaults to the value of the <code>iceberg.compression-codec</code>
+        catalog configuration property,
+        which defaults to <code>ZSTD</code>.</td>
+    </tr>
+    <tr>
       <td><code>partitioning</code></td>
-      <td>Specifies table partitioning. If a table is partitioned by
-      columns <code>c1</code> and <code>c2</code>, this property setting is
-      <code>partitioning=ARRAY['c1', 'c2']</code>.</td>
+      <td>Specifies table partitioning. For example, if a table is partitioned by
+      columns <code>c1</code> and <code>c2</code>, this property's setting would
+      be <code>partitioning=ARRAY['c1', 'c2']</code>.</td>
+    </tr>
+    <tr>
+      <td><code>sorted_by</code></td>
+      <td>The sort order to be applied during writes to the content of each
+        file written to the table.
+        For example, if the table files are sorted by columns
+        <code>c1</code> and <code>c2</code>,
+        the sort order property is <code>sorted_by = ARRAY['c1', 'c2']</code>.
+        The sort order applies to the contents written within each output file
+        independently and not to the entire dataset.</td>
     </tr>
     <tr>
       <td><code>location</code></td>
@@ -2624,7 +2644,7 @@ properties as needed:</p>
     <tr>
       <td><code>object_store_layout_enabled</code></td>
       <td>Specifies whether Iceberg’s
-      [object store file layout](https://iceberg.apache.org/docs/latest/aws/#object-store-file-layout)
+      <a href="https://iceberg.apache.org/docs/latest/aws/#object-store-file-layout">object store file layout</a>
       is enabled. Defaults to <code>false</code>.</td>
     </tr>
     <tr>
@@ -2632,8 +2652,87 @@ properties as needed:</p>
       <td>Optionally specifies the file system location URI for the table's
       data files.</td>
     </tr>
+    <tr>
+      <td><code>merge_mode</code></td>
+      <td>Determines how data is modified during write operations.
+        Possible values are <code>copy-on-write</code> and <code>merge-on-read</code>.
+        Defaults to <code>merge-on-read</code>.
+        See also <a href="#write-modes">Write modes</a>.</td>
+    </tr>
   </tbody>
 </table>
+      <h3 id="write-modes">
+        
+        
+          Write modes <a href="#write-modes" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>The table format supports two write modes:
+<code>copy-on-write</code> and <code>merge-on-read</code>.
+These modes determine how data is modified during write operations.
+To set the mode, use the <code>merge_mode</code> table property.
+The default is <code>merge-on-read</code>.</p>
+      <h4 id="copy-on-write">
+        
+        
+          COPY-ON-WRITE <a href="#copy-on-write" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code>copy-on-write</code> mode rewrites the affected data files.
+When you delete rows,
+the format rewrites the entire data file containing those rows.
+It does not create a separate delete file.</p>
+
+<p>The <code>copy-on-write</code> mode has the following characteristics:</p>
+
+<ul>
+  <li>Optimized for read performance because there are no delete files to evaluate.</li>
+  <li>Higher write amplification due to full file rewrites.</li>
+  <li>Simple file layout for downstream readers.</li>
+</ul>
+      <h4 id="merge-on-read">
+        
+        
+          MERGE-ON-READ <a href="#merge-on-read" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>The <code>merge-on-read</code> mode writes delete files,
+also known as position delete files,
+instead of rewriting data files.
+When you query the table,
+reads must apply these deletes at query time to produce the correct result set.
+In Iceberg v3 or later,
+<code>merge-on-read</code> writes deletion vectors instead of delete files.</p>
+
+<p>The <code>merge-on-read&lt;c/ode&gt; mode has the following characteristics:</code></p>
+<ul>
+  <li>Optimized for write performance due to lower write amplification.</li>
+  <li>Read performance may be slower due to delete file or deletion vector
+valuation.</li>
+  <li>Suitable for workloads with frequent small updates or deletes.</li>
+</ul>
+
+<p>Configure the write mode when creating a new table:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="n">example_table</span> <span class="p">(</span>
+  <span class="p">...</span>
+<span class="p">)</span>
+<span class="k">WITH</span> <span class="p">(</span>
+  <span class="n">merge_mode</span> <span class="o">=</span> <span class="s1">'copy-on-write'</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>Configure the write mode on an existing table:</p>
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">ALTER</span> <span class="k">TABLE</span> <span class="n">example_table</span> <span class="k">SET</span> <span class="n">PROPERTIES</span> <span class="n">merge_mode</span> <span class="o">=</span> <span class="s1">'copy-on-write'</span>
+</code></pre></div></div>
       <h2 id="iceberg-metadata-tables">
         
         
@@ -3634,7 +3733,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li></ul></li><li><a href="#table-functions">Table functions</a><ul><li><a href="#table_changes">table_changes</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li><li><a href="#generate_embeddings">generate_embeddings</a><ul><li><a href="#considerations">Considerations</a></li></ul></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#add-files-to-iceberg">Add files to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a><ul><li><a href="#replacing-tables">Replacing tables</a></li><li><a href="#time-travel-queries">Time travel queries</a></li></ul></li></ul></li></ul>
+          <ul><li><a href="#iceberg-table-format">Iceberg table format</a><ul><li><a href="#specify-iceberg-format">Specify Iceberg format</a></li><li><a href="#iceberg-table-properties">Iceberg table properties</a><ul><li><a href="#write-modes">Write modes</a><ul><li><a href="#copy-on-write">COPY-ON-WRITE</a></li><li><a href="#merge-on-read">MERGE-ON-READ</a></li></ul></li></ul></li><li><a href="#iceberg-metadata-tables">Iceberg metadata tables</a></li><li><a href="#table-procedures">Table procedures</a><ul><li><a href="#register_table">register_table</a></li><li><a href="#unregister_table">unregister_table</a></li><li><a href="#rollback_to_snapshot">rollback_to_snapshot</a></li></ul></li><li><a href="#table-functions">Table functions</a><ul><li><a href="#table_changes">table_changes</a></li><li><a href="#alter-table-execute">ALTER TABLE EXECUTE</a><ul><li><a href="#optimize">optimize</a></li><li><a href="#drop_extended_stats">drop_extended_stats</a></li><li><a href="#expire_snapshots">expire_snapshots</a></li><li><a href="#remove_orphan_files">remove_orphan_files</a></li><li><a href="#generate_embeddings">generate_embeddings</a><ul><li><a href="#considerations">Considerations</a></li></ul></li></ul></li></ul></li><li><a href="#migrate-hive-to-iceberg">Migrate Hive to Iceberg</a></li><li><a href="#add-files-to-iceberg">Add files to Iceberg</a></li><li><a href="#session-properties">Session properties</a></li><li><a href="#iceberg-sql-support">Iceberg SQL support</a><ul><li><a href="#replacing-tables">Replacing tables</a></li><li><a href="#time-travel-queries">Time travel queries</a></li></ul></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
