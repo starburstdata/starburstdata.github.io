@@ -2513,97 +2513,176 @@
       </h1>
     
 
+<div class="alert alert-info" role="alert">
+  <i class="fa fa-info-circle"></i>
+  <b>Note: </b>
+  These instructions describe the current
+recommended configuration method. For the previous configuration method, see
+<a href="./aws-privatelink-for-rds-deprecated">AWS PrivateLink for RDS (deprecated)</a>.</div>
+
 <p>Use the following steps to securely connect your Galaxy cluster to your <a href="https://aws.amazon.com/rds/">AWS RDS
 instances</a> using <a href="https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html">AWS
 PrivateLink</a>.
 These steps also apply to the same databases deployed on an AWS EC2 instance.</p>
 
-<p>You must work with a Starburst technical resource to complete your PrivateLink
-configuration. Contact your account team for more information.</p>
-
-<div class="alert alert-info" role="alert">
-  <i class="fa fa-info-circle"></i>
-  <b>Note: </b>
-  See the
-<a href="https://www.starburst.io/tutorials/configure-aws-privatelink-rds/">tutorial</a>
-for step-by-step instructions.</div>
+<p>You must work with a Starburst technical resource to complete your
+PrivateLink configuration. Contact your account team for more information.</p>
 
 <blockquote>
   <p>You must configure a separate AWS PrivateLink connection for each
   catalog you want to connect to Starburst Galaxy.</p>
 </blockquote>
+      <h2 id="configure-aws-resources">
+        
+        
+          Configure AWS resources <a href="#configure-aws-resources" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
 
-<p>In the <a href="https://console.aws.amazon.com/">AWS console</a>, create the following:</p>
+<p>Configure the following resources in the <a href="https://console.aws.amazon.com/">AWS
+console</a>:</p>
 
 <ul>
-  <li><a href="#create-a-target-group">A target group</a></li>
-  <li><a href="#create-a-load-balancer">A load balancer</a></li>
-  <li><a href="#create-an-endpoint-service">An endpoint service</a></li>
+  <li><a href="#create-a-resource-gateway">Resource gateway</a></li>
+  <li><a href="#create-a-group-resource-configuration">Group resource configuration</a></li>
+  <li><a href="#create-a-resource-share">Resource share</a></li>
+  <li><a href="#create-child-resource-configurations">Child resource configurations</a></li>
 </ul>
-      <h2 id="create-a-target-group">
+      <h3 id="create-a-resource-gateway">
         
         
-          Create a target group <a href="#create-a-target-group" class="titleAnchor">#</a>
+          Create a resource gateway <a href="#create-a-resource-gateway" class="titleAnchor">#</a>
         
         
-      </h2>
+      </h3>
     
 
 <ol>
   <li>
-    <p>Go to the <a href="https://console.aws.amazon.com/ec2">EC2 Console</a>.</p>
+    <p>Go to the <a href="https://console.aws.amazon.com/vpc">VPC console</a>.</p>
   </li>
   <li>
-    <p>Create a new target group for your RDS instance. For assistance, see the <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/application/create-target-group.html">AWS
+    <p>Navigate to <strong>PrivateLink and Lattice</strong> &gt; <strong>Resource gateways</strong>.</p>
+  </li>
+  <li>
+    <p>Create a new resource gateway for the VPC where your RDS instance resides.
+For assistance, see the <a href="https://docs.aws.amazon.com/vpc/latest/privatelink/resource-gateway.html">AWS
 documentation</a>.</p>
   </li>
 </ol>
-      <h2 id="create-a-load-balancer">
+      <h3 id="create-a-group-resource-configuration">
         
         
-          Create a load balancer <a href="#create-a-load-balancer" class="titleAnchor">#</a>
+          Create a group resource configuration <a href="#create-a-group-resource-configuration" class="titleAnchor">#</a>
         
         
-      </h2>
+      </h3>
     
 
 <ol>
   <li>
-    <p>Go to the <a href="https://console.aws.amazon.com/ec2">EC2 Console</a>.</p>
+    <p>Go to the <a href="https://console.aws.amazon.com/vpc">VPC console</a>.</p>
   </li>
   <li>
-    <p>Create a new network load balancer for your RDS instance. For assistance, see
-the <a href="https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html">AWS
-documentation</a>.</p>
+    <p>Navigate to <strong>PrivateLink and Lattice</strong> &gt; <strong>Resource configurations</strong>.</p>
+  </li>
+  <li>
+    <p>Create a new resource configuration. In the <strong>Configuration type</strong> section,
+select <strong>Resource group</strong>.</p>
+  </li>
+  <li>
+    <p>In the <strong>Resource gateway</strong> section, select the resource gateway you created
+in the previous step.</p>
+  </li>
+  <li>
+    <p>Copy the ARN of your resource configuration for later use.</p>
   </li>
 </ol>
-      <h2 id="create-an-endpoint-service">
+      <h3 id="create-a-resource-share">
         
         
-          Create an endpoint service <a href="#create-an-endpoint-service" class="titleAnchor">#</a>
+          Create a resource share <a href="#create-a-resource-share" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<ol>
+  <li>
+    <p>Go to the <a href="https://console.aws.amazon.com/ram/home">Resource Access Manager
+console</a>.</p>
+  </li>
+  <li>
+    <p>Create a new resource share for your group resource configuration.</p>
+  </li>
+  <li>
+    <p>Grant access to the Starburst principal ARN: <code class="language-plaintext highlighter-rouge">179619298502</code>.</p>
+  </li>
+</ol>
+      <h3 id="create-child-resource-configurations">
+        
+        
+          Create child resource configurations <a href="#create-child-resource-configurations" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>For each data source you want to connect to Galaxy, complete the
+following steps:</p>
+
+<ol>
+  <li>
+    <p>Return to your group resource configuration.</p>
+  </li>
+  <li>
+    <p>Create a new resource configuration.</p>
+  </li>
+  <li>
+    <p>In the <strong>Configuration type</strong> section, select <strong>Resource</strong>.</p>
+  </li>
+  <li>
+    <p>In the <strong>Type</strong> drop-down menu, select <strong>Child</strong>.</p>
+  </li>
+  <li>
+    <p>Specify either the DNS name or IP address of your data source.</p>
+  </li>
+  <li>
+    <p>Configure the appropriate port range.</p>
+  </li>
+</ol>
+      <h2 id="complete-configuration">
+        
+        
+          Complete configuration <a href="#complete-configuration" class="titleAnchor">#</a>
         
         
       </h2>
     
 
+<p>Submit a support ticket through Galaxy:</p>
+
 <ol>
   <li>
-    <p>Go to the <a href="https://console.aws.amazon.com/vpc">VPC Console</a>.</p>
+    <p>Click the support icon in Galaxy.</p>
   </li>
   <li>
-    <p>Create a new endpoint service for your RDS instance. For assistance, see the
-<a href="https://docs.aws.amazon.com/vpc/latest/privatelink/create-endpoint-service.html">AWS
-documentation</a>.</p>
+    <p>Select <strong>Chat with technical support</strong>.</p>
   </li>
   <li>
-    <p>In the <strong>Allow principals</strong> tab, add the Starburst Galaxy ARN
-<code class="language-plaintext highlighter-rouge">arn:aws:iam::179619298502:root</code> to the list.</p>
+    <p>Select <strong>Submit a Support Ticket</strong>.</p>
+  </li>
+  <li>
+    <p>Include the ARN of your group resource configuration in the request.</p>
   </li>
 </ol>
 
 <blockquote>
-  <p>As the final step, contact your Starburst account team to complete
-your PrivateLink configuration.</p>
+  <p>Starburst Support aims to confirm the creation of a resource endpoint
+within 24-48 hours. You can then manage child resource configurations in your
+AWS account. Galaxy automatically reflects any changes.</p>
 </blockquote>
 
         <div class="feedback-container">
@@ -2707,7 +2786,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#aws-privatelink-for-rds">AWS PrivateLink for RDS</a><ul><li><a href="#create-a-target-group">Create a target group</a></li><li><a href="#create-a-load-balancer">Create a load balancer</a></li><li><a href="#create-an-endpoint-service">Create an endpoint service</a></li></ul></li></ul>
+          <ul><li><a href="#aws-privatelink-for-rds">AWS PrivateLink for RDS</a><ul><li><a href="#configure-aws-resources">Configure AWS resources</a><ul><li><a href="#create-a-resource-gateway">Create a resource gateway</a></li><li><a href="#create-a-group-resource-configuration">Create a group resource configuration</a></li><li><a href="#create-a-resource-share">Create a resource share</a></li><li><a href="#create-child-resource-configurations">Create child resource configurations</a></li></ul></li><li><a href="#complete-configuration">Complete configuration</a></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
