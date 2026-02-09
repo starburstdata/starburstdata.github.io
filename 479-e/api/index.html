@@ -1048,6 +1048,23 @@
   },
   "description" : "Definition of a dataset column"
 };
+            defs["ColumnDocumentationAsCodeModel"] = {
+  "required" : [ "name", "type" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "type" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "description" : {
+      "type" : "string"
+    }
+  }
+};
             defs["ColumnMaskPayload"] = {
   "required" : [ "entity", "expressionId" ],
   "type" : "object",
@@ -1158,6 +1175,14 @@
     },
     "action" : {
       "$ref" : "#/components/schemas/Action"
+    },
+    "columnMaskExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
+    },
+    "rowFilterExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
     },
     "entity" : {
       "$ref" : "#/components/schemas/EntityModel"
@@ -1649,6 +1674,62 @@
   },
   "description" : "Data for creating or updating a data product"
 };
+            defs["DataProductAsCodeModel"] = {
+  "required" : [ "apiVersion", "kind", "metadata" ],
+  "type" : "object",
+  "properties" : {
+    "apiVersion" : {
+      "type" : "string",
+      "enum" : [ "v1" ]
+    },
+    "kind" : {
+      "type" : "string",
+      "enum" : [ "DataProduct" ]
+    },
+    "metadata" : {
+      "$ref" : "#/components/schemas/DataProductMetadata"
+    },
+    "owners" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/DataProductOwnerAsCodeModel"
+      }
+    },
+    "relevantLinks" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/RelevantLinkAsCodeModel"
+      }
+    },
+    "tags" : {
+      "type" : "array",
+      "items" : {
+        "type" : "string"
+      }
+    },
+    "sampleQueries" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/SampleQueryAsCodeModel"
+      }
+    },
+    "views" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/ViewDatasetAsCodeModel"
+      }
+    },
+    "materializedViews" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/MaterializedViewDatasetAsCodeModel"
+      }
+    },
+    "exportMetadata" : {
+      "$ref" : "#/components/schemas/DataProductExportMetadata"
+    }
+  }
+};
             defs["DataProductEntityData"] = {
   "type" : "object",
   "description" : "Data of a DATA_PRODUCTS entity",
@@ -1667,6 +1748,60 @@
       }
     }
   } ]
+};
+            defs["DataProductExportMetadata"] = {
+  "required" : [ "createdAt", "exportedAt", "exportedBy", "status" ],
+  "type" : "object",
+  "properties" : {
+    "exportedAt" : {
+      "type" : "string",
+      "format" : "date-time"
+    },
+    "exportedBy" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "status" : {
+      "type" : "string",
+      "enum" : [ "DRAFT", "PUBLISHED", "PENDING_CHANGES" ]
+    },
+    "createdAt" : {
+      "type" : "string",
+      "format" : "date-time"
+    },
+    "publishedAt" : {
+      "type" : "string",
+      "format" : "date-time"
+    }
+  }
+};
+            defs["DataProductMetadata"] = {
+  "required" : [ "catalogName", "dataDomainName", "name", "summary" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "catalogName" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "schemaName" : {
+      "type" : "string"
+    },
+    "dataDomainName" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "summary" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "description" : {
+      "type" : "string"
+    }
+  }
 };
             defs["DataProductOwner"] = {
   "required" : [ "email", "name" ],
@@ -1688,6 +1823,20 @@
     }
   },
   "description" : "Data for a data product owner."
+};
+            defs["DataProductOwnerAsCodeModel"] = {
+  "required" : [ "email", "name" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "email" : {
+      "minLength" : 1,
+      "type" : "string"
+    }
+  }
 };
             defs["DataProductStatus"] = {
   "type" : "string",
@@ -1806,8 +1955,8 @@
 };
             defs["Effect"] = {
   "type" : "string",
-  "description" : "Grant effect (ALLOW, ALLOW_WITH_GRANT_OPTION, and DENY)",
-  "enum" : [ "ALLOW", "ALLOW_WITH_GRANT_OPTION", "DENY" ]
+  "description" : "Grant effect (ALLOW(|_WITH_GRANT_OPTION), DENY, APPLY_(COLUMN_MASK|ROW_FILTER)(|_WITH_GRANT_OPTION))",
+  "enum" : [ "ALLOW", "ALLOW_WITH_GRANT_OPTION", "DENY", "APPLY_COLUMN_MASK", "APPLY_COLUMN_MASK_WITH_GRANT_OPTION", "APPLY_ROW_FILTER", "APPLY_ROW_FILTER_WITH_GRANT_OPTION" ]
 };
             defs["Entity"] = {
   "type" : "object",
@@ -1848,7 +1997,7 @@
             defs["EntityCategory"] = {
   "type" : "string",
   "description" : "The current page of results.",
-  "enum" : [ "TABLES", "SCHEMA_PROPERTIES", "TABLE_PROPERTIES", "SYSTEM_SESSION_PROPERTIES", "CATALOG_SESSION_PROPERTIES", "FUNCTIONS", "PROCEDURES", "QUERIES", "ROLES", "USERS", "DATA_PRODUCTS", "AUDIT_LOGS", "USER_INTERFACE", "SYSTEM_INFORMATION", "AI_MODELS", "SPARK_RESOURCE_POOLS", "SPARK_INSTANCE_IMAGES", "SPARK_JOBS", "SPARK_CONNECT_SERVERS", "SPARK_UPLOADS", "JUPYTER_NOTEBOOKS", "SPARK_SYSTEM", "S3_GOVERNANCE" ]
+  "enum" : [ "TABLES", "SCHEMA_PROPERTIES", "TABLE_PROPERTIES", "SYSTEM_SESSION_PROPERTIES", "CATALOG_SESSION_PROPERTIES", "FUNCTIONS", "PROCEDURES", "COLUMN_MASK_EXPRESSIONS", "ROW_FILTER_EXPRESSIONS", "QUERIES", "ROLES", "USERS", "DATA_PRODUCTS", "AUDIT_LOGS", "USER_INTERFACE", "SYSTEM_INFORMATION", "AI_MODELS", "SPARK_RESOURCE_POOLS", "SPARK_INSTANCE_IMAGES", "SPARK_JOBS", "SPARK_CONNECT_SERVERS", "SPARK_UPLOADS", "JUPYTER_NOTEBOOKS", "SPARK_SYSTEM", "S3_GOVERNANCE" ]
 };
             defs["EntityDto"] = {
   "type" : "object",
@@ -1889,7 +2038,7 @@
   "properties" : {
     "category" : {
       "type" : "string",
-      "description" : "TABLES, SCHEMA_PROPERTIES, AI_MODELS, TABLE_PROPERTIES, SYSTEM_SESSION_PROPERTIES, CATALOG_SESSION_PROPERTIES, FUNCTIONS, PROCEDURES, QUERIES, SYSTEM_INFORMATION, ROLES, USERS, DATA_PRODUCTS, AUDIT_LOGS, USER_INTERFACE, SPARK_RESOURCE_POOLS, SPARK_INSTANCE_IMAGES, SPARK_JOBS, SPARK_CONNECT_SERVERS, SPARK_UPLOADS, SPARK_SYSTEM, JUPYTER_NOTEBOOKS, S3_GOVERNANCE"
+      "description" : "TABLES, COLUMN_MASK_EXPRESSIONS, ROW_FILTER_EXPRESSIONS, SCHEMA_PROPERTIES, AI_MODELS, TABLE_PROPERTIES, SYSTEM_SESSION_PROPERTIES, CATALOG_SESSION_PROPERTIES, FUNCTIONS, PROCEDURES, QUERIES, SYSTEM_INFORMATION, ROLES, USERS, DATA_PRODUCTS, AUDIT_LOGS, USER_INTERFACE, SPARK_RESOURCE_POOLS, SPARK_INSTANCE_IMAGES, SPARK_JOBS, SPARK_CONNECT_SERVERS, SPARK_UPLOADS, SPARK_SYSTEM, JUPYTER_NOTEBOOKS, S3_GOVERNANCE"
     },
     "allEntities" : {
       "type" : "boolean",
@@ -1900,6 +2049,8 @@
     "propertyName" : "category",
     "mapping" : {
       "TABLES" : "#/components/schemas/TableEntityData",
+      "COLUMN_MASK_EXPRESSIONS" : "#/components/schemas/SingleKeyEntityData",
+      "ROW_FILTER_EXPRESSIONS" : "#/components/schemas/SingleKeyEntityData",
       "SYSTEM_SESSION_PROPERTIES" : "#/components/schemas/SingleKeyEntityData",
       "AI_MODELS" : "#/components/schemas/SingleKeyEntityData",
       "ROLES" : "#/components/schemas/SingleKeyEntityData",
@@ -2086,6 +2237,14 @@
       "type" : "string",
       "enum" : [ "SHOW", "CREATE", "ALTER", "DROP", "EXECUTE", "SELECT", "INSERT", "DELETE", "UPDATE", "REFRESH", "IMPERSONATE", "KILL", "SET", "PUBLISH", "EDIT", "READ", "WRITE", "MANAGE", "USE", "SUBSCRIBE", "UNSUBSCRIBE" ]
     },
+    "columnMaskExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
+    },
+    "rowFilterExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
+    },
     "entity" : {
       "$ref" : "#/components/schemas/EntityDto"
     },
@@ -2124,6 +2283,14 @@
     },
     "action" : {
       "$ref" : "#/components/schemas/Action"
+    },
+    "columnMaskExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
+    },
+    "rowFilterExpressionId" : {
+      "type" : "integer",
+      "format" : "int64"
     },
     "entity" : {
       "$ref" : "#/components/schemas/EntityModel"
@@ -2277,6 +2444,34 @@
     }
   },
   "description" : "Detailed data for a materialized view"
+};
+            defs["MaterializedViewDatasetAsCodeModel"] = {
+  "required" : [ "name" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "definitionQuery" : {
+      "type" : "string"
+    },
+    "definitionProperties" : {
+      "type" : "object",
+      "additionalProperties" : {
+        "type" : "object"
+      }
+    },
+    "columns" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/ColumnDocumentationAsCodeModel"
+      }
+    }
+  }
 };
             defs["MaterializedViewDatasetPayload"] = {
   "required" : [ "name" ],
@@ -2731,6 +2926,20 @@
   },
   "description" : "Relevant link for a data product"
 };
+            defs["RelevantLinkAsCodeModel"] = {
+  "required" : [ "label", "url" ],
+  "type" : "object",
+  "properties" : {
+    "label" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "url" : {
+      "minLength" : 1,
+      "type" : "string"
+    }
+  }
+};
             defs["RoleAssignmentResponse"] = {
   "type" : "object",
   "properties" : {
@@ -2853,6 +3062,22 @@
   },
   "description" : "Sample query for the data product"
 };
+            defs["SampleQueryAsCodeModel"] = {
+  "required" : [ "name", "query" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "query" : {
+      "type" : "string"
+    }
+  }
+};
             defs["SearchOptionsApiModel"] = {
   "type" : "object",
   "properties" : {
@@ -2909,7 +3134,7 @@
 };
             defs["SingleKeyEntityData"] = {
   "type" : "object",
-  "description" : "Data of a USERS, ROLES, SYSTEM_SESSION_PROPERTIES, AI_MODELS, SPARK_RESOURCE_POOLS or SPARK_INSTANCE_IMAGES entity",
+  "description" : "Data of a USERS, ROLES, COLUMN_MASK_EXPRESSIONS, ROW_FILTER_EXPRESSIONS, SYSTEM_SESSION_PROPERTIES, AI_MODELS, SPARK_RESOURCE_POOLS or SPARK_INSTANCE_IMAGES entity",
   "allOf" : [ {
     "$ref" : "#/components/schemas/EntityModel"
   }, {
@@ -3415,6 +3640,32 @@
   },
   "description" : "Detailed data for a view dataset"
 };
+            defs["ViewDatasetAsCodeModel"] = {
+  "required" : [ "name" ],
+  "type" : "object",
+  "properties" : {
+    "name" : {
+      "minLength" : 1,
+      "type" : "string"
+    },
+    "description" : {
+      "type" : "string"
+    },
+    "viewSecurityMode" : {
+      "type" : "string",
+      "enum" : [ "DEFINER", "INVOKER" ]
+    },
+    "definitionQuery" : {
+      "type" : "string"
+    },
+    "columns" : {
+      "type" : "array",
+      "items" : {
+        "$ref" : "#/components/schemas/ColumnDocumentationAsCodeModel"
+      }
+    }
+  }
+};
             defs["ViewDatasetPayload"] = {
   "required" : [ "name" ],
   "type" : "object",
@@ -3543,6 +3794,9 @@
                     </li>
                     <li data-group="DataProducts" data-name="getTargetCatalogs" class="">
                       <a href="#api-DataProducts-getTargetCatalogs">getTargetCatalogs</a>
+                    </li>
+                    <li data-group="DataProducts" data-name="importDataProduct" class="">
+                      <a href="#api-DataProducts-importDataProduct">importDataProduct</a>
                     </li>
                     <li data-group="DataProducts" data-name="listSampleQueries" class="">
                       <a href="#api-DataProducts-listSampleQueries">listSampleQueries</a>
@@ -12777,6 +13031,427 @@ except ApiException as e:
                                   </div>
                                   <input id='responses-getTargetCatalogs-200-schema-data' type='hidden' value=''></input>
                                 </div>
+                            </div>
+
+                        </article>
+                      </div>
+                      <hr>
+                    <div id="api-DataProducts-importDataProduct">
+                      <article id="api-DataProducts-importDataProduct-0" data-group="User" data-name="importDataProduct" data-version="0">
+                        <div class="pull-left">
+                          <h1>importDataProduct</h1>
+                          <p>Import a data product from YAML</p>
+                        </div>
+                        <div class="pull-right"></div>
+                        <div class="clearfix"></div>
+                        <p></p>
+                        <p class="marked">Import a data product definition from YAML format. Use onDuplicate&#x3D;fail (default) to prevent overwriting existing products, or onDuplicate&#x3D;overwrite to update an existing product with the same name in the same domain. Imported products are created in DRAFT status.</p>
+                        <p></p>
+                        <br />
+                        <pre class="prettyprint language-html prettyprinted" data-type="post"><code><span class="pln">/api/v1/dataProduct/products/import</span></code></pre>
+                        <p>
+                          <h3>Usage and SDK Samples</h3>
+                        </p>
+                        <ul class="nav nav-tabs nav-tabs-examples">
+                          <li class="active"><a href="#examples-DataProducts-importDataProduct-0-curl">Curl</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-java">Java</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-android">Android</a></li>
+                          <!--<li class=""><a href="#examples-DataProducts-importDataProduct-0-groovy">Groovy</a></li>-->
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-objc">Obj-C</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-javascript">JavaScript</a></li>
+                          <!--<li class=""><a href="#examples-DataProducts-importDataProduct-0-angular">Angular</a></li>-->
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-csharp">C#</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-php">PHP</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-perl">Perl</a></li>
+                          <li class=""><a href="#examples-DataProducts-importDataProduct-0-python">Python</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                          <div class="tab-pane active" id="examples-DataProducts-importDataProduct-0-curl">
+                           <pre class="prettyprint"><code class="language-bsh">curl -X POST\
+\
+ -H "Authorization: Basic [[basicHash]]"\
+-H "Accept: application/json"\
+-H "Content-Type: application/yaml"\
+"//api/v1/dataProduct/products/import?onDuplicate="</code></pre>
+                          </div>
+                          <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-java">
+                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.*;
+import io.swagger.client.auth.*;
+import io.swagger.client.model.*;
+import io.swagger.client.api.DataProductsApi;
+
+import java.io.File;
+import java.util.*;
+
+public class DataProductsApiExample {
+
+    public static void main(String[] args) {
+        ApiClient defaultClient = Configuration.getDefaultApiClient();
+
+        // Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+        OAuth 01_Cf_Access_OAuth2 = (OAuth) defaultClient.getAuthentication("01_Cf_Access_OAuth2");
+        01_Cf_Access_OAuth2.setAccessToken("YOUR ACCESS TOKEN");
+        // Configure HTTP basic authorization: 02_Cf_Access_Basic
+        HttpBasicAuth 02_Cf_Access_Basic = (HttpBasicAuth) defaultClient.getAuthentication("02_Cf_Access_Basic");
+        02_Cf_Access_Basic.setUsername("YOUR USERNAME");
+        02_Cf_Access_Basic.setPassword("YOUR PASSWORD");
+
+        DataProductsApi apiInstance = new DataProductsApi();
+        DataProductAsCodeModel body = ; // DataProductAsCodeModel | 
+        String onDuplicate = onDuplicate_example; // String | 
+        try {
+            Data product result = apiInstance.importDataProduct(body, onDuplicate);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DataProductsApi#importDataProduct");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+
+                          <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-android">
+                            <pre class="prettyprint"><code class="language-java">import io.swagger.client.api.DataProductsApi;
+
+public class DataProductsApiExample {
+
+    public static void main(String[] args) {
+        DataProductsApi apiInstance = new DataProductsApi();
+        DataProductAsCodeModel body = ; // DataProductAsCodeModel | 
+        String onDuplicate = onDuplicate_example; // String | 
+        try {
+            Data product result = apiInstance.importDataProduct(body, onDuplicate);
+            System.out.println(result);
+        } catch (ApiException e) {
+            System.err.println("Exception when calling DataProductsApi#importDataProduct");
+            e.printStackTrace();
+        }
+    }
+}</code></pre>
+                          </div>
+  <!--
+  <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-groovy">
+  <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+  </div> -->
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-objc">
+                              <pre class="prettyprint"><code class="language-cpp">Configuration *apiConfig = [Configuration sharedConfig];
+// Configure OAuth2 access token for authorization: (authentication scheme: 01_Cf_Access_OAuth2)
+[apiConfig setAccessToken:@"YOUR_ACCESS_TOKEN"];
+// Configure HTTP basic authorization (authentication scheme: 02_Cf_Access_Basic)
+[apiConfig setUsername:@"YOUR_USERNAME"];
+[apiConfig setPassword:@"YOUR_PASSWORD"];
+DataProductAsCodeModel *body = ; //  (optional)
+String *onDuplicate = onDuplicate_example; //  (optional) (default to fail)
+
+DataProductsApi *apiInstance = [[DataProductsApi alloc] init];
+
+// Import a data product from YAML
+[apiInstance importDataProductWith:body
+    onDuplicate:onDuplicate
+              completionHandler: ^(Data product output, NSError* error) {
+                            if (output) {
+                                NSLog(@"%@", output);
+                            }
+                            if (error) {
+                                NSLog(@"Error: %@", error);
+                            }
+                        }];
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-javascript">
+                              <pre class="prettyprint"><code class="language-js">var StarburstEnterpriseApiDocumentation = require('starburst_enterprise_api_documentation');
+var defaultClient = StarburstEnterpriseApiDocumentation.ApiClient.instance;
+
+// Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+var 01_Cf_Access_OAuth2 = defaultClient.authentications['01_Cf_Access_OAuth2'];
+01_Cf_Access_OAuth2.accessToken = "YOUR ACCESS TOKEN"
+// Configure HTTP basic authorization: 02_Cf_Access_Basic
+var 02_Cf_Access_Basic = defaultClient.authentications['02_Cf_Access_Basic'];
+02_Cf_Access_Basic.username = 'YOUR USERNAME'
+02_Cf_Access_Basic.password = 'YOUR PASSWORD'
+
+var api = new StarburstEnterpriseApiDocumentation.DataProductsApi()
+var opts = { 
+  'body':  // {{DataProductAsCodeModel}} 
+  'onDuplicate': onDuplicate_example // {{String}} 
+};
+var callback = function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('API called successfully. Returned data: ' + data);
+  }
+};
+api.importDataProduct(opts, callback);
+</code></pre>
+                            </div>
+
+                            <!--<div class="tab-pane" id="examples-DataProducts-importDataProduct-0-angular">
+              <pre class="prettyprint language-json prettyprinted" data-type="json"><code>Coming Soon!</code></pre>
+            </div>-->
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-csharp">
+                              <pre class="prettyprint"><code class="language-cs">using System;
+using System.Diagnostics;
+using IO.Swagger.Api;
+using IO.Swagger.Client;
+using IO.Swagger.Model;
+
+namespace Example
+{
+    public class importDataProductExample
+    {
+        public void main()
+        {
+
+            // Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+            Configuration.Default.AccessToken = "YOUR_ACCESS_TOKEN";            // Configure HTTP basic authorization: 02_Cf_Access_Basic
+            Configuration.Default.Username = "YOUR_USERNAME";
+            Configuration.Default.Password = "YOUR_PASSWORD";
+
+            var apiInstance = new DataProductsApi();
+            var body = new DataProductAsCodeModel(); // DataProductAsCodeModel |  (optional) 
+            var onDuplicate = onDuplicate_example;  // String |  (optional)  (default to fail)
+
+            try
+            {
+                // Import a data product from YAML
+                Data product result = apiInstance.importDataProduct(body, onDuplicate);
+                Debug.WriteLine(result);
+            }
+            catch (Exception e)
+            {
+                Debug.Print("Exception when calling DataProductsApi.importDataProduct: " + e.Message );
+            }
+        }
+    }
+}
+</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-php">
+                              <pre class="prettyprint"><code class="language-php"><&#63;php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+// Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+Swagger\Client\Configuration::getDefaultConfiguration()->setAccessToken('YOUR_ACCESS_TOKEN');// Configure HTTP basic authorization: 02_Cf_Access_Basic
+Swagger\Client\Configuration::getDefaultConfiguration()->setUsername('YOUR_USERNAME');
+Swagger\Client\Configuration::getDefaultConfiguration()->setPassword('YOUR_PASSWORD');
+
+$api_instance = new Swagger\Client\ApiDataProductsApi();
+$body = ; // DataProductAsCodeModel | 
+$onDuplicate = onDuplicate_example; // String | 
+
+try {
+    $result = $api_instance->importDataProduct($body, $onDuplicate);
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling DataProductsApi->importDataProduct: ', $e->getMessage(), PHP_EOL;
+}
+?></code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-perl">
+                              <pre class="prettyprint"><code class="language-perl">use Data::Dumper;
+use WWW::SwaggerClient::Configuration;
+use WWW::SwaggerClient::DataProductsApi;
+
+# Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+$WWW::SwaggerClient::Configuration::access_token = 'YOUR_ACCESS_TOKEN';# Configure HTTP basic authorization: 02_Cf_Access_Basic
+$WWW::SwaggerClient::Configuration::username = 'YOUR_USERNAME';
+$WWW::SwaggerClient::Configuration::password = 'YOUR_PASSWORD';
+
+my $api_instance = WWW::SwaggerClient::DataProductsApi->new();
+my $body = WWW::SwaggerClient::Object::DataProductAsCodeModel->new(); # DataProductAsCodeModel | 
+my $onDuplicate = onDuplicate_example; # String | 
+
+eval { 
+    my $result = $api_instance->importDataProduct(body => $body, onDuplicate => $onDuplicate);
+    print Dumper($result);
+};
+if ($@) {
+    warn "Exception when calling DataProductsApi->importDataProduct: $@\n";
+}</code></pre>
+                            </div>
+
+                            <div class="tab-pane" id="examples-DataProducts-importDataProduct-0-python">
+                              <pre class="prettyprint"><code class="language-python">from __future__ import print_statement
+import time
+import swagger_client
+from swagger_client.rest import ApiException
+from pprint import pprint
+
+# Configure OAuth2 access token for authorization: 01_Cf_Access_OAuth2
+swagger_client.configuration.access_token = 'YOUR_ACCESS_TOKEN'# Configure HTTP basic authorization: 02_Cf_Access_Basic
+swagger_client.configuration.username = 'YOUR_USERNAME'
+swagger_client.configuration.password = 'YOUR_PASSWORD'
+
+# create an instance of the API class
+api_instance = swagger_client.DataProductsApi()
+body =  # DataProductAsCodeModel |  (optional)
+onDuplicate = onDuplicate_example # String |  (optional) (default to fail)
+
+try: 
+    # Import a data product from YAML
+    api_response = api_instance.import_data_product(body=body, onDuplicate=onDuplicate)
+    pprint(api_response)
+except ApiException as e:
+    print("Exception when calling DataProductsApi->importDataProduct: %s\n" % e)</code></pre>
+                            </div>
+                          </div>
+
+                          <h2>Parameters</h2>
+
+
+
+                            <div class="methodsubtabletitle">Body parameters</div>
+                            <table id="methodsubtable">
+                              <tr>
+                                <th width="150px">Name</th>
+                                <th>Description</th>
+                              </tr>
+                                <tr><td style="width:150px;">body </td>
+                                <td>
+                                
+                                
+                                <script>
+                                $(document).ready(function() {
+                                  var schemaWrapper = {
+  "content" : {
+    "application/yaml" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/DataProductAsCodeModel"
+      }
+    }
+  }
+};
+                                  var schema = schemaWrapper.content["application/yaml"].schema;
+                                  if (schema.$ref != null) {
+                                    schema = defsParser.$refs.get(schema.$ref);
+                                  } else {
+                                    schemaWrapper.components = {};
+                                    schemaWrapper.components.schemas = Object.assign({}, defs);
+                                    $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                      console.log(err);
+                                    });
+                                  }
+                                
+                                  var view = new JSONSchemaView(schema,2,{isBodyParam: true});
+                                  var result = $('#d2e199_importDataProduct_body');
+                                  result.empty();
+                                  result.append(view.render());
+                                });
+                                </script>
+                                <div id="d2e199_importDataProduct_body"></div>
+                                </td>
+                                </tr>
+                            </table>
+
+
+                            <div class="methodsubtabletitle">Query parameters</div>
+                            <table id="methodsubtable">
+                              <tr>
+                                <th width="150px">Name</th>
+                                <th>Description</th>
+                              </tr>
+                                <tr><td style="width:150px;">onDuplicate</td>
+                                <td>
+                                
+                                
+                                    <div id="d2e199_importDataProduct_onDuplicate">
+                                        <div class="json-schema-view">
+                                            <div class="primitive">
+                                                <span class="type">
+                                                    String
+                                                </span>
+                                
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                </tr>
+                            </table>
+
+                          <h2>Responses</h2>
+                            <h3> Status: 200 - Success </h3>
+
+                            <ul class="nav nav-tabs nav-tabs-examples" >
+                                <li class="active">
+                                  <a data-toggle="tab" href="#responses-importDataProduct-200-schema">Schema</a>
+                                </li>
+
+                            </ul>
+
+                            <div class="tab-content" style='margin-bottom: 10px;'>
+                                <div class="tab-pane active" id="responses-importDataProduct-200-schema">
+                                  <div id='responses-importDataProduct-200-schema-200' style="padding: 30px; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                                    <script>
+                                      $(document).ready(function() {
+                                        var schemaWrapper = {
+  "description" : "Success",
+  "content" : {
+    "application/json" : {
+      "schema" : {
+        "$ref" : "#/components/schemas/Data product"
+      }
+    }
+  }
+};
+                                        var schema = schemaWrapper.content["application/json"].schema;
+                                        if (schema.$ref != null) {
+                                          schema = defsParser.$refs.get(schema.$ref);
+                                        } else {
+                                          schemaWrapper.components = {};
+                                          schemaWrapper.components.schemas = Object.assign({}, defs);
+                                          $RefParser.dereference(schemaWrapper).catch(function(err) {
+                                            console.log(err);
+                                          });
+                                        }
+
+                                        //console.log(JSON.stringify(schema));
+                                        var view = new JSONSchemaView(schema, 3);
+                                        $('#responses-importDataProduct-200-schema-data').val(stringify(schema));
+                                        var result = $('#responses-importDataProduct-200-schema-200');
+                                        result.empty();
+                                        result.append(view.render());
+                                      });
+                                    </script>
+                                  </div>
+                                  <input id='responses-importDataProduct-200-schema-data' type='hidden' value=''></input>
+                                </div>
+                            </div>
+
+                            <h3> Status: 400 - Bad Request - validation failed </h3>
+
+                            <ul class="nav nav-tabs nav-tabs-examples" >
+                            </ul>
+
+                            <div class="tab-content" style='margin-bottom: 10px;'>
+                            </div>
+
+                            <h3> Status: 403 - Forbidden </h3>
+
+                            <ul class="nav nav-tabs nav-tabs-examples" >
+                            </ul>
+
+                            <div class="tab-content" style='margin-bottom: 10px;'>
+                            </div>
+
+                            <h3> Status: 404 - Not found - domain not found </h3>
+
+                            <ul class="nav nav-tabs nav-tabs-examples" >
+                            </ul>
+
+                            <div class="tab-content" style='margin-bottom: 10px;'>
+                            </div>
+
+                            <h3> Status: 409 - Conflict - data product already exists </h3>
+
+                            <ul class="nav nav-tabs nav-tabs-examples" >
+                            </ul>
+
+                            <div class="tab-content" style='margin-bottom: 10px;'>
                             </div>
 
                         </article>
