@@ -59,7 +59,7 @@
 </script>
   
   
-    <title>JWT authentication &#8212; Starburst Enterprise</title>
+    <title>LDAP user and group synchronization &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=bbebba6e" />
     <link rel="stylesheet" type="text/css" href="../_static/material.css?v=79c92029" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -77,8 +77,8 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Header authenticator" href="../develop/header-authenticator.html" />
-    <link rel="prev" title="Certificate authentication" href="certificate.html" />
+    <link rel="next" title="SCIM user and group synchronization" href="scim-provisioning.html" />
+    <link rel="prev" title="Keycloak group provider" href="keycloak-group-provider.html" />
 
   
    
@@ -90,7 +90,7 @@
 
 
 <!-- Always link to the latest version, as canonical -->
-<link rel="canonical" href="https://docs.starburst.io/latest/security/jwt.html">
+<link rel="canonical" href="https://docs.starburst.io/latest/security/ldap-provisioning.html">
 
   </head>
   <body dir=ltr
@@ -107,7 +107,7 @@
   <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer">
   <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search">
   <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
-  <a href="#security/jwt" tabindex="1" class="md-skip"> Skip to content </a>
+  <a href="#security/ldap-provisioning" tabindex="1" class="md-skip"> Skip to content </a>
   
 <header class="md-header" data-md-component="header">
   <nav class="md-header-nav md-grid">
@@ -128,7 +128,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 479-e STS</a>
-          <span class="md-header-nav__topic"> JWT authentication </span>
+          <span class="md-header-nav__topic"> LDAP user and group synchronization </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -268,7 +268,20 @@
 <li class="toctree-l5"><a class="reference internal" href="ldap.html">LDAP</a></li>
 <li class="toctree-l5"><a class="reference internal" href="ldap-group-provider.html">LDAP group provider</a></li>
 <li class="toctree-l5"><a class="reference internal" href="keycloak-group-provider.html">Keycloak group provider</a></li>
-<li class="toctree-l5"><a class="reference internal" href="ldap-provisioning.html">LDAP user and group synchronization</a></li>
+<li class="toctree-l5 current"><a class="current reference internal" href="#">LDAP user and group synchronization</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#configure-an-internal-group-provider">Configure an internal group provider</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#enable-ldap-user-provisioning">Enable LDAP user provisioning</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#configure-ldap-user-provisioning-properties">Configure LDAP user provisioning properties</a></li>
+</ul>
+</li>
+<li class="toctree-l6"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#secure-ldap-connection-ldaps">Secure LDAP connection (LDAPS)</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#insecure-ldap-connection">Insecure LDAP connection</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l5"><a class="reference internal" href="scim-provisioning.html">SCIM user and group synchronization</a></li>
 <li class="toctree-l5"><a class="reference internal" href="salesforce.html">Salesforce</a></li>
 <li class="toctree-l5"><a class="reference internal" href="oauth2.html">OAuth2 over HTTPS</a></li>
@@ -277,18 +290,7 @@
 <li class="toctree-l5"><a class="reference internal" href="okta-authentication.html">Okta</a></li>
 <li class="toctree-l5"><a class="reference internal" href="kerberos.html">Kerberos</a></li>
 <li class="toctree-l5"><a class="reference internal" href="certificate.html">Certificate</a></li>
-<li class="toctree-l5 current"><a class="current reference internal" href="#">JWT</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="#using-jwt-authentication">Using JWT authentication</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#jwt-authentication-configuration">JWT authentication configuration</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#using-jwts-with-clients">Using JWTs with clients</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#jwt-pass-through">JWT pass-through</a><ul>
-<li class="toctree-l7"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l7"><a class="reference internal" href="#configure-jwt-pass-through">Configure JWT pass-through</a></li>
-</ul>
-</li>
-<li class="toctree-l6"><a class="reference internal" href="#resources">Resources</a></li>
-</ul>
-</li>
+<li class="toctree-l5"><a class="reference internal" href="jwt.html">JWT</a></li>
 <li class="toctree-l5"><a class="reference internal" href="../develop/header-authenticator.html">Header</a></li>
 <li class="toctree-l5"><a class="reference internal" href="password-passthrough.html">Password pass-through</a></li>
 <li class="toctree-l5"><a class="reference internal" href="oauth2-passthrough.html">OAuth 2.0 token pass-through</a></li>
@@ -343,16 +345,18 @@
   <div class="local-toc">
     <strong>Contents</strong>
     <ul>
-<li><a class="reference internal" href="#">JWT authentication</a><ul>
-<li><a class="reference internal" href="#using-jwt-authentication">Using JWT authentication</a></li>
-<li><a class="reference internal" href="#jwt-authentication-configuration">JWT authentication configuration</a></li>
-<li><a class="reference internal" href="#using-jwts-with-clients">Using JWTs with clients</a></li>
-<li><a class="reference internal" href="#jwt-pass-through">JWT pass-through</a><ul>
-<li><a class="reference internal" href="#requirements">Requirements</a></li>
-<li><a class="reference internal" href="#configure-jwt-pass-through">Configure JWT pass-through</a></li>
+<li><a class="reference internal" href="#">LDAP user and group synchronization</a><ul>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#configure-an-internal-group-provider">Configure an internal group provider</a></li>
+<li><a class="reference internal" href="#enable-ldap-user-provisioning">Enable LDAP user provisioning</a></li>
+<li><a class="reference internal" href="#configure-ldap-user-provisioning-properties">Configure LDAP user provisioning properties</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#resources">Resources</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#secure-ldap-connection-ldaps">Secure LDAP connection (LDAPS)</a></li>
+<li><a class="reference internal" href="#insecure-ldap-connection">Insecure LDAP connection</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -366,205 +370,183 @@
         <div class="md-content">
           <article class="md-content__inner md-typeset" role="main">
             
-  <section id="jwt-authentication">
-<h1 id="security-jwt--page-root">JWT authentication<a class="headerlink" href="#security-jwt--page-root" title="Link to this heading">#</a></h1>
-<p>Starburst Enterprise platform (SEP) can be configured to authenticate client access using <a class="reference external" href="https://wikipedia.org/wiki/JSON_Web_Token">JSON web
-tokens</a>. A JWT is a small,
-web-safe JSON file that contains cryptographic information similar to a
-certificate, including:</p>
-<ul class="simple">
-<li><p>Subject</p></li>
-<li><p>Valid time period</p></li>
-<li><p>Signature</p></li>
-</ul>
-<p>A JWT is designed to be passed between servers as proof of prior authentication
-in a workflow like the following:</p>
-<ol class="arabic simple">
-<li><p>An end user logs into a client application and requests access to a server.</p></li>
-<li><p>The server sends the user’s credentials to a separate authentication service
-that:</p>
-<ul class="simple">
-<li><p>validates the user</p></li>
-<li><p>generates a JWT as proof of validation</p></li>
-<li><p>returns the JWT to the requesting server</p></li>
-</ul>
-</li>
-<li><p>The same JWT can then be forwarded to other services to maintain the user’s
-validation without further credentials.</p></li>
-</ol>
-<div class="admonition important">
-<p class="admonition-title">Important</p>
-<p>If you are trying to configure OAuth2 or OIDC, there is a dedicated system
-for that in SEP, as described in <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a>. When using
-OAuth2 authentication, you do not need to configure JWT authentication,
-because JWTs are handled automatically by the OAuth2 code.</p>
-<p>A typical use for JWT authentication is to support administrators at large
-sites who are writing their own single sign-on or proxy system to stand
-between users and the SEP coordinator, where their new system submits
-queries on behalf of users.</p>
+  <section id="ldap-user-and-group-synchronization">
+<h1 id="security-ldap-provisioning--page-root">LDAP user and group synchronization<a class="headerlink" href="#security-ldap-provisioning--page-root" title="Link to this heading">#</a></h1>
+<p>You can configure SEP to synchronize users and groups from an LDAP
+directory.</p>
+<p>Starburst recommends LDAP provisioning instead of <a class="reference internal" href="ldap-group-provider.html"><span class="doc std std-doc">LDAP group
+mapping</span></a> for synchronizing group membership.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To synchronize identities using the SCIM protocol instead, see
+<a class="reference internal" href="scim-provisioning.html"><span class="doc std std-doc">SCIM user and group synchronization</span></a>.</p>
 </div>
-<p>Using <a class="reference internal" href="tls.html"><span class="doc">TLS</span></a> and <a class="reference internal" href="internal-communication.html"><span class="doc">a configured shared secret</span></a> is required for JWT authentication.</p>
-<section id="using-jwt-authentication">
-<h2 id="using-jwt-authentication">Using JWT authentication<a class="headerlink" href="#using-jwt-authentication" title="Link to this heading">#</a></h2>
-<p>SEP supports Base64 encoded JWTs, but not encrypted JWTs.</p>
-<p>There are two ways to get the encryption key necessary to validate the JWT
-signature:</p>
+<section id="configuration">
+<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<p>To configure LDAP user and group synchronization, complete the following steps:</p>
 <ul class="simple">
-<li><p>Load the key from a JSON web key set (JWKS) endpoint service (the
-typical case)</p></li>
-<li><p>Load the key from the local file system on the SEP coordinator</p></li>
+<li><p>Configure an internal group provider in SEP</p></li>
+<li><p>Enable LDAP user provisioning</p></li>
+<li><p>Configure LDAP user provisioning properties</p></li>
 </ul>
-<p>A JWKS endpoint is a read-only service that contains public key information in
-<a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc7517">JWK</a> format. These
-public keys are the counterpart of the private keys that sign JSON web tokens.</p>
+<section id="configure-an-internal-group-provider">
+<h3 id="configure-an-internal-group-provider">Configure an internal group provider<a class="headerlink" href="#configure-an-internal-group-provider" title="Link to this heading">#</a></h3>
+<p>SEP requires a group provider configuration to handle imported users and
+groups internally. Create an <code class="docutils literal notranslate"><span class="pre">etc/group-provider.properties</span></code> configuration
+file on the coordinator with the following contents:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">group-provider.name</span><span class="o">=</span><span class="s">starburst</span>
+</pre></div>
+</div>
+<p>The SEP group provider includes an optional cache for user and group
+lookups, which is enabled by default. Disable the cache with the following
+property:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst-group-provider.cache.enabled</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+<p>When you enable caching, the following optional properties are also available:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst-group-provider.cache.ttl</span><span class="o">=</span><span class="s">10s</span>
+<span class="na">starburst-group-provider.cache.maximum-size</span><span class="o">=</span><span class="s">1024</span>
+</pre></div>
+</div>
 </section>
-<section id="jwt-authentication-configuration">
-<span id="jwt-config"></span><h2 id="jwt-authentication-configuration">JWT authentication configuration<a class="headerlink" href="#jwt-authentication-configuration" title="Link to this heading">#</a></h2>
-<p>Enable JWT authentication by setting the <a class="reference internal" href="authentication-types.html"><span class="doc">JWT authentication type</span></a> in <a class="reference internal" href="../installation/deployment.html#config-properties"><span class="std std-ref">etc/config.properties</span></a>, and
-specifying a URL or path to a key file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">JWT</span>
-<span class="na">http-server.authentication.jwt.key-file</span><span class="o">=</span><span class="s">https://cluster.example.net/.well-known/jwks.json</span>
+<section id="enable-ldap-user-provisioning">
+<h3 id="enable-ldap-user-provisioning">Enable LDAP user provisioning<a class="headerlink" href="#enable-ldap-user-provisioning" title="Link to this heading">#</a></h3>
+<p>To enable LDAP user provisioning, add the following property to your
+coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.users.provisioning.type</span><span class="o">=</span><span class="s">LDAP</span>
 </pre></div>
 </div>
-<p>JWT authentication is typically used in addition to other authentication
-methods:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">PASSWORD,JWT</span>
-<span class="na">http-server.authentication.jwt.key-file</span><span class="o">=</span><span class="s">https://cluster.example.net/.well-known/jwks.json</span>
-</pre></div>
-</div>
+</section>
+<section id="configure-ldap-user-provisioning-properties">
+<h3 id="configure-ldap-user-provisioning-properties">Configure LDAP user provisioning properties<a class="headerlink" href="#configure-ldap-user-provisioning-properties" title="Link to this heading">#</a></h3>
+<p>Set all LDAP user provisioning configuration properties in your
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file.</p>
+<p>Configure the LDAP client connection using the same properties as the <a class="reference external" href="https://trino.io/docs/current/security/ldap.html#password-authenticator-configuration">Trino
+LDAP password
+authenticator</a>,
+but with the <code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.</span></code> prefix.</p>
 <p>The following configuration properties are available:</p>
 <table id="id1">
-<caption><span class="caption-text">Configuration properties for JWT authentication</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<caption><span class="caption-text">LDAP user provisioning properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
-<col style="width: 50%"/>
-<col style="width: 50%"/>
+<col style="width: 30%"/>
+<col style="width: 35%"/>
+<col style="width: 10%"/>
+<col style="width: 25%"/>
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Property</p></th>
 <th class="head"><p>Description</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Notes</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.key-file</span></code></p></td>
-<td><p>Required. Specifies either the URL to a JWKS service or the path to a
-PEM or HMAC file, as described below this table.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.user-search-base</span></code></p></td>
+<td><p>The base distinguished name (DN) for user searches</p></td>
+<td><p>Yes</p></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.required-issuer</span></code></p></td>
-<td><p>Specifies a string that must match the value of the JWT’s
-issuer (<code class="docutils literal notranslate"><span class="pre">iss</span></code>) field in order to consider this JWT valid.
-The <code class="docutils literal notranslate"><span class="pre">iss</span></code> field in the JWT identifies the principal that issued the
-JWT.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.user-search-filter</span></code></p></td>
+<td><p>The LDAP search filter for locating user entries</p></td>
+<td><p>Yes</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">(objectClass=user)</span></code> for Active Directory or
+<code class="docutils literal notranslate"><span class="pre">(objectClass=inetOrgPerson)</span></code> for OpenLDAP</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.required-audience</span></code></p></td>
-<td><p>Specifies a string that must match the value of the JWT’s
-Audience (<code class="docutils literal notranslate"><span class="pre">aud</span></code>) field in order to consider this JWT valid.
-The <code class="docutils literal notranslate"><span class="pre">aud</span></code> field in the JWT identifies the recipients that the
-JWT is intended for.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.user-name-attribute</span></code></p></td>
+<td><p>The LDAP attribute that contains the username</p></td>
+<td><p>Yes</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">sAMAccountName</span></code> for Active Directory or <code class="docutils literal notranslate"><span class="pre">uid</span></code> for
+OpenLDAP</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.principal-field</span></code></p></td>
-<td><p>String to identify the field in the JWT that identifies the
-subject of the JWT. The default value is <code class="docutils literal notranslate"><span class="pre">sub</span></code>. This field is used to
-create the SEP principal.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.user-unique-attribute</span></code></p></td>
+<td><p>The LDAP attribute that contains a unique identifier for each user</p></td>
+<td><p>No</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">objectGUID</span></code> for Active Directory or <code class="docutils literal notranslate"><span class="pre">entryUUID</span></code> for
+OpenLDAP</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.user-mapping.pattern</span></code></p></td>
-<td><p>A regular expression pattern to <a class="reference internal" href="user-mapping.html"><span class="doc">map all user names</span></a> for this authentication system to the format
-expected by the SEP server.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group-search-base</span></code></p></td>
+<td><p>The base distinguished name (DN) for group searches</p></td>
+<td><p>Yes</p></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.user-mapping.file</span></code></p></td>
-<td><p>The path to a JSON file that contains a set of
-<a class="reference internal" href="user-mapping.html"><span class="doc">user mapping rules</span></a> for this
-authentication system.</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group-search-filter</span></code></p></td>
+<td><p>The LDAP search filter for locating group entries</p></td>
+<td><p>Yes</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">(objectClass=group)</span></code> for Active Directory or
+<code class="docutils literal notranslate"><span class="pre">(objectClass=groupOfEntries)</span></code> for OpenLDAP</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group-name-attribute</span></code></p></td>
+<td><p>The LDAP attribute that contains the group name</p></td>
+<td><p>Yes</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">sAMAccountName</span></code> for Active Directory or <code class="docutils literal notranslate"><span class="pre">cn</span></code> for
+OpenLDAP</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group-unique-attribute</span></code></p></td>
+<td><p>The LDAP attribute that contains a unique identifier for each group</p></td>
+<td><p>No</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">objectGUID</span></code> for Active Directory or <code class="docutils literal notranslate"><span class="pre">entryUUID</span></code> for
+OpenLDAP</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group-membership-attribute</span></code></p></td>
+<td><p>The LDAP attribute on a group entry that lists its members</p></td>
+<td><p>Yes</p></td>
+<td><p>For example, <code class="docutils literal notranslate"><span class="pre">member</span></code> for Active Directory or OpenLDAP</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.sync-interval</span></code></p></td>
+<td><p>The frequency of synchronization. Defaults to <code class="docutils literal notranslate"><span class="pre">2h</span></code></p></td>
+<td><p>No</p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">http-server.authentication.jwt.key-file</span></code> property to specify
-either:</p>
-<ul>
-<li><p>The URL to a JWKS endpoint service, where the URL begins with <code class="docutils literal notranslate"><span class="pre">https://</span></code>.
-The JWKS service must be reachable from the coordinator. If the coordinator
-is running in a secured or firewalled network, the administrator <em>may</em> have
-to open access to the JWKS server host.</p>
-<div class="admonition caution">
-<p class="admonition-title">Caution</p>
-<p>The SEP server also accepts JWKS URLs that begin with <code class="docutils literal notranslate"><span class="pre">http://</span></code>, but
-using this protocol results in a severe security risk. Only use this
-protocol for short-term testing during development of your cluster.</p>
-</div>
-</li>
-<li><p>The path to a local file in <a class="reference internal" href="inspect-pem.html"><span class="doc">PEM</span></a> or
-<a class="reference external" href="https://wikipedia.org/wiki/HMAC">HMAC</a> format that contains a
-single key. If the file path contains <code class="docutils literal notranslate"><span class="pre">${KID}</span></code>, then SEP interpolates
-the <code class="docutils literal notranslate"><span class="pre">kid</span></code> from the JWT into the file path before loading this key. This
-enables support for setups with multiple keys.</p></li>
-</ul>
 </section>
-<section id="using-jwts-with-clients">
-<h2 id="using-jwts-with-clients">Using JWTs with clients<a class="headerlink" href="#using-jwts-with-clients" title="Link to this heading">#</a></h2>
-<p>You can enable a <a class="reference internal" href="../overview/sep-ui.html#ui-client-token"><span class="std std-ref">client token authentication page</span></a> in
-the Starburst Enterprise web UI that exposes a JWT for use with any clients that support JWT
-authentication. To enable this page, set the following configuration property
-to <code class="docutils literal notranslate"><span class="pre">true</span></code> in the coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">web-ui.token-copy.enabled</span><span class="o">=</span><span class="s">true</span>
+</section>
+<section id="examples">
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
+<p>The following examples show complete <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> configurations for
+LDAP user provisioning.</p>
+<section id="secure-ldap-connection-ldaps">
+<h3 id="secure-ldap-connection-ldaps">Secure LDAP connection (LDAPS)<a class="headerlink" href="#secure-ldap-connection-ldaps" title="Link to this heading">#</a></h3>
+<p>The following example configures LDAP user provisioning over a secure TLS
+connection:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.users.provisioning.type</span><span class="o">=</span><span class="s">LDAP</span>
+<span class="na">ldap-user-provisioning.ldap.url</span><span class="o">=</span><span class="s">ldaps://ldapserver:636</span>
+<span class="na">ldap-user-provisioning.ldap.ssl.keystore.path</span><span class="o">=</span><span class="s">/etc/openldap/certs/trino-coordinator-for-ldap.pem</span>
+<span class="na">ldap-user-provisioning.ldap.ssl.truststore.path</span><span class="o">=</span><span class="s">/etc/openldap/certs/openldap-certificate.pem</span>
+<span class="na">ldap-user-provisioning.ldap.bind-user</span><span class="o">=</span><span class="s">cn=admin,dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.ldap.bind-password</span><span class="o">=</span><span class="s">admin</span>
+<span class="na">ldap-user-provisioning.user-search-base</span><span class="o">=</span><span class="s">dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.user-search-filter</span><span class="o">=</span><span class="s">(objectClass=inetOrgPerson)</span>
+<span class="na">ldap-user-provisioning.user-name-attribute</span><span class="o">=</span><span class="s">cn</span>
+<span class="na">ldap-user-provisioning.group-search-base</span><span class="o">=</span><span class="s">dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.group-search-filter</span><span class="o">=</span><span class="s">(objectClass=groupOfNames)</span>
+<span class="na">ldap-user-provisioning.group-name-attribute</span><span class="o">=</span><span class="s">cn</span>
+<span class="na">ldap-user-provisioning.group-membership-attribute</span><span class="o">=</span><span class="s">member</span>
 </pre></div>
 </div>
-<p>When using the Trino <a class="reference internal" href="../client/cli.html"><span class="doc">CLI</span></a>, specify a JWT as described
-in <a class="reference internal" href="../client/cli.html#cli-jwt-auth"><span class="std std-ref">JWT authentication</span></a>.</p>
-<p>When using the SEP JDBC driver, specify a JWT with the <code class="docutils literal notranslate"><span class="pre">accessToken</span></code>
-<a class="reference internal" href="../client/jdbc.html#jdbc-parameter-reference"><span class="std std-ref">parameter</span></a>.</p>
 </section>
-<section id="jwt-pass-through">
-<span id="jwt-passthrough"></span><h2 id="jwt-pass-through">JWT pass-through<a class="headerlink" href="#jwt-pass-through" title="Link to this heading">#</a></h2>
-<p>The JSON Web Token (JWT) pass-through feature guarantees that SEP uses the
-same token as a user accessing a data source directly. This feature allows you
-to authenticate to SEP using JWT and the received token is passed through
-SEP and the connector to the underlying data source.</p>
-<section id="requirements">
-<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h3>
-<p>A user authenticated with a JWT compatible server must be able to query SEP,
-and SEP accesses the data from the data source with the token authenticated
-as the user.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The JWT pass-through feature is only supported in select connectors.
-Reference the <a class="reference internal" href="../connector/starburst-connectors.html#table-info"><span class="std std-ref">connectors feature matrix</span></a> for
-more information about which connectors support this feature.</p>
-</div>
-</section>
-<section id="configure-jwt-pass-through">
-<h3 id="configure-jwt-pass-through">Configure JWT pass-through<a class="headerlink" href="#configure-jwt-pass-through" title="Link to this heading">#</a></h3>
-<p>To enable JWT pass-through in SEP:</p>
-<ol class="arabic simple">
-<li><p>Set the following configuration properties in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file on
-the coordinator:</p></li>
-</ol>
-<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.type</span><span class="o">=</span><span class="s">DELEGATED-JWT</span>
-<span class="na">web-ui.authentication.type</span><span class="o">=</span><span class="s">DELEGATED-JWT</span>
+<section id="insecure-ldap-connection">
+<h3 id="insecure-ldap-connection">Insecure LDAP connection<a class="headerlink" href="#insecure-ldap-connection" title="Link to this heading">#</a></h3>
+<p>The following example configures LDAP user provisioning over an insecure
+connection. Only use this configuration for testing or development
+environments:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.users.provisioning.type</span><span class="o">=</span><span class="s">LDAP</span>
+<span class="na">ldap-user-provisioning.ldap.allow-insecure</span><span class="o">=</span><span class="s">true</span>
+<span class="na">ldap-user-provisioning.ldap.url</span><span class="o">=</span><span class="s">ldap://ldapserver:389</span>
+<span class="na">ldap-user-provisioning.ldap.bind-user</span><span class="o">=</span><span class="s">cn=admin,dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.ldap.bind-password</span><span class="o">=</span><span class="s">admin</span>
+<span class="na">ldap-user-provisioning.user-search-base</span><span class="o">=</span><span class="s">dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.user-search-filter</span><span class="o">=</span><span class="s">(objectClass=inetOrgPerson)</span>
+<span class="na">ldap-user-provisioning.user-name-attribute</span><span class="o">=</span><span class="s">cn</span>
+<span class="na">ldap-user-provisioning.group-search-base</span><span class="o">=</span><span class="s">dc=trino,dc=testldap,dc=com</span>
+<span class="na">ldap-user-provisioning.group-search-filter</span><span class="o">=</span><span class="s">(objectClass=groupOfNames)</span>
+<span class="na">ldap-user-provisioning.group-name-attribute</span><span class="o">=</span><span class="s">cn</span>
+<span class="na">ldap-user-provisioning.group-membership-attribute</span><span class="o">=</span><span class="s">member</span>
+<span class="na">ldap-user-provisioning.sync-interval</span><span class="o">=</span><span class="s">30m</span>
 </pre></div>
 </div>
-<ol class="arabic simple" start="2">
-<li><p>Set connector-specific properties in the connector catalog properties file.
-For connector-specific properties, see the <a class="reference internal" href="../connector/starburst-connectors.html"><span class="doc">connector documentation</span></a>.</p></li>
-</ol>
-<p>This method otherwise has the same configuration properties and works exactly
-the same as the <a class="reference internal" href="#jwt-config"><span class="std std-ref">JWT authentication configuration</span></a> method.</p>
-<p>The only difference is that the server passes the access token received with a
-query to other supported connectors in the connector session. As a result,
-compatible connectors can use the same token to authenticate with downstream
-data sources.</p>
 </section>
-</section>
-<section id="resources">
-<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Link to this heading">#</a></h2>
-<p>The following resources may prove useful in your work with JWTs and JWKs.</p>
-<ul class="simple">
-<li><p><a class="reference external" href="https://jwt.io">jwt.io</a> helps you decode and verify a JWT.</p></li>
-<li><p><a class="reference external" href="https://auth0.com/blog/navigating-rs256-and-jwks/">An article on using
-RS256</a> to sign
-and verify your JWTs.</p></li>
-<li><p>An <a class="reference external" href="https://mkjwk.org">online JSON web key</a> generator.</p></li>
-<li><p>A <a class="reference external" href="https://connect2id.com/products/nimbus-jose-jwt/generator">command line JSON web
-key</a> generator.</p></li>
-</ul>
 </section>
 </section>
 
@@ -685,7 +667,7 @@ feedback();
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
           
-            <a href="certificate.html" title="Certificate authentication"
+            <a href="keycloak-group-provider.html" title="Keycloak group provider"
                class="md-flex md-footer-nav__link md-footer-nav__link--prev"
                rel="prev">
               <div class="md-flex__cell md-flex__cell--shrink">
@@ -694,17 +676,17 @@ feedback();
               <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
                 <span class="md-flex__ellipsis">
                   <span
-                      class="md-footer-nav__direction"> "Previous" </span> Certificate authentication </span>
+                      class="md-footer-nav__direction"> "Previous" </span> Keycloak group provider </span>
               </div>
             </a>
           
           
-            <a href="../develop/header-authenticator.html" title="Header authenticator"
+            <a href="scim-provisioning.html" title="SCIM user and group synchronization"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> Header authenticator </span>
+                class="md-footer-nav__direction"> "Next" </span> SCIM user and group synchronization </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
