@@ -261,6 +261,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#eks">EKS</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#aks">AKS</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#gke">GKE</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#on-premises">On-premises</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#all-platforms">All platforms</a></li>
 </ul>
 </li>
@@ -294,6 +295,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="#on-premises-deployment">On-premises deployment</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#catalog-configuration">Catalog configuration</a><ul>
@@ -384,6 +386,7 @@
 <li><a class="reference internal" href="#eks">EKS</a></li>
 <li><a class="reference internal" href="#aks">AKS</a></li>
 <li><a class="reference internal" href="#gke">GKE</a></li>
+<li><a class="reference internal" href="#on-premises">On-premises</a></li>
 <li><a class="reference internal" href="#all-platforms">All platforms</a></li>
 </ul>
 </li>
@@ -417,6 +420,7 @@
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#on-premises-deployment">On-premises deployment</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#catalog-configuration">Catalog configuration</a><ul>
@@ -492,8 +496,7 @@ in <a class="reference internal" href="#warp-speed-cluster-configuration"><span 
 <li><p><a class="reference internal" href="#warp-speed-gcs-considerations"><span class="std std-ref">Google Cloud Storage (GCS)</span></a></p></li>
 <li><p><a class="reference internal" href="#warp-speed-adls-considerations"><span class="std std-ref">Microsoft ADLS Gen 2</span></a></p></li>
 </ul>
-<p>No other other object storage systems, including on-premises storage,
-S3-compatible storage such as MinIO, and any others are supported.</p>
+<p>On-premises S3-compatible storage is also supported.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Starburst strongly recommends using a <a class="reference internal" href="../../object-storage.html#file-system-native"><span class="std std-ref">native file system
@@ -572,6 +575,14 @@ Google console UI creates incompatible disk types.</p>
 </div>
 <p>Use the <code class="docutils literal notranslate"><span class="pre">ephemeral-storage-local-ssd</span></code> gcloud CLI command to provision local
 SSDs on the cluster. Select an even number of workers.</p>
+</section>
+<section id="on-premises">
+<span id="ws-on-prem"></span><h4 id="on-premises">On-premises<a class="headerlink" href="#on-premises" title="Link to this heading">#</a></h4>
+<ul class="simple">
+<li><p>Directly-attached NVMe SSDs on all nodes are recommended. Network-attached
+drives are supported but offer reduced performance.</p></li>
+<li><p>Minimum <code class="docutils literal notranslate"><span class="pre">1TB</span></code> total disk space recommended.</p></li>
+</ul>
 </section>
 <section id="all-platforms">
 <span id="ws-requirements-all-platforms"></span><h4 id="all-platforms">All platforms<a class="headerlink" href="#all-platforms" title="Link to this heading">#</a></h4>
@@ -831,6 +842,30 @@ significant storage space available.</p>
 <p>Safely ignore warnings like <code class="docutils literal notranslate"><span class="pre">Configuration</span> <span class="pre">property</span> <span class="pre">'cache-service.password'</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">used</span></code> during startup.</p>
 </section>
 </section>
+</section>
+<section id="on-premises-deployment">
+<h3 id="on-premises-deployment">On-premises deployment<a class="headerlink" href="#on-premises-deployment" title="Link to this heading">#</a></h3>
+<p>To use Starburst Warp Speed with an on-premises deployment, use the following steps to
+configure RAID 0 across the local NVMe drives on each node.</p>
+<p>List available block devices:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>lsblk
+</pre></div>
+</div>
+<p>Create the RAID 0 array:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>mdadm<span class="w"> </span>--create<span class="w"> </span>/dev/md0<span class="w"> </span>/dev/nvme0n1<span class="w"> </span>/dev/nvme1n1<span class="w"> </span>--level<span class="o">=</span><span class="m">0</span><span class="w"> </span>--force<span class="w"> </span>--raid-devices<span class="o">=</span><span class="m">2</span>
+</pre></div>
+</div>
+<p>Format the RAID volume:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>mkfs.ext4<span class="w"> </span>/dev/md0<span class="w"> </span>-O<span class="w"> </span>^has_journal
+</pre></div>
+</div>
+<p>Create and mount the directory for Starburst Warp Speed data:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>mkdir<span class="w"> </span>/opt/wsdata
+sudo<span class="w"> </span>mount<span class="w"> </span>/dev/md0<span class="w"> </span>/opt/wsdata
+sudo<span class="w"> </span>chown<span class="w"> </span>-R<span class="w"> </span>azureuser<span class="w"> </span>/opt/wsdata
+chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">777</span><span class="w"> </span>/opt/wsdata
+</pre></div>
+</div>
 </section>
 </section>
 <section id="catalog-configuration">
