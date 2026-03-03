@@ -1,9 +1,14 @@
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("copyright-year").textContent =
+    new Date().getFullYear();
+});
+
 function addArrowElementChild(element) {
   var arrowElement = document.createElement('span');
   arrowElement.className = 'arrow fa fa-angle-right';
   element.insertBefore(arrowElement, element.firstChild);
   arrowElement.addEventListener('click', function(event) {
-    event.preventDefault(); 
+    event.preventDefault();
     event.stopPropagation();
   });
 }
@@ -82,8 +87,8 @@ document.addEventListener('DOMContentLoaded', function(){
     var textContent = element.textContent;
 
     // Check if the href attribute contains "#" and is not equal to "#"
-    if (parent && hrefValue && hrefValue !== "#" 
-    && hrefValue.includes('#') 
+    if (parent && hrefValue && hrefValue !== "#"
+    && hrefValue.includes('#')
     && !parent.querySelector('a[href$=".html"]')
     && !excludedText.some(excluded => textContent.includes(excluded))
     ) {
@@ -92,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   });
 
-  selectors.forEach(function (selector) { 
+  selectors.forEach(function (selector) {
     // Select all elements matching the current selector
     var elements = document.querySelectorAll(selector);
 
@@ -103,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function(){
         // If it has children, select the 'a' element and apply the function
         var childLink = element.querySelector('a');
          // Check if the text content of the element is in the menuData array
-        if (childLink && menuData.includes(childLink.firstChild.data) 
+        if (childLink && menuData.includes(childLink.firstChild.data)
         && element.classList.contains('toctree-l1')
         ) {
           addArrowElementChild(childLink);
@@ -127,12 +132,12 @@ document.addEventListener('DOMContentLoaded', function(){
     cancelable: true
   });
 
-  // This function is to keep the left bar scrolling to the top 
+  // This function is to keep the left bar scrolling to the top
   var targetElement = targetElement2 || targetElement3 || targetElement1 || targetElement4;
 
   if(targetElement) {
     targetElement.addEventListener('click', function (event) {
-      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      // var toctreeL1 = event.target.closest('.toctree-l1');
       var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
 
       var arrowElement = toctree.querySelector('.arrow');
@@ -140,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function(){
       child.classList.add("current")
       // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
 
-      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2');
 
       toctreeL2Elements.forEach(function(toctreeL2) {
         toctreeL2.addEventListener('click', function(event) {
@@ -164,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
         // Check if the child element is now visible
         var isVisible = child.classList.contains('visible');
-        
+
         if(event.target.baseURI.includes('#')){
           setTimeout(function(){
             // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
@@ -178,13 +183,13 @@ document.addEventListener('DOMContentLoaded', function(){
             arrowElement.classList.toggle('fa-angle-right', !isVisible);
             arrowElement.classList.toggle('fa-angle-down', isVisible);
           }, 100)
-        } 
+        }
         else {
           setTimeout(function(){
             // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
             if ('scrollBehavior' in document.documentElement.style) {
               event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {      
+            } else {
               var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
               window.scrollTo({ top: scrollY, behavior: 'smooth' });
             }
@@ -201,26 +206,26 @@ document.addEventListener('DOMContentLoaded', function(){
             child.classList.remove('visibility-none');
         }
       }
-      
+
       if (!child) {
         // Create a new <ul> element with the class "visible"
         const ulVisible = document.createElement('ul');
-      
+
         // Append the new <ul> element to the parent of the event target
         event.target.parentNode.appendChild(ulVisible);
-      
+
         // Log the updated value of child after appending the <ul> element
         child = event.target.nextElementSibling;
       }
     });
-  
+
     // Dispatch the simulated click event
     targetElement.dispatchEvent(clickEvent);
   }
 
   if(targetElement3) {
     targetElement3.addEventListener('click', function (event) {
-      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      // var toctreeL1 = event.target.closest('.toctree-l1');
       var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
 
       var arrowElement = toctree.querySelector('.arrow');
@@ -228,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function(){
       child.classList.add("current")
       // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
 
-      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2');
 
       toctreeL2Elements.forEach(function(toctreeL2) {
         toctreeL2.addEventListener('click', function(event) {
@@ -252,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
         // Check if the child element is now visible
         var isVisible = child.classList.contains('visible');
-        
+
         if(event.target.baseURI.includes('#')){
           setTimeout(function(){
             // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
@@ -272,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function(){
             // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
             if ('scrollBehavior' in document.documentElement.style) {
               event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {      
+            } else {
               var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
               window.scrollTo({ top: scrollY, behavior: 'smooth' });
             }
@@ -289,26 +294,26 @@ document.addEventListener('DOMContentLoaded', function(){
             child.classList.remove('visibility-none');
         }
       }
-      
+
       if (!child) {
         // Create a new <ul> element with the class "visible"
         const ulVisible = document.createElement('ul');
-      
+
         // Append the new <ul> element to the parent of the event target
         event.target.parentNode.appendChild(ulVisible);
-      
+
         // Log the updated value of child after appending the <ul> element
         child = event.target.nextElementSibling;
       }
     });
-  
+
     // Dispatch the simulated click event
     targetElement3.dispatchEvent(clickEvent);
   }
 
   if(targetElement4) {
     targetElement4.addEventListener('click', function (event) {
-      // var toctreeL1 = event.target.closest('.toctree-l1');  
+      // var toctreeL1 = event.target.closest('.toctree-l1');
       var toctree = event.target.closest('.toctree-l1, .toctree-l2, .toctree-l3');
 
       var arrowElement = toctree.querySelector('.arrow');
@@ -316,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function(){
       child.classList.add("current")
       // event.target.style.color = '#1A306E'; // Change color to '#1A306E' when clicked
 
-      var toctreeL2Elements = document.querySelectorAll('.toctree-l2'); 
+      var toctreeL2Elements = document.querySelectorAll('.toctree-l2');
 
       toctreeL2Elements.forEach(function(toctreeL2) {
         toctreeL2.addEventListener('click', function(event) {
@@ -340,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
         // Check if the child element is now visible
         var isVisible = child.classList.contains('visible');
-        
+
         if(event.target.baseURI.includes('#')){
           setTimeout(function(){
             // event.target.nextElementSibling.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'end', inline: 'nearest' });
@@ -354,13 +359,13 @@ document.addEventListener('DOMContentLoaded', function(){
             arrowElement.classList.toggle('fa-angle-right', !isVisible);
             arrowElement.classList.toggle('fa-angle-down', isVisible);
           }, 100)
-        } 
+        }
         else {
           setTimeout(function(){
             // event.target.scrollIntoView({ behavior: 'smooth', inline: 'nearest', scrollMode: 'if-needed', block: 'center', inline: 'nearest' });
             if ('scrollBehavior' in document.documentElement.style) {
               event.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {      
+            } else {
               var scrollY = window.scrollY + event.target.getBoundingClientRect().top;
               window.scrollTo({ top: scrollY, behavior: 'smooth' });
             }
@@ -377,19 +382,19 @@ document.addEventListener('DOMContentLoaded', function(){
             child.classList.remove('visibility-none');
         }
       }
-      
+
       if (!child) {
         // Create a new <ul> element with the class "visible"
         const ulVisible = document.createElement('ul');
-      
+
         // Append the new <ul> element to the parent of the event target
         event.target.parentNode.appendChild(ulVisible);
-      
+
         // Log the updated value of child after appending the <ul> element
         child = event.target.nextElementSibling;
       }
     });
-  
+
     // Dispatch the simulated click event
     targetElement4.dispatchEvent(clickEvent);
   }
