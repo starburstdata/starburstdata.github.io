@@ -1,3 +1,8 @@
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("copyright-year").textContent =
+    new Date().getFullYear();
+});
+
 document.addEventListener('DOMContentLoaded', function(){
   function copyToClipboard() {
     var titleAnchor = document.querySelectorAll('.headerlink');
