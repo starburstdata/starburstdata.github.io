@@ -1,3 +1,8 @@
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("copyright-year").textContent =
+    new Date().getFullYear();
+});
+
 function toggle_navigation_visibility(id) {
   var e = document.getElementById(id);
   var elementStyles = window.getComputedStyle(e);
