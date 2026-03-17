@@ -324,6 +324,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#known-behavioral-differences-with-aws-glue">Known behavioral differences with AWS Glue</a></li>
+<li><a class="reference internal" href="#hms-to-starburst-data-catalog-migration-tool">HMS to Starburst data catalog migration tool</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#unity-catalog">Unity catalog</a></li>
@@ -1127,6 +1128,76 @@ automatically updated on subsequent access.</p></li>
 not automatically updated on subsequent access.</p></li>
 </ul>
 </section>
+<section id="hms-to-starburst-data-catalog-migration-tool">
+<h3 id="hms-to-starburst-data-catalog-migration-tool">HMS to Starburst data catalog migration tool<a class="headerlink" href="#hms-to-starburst-data-catalog-migration-tool" title="Link to this heading">#</a></h3>
+<p>You can migrate metadata from HMS to SDC with the included CLI tool. Download
+the <code class="docutils literal notranslate"><span class="pre">starburst-catalog-cli-&lt;version&gt;-executable.jar</span></code> file from the <a class="reference external" href="https://software.starburstdata.net/">Starburst
+Software Downloads repository</a> and run the
+tool with the following command, replacing <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> with the appropriate
+version of SEP, such as <code class="docutils literal notranslate"><span class="pre">479-e</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./starburst-catalog-cli-&lt;version&gt;-executable.jar
+</pre></div>
+</div>
+<table id="id9">
+<caption><span class="caption-text">HMS to Starburst data catalog migration tool arguments</span><a class="headerlink" href="#id9" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25%"/>
+<col style="width: 75%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Argument</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-m</span></code>, <code class="docutils literal notranslate"><span class="pre">--mode</span></code></p></td>
+<td><p>Must be either <code class="docutils literal notranslate"><span class="pre">export</span></code> or <code class="docutils literal notranslate"><span class="pre">import</span></code>. <strong>Required</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-f</span></code>, <code class="docutils literal notranslate"><span class="pre">--file</span></code></p></td>
+<td><p>The local directory path used for the operation. In export mode, this is
+the path where the output files are saved. In import mode, this is the
+path to the directory containing the previously exported metadata files.
+Example: <code class="docutils literal notranslate"><span class="pre">--file</span> <span class="pre">/path/to/metadata/export/</span></code>. <strong>Required</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-e</span></code>, <code class="docutils literal notranslate"><span class="pre">--endpoint</span></code></p></td>
+<td><p>The endpoint URL for the metastore. In export mode, this is the Thrift URI
+of the source Hive Metastore. In import mode, this is the URL of the
+destination service, such as the Starburst Catalog Service endpoint.
+Example: <code class="docutils literal notranslate"><span class="pre">--endpoint</span> <span class="pre">thrift://hms.example.com:9083</span></code>. <strong>Required</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-a</span></code>, <code class="docutils literal notranslate"><span class="pre">--accessKey</span></code></p></td>
+<td><p>The AWS Access Key ID to use for authentication. This is required when using
+import mode to authenticate with an AWS-based service.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-s</span></code>, <code class="docutils literal notranslate"><span class="pre">--secretKey</span></code></p></td>
+<td><p>The AWS Secret Access Key to use for authentication. This is required when
+using import mode to authenticate with an AWS-based service.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example exports metadata from an HMS instance and then imports it
+into Starburst data catalog:</p>
+<ol class="arabic simple">
+<li><p>Export metadata from HMS:</p></li>
+</ol>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./starburst-catalog-cli-&lt;version&gt;-executable.jar
+  --mode export
+  --file /tmp/hms-export
+  --endpoint https://hms.example.com:9083
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Import metadata into Starburst data catalog:</p></li>
+</ol>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./starburst-catalog-cli-&lt;version&gt;-executable.jar
+  --mode import
+  --file /tmp/hms-export
+  --endpoint https://sdc.example.com:8080
+  --accessKey &lt;example-access-key&gt;
+  --secretKey &lt;example-secret-key&gt;
+</pre></div>
+</div>
+</section>
 </section>
 <section id="unity-catalog">
 <span id="databricks-unity-catalog"></span><h2 id="unity-catalog">Unity catalog<a class="headerlink" href="#unity-catalog" title="Link to this heading">#</a></h2>
@@ -1171,8 +1242,8 @@ catalog as discussed in this section.</p>
 <a class="reference external" href="https://github.com/polaris-catalog/polaris">Polaris</a>, configure the catalog
 type with <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=rest</span></code>, and provide further details with the
 following properties:</p>
-<table id="id9">
-<caption><span class="caption-text">Iceberg REST catalog configuration properties</span><a class="headerlink" href="#id9" title="Link to this table">#</a></caption>
+<table id="id10">
+<caption><span class="caption-text">Iceberg REST catalog configuration properties</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1290,8 +1361,8 @@ the Iceberg connector:</p>
 <code class="docutils literal notranslate"><span class="pre">iceberg.jdbc-catalog.catalog-name</span></code> must be configured. When using any
 database besides PostgreSQL, a JDBC driver jar file must be placed in the plugin
 directory.</p>
-<table id="id10">
-<caption><span class="caption-text">JDBC catalog configuration properties</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
+<table id="id11">
+<caption><span class="caption-text">JDBC catalog configuration properties</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1362,8 +1433,8 @@ iceberg.jdbc-catalog.default-warehouse-dir=s3://bucket
 <p>In order to use a Nessie catalog, configure the catalog type with
 <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=nessie</span></code> and provide further details with the following
 properties:</p>
-<table id="id11">
-<caption><span class="caption-text">Nessie catalog configuration properties</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
+<table id="id12">
+<caption><span class="caption-text">Nessie catalog configuration properties</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1425,8 +1496,8 @@ iceberg.nessie-catalog.default-warehouse-dir=/tmp
 <p>In order to use a Snowflake catalog, configure the catalog type with
 <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=snowflake</span></code> and provide further details with the following
 properties:</p>
-<table id="id12">
-<caption><span class="caption-text">Snowflake catalog configuration properties</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">Snowflake catalog configuration properties</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -1483,8 +1554,8 @@ Tables</a> in
 an S3 table bucket, configure the catalog type with <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=rest</span></code>.
 In addition to the <a class="reference internal" href="#iceberg-rest-catalog"><span class="std std-ref">REST catalogs</span></a> properties include the following
 configuration properties:</p>
-<table id="id13">
-<caption><span class="caption-text">AWS S3 Tables configuration properties</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">AWS S3 Tables configuration properties</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
