@@ -2679,7 +2679,7 @@ and above.</p>
 <p><strong>Requirements</strong>:</p>
 
 <ul>
-  <li>A private <a href="../security-and-compliance/manage-galaxy-access/setup-oauth-clients.html">OAuth
+  <li>A private or public <a href="../security-and-compliance/manage-galaxy-access/setup-oauth-clients.html">OAuth
 client</a>
 created in your Galaxy account.</li>
   <li>The OAuth client must have the <code class="language-plaintext highlighter-rouge">galaxy.mcp</code> scope.</li>
@@ -2710,6 +2710,37 @@ Galaxy account name.</p>
 
 <div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>https://&lt;account-name&gt;.mcp.galaxy.starburst.io
 </code></pre></div></div>
+      <h3 id="claude-desktop">
+        
+        
+          Claude Desktop <a href="#claude-desktop" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p>Claude Desktop requires OAuth authentication. To set up the connection, follow
+these steps:</p>
+
+<ol>
+  <li>Create an <a href="../security-and-compliance/manage-galaxy-access/setup-oauth-clients.html">OAuth
+client</a>.
+You can choose a public or private client depending on your organization’s
+requirements. When you create the client, choose <code class="language-plaintext highlighter-rouge">Custom</code> as the
+<strong>Application</strong> and include the following URI as a redirect
+URI:<code class="language-plaintext highlighter-rouge">https://claude.ai/api/mcp/auth_callback</code>. Save the client ID and
+(optionally) the client secret.</li>
+  <li>Open Claude Desktop and navigate to the <strong>Customize</strong> screen. Click the
+<strong>Connect your apps</strong> tab, then search for “Starburst” and connect.</li>
+  <li>In the connection configuration, set the server URL to
+<code class="language-plaintext highlighter-rouge">https://&lt;account-name&gt;.mcp.galaxy.starburst.io</code>. Enter the client ID
+and (optional) client secret.</li>
+  <li>Click <strong>Connect</strong> to establish the connection. You can now use Claude Desktop
+to query your Galaxy data through the MCP server.</li>
+</ol>
+
+<p>  
+  <img src="/assets/img/galaxy/claude-desktop-installation.png" alt="Screen to connect Claude Desktop to Starburst Galaxy MCP server" class="img-fluid img-screenshot" description="" width="px" style="" /></p>
       <h3 id="claude-code">
         
         
@@ -2719,24 +2750,54 @@ Galaxy account name.</p>
       </h3>
     
 
-<p>Add the following configuration to your Claude Code settings file:</p>
+<p>Claude Code lets you to connect using OAuth authentication or basic
+authentication. Follow the instructions below for your preferred method.</p>
+      <h4 id="oauth-authentication">
+        
+        
+          OAuth authentication <a href="#oauth-authentication" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
 
-<p><strong>Basic authentication</strong>:</p>
+<p>To use OAuth authentication with Claude Code, create an OAuth client. The
+client can be a public client (without a secret) or a private client (with a
+secret). Include at least one redirect URI in the form
+<code class="language-plaintext highlighter-rouge">http://localhost:&lt;port&gt;/callback</code> when you create the client. Note the port,
+as you will need it for the next step.</p>
 
-<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
-  </span><span class="nl">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nl">"my-mcp-server-name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-      </span><span class="nl">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"http"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://&lt;account-name&gt;.mcp.galaxy.starburst.io"</span><span class="p">,</span><span class="w">
-      </span><span class="nl">"headers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-        </span><span class="nl">"Authorization"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Basic &lt;base64_encoded_credentials&gt;"</span><span class="w">
-      </span><span class="p">}</span><span class="w">
-    </span><span class="p">}</span><span class="w">
-  </span><span class="p">}</span><span class="w">
-</span><span class="p">}</span><span class="w">
-</span></code></pre></div></div>
+<p>Then, configure the connection in Claude Code using the following command,
+substituting the appropriate values for your OAuth client and Galaxy:</p>
 
-<p>Save the configuration file and restart Claude.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>claude mcp add --transport http \                                                   141 ↵
+  --client-id ${MY_OAUTH_CLIENT_ID} \
+  --callback-port ${MY_PORT_FROM_ABOVE} \
+  my-mcp-server ${ACCOUNT_MCP_URL}
+</code></pre></div></div>
+
+<p>Your account MCP URL will be in the format
+<code class="language-plaintext highlighter-rouge">https://&lt;account-name&gt;.mcp.galaxy.starburst.io</code>.</p>
+      <h4 id="basic-authentication-1">
+        
+        
+          Basic authentication <a href="#basic-authentication-1" class="titleAnchor">#</a>
+        
+        
+      </h4>
+    
+
+<p>To use basic authentication with Claude Code, you can configure static
+credentials to be used as a Basic auth header. Use the following command,
+substituting the appropriate values for your Galaxy
+account and credentials:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>claude mcp add-json my-mcp-server '{"type":"http","url":"${ACCOUNT_MCP_URL}","headers":{"Authorization":"Basic ${CREDENTIALS}"}}'
+</code></pre></div></div>
+
+<p>Credentials must be a base64 encoded string in the format <code class="language-plaintext highlighter-rouge">&lt;email&gt;:&lt;password&gt;</code>.
+Your account MCP URL will be in the format
+<code class="language-plaintext highlighter-rouge">https://&lt;account-name&gt;.mcp.galaxy.starburst.io</code>.</p>
       <h3 id="generic-mcp-client">
         
         
@@ -2927,7 +2988,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#model-context-protocol-mcp-on-starburst-galaxy">Model Context Protocol (MCP) on Starburst Galaxy</a><ul><li><a href="#use-cases">Use cases</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#authentication">Authentication</a><ul><li><a href="#basic-authentication">Basic authentication</a></li><li><a href="#oauth-20-authentication-recommended">OAuth 2.0 authentication (recommended)</a></li></ul></li><li><a href="#configuration">Configuration</a><ul><li><a href="#claude-code">Claude Code</a></li><li><a href="#generic-mcp-client">Generic MCP client</a></li></ul></li><li><a href="#limits-and-constraints">Limits and constraints</a></li><li><a href="#related-documentation">Related documentation</a></li></ul></li></ul>
+          <ul><li><a href="#model-context-protocol-mcp-on-starburst-galaxy">Model Context Protocol (MCP) on Starburst Galaxy</a><ul><li><a href="#use-cases">Use cases</a></li><li><a href="#prerequisites">Prerequisites</a></li><li><a href="#authentication">Authentication</a><ul><li><a href="#basic-authentication">Basic authentication</a></li><li><a href="#oauth-20-authentication-recommended">OAuth 2.0 authentication (recommended)</a></li></ul></li><li><a href="#configuration">Configuration</a><ul><li><a href="#claude-desktop">Claude Desktop</a></li><li><a href="#claude-code">Claude Code</a><ul><li><a href="#oauth-authentication">OAuth authentication</a></li><li><a href="#basic-authentication-1">Basic authentication</a></li></ul></li><li><a href="#generic-mcp-client">Generic MCP client</a></li></ul></li><li><a href="#limits-and-constraints">Limits and constraints</a></li><li><a href="#related-documentation">Related documentation</a></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
