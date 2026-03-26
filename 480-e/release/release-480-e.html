@@ -224,6 +224,11 @@
 <li class="toctree-l5"><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#general">General</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#security">Security</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#delta-lake-connector">Delta Lake connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#great-lakes-connector">Great Lakes connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#hive-connector">Hive connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#oracle-connector">Oracle connector</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="release-479-e.html">Release 479-e LTS (27 Feb 2026)</a></li>
@@ -324,6 +329,11 @@
 <li><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li><a class="reference internal" href="#general">General</a></li>
 <li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#delta-lake-connector">Delta Lake connector</a></li>
+<li><a class="reference internal" href="#great-lakes-connector">Great Lakes connector</a></li>
+<li><a class="reference internal" href="#hive-connector">Hive connector</a></li>
+<li><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
+<li><a class="reference internal" href="#oracle-connector">Oracle connector</a></li>
 </ul>
 </li>
 </ul>
@@ -340,7 +350,6 @@
   <section id="release-480-e-sts-xx-mar-2026">
 <h1 id="release-release-480-e--page-root">Release 480-e STS (xx Mar 2026)<a class="headerlink" href="#release-release-480-e--page-root" title="Link to this heading">#</a></h1>
 <p>Starburst Enterprise platform (SEP) 480-e STS is the follow up SEP release to
-<a class="reference internal" href="release-478-e.html"><span class="doc std std-doc">478-e</span></a> STS release and the
 <a class="reference internal" href="release-474-e.html"><span class="doc std std-doc">479-e</span></a> LTS release.</p>
 <p>This release is a <a class="reference internal" href="../versions.html#lts-sts"><span class="std std-ref">short term support (STS)</span></a> release.</p>
 <p>It includes all improvements from the following Trino release:</p>
@@ -355,9 +364,89 @@
 </section>
 <section id="general">
 <h2 id="general">General<a class="headerlink" href="#general" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Worksheets in the Starburst Portal query editor are now persistent. Queries are
+no longer lost when the page is refreshed.</p></li>
+<li><p>The <a class="reference internal" href="../object-storage/metastores.html#hms-to-sdc-migration-tool"><span class="std std-ref">HMS to Starburst data catalog migration
+tool</span></a> now processes schemas in
+parallel ratehr than sequentially, improving migration speed for environments
+with many schemas.</p></li>
+<li><p>The <a class="reference internal" href="../object-storage/metastores.html#hms-to-sdc-migration-tool"><span class="std std-ref">HMS to Starburst data catalog migration
+tool</span></a> now supports an optional
+<code class="docutils literal notranslate"><span class="pre">-p</span></code>/<code class="docutils literal notranslate"><span class="pre">--properties-file</span></code> argument for specifying a Java <code class="docutils literal notranslate"><span class="pre">.properties</span></code> file
+containing Thrift metastore client configuration. This lets you manage complex
+configurations in a single file rather than passed as individual command-line
+arguments.</p></li>
+<li><p>Added support for AWS S3 Multi-Region Access Points (MRAPs) in the <a class="reference internal" href="../object-storage/file-system-s3.html"><span class="doc std std-doc">S3 file
+system</span></a>.</p></li>
+<li><p>Fixed an issue where managed statistics connections could fail due to trust
+issues with automatically generated certificates used for secure internal
+communication.</p></li>
+<li><p>Fixed an issue where creating a view based on a partitioned table would fail
+when Starburst Data Catalog was configured as the metastore with Oracle as the
+persistence backend due to an empty string being bound as the partition
+location.</p></li>
+<li><p>Fixed an issue in Starburst Data Catalog with MySQL, where column statistics for
+high-precision <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> column types failed due to insufficient precision in
+internal table definitions.</p></li>
+<li><p>Fixed an issue where any user with privileges to add grants on a table,
+schema, or other entity could also add column masks and row filters on that
+entity through the <strong>Add privileges</strong> UI. Adding a column mask or row
+filter now requires the appropriate <code class="docutils literal notranslate"><span class="pre">APPLY</span></code> privilege on the user’s role.</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">compression_codec</span></code> table property values written by Trino not
+conforming to the Iceberg specification, causing Spark to fail when reading
+these tables.</p></li>
+<li><p>Fixed a regression which introduced over-validation of <code class="docutils literal notranslate"><span class="pre">compression_codec</span></code>
+property values on read, causing Trino to error when encountering tables
+written by Spark.</p></li>
+<li><p>Fixed an issue where schema discovery failed when fault-tolerant execution was
+configured with <code class="docutils literal notranslate"><span class="pre">retry-policy=TASK</span></code>.</p></li>
+</ul>
 </section>
 <section id="security">
 <h2 id="security">Security<a class="headerlink" href="#security" title="Link to this heading">#</a></h2>
+</section>
+<section id="delta-lake-connector">
+<h2 id="delta-lake-connector">Delta Lake connector<a class="headerlink" href="#delta-lake-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Fixed an issue where extra credentials provided in authentication passthrough
+scenarios were not being used when accessing files on storage.</p></li>
+<li><p>Fixed an issue where Google Cloud Storage object names containing <code class="docutils literal notranslate"><span class="pre">#</span></code> or <code class="docutils literal notranslate"><span class="pre">?</span></code>
+characters were blocked when using native file system support.</p></li>
+</ul>
+</section>
+<section id="great-lakes-connector">
+<h2 id="great-lakes-connector">Great Lakes connector<a class="headerlink" href="#great-lakes-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Added support for built-in access control.</p></li>
+</ul>
+</section>
+<section id="hive-connector">
+<h2 id="hive-connector">Hive connector<a class="headerlink" href="#hive-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Removed support for Glue v1 SDK. <code class="docutils literal notranslate"><span class="pre">glue</span></code> now defaults to Glue v2 across all
+connectors.</p></li>
+<li><p>Fixed an issue where Google Cloud Storage object names containing <code class="docutils literal notranslate"><span class="pre">#</span></code> or <code class="docutils literal notranslate"><span class="pre">?</span></code>
+characters were blocked when using native file system support.</p></li>
+</ul>
+</section>
+<section id="iceberg-connector">
+<h2 id="iceberg-connector">Iceberg connector<a class="headerlink" href="#iceberg-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Added support for <a class="reference internal" href="../connector/iceberg.html#iceberg-dynamic-passthrough"><span class="std std-ref">dynamic configuration
+passthrough</span></a>.</p></li>
+<li><p>Removed support for Glue v1 SDK. <code class="docutils literal notranslate"><span class="pre">glue</span></code> now defaults to Glue v2 across all
+connectors.</p></li>
+<li><p>Fixed an issue where Google Cloud Storage object names containing <code class="docutils literal notranslate"><span class="pre">#</span></code> or <code class="docutils literal notranslate"><span class="pre">?</span></code>
+characters were blocked when using native file system support.</p></li>
+</ul>
+</section>
+<section id="oracle-connector">
+<h2 id="oracle-connector">Oracle connector<a class="headerlink" href="#oracle-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Fixed query failures when reading Oracle <code class="docutils literal notranslate"><span class="pre">FLOAT</span></code> columns with out-of-range
+precision values.</p></li>
+</ul>
 </section>
 </section>
 
