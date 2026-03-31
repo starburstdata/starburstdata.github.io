@@ -1064,23 +1064,39 @@ secrets.</p></td>
 </section>
 <section id="google-cloud-platform">
 <span id="oauth2-idp-gcp"></span><h3 id="google-cloud-platform">Google Cloud Platform<a class="headerlink" href="#google-cloud-platform" title="Link to this heading">#</a></h3>
-<p>This section provides specific information for setting up OAuth 2.0 for SEP in
-Google cloud Platform (GCP).</p>
+<p>This section provides specific information for setting up OAuth 2.0 for SEP
+in Google Cloud Platform (GCP).</p>
 <p>There are two tasks to complete:</p>
 <ul class="simple">
 <li><p>Create application</p></li>
 <li><p>Configure the client</p></li>
 </ul>
-<p>The following sections describe the steps to complete these tasks.</p>
+<p>The following sections describe the steps to configure SEP OAuth
+authorization and external client token passthrough for third party clients:</p>
 <section id="id8">
 <h4 id="id8">Create application<a class="headerlink" href="#id8" title="Link to this heading">#</a></h4>
+<p>To avoid exposing confidential client secrets, create separate applications for
+the SEP web UI and any third-party clients, such as Power BI and Tableau, by
+following these steps:</p>
 <ol class="arabic simple">
 <li><p>In <a class="reference external" href="https://console.cloud.google.com/">Google Cloud Platform</a>
 open <strong>APIs &amp; Services &gt; Credentials</strong>.</p></li>
 <li><p>Click <strong>+ CREATE CREDENTIALS</strong> and <strong>OAuth client ID &gt; Web application</strong>.</p></li>
 <li><p>Provide a meaningful name for the SEP application.</p></li>
-<li><p>In the <strong>Authorized redirect URIs</strong>, enter the <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a> SEP callback
-URL, <code class="docutils literal notranslate"><span class="pre">https://&lt;sep-coordinator-domain-name&gt;/oauth2/callback</span></code>.</p></li>
+<li><p>In the <strong>Authorized redirect URIs</strong>, enter the following <a class="reference internal" href="oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a>
+SEP callback URL:</p>
+<ul class="simple">
+<li><p>For the SEP web UI:
+<code class="docutils literal notranslate"><span class="pre">https://&lt;sep-coordinator-domain-name&gt;/oauth2/callback</span></code></p></li>
+<li><p>For Power BI:
+<code class="docutils literal notranslate"><span class="pre">https://oauth.powerbi.com/views/oauthredirect.html.</span></code></p></li>
+<li><p>For Tableau Desktop: <code class="docutils literal notranslate"><span class="pre">http://localhost:55555/Callback</span> <span class="pre">for</span> <span class="pre">Tableau</span> <span class="pre">Desktop</span></code></p></li>
+<li><p>For Tableau Server:
+<code class="docutils literal notranslate"><span class="pre">https://&lt;on-prem-tableau-server&gt;:&lt;port&gt;/auth/add_oauth_token</span></code></p></li>
+<li><p>For Tableau Cloud:
+<code class="docutils literal notranslate"><span class="pre">https://&lt;your_pod&gt;.online.tableau.com/auth/add_oauth_token</span></code></p></li>
+</ul>
+</li>
 </ol>
 </section>
 <section id="id9">
@@ -1090,7 +1106,16 @@ URL, <code class="docutils literal notranslate"><span class="pre">https://&lt;se
 <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file on the coordinator to the <strong>Client ID</strong> displayed
 in Google Cloud:</p></li>
 </ol>
+<ul class="simple">
+<li><p>For the SEP web UI:</p></li>
+</ul>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.client-id</span><span class="o">=</span><span class="s">&lt;Client ID displayed in Google Cloud UI&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>For the public client:</p></li>
+</ul>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.public-client-id</span><span class="o">=</span><span class="s">${ENV:GCP_PUBLIC_CLIENT_ID}`</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
@@ -1098,16 +1123,34 @@ in Google Cloud:</p></li>
 <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file on the coordinator to the <strong>Client Secret</strong>
 displayed in Google Cloud:</p></li>
 </ol>
+<ul class="simple">
+<li><p>For the SEP web UI:</p></li>
+</ul>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.client-secret</span><span class="o">=</span><span class="s">&lt;Client Secret displayed in Google Cloud UI&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>For the public client:</p></li>
+</ul>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.public-token-url</span><span class="o">=</span><span class="s">https://oauth2.googleapis.com/token?client_secret=${ENV:GCP_PUBLIC_CLIENT_SECRET}</span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="3">
 <li><p>Set the properties on the coordinator in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p></li>
 </ol>
+<ul class="simple">
+<li><p>For the SEP web UI:</p></li>
+</ul>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.issuer</span><span class="o">=</span><span class="s">https://accounts.google.com</span>
 <span class="na">http-server.authentication.oauth2.principal-field</span><span class="o">=</span><span class="s">email</span>
 <span class="na">http-server.authentication.oauth2.scopes</span><span class="o">=</span><span class="s">openid,https://www.googleapis.com/auth/userinfo.email</span>
 <span class="na">http-server.authentication.oauth2.userinfo-url</span><span class="o">=</span><span class="s">https://openidconnect.googleapis.com/v1/userinfo</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>For the public client:</p></li>
+</ul>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">http-server.authentication.oauth2.public-auth-url</span><span class="o">=</span><span class="s">https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&amp;prompt=consent&amp;client_id=${ENV:GCP_PUBLIC_CLIENT_ID}</span>
 </pre></div>
 </div>
 </section>
