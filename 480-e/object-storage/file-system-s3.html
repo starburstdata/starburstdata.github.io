@@ -296,6 +296,11 @@
     <ul>
 <li><a class="reference internal" href="#">S3 file system support</a><ul>
 <li><a class="reference internal" href="#general-configuration">General configuration</a></li>
+<li><a class="reference internal" href="#multi-region-access-points">Multi-Region Access Points</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#limitations-and-considerations">Limitations and considerations</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#authentication">Authentication</a></li>
 <li><a class="reference internal" href="#security-mapping">Security mapping</a></li>
 <li><a class="reference internal" href="#migration-from-legacy-s3-file-system">Migration from legacy S3 file system</a></li>
@@ -468,8 +473,53 @@ timeout.</p></td>
 <td><p>Timeout for the entire S3 service call, including retries. By default, there
 is no timeout.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">s3.multi-region-access-points-enabled</span></code></p></td>
+<td><p>Enable support for AWS S3 Multi-Region Access Points. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.
+See <a class="reference internal" href="#multi-region-access-points"><span class="std std-ref">Multi-Region Access Points</span></a> for
+requirements and limitations before enabling.</p></td>
+</tr>
 </tbody>
 </table>
+</section>
+<section id="multi-region-access-points">
+<span id="id1"></span><h2 id="multi-region-access-points">Multi-Region Access Points<a class="headerlink" href="#multi-region-access-points" title="Link to this heading">#</a></h2>
+<p>Multi-Region Access Points (MRAPs) provide a global endpoint that routes S3
+requests to one of several associated buckets across AWS regions based on
+proximity and bucket health. If a primary bucket becomes unavailable, the global
+endpoint automatically routes requests to an available bucket in another region
+without requiring a manual endpoint change, making MRAPs useful for disaster
+recovery (DR) configurations.</p>
+<p>To enable MRAP support, set <code class="docutils literal notranslate"><span class="pre">s3.multi-region-access-points-enabled=true</span></code> and
+specify the MRAP global endpoint as the value for <code class="docutils literal notranslate"><span class="pre">s3.endpoint</span></code>.</p>
+<section id="requirements">
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h3>
+<p>MRAPs must be used together with <a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiRegionAccessPointBucketReplication.html">S3 Cross-Region Replication
+(CRR)</a>.
+Without CRR, reads may be routed to a bucket that does not contain the requested
+data.</p>
+<p><code class="docutils literal notranslate"><span class="pre">s3.path-style-acces</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">false</span></code>, as path-style access is not
+compatible with MRAPs.</p>
+</section>
+<section id="limitations-and-considerations">
+<h3 id="limitations-and-considerations">Limitations and considerations<a class="headerlink" href="#limitations-and-considerations" title="Link to this heading">#</a></h3>
+<p>MRAP routing is proximity-based and non-deterministic. It is not possible to
+control which bucket a given request is routed to.</p>
+<p>Because requests may be routed to different regions, SEP can only guarantee
+eventual consistency when using MRAPs. A write that completes successfully may
+not be immediately visible to a subsequent read if replication has not yet
+propagated the change and the request is routed to a different bucket.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Active-active configurations with write-heavy workloads are high risk and are
+strongly discouraged. If a writer commits data to an Iceberg table but the data
+files have not yet been replicated via CRR, subsequent reads may fail with
+missing file errors. If this occurs, reverting to a prior Iceberg snapshot is
+sufficient to recover.</p>
+</div>
+<p>For more information on routing behavior and replication considerations, see the
+<a class="reference external" href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/MultiRegionAccessPointRequestRouting.html">AWS MRAP request routing
+documentation</a>.</p>
+</section>
 </section>
 <section id="authentication">
 <h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Link to this heading">#</a></h2>
@@ -615,8 +665,8 @@ or from an HTTP endpoint via <code class="docutils literal notranslate"><span cl
 <span class="p">}</span>
 </pre></div>
 </div>
-<table id="id1">
-<caption><span class="caption-text">Security mapping properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<table id="id2">
+<caption><span class="caption-text">Security mapping properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 50%"/>
 <col style="width: 50%"/>
