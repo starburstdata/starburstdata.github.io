@@ -324,7 +324,10 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#known-behavioral-differences-with-aws-glue">Known behavioral differences with AWS Glue</a></li>
-<li><a class="reference internal" href="#hms-to-starburst-data-catalog-migration-tool">HMS to Starburst data catalog migration tool</a></li>
+<li><a class="reference internal" href="#hms-to-starburst-data-catalog-migration-tool">HMS to Starburst data catalog migration tool</a><ul>
+<li><a class="reference internal" href="#exporting-from-a-kerberos-secured-hms">Exporting from a Kerberos-secured HMS</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#unity-catalog">Unity catalog</a></li>
@@ -1097,6 +1100,11 @@ the <code class="docutils literal notranslate"><span class="pre">starburst-catal
 Software Downloads repository</a> and run the
 tool with the following command, replacing <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> with the appropriate
 version of SEP, such as <code class="docutils literal notranslate"><span class="pre">479-e</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Export and import operations must be performed using the same version of the
+CLI. There is no backward compatibility between versions.</p>
+</div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./starburst-catalog-cli-&lt;version&gt;-executable.jar
 </pre></div>
 </div>
@@ -1135,8 +1143,26 @@ import mode to authenticate with an AWS-based service.</p></td>
 <td><p>The AWS Secret Access Key to use for authentication. This is required when
 using import mode to authenticate with an AWS-based service.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-p</span></code>, <code class="docutils literal notranslate"><span class="pre">--parallelism</span></code></p></td>
+<td><p>The number of concurrent threads used to process schemas during migration.
+Optional. Defaults to <code class="docutils literal notranslate"><span class="pre">8</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-c</span></code>, <code class="docutils literal notranslate"><span class="pre">--properties-file</span></code></p></td>
+<td><p>The path to a Java <code class="docutils literal notranslate"><span class="pre">.properties</span></code> file containing configuration key-value
+pairs for the Thrift metastore client. Optional. When provided, properties
+in this file serve as the base configuration, allowing complex setups such
+as Kerberos-secured HMS instances to be managed in a single file rather than
+passed as individual command-line arguments.</p></td>
+</tr>
 </tbody>
 </table>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>The CLI captures metadata stored in the HMS instance at the time the export is
+started. All connections writing data to the HMS instance should be stopped
+before running the export. Writing data to HMS during the export process may
+result in broken export files and loss of data after import.</p>
+</div>
 <p>The following example exports metadata from an HMS instance and then imports it
 into Starburst data catalog:</p>
 <ol class="arabic simple">
@@ -1159,6 +1185,31 @@ into Starburst data catalog:</p>
   --secretKey &lt;example-secret-key&gt;
 </pre></div>
 </div>
+<section id="exporting-from-a-kerberos-secured-hms">
+<h4 id="exporting-from-a-kerberos-secured-hms">Exporting from a Kerberos-secured HMS<a class="headerlink" href="#exporting-from-a-kerberos-secured-hms" title="Link to this heading">#</a></h4>
+<p>To export metadata from a Kerberos-secured HMS instance, use the
+<code class="docutils literal notranslate"><span class="pre">-c</span></code>/<code class="docutils literal notranslate"><span class="pre">--properties-file</span></code> argument to pass a <code class="docutils literal notranslate"><span class="pre">.properties</span></code> file containing the
+necessary Kerberos configuration:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make sure Kerberos is initialized properly</span>
+
+<span class="c1"># Copy HMS connection configuration from a SEP Hive catalog</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>/local/path/hms_config.properties<span class="w"> </span><span class="s">&lt;&lt;END \</span>
+<span class="s">hive.metastore=thrift</span>
+<span class="s">hive.metastore.thrift.client.socks-proxy=hadoop-master.docker.cluster:1180</span>
+<span class="s">hive.metastore.authentication.type=KERBEROS</span>
+<span class="s">hive.metastore.service.principal=hive/hadoop-master.docker.cluster@STARBURSTDATA.COM</span>
+<span class="s">hive.metastore.client.principal=presto-server/presto-master.docker.cluster@STARBURSTDATA.COM</span>
+<span class="s">hive.metastore.client.keytab=/etc/kerberos/keytabs/presto-server.keytab</span>
+<span class="s">END</span>
+
+starburst-catalog-cli-<span class="o">{</span>version<span class="o">}</span>-executable.jar<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span><span class="nb">export</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--endpoint<span class="w"> </span>thrift://hms.example.com:9083<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--properties-file<span class="w"> </span>/local/path/hms_config.properties<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--file<span class="w"> </span>/local/path/hms_export/
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 <section id="unity-catalog">
