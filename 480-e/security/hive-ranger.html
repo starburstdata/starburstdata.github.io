@@ -271,6 +271,7 @@
 <li class="toctree-l5 current"><a class="current reference internal" href="#">Hive Ranger</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#installation">Installation</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#database-name-provider">Database name provider</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#resource-and-privilege-relationship-limitations">Resource and privilege relationship limitations</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#role-management-limitations">Role management limitations</a></li>
 </ul>
@@ -334,6 +335,7 @@
 <li><a class="reference internal" href="#">Object storage access control with Apache Ranger</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#database-name-provider">Database name provider</a></li>
 <li><a class="reference internal" href="#resource-and-privilege-relationship-limitations">Resource and privilege relationship limitations</a></li>
 <li><a class="reference internal" href="#role-management-limitations">Role management limitations</a></li>
 </ul>
@@ -464,6 +466,25 @@ offline, or changing runtime flags.</p></li>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.udf-access-control.enabled</span></code></p></td>
 <td><p>Determines if access to user defined functions should be controlled. Default is <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.database-name-provider</span></code></p></td>
+<td><p>Controls how the Ranger database name is configured for Ranger resources.
+The following options are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SCHEMA</span></code>: Uses the schema name as the Ranger database name. This is the
+default option.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CATALOG_SCHEMA</span></code>: Concatenates the catalog name and schema name with a
+configurable separator, such as <code class="docutils literal notranslate"><span class="pre">_</span></code>. This enables namespace-aware Ranger
+policies by using database names like <code class="docutils literal notranslate"><span class="pre">catalog_schema</span></code> instead of just
+<code class="docutils literal notranslate"><span class="pre">schema</span></code>.</p></li>
+</ul>
+<p>See <a class="reference internal" href="#hive-ranger-database-name-provider"><span class="std std-ref">Database name provider</span></a> for more
+details.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ranger.hive-based.database-name-provider.catalog-schema.separator</span></code></p></td>
+<td><p>Configures the separator used when <code class="docutils literal notranslate"><span class="pre">ranger.hive-based.database-name-provider</span></code>
+is set to <code class="docutils literal notranslate"><span class="pre">CATALOG_SCHEMA</span></code>. Default is <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-views.run-as-invoker-default-value</span></code></p></td>
 <td><p>Specifies default value for the <a class="reference internal" href="../connector/hive.html#sb-hive-mv-automatic-refresh"><span class="std std-ref">run-as-invoker property</span></a>.</p></td>
 </tr>
@@ -471,6 +492,39 @@ offline, or changing runtime flags.</p></li>
 </table>
 <p>See <a class="reference internal" href="ranger-overview.html#ranger-config-properties"><span class="std std-ref">additional configuration properties available in Ranger.
 </span></a></p>
+</section>
+<section id="database-name-provider">
+<span id="hive-ranger-database-name-provider"></span><h2 id="database-name-provider">Database name provider<a class="headerlink" href="#database-name-provider" title="Link to this heading">#</a></h2>
+<p>Catalog and schema names are mapped to Ranger database names when
+evaluating policies. The database name provider lets you customize this mapping.
+This is helpful for scenarios when pre-existing Hive Ranger database naming had
+unusual mapping, such as mapping SEP’s <code class="docutils literal notranslate"><span class="pre">catalog.schema.table</span></code> to Ranger’s
+<code class="docutils literal notranslate"><span class="pre">catalog_schema.table</span></code>.</p>
+<p>The following two options are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">SCHEMA</span></code>: Uses the schema name as the Ranger database name. This is the
+default option.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CATALOG_SCHEMA</span></code>: Concatenates the catalog name and schema name with a
+configurable separator, such as <code class="docutils literal notranslate"><span class="pre">_</span></code>. This enables namespace-aware Ranger
+policies by using database names like <code class="docutils literal notranslate"><span class="pre">catalog_schema</span></code> instead of just
+<code class="docutils literal notranslate"><span class="pre">schema</span></code>.</p></li>
+</ul>
+<p>For example, with the <code class="docutils literal notranslate"><span class="pre">CATALOG_SCHEMA</span></code> option, a fully qualified name of
+<code class="docutils literal notranslate"><span class="pre">catalog.schema.table</span></code> maps to a Ranger database name of <code class="docutils literal notranslate"><span class="pre">catalog_schema</span></code> and
+table name of <code class="docutils literal notranslate"><span class="pre">table</span></code>.</p>
+<p>The following is an example <code class="docutils literal notranslate"><span class="pre">access-control.properties</span></code> configuration that uses
+the <code class="docutils literal notranslate"><span class="pre">CATALOG_SCHEMA</span></code> database name provider option:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">ranger.hive-based.catalogs</span><span class="o">=</span><span class="s">catalog_schema_database</span>
+<span class="na">ranger.hive-based.fallback-access-control</span><span class="o">=</span><span class="s">allow-all</span>
+<span class="na">ranger.hive-based.database-name-provider</span><span class="o">=</span><span class="s">CATALOG_SCHEMA</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Clusters that need unique <code class="docutils literal notranslate"><span class="pre">ranger.hive-based.database-name-provider</span></code> values
+for different <code class="docutils literal notranslate"><span class="pre">ranger.hive-based.catalogs</span></code> require separate access control
+configurations for those catalogs.</p>
+</div>
 </section>
 <section id="resource-and-privilege-relationship-limitations">
 <h2 id="resource-and-privilege-relationship-limitations">Resource and privilege relationship limitations<a class="headerlink" href="#resource-and-privilege-relationship-limitations" title="Link to this heading">#</a></h2>
