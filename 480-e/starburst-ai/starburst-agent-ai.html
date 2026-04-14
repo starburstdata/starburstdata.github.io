@@ -245,6 +245,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#data-engineer">Data engineer</a></li>
 </ul>
 </li>
+<li class="toctree-l5"><a class="reference internal" href="#custom-persona-prompts">Custom persona prompts</a></li>
 </ul>
 </li>
 </ul>
@@ -347,6 +348,7 @@
 <li><a class="reference internal" href="#data-engineer">Data engineer</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#custom-persona-prompts">Custom persona prompts</a></li>
 </ul>
 </li>
 </ul>
@@ -482,20 +484,26 @@ from <code class="docutils literal notranslate"><span class="pre">1KB</span></co
 <code class="docutils literal notranslate"><span class="pre">ai.agent.session-storage=IN_MEMORY</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">40</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.session-compaction-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.persona-directory-path</span></code></p></td>
+<td><p>Specifies the path to a directory containing custom persona prompt JSON
+files. Each file must contain <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">description</span></code>, and <code class="docutils literal notranslate"><span class="pre">prompt</span></code> keys. For
+more information, read <a class="reference internal" href="#sb-agent-custom-persona-prompts"><span class="std std-ref">Custom persona prompts</span></a>.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.session-compaction-enabled</span></code></p></td>
 <td><p>Enables AI-based session compaction. When enabled, older segments of the
 conversation history are summarized to control LLM context size while
 preserving key information needed for context.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.session-storage</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.session-storage</span></code></p></td>
 <td><p>Defines where the agent’s session data is stored. Use <code class="docutils literal notranslate"><span class="pre">IN_MEMORY</span></code> to keep
 session data in the coordinator’s memory. Data stored this way is not
 persisted. Use <code class="docutils literal notranslate"><span class="pre">INSIGHTS</span></code> to persist session data in the Insights database.
 For more information, see <a class="reference internal" href="#sb-agent-session-storage"><span class="std std-ref">Session storage</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">INSIGHTS</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.use-extracted-tool-call</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.use-extracted-tool-call</span></code></p></td>
 <td><p>Some LLMs do not format tool calls properly and return them inline as part
 of the assistant response. When this property is enabled, if the model
 returns inline tool calls in its response, the agent attempts to extract the
@@ -504,7 +512,7 @@ tool calls from the response and to execute it. When this property is set to
 response from the model.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.agent.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.agent.enabled</span></code></p></td>
 <td><p>Enables or disables the AI Agent. When disabled, it also disables AI
 features that rely on the AI Agent.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
@@ -671,6 +679,39 @@ Analyst, and Data engineer personas.</p>
 <li><p>Highlights potential data issues or anomalies</p></li>
 </ul>
 </section>
+</section>
+<section id="custom-persona-prompts">
+<span id="sb-agent-custom-persona-prompts"></span><h3 id="custom-persona-prompts">Custom persona prompts<a class="headerlink" href="#custom-persona-prompts" title="Link to this heading">#</a></h3>
+<p>You can customize the prompt that AI Agent uses for each persona by providing
+your own persona prompt files. This lets you tailor how each persona behaves,
+responds, and frames its output.</p>
+<p>To configure custom persona prompts, set the following property in your
+coordinator configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">ai.agent.persona-directory-path</span><span class="o">=</span><span class="s">/PATH/TO/PERSONA_PROMPTS</span>
+</pre></div>
+</div>
+<p>When this property is configured, the AI Agent loads persona definitions from
+the specified directory. If a persona file is not found in the directory, the
+AI Agent defaults to the corresponding built-in persona prompt.</p>
+<p>The specified directory must contain JSON files for the personas you want to
+customize. The following file names are supported:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">analyst.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data_engineer.json</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">executive.json</span></code></p></li>
+</ul>
+<p>Each JSON file requires the <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">description</span></code>, and <code class="docutils literal notranslate"><span class="pre">prompt</span></code> keys, and must
+use the following structure:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Analyst"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A description of the persona's role and purpose."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"prompt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The system prompt that defines the persona's behavior."</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To view the current prompt for the selected persona, including any custom
+overrides, click the <i class="material-symbols-rounded">rule</i> icon next to
+the <strong>Persona</strong> drop-down menu in the AIDA UI.</p>
 </section>
 </section>
 </section>
