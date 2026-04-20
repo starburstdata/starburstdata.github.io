@@ -335,6 +335,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#security">Security</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#user-impersonation">User impersonation</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kerberos-authentication">Kerberos authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#azure-managed-identity-authentication">Azure managed identity authentication</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#kerberos-credential-pass-through">Kerberos credential pass-through</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#password-authentication">Password authentication</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#password-credential-pass-through">Password credential pass-through</a></li>
@@ -473,6 +474,7 @@
 <li><a class="reference internal" href="#security">Security</a><ul>
 <li><a class="reference internal" href="#user-impersonation">User impersonation</a></li>
 <li><a class="reference internal" href="#kerberos-authentication">Kerberos authentication</a></li>
+<li><a class="reference internal" href="#azure-managed-identity-authentication">Azure managed identity authentication</a></li>
 <li><a class="reference internal" href="#kerberos-credential-pass-through">Kerberos credential pass-through</a></li>
 <li><a class="reference internal" href="#password-authentication">Password authentication</a></li>
 <li><a class="reference internal" href="#password-credential-pass-through">Password credential pass-through</a></li>
@@ -1754,6 +1756,31 @@ catalog configuration properties to the catalog properties file:</p>
 database. The related Kerberos service ticket is located in the
 <code class="docutils literal notranslate"><span class="pre">etc/kerberos/&lt;KEYTAB_FILE&gt;</span></code> file or as cache credentials in the
 <code class="docutils literal notranslate"><span class="pre">etc/kerberos/&lt;CACHE_FILE&gt;</span></code> file.</p>
+</section>
+<section id="azure-managed-identity-authentication">
+<span id="oracle-uami"></span><h3 id="azure-managed-identity-authentication">Azure managed identity authentication<a class="headerlink" href="#azure-managed-identity-authentication" title="Link to this heading">#</a></h3>
+<p>The connector uses <a class="reference external" href="https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview">Azure managed identity
+authentication</a>
+to connect to an Oracle database registered with Microsoft Entra ID without
+storing credentials. A User-Assigned Managed Identity (UAMI) is used to acquire
+an access token scoped to the Oracle app registration. Oracle validates the
+token claims and maps them to a database user.</p>
+<p>Make sure the Oracle database is configured for token-based authentication with
+Microsoft Entra ID.</p>
+<p>To enable managed identity authentication, add the following configuration
+properties to the catalog properties file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">oracle.authentication.type</span><span class="o">=</span><span class="s">MANAGED_IDENTITY</span>
+<span class="na">connection-url</span><span class="o">=</span><span class="s">jdbc:oracle:thin:@tcps://${ORACLE_HOST}:${ORACLE_PORT}/${SERVICE_NAME}</span>
+<span class="na">oracle.managed-identity.scope</span><span class="o">=</span><span class="s">${ORACLE_APP_ID_URI}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">connection-url</span></code> property requires a <a class="reference external" href="https://docs.oracle.com/cloud/paas/base-database/iam/#GUID-FDF2391B-EEAE-48AA-BC78-57404F329988">TCPS
+connection</a>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">oracle.managed-identity.scope</span></code> property specifies the application ID URI of
+the Oracle database app registration in Microsoft Entra ID. The
+<code class="docutils literal notranslate"><span class="pre">connection-user</span></code> and <code class="docutils literal notranslate"><span class="pre">connection-password</span></code> configuration properties are not
+supported when using managed identity authentication. The database user is
+identified from the token.</p>
 </section>
 <section id="kerberos-credential-pass-through">
 <span id="oracle-kerberos-passthrough"></span><h3 id="kerberos-credential-pass-through">Kerberos credential pass-through<a class="headerlink" href="#kerberos-credential-pass-through" title="Link to this heading">#</a></h3>
