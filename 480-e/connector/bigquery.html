@@ -297,6 +297,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#security">Security</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#oauth-2-0-token-pass-through">OAuth 2.0 token pass-through</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dynamic-connection-passthrough">Dynamic connection passthrough</a></li>
 </ul>
 </li>
 </ul>
@@ -419,6 +420,7 @@
 </li>
 <li><a class="reference internal" href="#security">Security</a><ul>
 <li><a class="reference internal" href="#oauth-2-0-token-pass-through">OAuth 2.0 token pass-through</a></li>
+<li><a class="reference internal" href="#dynamic-connection-passthrough">Dynamic connection passthrough</a></li>
 </ul>
 </li>
 </ul>
@@ -1242,6 +1244,92 @@ following sections.</p>
 <p>To enable OAuth 2.0 passthrough, set the following catalog configuration
 property:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">bigquery.authentication.type</span><span class="o">=</span><span class="s">TOKEN_PASS_THROUGH</span>
+</pre></div>
+</div>
+</section>
+<section id="dynamic-connection-passthrough">
+<span id="bigquery-dynamic-connection-passthrough"></span><h3 id="dynamic-connection-passthrough">Dynamic connection passthrough<a class="headerlink" href="#dynamic-connection-passthrough" title="Link to this heading">#</a></h3>
+<p>The BigQuery connector supports dynamic connection passthrough, which allows
+credentials and project configuration to be passed at query time through session
+extra credentials instead of static catalog configuration properties. This lets
+a single BigQuery catalog serves multiple GCP projects and credential sets.</p>
+<p>To enable dynamic connection passthrough, set the following catalog
+configuration properties:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">bigquery.authentication.type</span><span class="o">=</span><span class="s">DYNAMIC_CONNECTION</span>
+<span class="na">bigquery.project-id.credential-name</span><span class="o">=</span><span class="s">project_id</span>
+<span class="na">bigquery.parent-project-id.credential-name</span><span class="o">=</span><span class="s">parent_project_id</span>
+<span class="na">bigquery.credentials-key.credential-name</span><span class="o">=</span><span class="s">credentials_key</span>
+<span class="na">bigquery.view-materialization-project.credential-name</span><span class="o">=</span><span class="s">view_materialization_project</span>
+<span class="na">bigquery.view-materialization-dataset.credential-name</span><span class="o">=</span><span class="s">view_materialization_dataset</span>
+</pre></div>
+</div>
+<p>The following properties are not supported when dynamic connection passthrough
+is enabled:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.project-id</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-file</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.view-materialization-project</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.view-materialization-dataset</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bigquery.rpc-proxy.enabled</span></code></p></li>
+</ul>
+<table id="id7">
+<caption><span class="caption-text">Dynamic connection passthrough configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 45%"/>
+<col style="width: 27%"/>
+<col style="width: 27%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.authentication.type</span></code></p></td>
+<td><p>Authentication type for the BigQuery connection. Set to <code class="docutils literal notranslate"><span class="pre">DYNAMIC_CONNECTION</span></code>
+to enable dynamic connection passthrough.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">STATIC_CREDENTIALS</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.project-id.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that contains the BigQuery project ID used
+for the connection.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.parent-project-id.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that contains the BigQuery parent project
+ID used for the connection.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.credentials-key.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that contains the base64-encoded
+credentials key used for the connection.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.view-materialization-project.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that contains the BigQuery project used for
+materialized view creation.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bigquery.view-materialization-dataset.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that contains the BigQuery dataset used for
+materialized view creation.</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Once you configure the catalog with the appropriate properties, you can run
+queries using the Trino CLI by supplying <code class="docutils literal notranslate"><span class="pre">--extra-credential</span></code> values whose key
+names match the credential names defined in the catalog configuration file.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>trino-cli-executable.jar<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--server<span class="w"> </span>localhost:8080<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--extra-credential<span class="w"> </span><span class="nv">project_id</span><span class="o">=</span>&lt;PROJECT_ID&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--extra-credential<span class="w"> </span><span class="nv">parent_project_id</span><span class="o">=</span>&lt;PARENT_PROJECT_ID&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--extra-credential<span class="w"> </span><span class="nv">credentials_key</span><span class="o">=</span>&lt;CREDENTIAL_KEY&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--extra-credential<span class="w"> </span><span class="nv">view_materialization_project</span><span class="o">=</span>&lt;VIEW_MATERIALIZATION&gt;_PROJECT&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span>--extra-credential<span class="w"> </span><span class="nv">view_materialization_dataset</span><span class="o">=</span>&lt;VIEW_MATERIALIZATION_DATASET&gt;
 </pre></div>
 </div>
 </section>
