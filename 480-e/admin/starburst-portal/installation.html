@@ -241,6 +241,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#create-image-pull-secret">Create image pull secret</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#create-configuration-secrets">Create configuration secrets</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#create-configuration-file">Create configuration file</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configure-secrets-providers">Configure secrets providers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#deploy-starburst-portal">Deploy Starburst Portal</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#verify-deployment">Verify deployment</a></li>
 </ul>
@@ -359,6 +360,7 @@
 <li><a class="reference internal" href="#create-image-pull-secret">Create image pull secret</a></li>
 <li><a class="reference internal" href="#create-configuration-secrets">Create configuration secrets</a></li>
 <li><a class="reference internal" href="#create-configuration-file">Create configuration file</a></li>
+<li><a class="reference internal" href="#configure-secrets-providers">Configure secrets providers</a></li>
 <li><a class="reference internal" href="#deploy-starburst-portal">Deploy Starburst Portal</a></li>
 <li><a class="reference internal" href="#verify-deployment">Verify deployment</a></li>
 </ul>
@@ -609,6 +611,51 @@ downloads</a>:</p>
 <span class="nt">envFrom</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">secretRef</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">portal-secret</span>
+</pre></div>
+</div>
+</section>
+<section id="configure-secrets-providers">
+<h3 id="configure-secrets-providers">Configure secrets providers<a class="headerlink" href="#configure-secrets-providers" title="Link to this heading">#</a></h3>
+<p>Starburst Portal supports <a class="reference internal" href="../../security/secrets.html"><span class="doc std std-doc">secrets providers</span></a> that allow
+sensitive values to be resolved at runtime rather than stored as plain text in
+Helm values.</p>
+<p>To activate a secrets provider, place a <code class="docutils literal notranslate"><span class="pre">secrets.toml</span></code> file in the
+<code class="docutils literal notranslate"><span class="pre">/etc/starburst/</span></code> directory using the <code class="docutils literal notranslate"><span class="pre">etcFiles.other</span></code> map.</p>
+<p>Once a secrets provider is configured, you can reference secrets in any Starburst
+Portal configuration property using the provider-specific syntax.</p>
+<p>The following example reads secrets from environment variables:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">etcFiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">other</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secrets.toml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">[env]</span>
+<span class="w">      </span><span class="no">secrets-provider.name="env"</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">persistence.jdbc.password=${ENV:DB_PASSWORD}</span>
+<span class="w">    </span><span class="no">gateway.clusters.encryption.secret=${ENV:PORTAL_ENCRYPTION_SECRET}</span>
+</pre></div>
+</div>
+<p>The following example reads secrets from AWS Secrets Manager:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">etcFiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">other</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secrets.toml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">[asm]</span>
+<span class="w">      </span><span class="no">secrets-provider.name="asm"</span>
+<span class="w">      </span><span class="no">region="us-east-2"</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">persistence.jdbc.url=${ASM:myapp/db:url}</span>
+<span class="w">    </span><span class="no">persistence.jdbc.user=${ASM:myapp/db:username}</span>
+<span class="w">    </span><span class="no">persistence.jdbc.password=${ASM:myapp/db:password}</span>
+</pre></div>
+</div>
+<p>The following example reads secrets from multiple providers simultaneously:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">etcFiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">other</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">secrets.toml</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">[asm]</span>
+<span class="w">      </span><span class="no">secrets-provider.name="asm"</span>
+<span class="w">      </span><span class="no">region="us-east-2"</span>
+<span class="w">      </span><span class="no">[env]</span>
+<span class="w">      </span><span class="no">secrets-provider.name="env"</span>
 </pre></div>
 </div>
 </section>
