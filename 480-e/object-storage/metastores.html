@@ -334,6 +334,7 @@
 <li><a class="reference internal" href="#iceberg-specific-metastores">Iceberg-specific metastores</a><ul>
 <li><a class="reference internal" href="#rest-catalogs">REST catalogs</a><ul>
 <li><a class="reference internal" href="#oauth-2-0-token-pass-through">OAuth 2.0 token pass-through</a></li>
+<li><a class="reference internal" href="#oauth-2-0-token-pass-through-with-unity-catalog-on-aws">OAuth 2.0 token pass-through with Unity Catalog on AWS</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#jdbc-catalog">JDBC catalog</a></li>
@@ -1316,6 +1317,20 @@ expiration time is available. Defaults to <code class="docutils literal notransl
 <td><p>Controls whether to use the token exchange flow to acquire new tokens.
 Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.enabled</span></code></p></td>
+<td><p>Enables the OAuth2 Token Exchange flow for authenticating with the REST
+catalog. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.extra-credentials.prefix</span></code></p></td>
+<td><p>The prefix for extra credential keys forwarded as additional parameters in the
+OAuth2 token exchange request.</p>
+<p><br/>When <code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.enabled</span></code> is set to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>, any extra credential with a key that starts with this prefix is
+included as an additional parameter in the token exchange request. For
+example, set a credential with the <code class="docutils literal notranslate"><span class="pre">client_id</span></code> key to pass the service
+principal UUID required for token exchange with Databricks.</p>
+</td>
+</tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.vended-credentials-enabled</span></code></p></td>
 <td><p>Use credentials provided by the REST backend for file system access.
 Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
@@ -1381,6 +1396,44 @@ coordinator’s <a class="reference internal" href="../installation/deployment.h
 <p>Additionally, enable <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> in the catalog properties file using
 the Iceberg connector:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.rest-catalog.security</span><span class="o">=</span><span class="s">OAUTH2_PASSTHROUGH</span>
+</pre></div>
+</div>
+</section>
+<section id="oauth-2-0-token-pass-through-with-unity-catalog-on-aws">
+<span id="iceberg-rest-oauth2-unity-catalog-aws"></span><h4 id="oauth-2-0-token-pass-through-with-unity-catalog-on-aws">OAuth 2.0 token pass-through with Unity Catalog on AWS<a class="headerlink" href="#oauth-2-0-token-pass-through-with-unity-catalog-on-aws" title="Link to this heading">#</a></h4>
+<p>When using the Iceberg REST catalog with Databricks Unity Catalog on AWS, the
+IdP token cannot be passed directly. It must first be exchanged for a
+<a class="reference external" href="https://docs.databricks.com/aws/en/dev-tools/auth/oauth-federation-exchange">Databricks OIDC
+token</a>.</p>
+<p>To enable this token exchange, set the following catalog configuration property to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.rest-catalog.oauth2.token-exchange.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>When authenticating as a service principal rather than an end user, set the
+following catalog configuration property to define a prefix for extra
+credentials:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.rest-catalog.oauth2.token-exchange.extra-credentials.prefix</span><span class="o">=</span><span class="s">&lt;example-prefix&gt;</span>
+</pre></div>
+</div>
+<p>Your client must then pass the service principal UUID as an extra credential
+in the JDBC connection string. The key is the configured prefix combined with
+<code class="docutils literal notranslate"><span class="pre">.client_id</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">extraCredentials</span><span class="o">=&lt;</span><span class="n">example</span><span class="o">-</span><span class="k">prefix</span><span class="o">&gt;</span><span class="p">.</span><span class="n">client_id</span><span class="p">:</span><span class="o">&lt;</span><span class="n">service</span><span class="o">-</span><span class="n">principal</span><span class="o">-</span><span class="n">uuid</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>The following example configures token exchange for Databricks Unity Catalog on
+AWS using OAuth2 passthrough:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">iceberg</span>
+<span class="na">iceberg.catalog.type</span><span class="o">=</span><span class="s">rest</span>
+<span class="na">iceberg.rest-catalog.uri</span><span class="o">=</span><span class="s">https://${ENV:DATABRICKS_HOST}/api/2.1/unity-catalog/iceberg-rest</span>
+<span class="na">iceberg.rest-catalog.oauth2.server-uri</span><span class="o">=</span><span class="s">https://${ENV:DATABRICKS_HOST}/oidc/v1/token</span>
+<span class="na">iceberg.rest-catalog.warehouse</span><span class="o">=</span><span class="s">${ENV:DATABRICKS_UNITY_CATALOG_NAME}</span>
+<span class="na">iceberg.rest-catalog.security</span><span class="o">=</span><span class="s">OAUTH2_PASSTHROUGH</span>
+<span class="na">iceberg.rest-catalog.oauth2.scope</span><span class="o">=</span><span class="s">all-apis</span>
+<span class="na">fs.native-s3.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">iceberg.rest-catalog.oauth2.token-exchange.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">iceberg.rest-catalog.oauth2.token-exchange.extra-credentials.prefix</span><span class="o">=</span><span class="s">example-prefix</span>
 </pre></div>
 </div>
 </section>
