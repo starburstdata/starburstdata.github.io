@@ -289,7 +289,10 @@
 <li class="toctree-l5"><a class="reference internal" href="#k8s-defaults-internal-comms">Defaults</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#using-tls-for-internal-communication">Using TLS for internal communication</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#configuring-automatic-internal-tls">Configuring automatic internal TLS</a></li>
-<li class="toctree-l6"><a class="reference internal" href="#manual-tls-configuration">Manual TLS configuration</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#manual-tls-configuration">Manual TLS configuration</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#appending-a-cluster-domain-to-fqdn-node-addresses">Appending a cluster domain to FQDN node addresses</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#non-standard-https-port-numbers">Non-standard HTTPS port numbers</a></li>
@@ -406,7 +409,10 @@
 <li><a class="reference internal" href="#k8s-defaults-internal-comms">Defaults</a></li>
 <li><a class="reference internal" href="#using-tls-for-internal-communication">Using TLS for internal communication</a><ul>
 <li><a class="reference internal" href="#configuring-automatic-internal-tls">Configuring automatic internal TLS</a></li>
-<li><a class="reference internal" href="#manual-tls-configuration">Manual TLS configuration</a></li>
+<li><a class="reference internal" href="#manual-tls-configuration">Manual TLS configuration</a><ul>
+<li><a class="reference internal" href="#appending-a-cluster-domain-to-fqdn-node-addresses">Appending a cluster domain to FQDN node addresses</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#non-standard-https-port-numbers">Non-standard HTTPS port numbers</a></li>
@@ -688,9 +694,12 @@ the Kubernetes naming scheme. When <code class="docutils literal notranslate"><s
 <code class="docutils literal notranslate"><span class="pre">worker.additionalProperties:</span></code> nodes), the chart manages the
 <code class="docutils literal notranslate"><span class="pre">node.internal-address</span></code> property automatically, and the SAN field in TLS certs
 must match.</p>
-<p>The TLS certificates used must have <code class="docutils literal notranslate"><span class="pre">starburst</span></code>,
-<code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc</span></code> and <code class="docutils literal notranslate"><span class="pre">*.worker.&lt;namespace&gt;.svc</span></code> in the Subject
-Alternative Name (SAN) field. Replace <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> with a real value.</p>
+<p>The TLS certificates used must have <code class="docutils literal notranslate"><span class="pre">starburst</span></code>, <code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc</span></code>
+and <code class="docutils literal notranslate"><span class="pre">*.worker.&lt;namespace&gt;.svc</span></code> in the Subject Alternative Name (SAN) field.
+Replace <code class="docutils literal notranslate"><span class="pre">&lt;namespace&gt;</span></code> with a real value. If <code class="docutils literal notranslate"><span class="pre">clusterDomain</span></code> is also configured,
+certificates must additionally include
+<code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc.&lt;clusterDomain&gt;</span></code> and
+<code class="docutils literal notranslate"><span class="pre">*.worker.&lt;namespace&gt;.svc.&lt;clusterDomain&gt;</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">coordinator</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">    </span><span class="no">node.internal-address-source=FQDN</span>
@@ -700,6 +709,36 @@ Alternative Name (SAN) field. Replace <code class="docutils literal notranslate"
 <span class="w">    </span><span class="no">node.internal-address-source=FQDN</span>
 </pre></div>
 </div>
+<section id="appending-a-cluster-domain-to-fqdn-node-addresses">
+<h5 id="appending-a-cluster-domain-to-fqdn-node-addresses">Appending a cluster domain to FQDN node addresses<a class="headerlink" href="#appending-a-cluster-domain-to-fqdn-node-addresses" title="Link to this heading">#</a></h5>
+<p>When <code class="docutils literal notranslate"><span class="pre">node.internal-address-source</span></code> is set to <code class="docutils literal notranslate"><span class="pre">FQDN</span></code>, you can optionally append
+a Kubernetes cluster domain to the generated node addresses using the
+<code class="docutils literal notranslate"><span class="pre">clusterDomain</span></code> value. This produces full long-form addresses instead of the
+default short-form <code class="docutils literal notranslate"><span class="pre">&lt;node&gt;.&lt;namespace&gt;.svc</span></code> addresses.</p>
+<p>Node addresses take the following forms:</p>
+<ul class="simple">
+<li><p>Coordinator: <code class="docutils literal notranslate"><span class="pre">coordinator.&lt;namespace&gt;.svc.cluster.local</span></code></p></li>
+<li><p>Workers: <code class="docutils literal notranslate"><span class="pre">&lt;ip-with-dashes&gt;.worker.&lt;namespace&gt;.svc.cluster.local</span></code>, where worker
+pod IP address dots are replaced with hyphens.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">clusterDomain</span></code> is only effective when <code class="docutils literal notranslate"><span class="pre">node.internal-address-source=FQDN</span></code> is
+set in both <code class="docutils literal notranslate"><span class="pre">coordinator.additionalProperties</span></code> and
+<code class="docutils literal notranslate"><span class="pre">worker.additionalProperties</span></code>. If <code class="docutils literal notranslate"><span class="pre">clusterDomain</span></code> is set without FQDN configured
+on both nodes, the value is ignored and a warning is thrown.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">clusterDomain</span><span class="p">:</span><span class="w"> </span><span class="s">"cluster.local"</span>
+
+<span class="nt">coordinator</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">node.internal-address-source=FQDN</span>
+
+<span class="nt">worker</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">additionalProperties</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">node.internal-address-source=FQDN</span>
+</pre></div>
+</div>
+<p>The TLS certificates used must include the resulting long-form addresses in
+their Subject Alternative Name (SAN) fields.</p>
+</section>
 </section>
 </section>
 <section id="non-standard-https-port-numbers">
