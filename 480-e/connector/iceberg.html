@@ -268,7 +268,10 @@
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#sql-support">SQL support</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#basic-usage-examples">Basic usage examples</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#branching">Branching</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#branching-and-tagging">Branching and tagging</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#create-a-tag">Create a tag</a></li>
+</ul>
+</li>
 <li class="toctree-l5"><a class="reference internal" href="#procedures">Procedures</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#register-table">Register table</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#unregister-table">Unregister table</a></li>
@@ -454,7 +457,10 @@
 </li>
 <li><a class="reference internal" href="#sql-support">SQL support</a><ul>
 <li><a class="reference internal" href="#basic-usage-examples">Basic usage examples</a></li>
-<li><a class="reference internal" href="#branching">Branching</a></li>
+<li><a class="reference internal" href="#branching-and-tagging">Branching and tagging</a><ul>
+<li><a class="reference internal" href="#create-a-tag">Create a tag</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#procedures">Procedures</a><ul>
 <li><a class="reference internal" href="#register-table">Register table</a></li>
 <li><a class="reference internal" href="#unregister-table">Unregister table</a></li>
@@ -1337,15 +1343,20 @@ is with <a class="reference internal" href="../sql/values.html"><span class="doc
 </pre></div>
 </div>
 </section>
-<section id="branching">
-<span id="iceberg-branch"></span><h3 id="branching">Branching<a class="headerlink" href="#branching" title="Link to this heading">#</a></h3>
-<p>The connector supports <a class="reference external" href="https://iceberg.apache.org/docs/latest/branching/">Iceberg
-branching</a>. Branches are
-mutable named references that can be updated by committing a new snapshot as the
-branch’s referenced snapshot. Branches can also be used as part of data
-engineering workflows, for enabling experimental branches for testing and
-validating new jobs.</p>
-<p>The following SQL statements are supported:</p>
+<section id="branching-and-tagging">
+<span id="iceberg-branch"></span><h3 id="branching-and-tagging">Branching and tagging<a class="headerlink" href="#branching-and-tagging" title="Link to this heading">#</a></h3>
+<p>The connector supports <a class="reference external" href="https://iceberg.apache.org/docs/latest/branching/">Iceberg branching and
+tagging</a>. Branches and tags
+are named references to snapshots in an Iceberg table:</p>
+<ul class="simple">
+<li><p>A <em>branch</em> is a mutable named reference that can be updated by committing a
+new snapshot as the branch’s referenced snapshot. Branches can also be used
+as part of data engineering workflows to enable experimental branches
+for testing and validating new jobs.</p></li>
+<li><p>A <em>tag</em> is an immutable named reference to a specific snapshot. Tags are
+useful for auditing and retaining historical snapshots.</p></li>
+</ul>
+<p>The following SQL statements are supported for branching and tagging.</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../sql/create-branch.html"><span class="doc std std-doc">CREATE BRANCH</span></a></p></li>
 <li><p><a class="reference internal" href="../sql/alter-branch.html"><span class="doc std std-doc">ALTER BRANCH</span></a></p></li>
@@ -1356,6 +1367,78 @@ validating new jobs.</p>
 <li><p><a class="reference internal" href="../sql/update.html"><span class="doc std std-doc">UPDATE</span></a></p></li>
 <li><p><a class="reference internal" href="../sql/merge.html"><span class="doc std std-doc">MERGE</span></a></p></li>
 </ul>
+<p>Use a <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause of <a class="reference internal" href="../sql/create-branch.html"><span class="doc std std-doc">CREATE BRANCH</span></a> to set the
+following properties:</p>
+<table>
+<colgroup>
+<col style="width: 20%"/>
+<col style="width: 80%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p>The reference type to create. Possible values are: <code class="docutils literal notranslate"><span class="pre">BRANCH</span></code> or <code class="docutils literal notranslate"><span class="pre">TAG</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">BRANCH</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">snapshot_id</span></code></p></td>
+<td><p>The ID of the snapshot the reference points to. Defaults to the current
+snapshot of the source branch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">retention</span></code></p></td>
+<td><p>Specifies the <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> the snapshot referenced by the
+tag is protected from <a class="reference internal" href="#iceberg-expire-snapshots"><span class="std std-ref">expire_snapshots</span></a>. For
+example, ‘90d’.</p></td>
+</tr>
+</tbody>
+</table>
+<section id="create-a-tag">
+<h4 id="create-a-tag">Create a tag<a class="headerlink" href="#create-a-tag" title="Link to this heading">#</a></h4>
+<p>To create a tag, use <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">BRANCH</span></code> with the <code class="docutils literal notranslate"><span class="pre">type</span></code> property set to <code class="docutils literal notranslate"><span class="pre">'TAG'</span></code>.
+The following example creates a tag named <code class="docutils literal notranslate"><span class="pre">audit</span></code> on the current snapshot of the
+Iceberg table named <code class="docutils literal notranslate"><span class="pre">orders</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">BRANCH</span><span class="w"> </span><span class="n">audit</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TAG'</span><span class="p">)</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span>
+</pre></div>
+</div>
+<p>Create a tag that points to a specific snapshot, with a 90-day retention:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">BRANCH</span><span class="w"> </span><span class="n">audit</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TAG'</span><span class="p">,</span><span class="w"> </span><span class="n">snapshot_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span><span class="w"> </span><span class="n">retention</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'90d'</span><span class="p">)</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span>
+</pre></div>
+</div>
+<p>Create a tag from the head of an existing branch:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="n">BRANCH</span><span class="w"> </span><span class="n">audit</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TAG'</span><span class="p">)</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">source_branch</span>
+</pre></div>
+</div>
+<p>Replace an existing tag so that it points to the current snapshot:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="n">BRANCH</span><span class="w"> </span><span class="n">audit</span>
+<span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="k">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'TAG'</span><span class="p">)</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span>
+</pre></div>
+</div>
+<p>Drop a tag:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DROP</span><span class="w"> </span><span class="n">BRANCH</span><span class="w"> </span><span class="n">audit</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span>
+</pre></div>
+</div>
+<p>Query a table at the snapshot a tag points to:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">VERSION</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="s1">'audit'</span>
+</pre></div>
+</div>
+<p>The same syntax resolves any immutable named reference, including branches. To
+query by snapshot ID, use <code class="docutils literal notranslate"><span class="pre">FOR</span> <span class="pre">VERSION</span> <span class="pre">AS</span> <span class="pre">OF</span></code> <code class="docutils literal notranslate"><span class="pre">snapshot_id</span></code> without quotes.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>If a tag already exists, <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">BRANCH</span> <span class="pre">name</span> <span class="pre">WITH</span> <span class="pre">(type</span> <span class="pre">=</span> <span class="pre">'TAG')</span></code> produces an
+error saying that a branch of that name already exists.</p></li>
+<li><p>When a tag with the specified name already exists,<code class="docutils literal notranslate"> <span class="pre">CREATE</span> <span class="pre">BRANCH</span> <span class="pre">IF</span> <span class="pre">NOT</span> <span class="pre">EXISTS</span> <span class="pre">name</span> <span class="pre">WITH</span> <span class="pre">(type</span> <span class="pre">=</span> <span class="pre">'TAG')</span></code> returns success without creating or replacing
+the tag. To replace the existing tag, use <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">BRANCH</span></code> instead.</p></li>
+</ul>
+</div>
+</section>
 </section>
 <section id="procedures">
 <span id="iceberg-procedures"></span><h3 id="procedures">Procedures<a class="headerlink" href="#procedures" title="Link to this heading">#</a></h3>
