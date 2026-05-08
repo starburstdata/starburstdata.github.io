@@ -255,6 +255,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#no-failover-after-coordinator-failure">No failover after coordinator failure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#queries-fail-during-failover">Queries fail during failover</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#multiple-coordinators-marked-as-decommissioned">Multiple coordinators marked as <code class="docutils literal notranslate"><span class="pre">DECOMMISSIONED</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coordinator-is-marked-as-gone">Coordinator is marked as <code class="docutils literal notranslate"><span class="pre">GONE</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#health-checks-show-unknown-status">Health checks show <code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code> status</a></li>
 </ul>
 </li>
@@ -364,6 +365,7 @@
 <li><a class="reference internal" href="#no-failover-after-coordinator-failure">No failover after coordinator failure</a></li>
 <li><a class="reference internal" href="#queries-fail-during-failover">Queries fail during failover</a></li>
 <li><a class="reference internal" href="#multiple-coordinators-marked-as-decommissioned">Multiple coordinators marked as <code class="docutils literal notranslate"><span class="pre">DECOMMISSIONED</span></code></a></li>
+<li><a class="reference internal" href="#coordinator-is-marked-as-gone">Coordinator is marked as <code class="docutils literal notranslate"><span class="pre">GONE</span></code></a></li>
 <li><a class="reference internal" href="#health-checks-show-unknown-status">Health checks show <code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code> status</a></li>
 </ul>
 </li>
@@ -445,6 +447,12 @@ fails.</p></td>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DECOMMISSIONED</span></code></p></td>
 <td><p>A coordinator removed from the HA pool. Restart the coordinator to return it
 to the pool.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GONE</span></code></p></td>
+<td><p>A stale coordinator record whose URI now serves a different coordinator
+instance. This occurs when a coordinator restarts and receives a new instance
+identifier. The stale record is excluded from HA management. The new
+coordinator instance registers itself automatically as <code class="docutils literal notranslate"><span class="pre">STANDBY</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -618,6 +626,12 @@ counter</p></li>
 <li><p>Returns an HTTP status code other than 200</p></li>
 <li><p>Reports it is not ready to handle queries</p></li>
 </ul>
+<p>During each health check, Starburst Portal also verifies that the instance
+identifier returned by the coordinator matches the stored identifier. If the
+identifiers differ, the coordinator at that URI has been replaced by a new
+instance (for example, after a pod restart). Starburst Portal immediately marks
+the stale record as <code class="docutils literal notranslate"><span class="pre">GONE</span></code>. The new coordinator instance at the same URI
+announces itself and registers as a fresh <code class="docutils literal notranslate"><span class="pre">STANDBY</span></code>.</p>
 </section>
 <section id="automatic-failover">
 <h3 id="automatic-failover">Automatic failover<a class="headerlink" href="#automatic-failover" title="Link to this heading">#</a></h3>
@@ -677,6 +691,18 @@ pool as standbys.</p></li>
 <li><p>Check for network issues between Starburst Portal and the coordinators.</p></li>
 </ul>
 </section>
+<section id="coordinator-is-marked-as-gone">
+<h3 id="coordinator-is-marked-as-gone">Coordinator is marked as <code class="docutils literal notranslate"><span class="pre">GONE</span></code><a class="headerlink" href="#coordinator-is-marked-as-gone" title="Link to this heading">#</a></h3>
+<p>A coordinator is marked as <code class="docutils literal notranslate"><span class="pre">GONE</span></code> when the health check detects that the URI
+for a registered coordinator now responds with a different instance identifier.
+This typically happens after a coordinator restarts and is assigned a new
+instance identifier while reusing the same URI (for example, after a Kubernetes
+pod restart without a persistent identity).</p>
+<p>The stale <code class="docutils literal notranslate"><span class="pre">GONE</span></code> record is kept in the database for audit purposes but is
+excluded from HA management. No action is required — the new coordinator
+instance at the same URI registers itself as a <code class="docutils literal notranslate"><span class="pre">STANDBY</span></code> automatically once it
+sends an announcement to Starburst Portal.</p>
+</section>
 <section id="health-checks-show-unknown-status">
 <h3 id="health-checks-show-unknown-status">Health checks show <code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code> status<a class="headerlink" href="#health-checks-show-unknown-status" title="Link to this heading">#</a></h3>
 <p>If a coordinator’s health status is <code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code>:</p>
@@ -701,6 +727,14 @@ two minutes by default. To reduce this time, configure
 <code class="docutils literal notranslate"><span class="pre">clusters.http-client.request-timeout</span></code>.</p></li>
 <li><p>To return a decommissioned coordinator to the HA pool, restart the
 coordinator.</p></li>
+<li><p>When the SEP Helm chart is deployed with <code class="docutils literal notranslate"><span class="pre">internalTls:</span> <span class="pre">true</span></code>, the SEP init
+container automatically overrides any <code class="docutils literal notranslate"><span class="pre">discovery.uri</span></code> value you set in
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code> with <code class="docutils literal notranslate"><span class="pre">https://{node.environment}:{httpsPort}</span></code> (for example,
+<code class="docutils literal notranslate"><span class="pre">https://mycluster:8443</span></code>). Setting <code class="docutils literal notranslate"><span class="pre">discovery.uri</span></code> in your Helm values has no
+effect in this configuration. To use coordinator high availability with
+<code class="docutils literal notranslate"><span class="pre">internalTls:</span> <span class="pre">true</span></code>, you must make Starburst Portal accessible at the address
+that the init container generates - currently, this is not supported by the
+Helm chart and requires custom setup.</p></li>
 </ul>
 </section>
 </section>
