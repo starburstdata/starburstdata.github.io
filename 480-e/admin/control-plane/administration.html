@@ -234,6 +234,16 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#routing-rules">Routing rules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tagging-rules">Tagging rules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#condition-syntax">Condition syntax</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#creating-a-tagging-rule">Creating a tagging rule</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#route-queries-by-user-group-using-a-fixed-value">Route queries by user group using a fixed value</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#extract-environment-from-application-source-tag">Extract environment from application source tag</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="load-balancing.html">Load balancing</a></li>
@@ -327,6 +337,16 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#routing-rules">Routing rules</a></li>
+<li><a class="reference internal" href="#tagging-rules">Tagging rules</a><ul>
+<li><a class="reference internal" href="#condition-syntax">Condition syntax</a></li>
+<li><a class="reference internal" href="#creating-a-tagging-rule">Creating a tagging rule</a></li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#route-queries-by-user-group-using-a-fixed-value">Route queries by user group using a fixed value</a></li>
+<li><a class="reference internal" href="#extract-environment-from-application-source-tag">Extract environment from application source tag</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -354,8 +374,13 @@ ui</span></a>.</p>
 <section id="query-editor">
 <h2 id="query-editor">Query editor<a class="headerlink" href="#query-editor" title="Link to this heading">#</a></h2>
 <p>Use the <strong>Query editor</strong> pane to run SQL queries directly in Starburst Control
-Plane. Starburst Control Plane routes all queries from the query editor to the
-default <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> routing group.</p>
+Plane.</p>
+<p>When either client tag-based or auto tag-based routing is enabled, the query
+editor includes a <strong>Client tags</strong> field. Tags you enter here are sent as the
+<code class="docutils literal notranslate"><span class="pre">X-Trino-Client-Tags</span></code> header with each query, and the normal routing pipeline
+applies. This lets you test routing behavior directly from the UI without a
+separate client application.</p>
+<p>See <a class="reference internal" href="workload-isolation.html"><span class="doc std std-doc">Workload isolation</span></a> for more information.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If no <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> clusters are defined, the query editor displays an error.</p>
@@ -420,12 +445,16 @@ Gateway-compatible configuration. Contact Starburst Support for further informat
 <section id="query-insights">
 <h2 id="query-insights">Query insights<a class="headerlink" href="#query-insights" title="Link to this heading">#</a></h2>
 <p>Use the <strong>Query insights</strong> pane to view all queries processed by Starburst
-Control Plane, including failed queries. The pane shows each query’s routing
-group and the cluster that processed the query. Use this information to test and
-verify routing rules.</p>
-<p>To run SQL queries directly against an individual SEP cluster, select the
-cluster from the <strong>Clusters</strong> pane, then navigate to the query editor. Queries
-you run this way appear on the <strong>Query insights</strong> pane.</p>
+Control Plane, including failed queries. For each query, the pane shows:</p>
+<ul class="simple">
+<li><p>The routing group the query was sent to.</p></li>
+<li><p>The cluster within that routing group that processed the query.</p></li>
+<li><p>The routing rule that matched the query (when auto tag-based routing is
+enabled and a rule was matched).</p></li>
+</ul>
+<p>Use this information to test and verify routing rules. When a query is routed
+by a specific routing rule, the rule name appears in the query detail view,
+making it easy to confirm that the intended rule was applied.</p>
 <section id="id1">
 <h3 id="id1">Limitations<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <ul class="simple">
@@ -437,27 +466,163 @@ property.</p></li>
 </section>
 </section>
 <section id="routing-rules">
-<h2 id="routing-rules">Routing rules<a class="headerlink" href="#routing-rules" title="Link to this heading">#</a></h2>
+<span id="control-plane-routing-rules"></span><h2 id="routing-rules">Routing rules<a class="headerlink" href="#routing-rules" title="Link to this heading">#</a></h2>
 <p>Use the <strong>Routing rules</strong> pane to create, view, and update the rules that
 Starburst Control Plane uses to route queries to routing groups.</p>
 <p>To create a routing rule, click <strong>Create routing rule</strong>.</p>
-<p>In the <strong>Create routing rule</strong> dialog, specify a condition and an action for the
-routing rule:</p>
+<ol class="arabic simple">
+<li><p>In the <strong>Create routing rule</strong> dialog, enter the following information:</p></li>
+</ol>
+<p>For client tag-based routing:</p>
 <ul class="simple">
-<li><p>The condition consists of one or more Trino client tags that the
-query’s HTTP request header must include, such as application name or user ID.
-To set Trino client tags, use the <a class="reference external" href="https://trino.io/docs/current/client/cli.html">Trino
-CLI</a>.</p></li>
-<li><p>The action specifies which routing group receives the query when the condition
+<li><p><strong>Name</strong>: a unique label for the rule.</p></li>
+<li><p><strong>Priority</strong>: controls evaluation order. Lower priority numbers are evaluated
+first.</p></li>
+<li><p><strong>Description</strong>: optional text description.</p></li>
+<li><p><strong>Tag names</strong>: Values from the <code class="docutils literal notranslate"><span class="pre">X-Trino-Client-Tags</span></code> HTTP header. When
+the specified tags are present, the routing rule applies.</p></li>
+<li><p><strong>Action</strong>: the routing group to receive the query when the condition
 matches.</p></li>
 </ul>
-<p>Click <strong>Save</strong>.</p>
+<p>For auto tag-based routing:</p>
+<ul class="simple">
+<li><p><strong>Name</strong>: a unique label for the rule.</p></li>
+<li><p><strong>Description</strong>: optional text description.</p></li>
+<li><p><strong>Condition</strong>: when the rule applies. The condition can match against any
+of the available tags for the query: all system tags (<code class="docutils literal notranslate"><span class="pre">source</span></code>,
+<code class="docutils literal notranslate"><span class="pre">clientTag</span></code>, <code class="docutils literal notranslate"><span class="pre">user</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code>, <code class="docutils literal notranslate"><span class="pre">role</span></code>) plus any custom tags produced by
+tagging rules.</p></li>
+<li><p><strong>Action</strong>: the routing group to receive the query when the condition
+matches.</p></li>
+</ul>
+<ol class="arabic simple" start="2">
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+<p>The Control Plane evaluates routing rules in priority order. For more
+information, see <a class="reference internal" href="workload-isolation.html#control-plane-routing-rule-matching"><span class="std std-ref">routing rule matching</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>To use routing rules from legacy Trino Gateway-compatible files,
 contact Starburst Support. Otherwise, Starburst Control Plane ignores these files and
 uses only routing rules you create through the <strong>Routing rules</strong> UI.</p>
 </div>
+</section>
+<section id="tagging-rules">
+<span id="control-plane-tagging-rules"></span><h2 id="tagging-rules">Tagging rules<a class="headerlink" href="#tagging-rules" title="Link to this heading">#</a></h2>
+<p>Use the <strong>Tagging rules</strong> pane to create and manage the rules that generate
+custom tags for each query. Tagging rules are only active when
+<code class="docutils literal notranslate"><span class="pre">gateway.routing.type=AUTO_TAGS</span></code> is set. See <a class="reference internal" href="workload-isolation.html"><span class="doc std std-doc">workload
+isolation</span></a> and <a class="reference internal" href="installation.html#control-plane-cluster-configuration"><span class="std std-ref">cluster
+configuration</span></a> for more information.</p>
+<p>Each tagging rule has the following properties:</p>
+<ul class="simple">
+<li><p><strong>Name</strong>: a unique label for the rule.</p></li>
+<li><p><strong>Description</strong>: optional text description.</p></li>
+<li><p><strong>Tag key</strong>: the key of the tag this rule produces.</p></li>
+<li><p><strong>Condition</strong>: when the rule applies. Conditions can check any system tag or
+any custom tag produced by a higher-priority tagging rule.</p></li>
+<li><p><strong>Action</strong>: how the tag value is produced. Use one of the following:</p>
+<ul>
+<li><p><strong>Fixed value</strong>: the tag value is a literal string you specify.</p></li>
+<li><p><strong>Regular expression extraction</strong>: the tag value is extracted from an
+existing tag using a regex with one capturing group. The captured group
+becomes the tag value.</p></li>
+</ul>
+</li>
+</ul>
+<p>You can reorder tagging rules in the <strong>Tagging rules</strong> tab. Click <strong>Routing
+rules</strong> &gt; <strong>Tagging rules</strong>, then <i class="material-symbols-rounded" style="color:black">more_vert</i> options &gt; <strong>Re-order rules</strong>. Drag and drop
+the rules in the grid. You can not manually set a priority number for a rule.</p>
+<section id="condition-syntax">
+<h3 id="condition-syntax">Condition syntax<a class="headerlink" href="#condition-syntax" title="Link to this heading">#</a></h3>
+<p>A condition is a list of groups. A query matches if it satisfies any group
+(logical <code class="docutils literal notranslate"><span class="pre">OR</span></code>). Within a group, all expressions must match (logical <code class="docutils literal notranslate"><span class="pre">AND</span></code>).</p>
+<p>Each expression compares a tag against a value using either an exact string
+match or a regular expression match.</p>
+</section>
+<section id="creating-a-tagging-rule">
+<h3 id="creating-a-tagging-rule">Creating a tagging rule<a class="headerlink" href="#creating-a-tagging-rule" title="Link to this heading">#</a></h3>
+<p>In the <strong>Tagging rules</strong> pane, click <strong>Create tagging rule</strong>.</p>
+<ol class="arabic simple">
+<li><p>Enter a name and optional description.</p></li>
+<li><p>Enter a priority number. Rules with a lower number are evaluated first.</p></li>
+<li><p>Enter the <strong>Tag key</strong> — the name of the tag this rule produces.</p></li>
+<li><p>Build the condition. Click <strong>Add condition group</strong> to add an <code class="docutils literal notranslate"><span class="pre">OR</span></code> branch.
+Within each group, click <strong>Add condition</strong> to add <code class="docutils literal notranslate"><span class="pre">AND</span></code> clauses. Select the
+tag key to compare, the operator, and the value.</p></li>
+<li><p>Select the action:</p></li>
+</ol>
+<ul class="simple">
+<li><p>Choose <strong>Fixed value</strong> and enter the tag value.</p></li>
+<li><p>Choose <strong>Regular expression extraction</strong>, select the source tag, and enter a
+regular expression with exactly one capturing group.</p></li>
+</ul>
+<ol class="arabic simple" start="6">
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+</section>
+<section id="examples">
+<h3 id="examples">Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h3>
+<section id="route-queries-by-user-group-using-a-fixed-value">
+<h4 id="route-queries-by-user-group-using-a-fixed-value">Route queries by user group using a fixed value<a class="headerlink" href="#route-queries-by-user-group-using-a-fixed-value" title="Link to this heading">#</a></h4>
+<p>Create a tagging rule that sets the <code class="docutils literal notranslate"><span class="pre">tier</span></code> tag to <code class="docutils literal notranslate"><span class="pre">premium</span></code> when the user
+belongs to the <code class="docutils literal notranslate"><span class="pre">premium_users</span></code> group:</p>
+<table>
+<colgroup>
+<col style="width: 38%"/>
+<col style="width: 63%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Tag key</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tier</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Condition</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">group</span></code> equals <code class="docutils literal notranslate"><span class="pre">premium_users</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Action</p></td>
+<td><p>Fixed value: <code class="docutils literal notranslate"><span class="pre">premium</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Then, create a routing rule that routes queries where <code class="docutils literal notranslate"><span class="pre">tier</span></code> EQUALS <code class="docutils literal notranslate"><span class="pre">premium</span></code> to
+the <code class="docutils literal notranslate"><span class="pre">premium-cluster</span></code> routing group.</p>
+</section>
+<section id="extract-environment-from-application-source-tag">
+<h4 id="extract-environment-from-application-source-tag">Extract environment from application source tag<a class="headerlink" href="#extract-environment-from-application-source-tag" title="Link to this heading">#</a></h4>
+<p>Create a tagging rule that extracts the environment from an application-set
+source tag, such as <code class="docutils literal notranslate"><span class="pre">prod-reporting</span></code> or <code class="docutils literal notranslate"><span class="pre">staging-etl</span></code>:</p>
+<table>
+<colgroup>
+<col style="width: 38%"/>
+<col style="width: 63%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Tag key</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">env</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Condition</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">source</span></code> matches regular expression <code class="docutils literal notranslate"><span class="pre">^(prod|staging)-.*</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Action</p></td>
+<td><p>Regular expression extraction from source with expression
+<code class="docutils literal notranslate"><span class="pre">^(prod|staging)-.*</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The captured group (<code class="docutils literal notranslate"><span class="pre">prod</span></code> or <code class="docutils literal notranslate"><span class="pre">staging</span></code>) becomes the value of the <code class="docutils literal notranslate"><span class="pre">env</span></code> tag,
+which routing rules can then match against.</p>
+</section>
+</section>
 </section>
 </section>
 

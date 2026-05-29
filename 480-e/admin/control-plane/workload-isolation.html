@@ -226,7 +226,11 @@
 <li class="toctree-l2"><a class="reference internal" href="administration.html">Control Plane administration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="load-balancing.html">Load balancing</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Workload isolation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#client-tag-based-routing">Client tag-based routing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#auto-tag-based-routing">Auto tag-based routing</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#routing-rule-matching">Routing rule matching</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#workload-optimized-clusters">Workload-optimized clusters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#verify-routing">Verify routing</a></li>
@@ -316,7 +320,11 @@
     <strong>Contents</strong>
     <ul>
 <li><a class="reference internal" href="#">Workload isolation</a><ul>
-<li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#overview">Overview</a><ul>
+<li><a class="reference internal" href="#client-tag-based-routing">Client tag-based routing</a></li>
+<li><a class="reference internal" href="#auto-tag-based-routing">Auto tag-based routing</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#routing-rule-matching">Routing rule matching</a></li>
 <li><a class="reference internal" href="#workload-optimized-clusters">Workload-optimized clusters</a></li>
 <li><a class="reference internal" href="#verify-routing">Verify routing</a></li>
@@ -344,38 +352,85 @@
 <p class="admonition-title">Note</p>
 <p>The previous name of the Starburst Control Plane was Starburst Portal.</p>
 </div>
-<p>Starburst Control Plane prevents competing workloads from interfering with each
-other and lets you use workload-optimized clusters for specific use cases.</p>
 <section id="overview">
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h2>
-<p>Starburst Control Plane routes queries to specific routing groups based on
-Trino client tags. When you send a query to Starburst Control Plane, the
-Control Plane checks the query’s HTTP request header for client tags. If the
-header contains tags that match a routing rule, Starburst Control Plane routes
-the query to the routing group specified by that rule. Otherwise, Starburst
-Control Plane routes the query to the default <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> routing group.</p>
-<p>After Starburst Control Plane selects a routing group, load balancing determines
+<p>Starburst Control Plane routes queries to specific routing groups to prevent
+competing workloads from interfering with each other, and to enable
+workload-optimized clusters for specific use cases.</p>
+<p>When a query arrives, the Control Plane evaluates routing rules against
+different tags to determine the appropriate routing group. You can configure one
+of two different routing methods:</p>
+<ul class="simple">
+<li><p>Client tag-based routing (default method). Routing rules match against values
+from the HTTP header supplied by the client application.</p></li>
+<li><p>Auto tag-based routing. Routing rules match against a richer set of tags
+derived from HTTP request headers and the authenticated user’s portal
+identity. Tagging rules can further derive custom tags from these inputs.</p></li>
+</ul>
+<p>After the Control Plane selects a routing group, load balancing determines
 which cluster within that group handles the query. For more information, see
 <a class="reference internal" href="load-balancing.html"><span class="doc std std-doc">Load balancing</span></a>.</p>
+<section id="client-tag-based-routing">
+<h3 id="client-tag-based-routing">Client tag-based routing<a class="headerlink" href="#client-tag-based-routing" title="Link to this heading">#</a></h3>
+<p>Client tag-based routing is based on Trino client tags. When you send a query
+to Starburst Control Plane, the Control Plane checks the values from the
+<code class="docutils literal notranslate"><span class="pre">X-Trino-Client-Tags</span></code> HTTP request header. If the header contains tags that
+match a routing rule, the Control Plane routes the query to the routing group
+specified by that rule. Otherwise, the Control Plane routes the query to the
+default <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> routing group.</p>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>You must set Trino client tags using your client application.
-This may require client-side changes. For example, in the Trino CLI, include
+This might require client-side changes. For example, in the Trino CLI, include
 the <code class="docutils literal notranslate"><span class="pre">--client-tags</span></code> flag in your SQL statements. If an application cannot set
 client tags, Starburst Control Plane routes all queries from that application
 to the default <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> routing group.</p>
 </div>
 </section>
+<section id="auto-tag-based-routing">
+<span id="control-plane-auto-tag-based-routing"></span><h3 id="auto-tag-based-routing">Auto tag-based routing<a class="headerlink" href="#auto-tag-based-routing" title="Link to this heading">#</a></h3>
+<p>Auto tag-based routing derives higher-level routing tags using pattern matching,
+and lets you route based on user identity without requiring clients to set any
+headers.</p>
+<p>When you <a class="reference internal" href="installation.html#control-plane-cluster-configuration"><span class="std std-ref">enable auto tag-based routing</span></a>,
+Starburst Control Plane routes each query through a two-stage process. First, the
+Control Plane builds a set of tags for the query by combining system tags and
+custom tags.</p>
+<ul class="simple">
+<li><p>System tags are extracted automatically from two sources:</p>
+<ul>
+<li><p>The HTTP request: <code class="docutils literal notranslate"><span class="pre">source</span></code> (from <code class="docutils literal notranslate"><span class="pre">X-Trino-Source</span></code>) and <code class="docutils literal notranslate"><span class="pre">clientTag</span></code> (from
+<code class="docutils literal notranslate"><span class="pre">X-Trino-Client-Tags</span></code>).</p></li>
+<li><p>The authenticated user’s portal identity: username (<code class="docutils literal notranslate"><span class="pre">user</span></code>), group
+memberships (<code class="docutils literal notranslate"><span class="pre">group</span></code>), and roles (<code class="docutils literal notranslate"><span class="pre">role</span></code>).</p></li>
+</ul>
+</li>
+<li><p>Custom tags are generated by evaluating <a class="reference internal" href="administration.html#control-plane-tagging-rules"><span class="std std-ref">tagging
+rules</span></a> against the system tags.</p></li>
+</ul>
+<p>After the Control Plane computes all the tags, it evaluates <a class="reference internal" href="administration.html#control-plane-routing-rules"><span class="std std-ref">routing
+rules</span></a> in priority order against the full set of
+tags. The first matching routing rule determines the
+routing group. If no rule matches, the query goes to the default <code class="docutils literal notranslate"><span class="pre">adhoc</span></code> routing
+group.</p>
+</section>
+</section>
 <section id="routing-rule-matching">
-<h2 id="routing-rule-matching">Routing rule matching<a class="headerlink" href="#routing-rule-matching" title="Link to this heading">#</a></h2>
-<p>Assign each routing rule a priority. Starburst Control Plane evaluates rules in
-priority order, with lower numbers first. If a query’s client tags match
-multiple rules, the last matching rule wins. To control which rule takes
-precedence, assign it a higher priority number.</p>
+<span id="control-plane-routing-rule-matching"></span><h2 id="routing-rule-matching">Routing rule matching<a class="headerlink" href="#routing-rule-matching" title="Link to this heading">#</a></h2>
+<p>Starburst Control Plane evaluates routing rules in priority order.</p>
+<ul class="simple">
+<li><p>In client tag-based mode, the last matching rule wins. To control the order,
+you can assign priority numbers in the <strong>Create routing rule</strong> or <strong>Edit
+routing rule</strong> panes.</p></li>
+<li><p>In auto tag-based mode, the first matching rule wins. You can reorder rules in
+the <strong>Routing rules</strong> pane. Click <i class="material-symbols-rounded" style="color:black">more_vert</i> options &gt; <strong>Re-order rules</strong>, then drag and
+drop the rules in the grid. You can not manually set a priority number for a
+rule.</p></li>
+</ul>
 </section>
 <section id="workload-optimized-clusters">
 <h2 id="workload-optimized-clusters">Workload-optimized clusters<a class="headerlink" href="#workload-optimized-clusters" title="Link to this heading">#</a></h2>
-<p>Once you isolate workloads to specific routing groups, size and configure the
+<p>After you isolate workloads to specific routing groups, size and configure the
 clusters within each group to meet the requirements of the workload. For
 example, for a customer-facing application that requires low latency, enable
 Warp Speed on the clusters in that routing group.</p>
@@ -383,7 +438,16 @@ Warp Speed on the clusters in that routing group.</p>
 <section id="verify-routing">
 <h2 id="verify-routing">Verify routing<a class="headerlink" href="#verify-routing" title="Link to this heading">#</a></h2>
 <p>To verify routing behavior, check the Starburst Control Plane <strong>Query insights</strong>
-page. The page shows each query and the matching routing rule.</p>
+pane. For each query, the pane shows:</p>
+<ul class="simple">
+<li><p>The routing group the query was sent to.</p></li>
+<li><p>The cluster within that routing group that processed the query.</p></li>
+<li><p>The routing rule that matched the query (when auto tag-based routing is
+enabled and a rule was matched).</p></li>
+</ul>
+<p>Use this information to test and verify routing rules. When a query was routed
+by a specific routing rule, the rule name appears in the query detail view,
+making it easy to confirm that the intended rule applied.</p>
 </section>
 <section id="troubleshooting">
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
