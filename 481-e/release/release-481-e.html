@@ -348,7 +348,33 @@ Trino releases:</p>
 <section id="breaking-changes">
 <h2 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li></li>
+<li><p>Legacy Hadoop-based object storage support has been removed from the Delta
+Lake, Hive, and Iceberg connectors. Any catalog using <code class="docutils literal notranslate"><span class="pre">fs.hadoop.enabled=true</span></code>
+for cloud object storage or the legacy <code class="docutils literal notranslate"><span class="pre">hive.s3.*</span></code>, <code class="docutils literal notranslate"><span class="pre">hive.azure.*</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">hive.gcs.*</span></code> configuration properties fail to start after upgrading.
+<code class="docutils literal notranslate"><span class="pre">fs.hadoop.enabled</span></code> now only activates HDFS support. You must migrate to <a class="reference internal" href="../object-storage.html#file-system-native"><span class="std std-ref">native
+file system</span></a> support before upgrading:</p>
+<ul>
+<li><p>S3: set <code class="docutils literal notranslate"><span class="pre">fs.native-s3.enabled=true</span></code> and rename <code class="docutils literal notranslate"><span class="pre">hive.s3.*</span></code> properties</p></li>
+<li><p>Azure: set <code class="docutils literal notranslate"><span class="pre">fs.native-azure.enabled=true</span></code> and rename <code class="docutils literal notranslate"><span class="pre">hive.azure.*</span></code>
+properties</p></li>
+<li><p>GCS: set <code class="docutils literal notranslate"><span class="pre">fs.native-gcs.enabled=true</span></code> and rename <code class="docutils literal notranslate"><span class="pre">hive.gcs.*</span></code> properties</p></li>
+</ul>
+</li>
+</ul>
+<p>See the migration guides for full property mapping tables.</p>
+<ul class="simple">
+<li><p>Geospatial functions now reject WKT input containing invalid geometry that was
+previously accepted and silently corrected. Queries passing non-conforming WKT
+strings now fail with a parse error. Validate and correct any WKT inputs in your
+queries before upgrading.</p></li>
+<li><p><a class="reference internal" href="../functions/geospatial.html#ST_Union" title="ST_Union"><code class="xref py py-func docutils literal notranslate"><span class="pre">ST_Union()</span></code></a> now returns an empty geometry collection instead of <code class="docutils literal notranslate"><span class="pre">NULL</span></code>
+when called with no input rows. Update any queries that check for a <code class="docutils literal notranslate"><span class="pre">NULL</span></code>
+result from <a class="reference internal" href="../functions/geospatial.html#ST_Union" title="ST_Union"><code class="xref py py-func docutils literal notranslate"><span class="pre">ST_Union()</span></code></a> on empty inputs.</p></li>
+<li><p><a class="reference internal" href="../functions/geospatial.html#ST_Union" title="ST_Union"><code class="xref py py-func docutils literal notranslate"><span class="pre">ST_Union()</span></code></a> no longer inserts additional vertices at intersection points
+when unioning a point with a line. Queries that depended on those extra
+intersection vertices in the output geometry produce different results after
+upgrading.</p></li>
 </ul>
 </section>
 <section id="general">
