@@ -306,7 +306,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#managed-statistics">Managed statistics</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#join-pushdown">Join pushdown</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#json-predicate-pushdown">JSON predicate pushdown</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#predicate-pushdown">Predicate pushdown</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#dynamic-filtering">Dynamic filtering</a><ul>
@@ -421,7 +421,7 @@
 <li><a class="reference internal" href="#managed-statistics">Managed statistics</a></li>
 <li><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li><a class="reference internal" href="#join-pushdown">Join pushdown</a></li>
-<li><a class="reference internal" href="#json-predicate-pushdown">JSON predicate pushdown</a></li>
+<li><a class="reference internal" href="#predicate-pushdown">Predicate pushdown</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#dynamic-filtering">Dynamic filtering</a><ul>
@@ -1137,8 +1137,8 @@ functions:</p>
 <li><p><a class="reference internal" href="../functions/aggregate.html#corr" title="corr"><code class="xref py py-func docutils literal notranslate"><span class="pre">corr()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../functions/aggregate.html#regr_intercept" title="regr_intercept"><code class="xref py py-func docutils literal notranslate"><span class="pre">regr_intercept()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../functions/aggregate.html#regr_slope" title="regr_slope"><code class="xref py py-func docutils literal notranslate"><span class="pre">regr_slope()</span></code></a></p></li>
-<li><p><a class="reference internal" href="../functions/json.html#json_extract" title="json_extract"><code class="xref py py-func docutils literal notranslate"><span class="pre">json_extract()</span></code></a> (see <a class="reference internal" href="#snowflake-json-pushdown"><span class="std std-ref">JSON predicate pushdown</span></a>)</p></li>
-<li><p><a class="reference internal" href="../functions/json.html#json_extract_scalar" title="json_extract_scalar"><code class="xref py py-func docutils literal notranslate"><span class="pre">json_extract_scalar()</span></code></a> (see <a class="reference internal" href="#snowflake-json-pushdown"><span class="std std-ref">JSON predicate pushdown</span></a>)</p></li>
+<li><p><a class="reference internal" href="../functions/json.html#json_extract" title="json_extract"><code class="xref py py-func docutils literal notranslate"><span class="pre">json_extract()</span></code></a> see <a class="reference internal" href="#snowflake-predicate-pushdown"><span class="std std-ref">Predicate pushdown</span></a></p></li>
+<li><p><a class="reference internal" href="../functions/json.html#json_extract_scalar" title="json_extract_scalar"><code class="xref py py-func docutils literal notranslate"><span class="pre">json_extract_scalar()</span></code></a> see <a class="reference internal" href="#snowflake-predicate-pushdown"><span class="std std-ref">Predicate pushdown</span></a></p></li>
 </ul>
 <p><a class="reference internal" href="../optimizer/pushdown.html#projection-pushdown"><span class="std std-ref">Projection pushdown</span></a> for the following
 functions:</p>
@@ -1154,12 +1154,30 @@ pushdowns may negatively impact performance for some queries.</p>
 <p>Join pushdown is set to <code class="docutils literal notranslate"><span class="pre">false</span></code> by default in Snowflake catalogs to provide an
 effective measure against higher compute costs.</p>
 </section>
-<section id="json-predicate-pushdown">
-<span id="snowflake-json-pushdown"></span><h4 id="json-predicate-pushdown">JSON predicate pushdown<a class="headerlink" href="#json-predicate-pushdown" title="Link to this heading">#</a></h4>
-<p>Pushdown of <code class="docutils literal notranslate"><span class="pre">json_extract()</span></code> and <code class="docutils literal notranslate"><span class="pre">json_extract_scalar()</span></code> is considered
-experimental, and must be enabled by setting the
-<code class="docutils literal notranslate"><span class="pre">snowflake.experimental-pushdown.enabled</span></code> catalog configuration property or
+<section id="predicate-pushdown">
+<span id="snowflake-predicate-pushdown"></span><h4 id="predicate-pushdown">Predicate pushdown<a class="headerlink" href="#predicate-pushdown" title="Link to this heading">#</a></h4>
+<p>The connector supports pushdown of predicates to Snowflake for evaluation,
+including <code class="docutils literal notranslate"><span class="pre">IN</span></code> list predicates.</p>
+<p>The connector also supports experimental pushdown of the following predicates
+and functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LIKE</span></code> predicates on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns, without an <code class="docutils literal notranslate"><span class="pre">ESCAPE</span></code> clause</p></li>
+<li><p>predicates that use <code class="docutils literal notranslate"><span class="pre">lower()</span></code> and <code class="docutils literal notranslate"><span class="pre">upper()</span></code> on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns</p></li>
+<li><p>predicates that use <code class="docutils literal notranslate"><span class="pre">coalesce()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">json_extract()</span></code> and <code class="docutils literal notranslate"><span class="pre">json_extract_scalar()</span></code></p></li>
+</ul>
+<p>Experimental pushdown is not enabled by default. To enable it, set the
+<code class="docutils literal notranslate"><span class="pre">snowflake.experimental-pushdown.enabled</span></code> catalog configuration property or the
 <code class="docutils literal notranslate"><span class="pre">experimental_pushdown_enabled</span></code> catalog session property to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When experimental pushdown is enabled, predicates that use the <code class="docutils literal notranslate"><span class="pre">lower()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">upper()</span></code> functions can return different results than when it is turned off.
+Snowflake performs the locale-sensitive, context-sensitive, and one-to-many
+character mappings required for some languages, while Trino does not. As a
+result, results can differ for some languages, such as Lithuanian, Turkish, and
+Azeri. See <a class="reference internal" href="../functions/string.html"><span class="doc std std-doc">String functions and operators</span></a></p>
+</div>
 </section>
 </section>
 <section id="dynamic-filtering">
