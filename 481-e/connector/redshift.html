@@ -277,6 +277,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#domain-compaction-threshold">Domain compaction threshold</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#case-insensitive-matching">Case insensitive matching</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#non-transactional-insert">Non-transactional INSERT</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#redshift-spectrum-external-tables">Redshift Spectrum external tables</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#table-redirection-for-redshift-spectrum">Table redirection for Redshift Spectrum</a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#fault-tolerant-execution-support">Fault-tolerant execution support</a></li>
 </ul>
 </li>
@@ -406,6 +410,10 @@
 <li><a class="reference internal" href="#domain-compaction-threshold">Domain compaction threshold</a></li>
 <li><a class="reference internal" href="#case-insensitive-matching">Case insensitive matching</a></li>
 <li><a class="reference internal" href="#non-transactional-insert">Non-transactional INSERT</a></li>
+<li><a class="reference internal" href="#redshift-spectrum-external-tables">Redshift Spectrum external tables</a><ul>
+<li><a class="reference internal" href="#table-redirection-for-redshift-spectrum">Table redirection for Redshift Spectrum</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#fault-tolerant-execution-support">Fault-tolerant execution support</a></li>
 </ul>
 </li>
@@ -832,6 +840,151 @@ or the corresponding <code class="docutils literal notranslate"><span class="pre
 exceptions occur during the insert operation. With transactions disabled, no
 rollback can be performed.</p>
 </section>
+<section id="redshift-spectrum-external-tables">
+<span id="redshift-external-tables"></span><h3 id="redshift-spectrum-external-tables">Redshift Spectrum external tables<a class="headerlink" href="#redshift-spectrum-external-tables" title="Link to this heading">#</a></h3>
+<p><a class="reference external" href="https://docs.aws.amazon.com/redshift/latest/dg/c-using-spectrum.html">Redshift
+Spectrum</a>
+lets you query data stored in Amazon S3 through external schemas and tables
+defined in an AWS Glue Data Catalog. The Redshift connector can expose these
+external tables and schemas along with regular Redshift tables in catalog
+metadata.</p>
+<table id="id4">
+<caption><span class="caption-text">Redshift Spectrum configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">redshift.external-tables.enabled</span></code></p></td>
+<td><p>When enabled, the connector discovers external schemas from
+<code class="docutils literal notranslate"><span class="pre">SVV_EXTERNAL_SCHEMAS</span></code> and external tables from <code class="docutils literal notranslate"><span class="pre">SVV_EXTERNAL_TABLES</span></code>,
+and resolves column metadata from <code class="docutils literal notranslate"><span class="pre">SVV_EXTERNAL_COLUMNS</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">redshift.hive-catalog-name</span></code></p></td>
+<td><p>Name of a configured Hive catalog to use for
+<a class="reference internal" href="#redshift-spectrum-redirection"><span class="std std-ref">table redirection</span></a> of Hive-format
+external tables backed by AWS Glue Data Catalog. Requires
+<code class="docutils literal notranslate"><span class="pre">redshift.external-tables.enabled=true</span></code>.</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">redshift.iceberg-catalog-name</span></code></p></td>
+<td><p>Name of a configured Iceberg catalog to use for <a class="reference internal" href="#redshift-spectrum-redirection"><span class="std std-ref">table
+redirection</span></a> of Iceberg external tables
+backed by AWS Glue Data Catalog. Requires
+<code class="docutils literal notranslate"><span class="pre">redshift.external-tables.enabled=true</span></code>.</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The connector supports read-only operations on external tables.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Enabling this feature adds a slight performance overhead to every
+table read. For each operation, the connector checks whether the target
+table is an external table.</p>
+</div>
+<section id="table-redirection-for-redshift-spectrum">
+<span id="redshift-spectrum-redirection"></span><h4 id="table-redirection-for-redshift-spectrum">Table redirection for Redshift Spectrum<a class="headerlink" href="#table-redirection-for-redshift-spectrum" title="Link to this heading">#</a></h4>
+<p>SEP can transparently redirect operations on an existing table to the
+appropriate catalog based on the format of the table and catalog configuration.</p>
+<p>When you configure Redshift Spectrum table redirection in the Redshift
+connector, the connector redirects queries on matching external tables to the
+appropriate Starburst Hive or Iceberg catalog. Trino then reads data directly
+from S3 using the Hive or Iceberg connector instead of routing the scan through
+Redshift Spectrum. This avoids the Redshift Spectrum per-terabyte scan cost and
+improves query performance.</p>
+<p>For example, the following scenario makes use of table redirection:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="n">USE</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">;</span>
+
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">example_table</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
+-------------------------------------------------------------------------
+Fragment 0 [SOURCE]
+     ...
+     Output[columnNames = [...]]
+     │   ...
+     └─ TableScan[table = another_catalog:example_schema:example_table]
+            ...
+</pre></div>
+</div>
+<p>The output of the <code class="docutils literal notranslate"><span class="pre">EXPLAIN</span></code> statement points to the actual
+catalog that handles the <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> query over the table <code class="docutils literal notranslate"><span class="pre">example_table</span></code>.</p>
+<p>Table redirection also works when you use fully qualified names for the tables:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">example_schema</span><span class="p">.</span><span class="n">example_table</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>                               Query Plan
+-------------------------------------------------------------------------
+Fragment 0 [SOURCE]
+     ...
+     Output[columnNames = [...]]
+     │   ...
+     └─ TableScan[table = another_catalog:example_schema:example_table]
+            ...
+</pre></div>
+</div>
+<p>SEP supports table redirection for the following operations:</p>
+<ul class="simple">
+<li><p>Table read operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/select.html"><span class="doc std std-doc">SELECT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/describe.html"><span class="doc std std-doc">DESCRIBE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/show-stats.html"><span class="doc std std-doc">SHOW STATS</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/show-create-table.html"><span class="doc std std-doc">SHOW CREATE TABLE</span></a></p></li>
+</ul>
+</li>
+<li><p>Table write operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/insert.html"><span class="doc std std-doc">INSERT</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/update.html"><span class="doc std std-doc">UPDATE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/merge.html"><span class="doc std std-doc">MERGE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/delete.html"><span class="doc std std-doc">DELETE</span></a></p></li>
+</ul>
+</li>
+<li><p>Table management operations</p>
+<ul>
+<li><p><a class="reference internal" href="../sql/alter-table.html"><span class="doc std std-doc">ALTER TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/drop-table.html"><span class="doc std std-doc">DROP TABLE</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/comment.html"><span class="doc std std-doc">COMMENT</span></a></p></li>
+</ul>
+</li>
+</ul>
+<p>SEP does not offer view redirection support.</p>
+<p>The connector supports redirection to Hive and Iceberg catalogs with the
+following catalog configuration properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">redshift.iceberg-catalog-name</span></code>: Name of the catalog to use for reading
+Iceberg tables.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">redshift.hive-catalog-name</span></code> Name of the catalog to use for reading
+Hive tables.</p></li>
+</ul>
+<p>The Hive or Iceberg catalog must also be configured with <a class="reference internal" href="../security/aws-lake-formation.html"><span class="doc std std-doc">AWS Lake
+Formation</span></a>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="c1"># hive.properties</span>
+<span class="na">hive.security</span><span class="o">=</span><span class="s">lake-formation</span>
+</pre></div>
+</div>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="c1"># iceberg.properties</span>
+<span class="na">iceberg.security</span><span class="o">=</span><span class="s">lake-formation</span>
+</pre></div>
+</div>
+<p>Table redirection requires that external tables are registered in AWS Glue
+Data Catalog. Tables stored outside Glue are not redirected.</p>
+<p>You can override the catalog names per session using the session
+properties <code class="docutils literal notranslate"><span class="pre">hive_catalog_name</span></code> and <code class="docutils literal notranslate"><span class="pre">iceberg_catalog_name</span></code> on the Redshift
+catalog.</p>
+</section>
+</section>
 <section id="fault-tolerant-execution-support">
 <span id="sb-redshift-fte-support"></span><h3 id="fault-tolerant-execution-support">Fault-tolerant execution support<a class="headerlink" href="#fault-tolerant-execution-support" title="Link to this heading">#</a></h3>
 <p>The connector supports <a class="reference internal" href="../admin/fault-tolerant-execution.html"><span class="doc">Fault-tolerant execution</span></a> of query
@@ -873,8 +1026,8 @@ connector modifies some types when reading or writing data.</p>
 <p>This connector supports reading the following Redshift types and performs
 conversion to SEP types with the detailed mappings as shown in the following
 table.</p>
-<table id="id4">
-<caption><span class="caption-text">Redshift to SEP type mapping</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Redshift to SEP type mapping</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 20%"/>
@@ -944,8 +1097,8 @@ table.</p>
 <p>This connector supports writing the following SEP types and performs
 conversion to Redshift types with the detailed mappings as shown in the
 following table.</p>
-<table id="id5">
-<caption><span class="caption-text">SEP to Redshift type mapping</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">SEP to Redshift type mapping</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 20%"/>
@@ -1404,8 +1557,8 @@ connector.</p>
 <p>Configure the required S3 location with <code class="docutils literal notranslate"><span class="pre">redshift.unload-location</span></code> to enable the
 parallel read. Parquet files are automatically removed with query completion.
 The Redshift cluster and the configured S3 bucket must use the same AWS region.</p>
-<table id="id6">
-<caption><span class="caption-text">Parallel read configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<table id="id7">
+<caption><span class="caption-text">Parallel read configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -1489,8 +1642,8 @@ catalog configuration file:</p>
 </div>
 <p>This table describes the configuration properties for IAM
 authentication:</p>
-<table id="id7">
-<caption><span class="caption-text">IAM configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+<table id="id8">
+<caption><span class="caption-text">IAM configuration properties</span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
