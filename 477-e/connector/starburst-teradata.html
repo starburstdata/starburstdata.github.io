@@ -116,7 +116,7 @@
         <a href="https://www.starburst.io" title="Starburst Enterprise"
           class="md-header-nav__button md-logo">
             <img src="../_static/img/Starburst_Logo_White+Blue.svg"
-              alt="Starburst Enterprise 477-e.14 LTS logo">
+              alt="Starburst Enterprise 477-e.15 LTS logo">
         </a>
       </div>
       <span class="header-divider"></span>
@@ -127,7 +127,7 @@
         <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
-          Documentation: Starburst Enterprise 477-e.14 LTS</a>
+          Documentation: Starburst Enterprise 477-e.15 LTS</a>
           <span class="md-header-nav__topic"> Starburst Teradata connectors </span>
         </div>
       </div>
@@ -204,7 +204,7 @@
       
     </a>
     <a href="../index.html"
-       title="Starburst Enterprise">Starburst Enterprise 477-e.14 LTS</a>
+       title="Starburst Enterprise">Starburst Enterprise 477-e.15 LTS</a>
   </label>
   
   
@@ -1760,23 +1760,34 @@ connector version in use.</p>
 <ul>
 <li><p>To obtain access to the Teradata native table operator file, contact
 Starburst Support.</p></li>
-<li><p>Copy the provided file onto all Teradata servers into an identical location
-such as <code class="docutils literal notranslate"><span class="pre">/opt/starburst</span></code>.</p></li>
+<li><p>Copy the provided file onto all Teradata servers into an identical location of
+your choosing. The <code class="docutils literal notranslate"><span class="pre">.so</span></code> file you copy must correspond to the SEP version
+of the cluster that will connect to Teradata. Note the path, as you will need
+it in the <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">FUNCTION</span></code> statement below.</p></li>
 <li><p>Allow Teradata processes to access the file by either adding read permission
 with a command such as <code class="docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">+r</span> <span class="pre">&lt;.so</span> <span class="pre">file&gt;</span></code>, or allowing access by the
 <code class="docutils literal notranslate"><span class="pre">tdtrusted</span></code> group with <code class="docutils literal notranslate"><span class="pre">chown</span> <span class="pre">:tdtrusted</span> <span class="pre">&lt;.so</span> <span class="pre">file&gt;;</span> <span class="pre">chmod</span> <span class="pre">g+r</span> <span class="pre">&lt;.so</span> <span class="pre">file&gt;</span></code>.</p></li>
 <li><p>Create the table operator function in the desired schema. We recommend a
-dedicated database for the current operator version.</p>
+dedicated database for the current operator version. The version-specific
+function and symbol names allow multiple native table operator versions to
+coexist in a single Teradata database.</p>
 <blockquote>
 <div><div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">some_database</span><span class="p">.</span><span class="n">table_operator</span><span class="p">()</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="nb">VARYING</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">starburst_teradata_contract</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="nb">VARYING</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">starburst_td_contract_</span><span class="o">&lt;</span><span class="n">trino_version</span><span class="o">&gt;</span>
 <span class="k">LANGUAGE</span><span class="w"> </span><span class="k">C</span>
 <span class="k">NO</span><span class="w"> </span><span class="k">SQL</span>
 <span class="k">PARAMETER</span><span class="w"> </span><span class="n">STYLE</span><span class="w"> </span><span class="n">SQLTABLE</span>
-<span class="k">EXTERNAL</span><span class="w"> </span><span class="n">NAME</span><span class="w"> </span><span class="s1">'SP!/opt/starburst/starburst-direct-&lt;version&gt;.so!F!starburst_teradata'</span><span class="p">;</span>
+<span class="k">EXTERNAL</span><span class="w"> </span><span class="n">NAME</span><span class="w"> </span><span class="s1">'SP!&lt;path&gt;/starburst-direct-&lt;version&gt;.so!F!starburst_teradata_&lt;trino_version&gt;'</span><span class="p">;</span>
 </pre></div>
 </div>
 </div></blockquote>
+<p>Replace <code class="docutils literal notranslate"><span class="pre">&lt;trino_version&gt;</span></code> with the Trino version number (for example, <code class="docutils literal notranslate"><span class="pre">481</span></code>
+for a <code class="docutils literal notranslate"><span class="pre">481-e.X</span></code> release), and <code class="docutils literal notranslate"><span class="pre">&lt;version&gt;</span></code> with the full SEP release version
+(for example, <code class="docutils literal notranslate"><span class="pre">481-e.12</span></code>). Replace <code class="docutils literal notranslate"><span class="pre">&lt;path&gt;</span></code> with the location where you
+copied the <code class="docutils literal notranslate"><span class="pre">.so</span></code> file in the previous step. The <code class="docutils literal notranslate"><span class="pre">.so</span></code> file and the version
+tokens in <code class="docutils literal notranslate"><span class="pre">USING</span> <span class="pre">FUNCTION</span></code> and <code class="docutils literal notranslate"><span class="pre">EXTERNAL</span> <span class="pre">NAME</span></code> must all correspond to the
+same Trino version. You cannot use a <code class="docutils literal notranslate"><span class="pre">.so</span></code> file built for a different Trino
+version than the one referenced in the function name.</p>
 </li>
 </ul>
 <div class="admonition warning">
@@ -2032,7 +2043,7 @@ feedback();
 
         <a href="https://www.starburst.io/" target="_blank">
           <img src="../_static/img/Starburst_Logo_White+Blue.svg" height="34"
-            alt="Starburst Enterprise 477-e.14 LTS logo">
+            alt="Starburst Enterprise 477-e.15 LTS logo">
         </a>
         <li class="footer-item" style="padding-right:10px;">
           <a href="/disclaimers.html#copyright">Copyright © 2017-2025<br> Starburst Data</a>
