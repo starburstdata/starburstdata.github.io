@@ -989,12 +989,12 @@ performance optimizations in query planning.</p>
 <a class="reference internal" href="#starburst-teradata-collect-statistics"><span class="std std-ref">collect_statistics</span></a> for details and examples.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If managed statistics is enabled, automatic internal TLS cannot secure
-communication between the Teradata Direct connector and the cluster. To use the
-feature, you must add the <code class="docutils literal notranslate"><span class="pre">http-server.https.port</span></code> configuration property to
-your <code class="docutils literal notranslate"><span class="pre">teradata_direct</span></code> catalog configuration and set it to an available HTTPS
-port. Additionally, ensure that the entire cluster uses an identical Java
-keystore configuration.</p>
+<p>If managed statistics is enabled, you must explicitly configure HTTPS for
+communication between the Teradata Direct connector and the cluster. Either add
+<code class="docutils literal notranslate"><span class="pre">http-server.https.port</span></code> to your <code class="docutils literal notranslate"><span class="pre">teradata_direct</span></code> catalog configuration and
+ensure the entire cluster uses an identical Java keystore configuration, or set
+<code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code> in your catalog configuration to use
+automatic transport layer security.</p>
 </div>
 </section>
 <section id="pushdown">
@@ -1749,8 +1749,18 @@ nodes over TLS.</p>
 <p>If SEP node communication is non-HTTPS, Teradata Direct
 communication is also non-HTTPS. If SEP node communication is HTTPS,
 Teradata Direct communication uses HTTPS.</p>
-<p>The only available option for encryption is via the SEP keystore. Automatic
-TLS configuration is not supported.</p>
+<p>Two TLS modes are available:</p>
+<ul class="simple">
+<li><p><strong>Automatic TLS:</strong> Set <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code> in your catalog
+properties. No keystore is required. The connector derives a public key from
+the shared secret and uses SHA256 public key pinning to verify the server
+identity. Use the same shared secret configured for SEP internal
+communication.</p></li>
+<li><p><strong>Manual TLS:</strong> Provide a keystore and <code class="docutils literal notranslate"><span class="pre">teradata-direct.root-certificate.path</span></code>.
+Existing manual TLS configurations continue to work unchanged.</p></li>
+</ul>
+<p>Automatic TLS is only active when <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code> is set
+and no keystore is configured. If both are present, manual TLS takes precedence.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>These HTTPS configuration changes apply to the Teradata Direct connector
