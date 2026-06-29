@@ -1462,9 +1462,8 @@ include <code class="docutils literal notranslate"><span class="pre">SYNONYM</sp
 </section>
 <section id="parallelism">
 <h3 id="parallelism">Parallelism<a class="headerlink" href="#parallelism" title="Link to this heading">#</a></h3>
-<p>The connector is able to read data from Oracle using multiple parallel
-connections for tables partitioned as described in the <a class="reference external" href="https://www.oracle.com/database/technologies/partitioning.html">Oracle partitioning
-documentation</a>.</p>
+<p>The connector supports parallel reads using multiple JDBC connections. The
+parallelism strategy is controlled by <code class="docutils literal notranslate"><span class="pre">oracle.parallelism-type</span></code>.</p>
 <table id="id4">
 <caption><span class="caption-text">Oracle parallelism configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
 <colgroup>
@@ -1482,18 +1481,40 @@ documentation</a>.</p>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">oracle.parallelism-type</span></code></p></td>
 <td><p>Determines the parallelism method. Possible values are:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">NO_PARALLELISM</span></code>, single JDBC connection</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">PARTITIONS</span></code>, separate connection for each partition</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NO_PARALLELISM</span></code>: single JDBC connection, no parallelism.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PARTITIONS</span></code>: separate connection for each partition. Requires the
+table to be partitioned as described in the
+<a class="reference external" href="https://www.oracle.com/database/technologies/partitioning.html">Oracle partitioning
+documentation</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ORA_HASH</span></code>: splits reads using <code class="docutils literal notranslate"><span class="pre">ORA_HASH(ROWID,</span> <span class="pre">N,</span> <span class="pre">0)</span> <span class="pre">=</span> <span class="pre">i</span></code> predicates.
+Works on any regular table regardless of partitioning. Falls back to a
+single split with a warning for external tables, views, synonyms, and
+tables with no resolvable owner.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AUTO</span></code>: automatically selects the parallelism strategy. Tries
+partition-based splits first. If the table is not partitioned, falls
+back to <code class="docutils literal notranslate"><span class="pre">ORA_HASH</span></code>. If <code class="docutils literal notranslate"><span class="pre">ORA_HASH</span></code> is not applicable, falls back to a
+single split.</p></li>
 </ul>
 </td>
 <td><p><code class="docutils literal notranslate"><span class="pre">NO_PARALLELISM</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">oracle.parallel.max-splits-per-scan</span></code></p></td>
-<td><p>Maximum number of parallel connections for a table scan</p></td>
+<td><p>Maximum number of parallel connections for a table scan. Must be 1 or
+greater.</p></td>
 <td><p>10</p></td>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each parallel split executes as a separate database statement on a separate
+connection. Oracle guarantees statement-level read consistency within each
+split, but provides no consistency guarantee across splits. Concurrent DML
+(inserts, updates, deletes) during query execution may cause rows to appear
+in multiple splits or be absent from all splits. The <code class="docutils literal notranslate"><span class="pre">PARTITIONS</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ORA_HASH</span></code>, and <code class="docutils literal notranslate"><span class="pre">AUTO</span></code> modes are best suited for analytical workloads where
+data is stable during query execution.</p>
+</div>
 </section>
 <section id="table-statistics">
 <h3 id="table-statistics">Table statistics<a class="headerlink" href="#table-statistics" title="Link to this heading">#</a></h3>
