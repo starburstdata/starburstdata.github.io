@@ -227,13 +227,9 @@ decimal <code class="docutils literal notranslate"><span class="pre">32</span></
 for decimal <code class="docutils literal notranslate"><span class="pre">9</span></code> or <code class="docutils literal notranslate"><span class="pre">0b101010</span></code> for decimal `42``.</li>
 </ul>
 <p>Underscore characters are ignored within literal values, and can be used to
-increase readability. For example, decimal integer <code class="docutils literal notranslate"><span class="pre">123_456.789_123</span></code> is
-equivalent to <code class="docutils literal notranslate"><span class="pre">123456.789123</span></code>. Preceding and trailing underscores are not
-permitted.</p>
-<p>Underscore characters are ignored within literal values, and can be used to
 increase readability. For example, decimal integer <code class="docutils literal notranslate"><span class="pre">123_456</span></code> is equivalent to
-<code class="docutils literal notranslate"><span class="pre">123456</span></code>. Preceding underscores, trailing underscores, and consecutive
-underscores are not permitted.</p>
+<code class="docutils literal notranslate"><span class="pre">123456</span></code>. Preceding underscores, trailing underscores, and consecutive underscores
+are not permitted.</p>
 <p>Integers are supported by the following data types.</p>
 
 <h3 id="tinyint"><code class="docutils literal notranslate"><span class="pre">TINYINT</span></code><a class="headerlink" href="#tinyint" title="Permalink to this heading">#</a></h3>
@@ -263,8 +259,8 @@ underscores are not permitted.</p>
 using scientific notation such as <code class="docutils literal notranslate"><span class="pre">1.03e1</span></code> and are cast as <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> data type.
 Underscore characters are ignored within literal values, and can be used to
 increase readability. For example, value <code class="docutils literal notranslate"><span class="pre">123_456.789e4</span></code> is equivalent to
-<code class="docutils literal notranslate"><span class="pre">123456.789e4</span></code>. Preceding underscores, trailing underscores, and underscores
-beside the comma (<code class="docutils literal notranslate"><span class="pre">.</span></code>) are not permitted.</p>
+<code class="docutils literal notranslate"><span class="pre">123456.789e4</span></code>. Preceding underscores, trailing underscores, consecutive
+underscores, and underscores beside the comma (<code class="docutils literal notranslate"><span class="pre">.</span></code>) are not permitted.</p>
 
 <h3 id="real"><code class="docutils literal notranslate"><span class="pre">REAL</span></code><a class="headerlink" href="#real" title="Permalink to this heading">#</a></h3>
 <p>A real is a 32-bit inexact, variable-precision implementing the
@@ -276,6 +272,44 @@ IEEE Standard 754 for Binary Floating-Point Arithmetic.</p>
 <p>A double is a 64-bit inexact, variable-precision implementing the
 IEEE Standard 754 for Binary Floating-Point Arithmetic.</p>
 <p>Example literals: <code class="docutils literal notranslate"><span class="pre">DOUBLE</span> <span class="pre">'10.3'</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span> <span class="pre">'1.03e1'</span></code>, <code class="docutils literal notranslate"><span class="pre">10.3e0</span></code>, <code class="docutils literal notranslate"><span class="pre">1.03e1</span></code></p>
+
+
+<span id="number-data-type"></span><h3 id="number"><code class="docutils literal notranslate"><span class="pre">NUMBER</span></code><a class="headerlink" href="#number" title="Permalink to this heading">#</a></h3>
+<p>A floating point, decimal number of unspecified precision of at least 50 decimal digits.
+The type supports positive values as small as <code class="docutils literal notranslate"><span class="pre">1e-100</span></code> or smaller, and
+values as large as <code class="docutils literal notranslate"><span class="pre">1e100</span></code> or larger.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'3.1415926535897932384626433832795028841971693993751'</span>
+<span class="c1">-- 3.1415926535897932384626433832795028841971693993751 without loss of precision</span>
+
+<span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'12345678901234567890123456789012345678901234567890e30'</span>
+<span class="c1">-- 1.234567890123456789012345678901234567890123456789E+79 without loss of precision</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> type supports the special values <code class="docutils literal notranslate"><span class="pre">Infinity</span></code>, <code class="docutils literal notranslate"><span class="pre">-Infinity</span></code>, and <code class="docutils literal notranslate"><span class="pre">NaN</span></code>,
+following similar semantics to floating-point types:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'Infinity'</span><span class="p">;</span>
+<span class="c1">-- Infinity</span>
+
+<span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'-Infinity'</span><span class="p">;</span>
+<span class="c1">-- -Infinity</span>
+
+<span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'NaN'</span><span class="p">;</span>
+<span class="c1">-- NaN</span>
+</pre></div>
+</div>
+<p>Division by zero raises a “Division by zero” error:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'1'</span> <span class="o">/</span> <span class="nb">NUMBER</span> <span class="s1">'0'</span><span class="p">;</span>
+<span class="c1">-- ERROR: Division by zero</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">NaN</span></code> is not equal to any value, including itself:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">NUMBER</span> <span class="s1">'NaN'</span> <span class="o">=</span> <span class="nb">NUMBER</span> <span class="s1">'NaN'</span><span class="p">;</span>
+<span class="c1">-- false</span>
+</pre></div>
+</div>
+<p>Ordering follows the convention: <code class="docutils literal notranslate"><span class="pre">-Infinity</span></code> &lt; all finite values &lt; <code class="docutils literal notranslate"><span class="pre">Infinity</span></code> &lt; <code class="docutils literal notranslate"><span class="pre">NaN</span></code>.</p>
+<p>Example literals: <code class="docutils literal notranslate"><span class="pre">NUMBER</span> <span class="pre">'10.3'</span></code>, <code class="docutils literal notranslate"><span class="pre">NUMBER</span> <span class="pre">'1234567890'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NUMBER</span> <span class="pre">'1e3'</span></code>, <code class="docutils literal notranslate"><span class="pre">NUMBER</span> <span class="pre">'Infinity'</span></code>, <code class="docutils literal notranslate"><span class="pre">NUMBER</span> <span class="pre">'NaN'</span></code></p>
 
 
 
@@ -333,26 +367,15 @@ another single quote:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">CHAR</span> <span class="s1">'All right, Mr. DeMille, I''m ready for my close-up.'</span>
 </pre></div>
 </div>
-<p>Fixed length character data. A <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> type without length specified has a default length of 1.
-A <code class="docutils literal notranslate"><span class="pre">CHAR(x)</span></code> value always has <code class="docutils literal notranslate"><span class="pre">x</span></code> characters. For example, casting <code class="docutils literal notranslate"><span class="pre">dog</span></code> to <code class="docutils literal notranslate"><span class="pre">CHAR(7)</span></code>
-adds 4 implicit trailing spaces. Leading and trailing spaces are included in comparisons of
-<code class="docutils literal notranslate"><span class="pre">CHAR</span></code> values. As a result, two character values with different lengths (<code class="docutils literal notranslate"><span class="pre">CHAR(x)</span></code> and
-<code class="docutils literal notranslate"><span class="pre">CHAR(y)</span></code> where <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">!=</span> <span class="pre">y</span></code>) will never be equal. As with <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, a single quote in a <code class="docutils literal notranslate"><span class="pre">CHAR</span></code>
-literal can be escaped with another single quote:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="nb">CHAR</span> <span class="s1">'All right, Mr. DeMille, I''m ready for my close-up.'</span>
+<p>Example type definitions: <code class="docutils literal notranslate"><span class="pre">char</span></code>, <code class="docutils literal notranslate"><span class="pre">char(20)</span></code></p>
 
-<span class="n">Example</span> <span class="k">type</span> <span class="n">definitions</span><span class="p">:</span> <span class="o">`</span><span class="nb">char</span><span class="o">`</span><span class="p">,</span> <span class="o">`</span><span class="nb">char</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span><span class="o">`</span>
 
-<span class="o">###</span> <span class="o">`</span><span class="n">VARBINARY</span><span class="o">`</span>
-
-<span class="k">Variable</span> <span class="k">length</span> <span class="nb">binary</span> <span class="k">data</span><span class="p">.</span>
-
-<span class="k">SQL</span> <span class="n">statements</span> <span class="n">support</span> <span class="k">usage</span> <span class="k">of</span> <span class="nb">binary</span> <span class="n">literal</span> <span class="k">data</span> <span class="k">with</span> <span class="n">the</span> <span class="k">prefix</span> <span class="o">`</span><span class="n">X</span><span class="o">`</span> <span class="k">or</span> <span class="o">`</span><span class="n">x</span><span class="o">`</span><span class="p">.</span>
-<span class="n">The</span> <span class="nb">binary</span> <span class="k">data</span> <span class="n">has</span> <span class="k">to</span> <span class="n">use</span> <span class="n">hexadecimal</span> <span class="n">format</span><span class="p">.</span> <span class="k">For</span> <span class="n">example</span><span class="p">,</span> <span class="n">the</span> <span class="nb">binary</span> <span class="n">form</span> <span class="k">of</span>
-<span class="o">`</span><span class="n">eh</span><span class="o">?`</span> <span class="k">is</span> <span class="o">`</span><span class="n">X</span><span class="s1">'65683F'</span><span class="o">`</span> <span class="k">as</span> <span class="n">you</span> <span class="n">can</span> <span class="n">confirm</span> <span class="k">with</span> <span class="n">the</span> <span class="n">following</span> <span class="k">statement</span><span class="p">:</span>
-
-<span class="o">```</span><span class="k">sql</span>
-<span class="k">SELECT</span> <span class="n">from_utf8</span><span class="p">(</span><span class="n">x</span><span class="s1">'65683F'</span><span class="p">);</span>
+<h3 id="varbinary"><code class="docutils literal notranslate"><span class="pre">VARBINARY</span></code><a class="headerlink" href="#varbinary" title="Permalink to this heading">#</a></h3>
+<p>Variable length binary data.</p>
+<p>SQL statements support usage of binary literal data with the prefix <code class="docutils literal notranslate"><span class="pre">X</span></code> or <code class="docutils literal notranslate"><span class="pre">x</span></code>.
+The binary data has to use hexadecimal format. For example, the binary form of
+<code class="docutils literal notranslate"><span class="pre">eh?</span></code> is <code class="docutils literal notranslate"><span class="pre">X'65683F'</span></code> as you can confirm with the following statement:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">from_utf8</span><span class="p">(</span><span class="n">x</span><span class="s1">'65683F'</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Binary literals ignore any whitespace characters. For example, the literal
@@ -363,9 +386,41 @@ literal can be escaped with another single quote:</p>
 </div>
 
 
-<h3 id="json"><code class="docutils literal notranslate"><span class="pre">JSON</span></code><a class="headerlink" href="#json" title="Permalink to this heading">#</a></h3>
+<span id="json-data-type"></span><h3 id="json"><code class="docutils literal notranslate"><span class="pre">JSON</span></code><a class="headerlink" href="#json" title="Permalink to this heading">#</a></h3>
 <p>JSON value type, which can be a JSON object, a JSON array, a JSON number, a JSON string,
 <code class="docutils literal notranslate"><span class="pre">true</span></code>, <code class="docutils literal notranslate"><span class="pre">false</span></code> or <code class="docutils literal notranslate"><span class="pre">null</span></code>.</p>
+
+
+<span id="variant-data-type"></span><h3 id="variant"><code class="docutils literal notranslate"><span class="pre">VARIANT</span></code><a class="headerlink" href="#variant" title="Permalink to this heading">#</a></h3>
+<p>A semi-structured value type. A <code class="docutils literal notranslate"><span class="pre">VARIANT</span></code> value can represent any of the following:</p>
+<ul class="simple">
+<li>object (key-value structure)</li>
+<li>array</li>
+<li>string</li>
+<li>number (integer, decimal, and floating-point)</li>
+<li>boolean</li>
+<li>null</li>
+<li>date and time values</li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">VARIANT</span></code> is designed for working with semi-structured data efficiently, and is
+commonly used with connectors and file formats that support a native variant type.</p>
+<p><code class="docutils literal notranslate"><span class="pre">VARIANT</span></code> differs from <a class="reference internal" href="#json-data-type"><span class="std std-ref">JSON</span></a> in that it preserves the full
+underlying value type, rather than reducing values to a limited set of JSON
+types.</p>
+<p>Examples:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">typeof</span><span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="n">JSON</span> <span class="s1">'{"a": 1, "b": [true, null]}'</span> <span class="k">AS</span> <span class="n">VARIANT</span><span class="p">));</span>
+<span class="c1">-- variant</span>
+
+<span class="k">SELECT</span> <span class="k">CAST</span><span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="n">JSON</span> <span class="s1">'123'</span> <span class="k">AS</span> <span class="n">VARIANT</span><span class="p">)</span> <span class="k">AS</span> <span class="nb">BIGINT</span><span class="p">);</span>
+<span class="c1">-- 123</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">VARIANT</span></code> follows the <a class="reference external" href="https://github.com/apache/parquet-format/blob/master/VariantEncoding.md" rel="noopener noreferrer" target="_blank">Apache Iceberg Variant specification</a>.
+Trino implements this specification directly, including its type system, value
+encoding, and semantics.</p>
+<p>This ensures consistent behavior when reading and writing variant values across
+systems that support the same specification.</p>
+<p>See also <a class="reference internal" href="../functions/variant.html"><span class="doc">VARIANT functions and operators</span></a></p>
 
 
 
@@ -438,9 +493,9 @@ digits.</p>
 
 <span id="timestamp-p-with-time-zone-data-type"></span><h3 id="timestamp-p-with-time-zone"><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(P)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code><a class="headerlink" href="#timestamp-p-with-time-zone" title="Permalink to this heading">#</a></h3>
 <p>Instant in time that includes the date and time of day with <code class="docutils literal notranslate"><span class="pre">P</span></code> digits of
-precision for the fraction of seconds and with a time zone. Values of this
-type are rendered using the time zone from the value.
-Time zones can be expressed in the following ways:</p>
+precision for the fraction of seconds and with a time zone. Values of this type
+are rendered using the time zone from the value. Time zones can be expressed in
+the following ways:</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">UTC</span></code>, with <code class="docutils literal notranslate"><span class="pre">GMT</span></code>, <code class="docutils literal notranslate"><span class="pre">Z</span></code>, or <code class="docutils literal notranslate"><span class="pre">UT</span></code> usable as aliases for UTC.</li>
 <li><code class="docutils literal notranslate"><span class="pre">+hh:mm</span></code> or <code class="docutils literal notranslate"><span class="pre">-hh:mm</span></code> with <code class="docutils literal notranslate"><span class="pre">hh:mm</span></code> as an hour and minute offset from UTC.
@@ -485,8 +540,8 @@ UTC.</li>
 
 <span id="map-type"></span><h3 id="map"><code class="docutils literal notranslate"><span class="pre">MAP</span></code><a class="headerlink" href="#map" title="Permalink to this heading">#</a></h3>
 <p>A map between the given component types. A map is a collection of key-value
-pairs, where each key is associated with a single value.</p>
-<p>A map between the given component types.</p>
+pairs, where each key is associated with a single value. Map keys are required,
+while map values can be null.</p>
 <p>Example: <code class="docutils literal notranslate"><span class="pre">MAP(ARRAY['foo',</span> <span class="pre">'bar'],</span> <span class="pre">ARRAY[1,</span> <span class="pre">2])</span></code></p>
 <p>More information in <a class="reference internal" href="../functions/map.html"><span class="doc std std-doc">Map functions and operators</span></a>.</p>
 

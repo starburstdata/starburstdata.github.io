@@ -623,6 +623,8 @@
         </li>
         <li class="md-nav__item"><a href="#lateral" class="md-nav__link">LATERAL</a>
         </li>
+        <li class="md-nav__item"><a href="#nearest" class="md-nav__link">NEAREST</a>
+        </li>
         <li class="md-nav__item"><a href="#qualifying-column-names" class="md-nav__link">Qualifying column names</a>
         </li></ul>
             </nav>
@@ -703,14 +705,14 @@
     <li class="md-nav__item">
     
     
-      <a href="show-create-materialized-view.html" class="md-nav__link">SHOW CREATE MATERIALIZED VIEW</a>
+      <a href="show-create-function.html" class="md-nav__link">SHOW CREATE FUNCTION</a>
       
     
     </li>
     <li class="md-nav__item">
     
     
-      <a href="show-create-function.html" class="md-nav__link">SHOW CREATE FUNCTION</a>
+      <a href="show-create-materialized-view.html" class="md-nav__link">SHOW CREATE MATERIALIZED VIEW</a>
       
     
     </li>
@@ -939,6 +941,8 @@
         <li class="md-nav__item"><a href="#cross-join" class="md-nav__link">CROSS JOIN</a>
         </li>
         <li class="md-nav__item"><a href="#lateral" class="md-nav__link">LATERAL</a>
+        </li>
+        <li class="md-nav__item"><a href="#nearest" class="md-nav__link">NEAREST</a>
         </li>
         <li class="md-nav__item"><a href="#qualifying-column-names" class="md-nav__link">Qualifying column names</a>
         </li></ul>
@@ -1657,13 +1661,13 @@ specifications contains the component, the default value is used.</p>
 <h2 id="set-operations">Set operations<a class="headerlink" href="#set-operations" title="Permalink to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">UNION</span></code> <code class="docutils literal notranslate"><span class="pre">INTERSECT</span></code> and <code class="docutils literal notranslate"><span class="pre">EXCEPT</span></code> are all set operations.  These clauses are used
 to combine the results of more than one select statement into a single result set:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query UNION [ALL | DISTINCT] query
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query UNION [ALL | DISTINCT] [CORRESPONDING] query
 </pre></div>
 </div>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query INTERSECT [ALL | DISTINCT] query
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query INTERSECT [ALL | DISTINCT] [CORRESPONDING] query
 </pre></div>
 </div>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query EXCEPT [ALL | DISTINCT] query
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>query EXCEPT [ALL | DISTINCT] [CORRESPONDING] query
 </pre></div>
 </div>
 <p>The argument <code class="docutils literal notranslate"><span class="pre">ALL</span></code> or <code class="docutils literal notranslate"><span class="pre">DISTINCT</span></code> controls which rows are included in
@@ -1722,6 +1726,31 @@ selects the values <code class="docutils literal notranslate"><span class="pre">
 (2 rows)
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">CORRESPONDING</span></code> matches columns by name instead of by position:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'alice'</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">UNION</span> <span class="k">ALL</span> <span class="n">CORRESPONDING</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="s1">'bob'</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> id | name
+----+-------
+  1 | alice
+  2 | bob
+(2 rows)
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2025-04-23'</span><span class="p">,</span> <span class="s1">'alice'</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">order_date</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">UNION</span> <span class="k">ALL</span> <span class="n">CORRESPONDING</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="s1">'bob'</span><span class="p">,</span> <span class="mi">123</span><span class="p">.</span><span class="mi">45</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">price</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> name
+-------
+ alice
+ bob
+(2 rows)
+</pre></div>
+</div>
 </section>
 <section id="intersect-clause">
 <h3 id="intersect-clause">INTERSECT clause<a class="headerlink" href="#intersect-clause" title="Permalink to this heading">#</a></h3>
@@ -1741,6 +1770,18 @@ is only in the result set of the first query, it is not included in the final re
 (2 rows)
 </pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">CORRESPONDING</span></code> matches columns by name instead of by position:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'alice'</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">INTERSECT</span> <span class="n">CORRESPONDING</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="s1">'alice'</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> id | name
+----+-------
+  1 | alice
+(1 row)
+</pre></div>
+</div>
 </section>
 <section id="except-clause">
 <h3 id="except-clause">EXCEPT clause<a class="headerlink" href="#except-clause" title="Permalink to this heading">#</a></h3>
@@ -1758,6 +1799,18 @@ is also in the result set of the second query, it is not included in the final r
 -------
    42
 (2 rows)
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">CORRESPONDING</span></code> matches columns by name instead of by position:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'alice'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">'bob'</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+<span class="k">EXCEPT</span> <span class="n">CORRESPONDING</span>
+<span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="s1">'alice'</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">id</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> id | name
+----+------
+  2 | bob
+(1 row)
 </pre></div>
 </div>
 </section>
@@ -2168,6 +2221,111 @@ computing the rows to be joined:</p>
 <span class="k">CROSS</span> <span class="k">JOIN</span> <span class="k">LATERAL</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">x</span> <span class="o">||</span> <span class="s1">')'</span> <span class="k">AS</span> <span class="n">y</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>When <code class="docutils literal notranslate"><span class="pre">LATERAL</span></code> appears on the right side of a <code class="docutils literal notranslate"><span class="pre">FULL</span> <span class="pre">JOIN</span></code>, the only condition
+supported by the current implementation is <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">TRUE</span></code>.</p>
+</section>
+<section id="nearest">
+<h3 id="nearest">NEAREST<a class="headerlink" href="#nearest" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">NEAREST</span></code> is a relation that selects at most one row from a <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation for
+each row on the left side of a join.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">NEAREST</span></code> on the right side of an explicit <code class="docutils literal notranslate"><span class="pre">CROSS</span> <span class="pre">JOIN</span></code>, <code class="docutils literal notranslate"><span class="pre">INNER</span> <span class="pre">JOIN</span></code> with
+<code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">TRUE</span></code>, <code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span></code> with <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">TRUE</span></code>, or an implicit comma join:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>CROSS JOIN NEAREST (
+    FROM relation
+    [ WHERE condition ]
+    MATCH comparison
+)
+
+INNER JOIN NEAREST (
+    FROM relation
+    [ WHERE condition ]
+    MATCH comparison
+) ON TRUE
+
+relation,
+NEAREST (
+    FROM relation
+    [ WHERE condition ]
+    MATCH comparison
+)
+
+LEFT JOIN NEAREST (
+    FROM relation
+    [ WHERE condition ]
+    MATCH comparison
+ ) ON TRUE
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">MATCH</span></code> clause is required. It must be a single comparison using one
+expression from the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation and one non-<code class="docutils literal notranslate"><span class="pre">FROM</span></code> expression, with one of
+the operators <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>.</p>
+<p>The comparison determines both the matching direction and the ordering of
+candidate rows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> select the closest row from the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation whose match key
+is smaller than, or smaller than or equal to, the other expression.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> select the closest row from the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation whose match key
+is greater than, or greater than or equal to, the other expression.</p></li>
+</ul>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">WHERE</span></code> clause filters candidate rows before the nearest row is
+selected.</p>
+<p><code class="docutils literal notranslate"><span class="pre">NEAREST</span></code> can be understood as shorthand for a lateral subquery that filters to
+matching candidate rows, orders them by the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation match key, and
+keeps only the first row. For example:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">NEAREST</span> <span class="pre">(</span>     <span class="pre">FROM</span> <span class="pre">...</span>     <span class="pre">WHERE</span> <span class="pre">...</span>     <span class="pre">MATCH</span> <span class="pre">right_key</span> <span class="pre">&lt;=</span> <span class="pre">left_key</span> <span class="pre">)</span></code> is equivalent to:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">LATERAL</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="o">*</span>
+    <span class="k">FROM</span> <span class="p">...</span>
+    <span class="k">WHERE</span> <span class="p">...</span>
+        <span class="k">AND</span> <span class="n">right_key</span> <span class="o">&lt;=</span> <span class="n">left_key</span>
+    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">right_key</span> <span class="k">DESC</span>
+    <span class="k">FETCH</span> <span class="k">FIRST</span> <span class="mi">1</span> <span class="k">ROW</span> <span class="k">ONLY</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">NEAREST</span> <span class="pre">(</span>     <span class="pre">FROM</span> <span class="pre">...</span>     <span class="pre">WHERE</span> <span class="pre">...</span>     <span class="pre">MATCH</span> <span class="pre">right_key</span> <span class="pre">&gt;=</span> <span class="pre">left_key</span> <span class="pre">)</span></code> is equivalent to:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">LATERAL</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="o">*</span>
+    <span class="k">FROM</span> <span class="p">...</span>
+    <span class="k">WHERE</span> <span class="p">...</span>
+        <span class="k">AND</span> <span class="n">right_key</span> <span class="o">&gt;=</span> <span class="n">left_key</span>
+    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">right_key</span> <span class="k">ASC</span>
+    <span class="k">FETCH</span> <span class="k">FIRST</span> <span class="mi">1</span> <span class="k">ROW</span> <span class="k">ONLY</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>More generally, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> order the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> relation match key descending,
+while <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> order it ascending.</p>
+<p>For example, the following query matches each trade with the most recent quote
+for the same symbol:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">trades</span><span class="p">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">trades</span><span class="p">.</span><span class="n">ts</span><span class="p">,</span> <span class="n">quotes</span><span class="p">.</span><span class="n">price</span>
+<span class="k">FROM</span> <span class="n">trades</span>
+<span class="k">CROSS</span> <span class="k">JOIN</span> <span class="n">NEAREST</span> <span class="p">(</span>
+    <span class="k">FROM</span> <span class="n">quotes</span>
+    <span class="k">WHERE</span> <span class="n">quotes</span><span class="p">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">trades</span><span class="p">.</span><span class="n">symbol</span>
+    <span class="k">MATCH</span> <span class="n">quotes</span><span class="p">.</span><span class="n">ts</span> <span class="o">&lt;=</span> <span class="n">trades</span><span class="p">.</span><span class="n">ts</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p>To preserve rows from the left side when no nearest row exists, use
+<code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span> <span class="pre">NEAREST</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">trades</span><span class="p">.</span><span class="n">symbol</span><span class="p">,</span> <span class="n">quotes</span><span class="p">.</span><span class="n">price</span>
+<span class="k">FROM</span> <span class="n">trades</span>
+<span class="k">LEFT</span> <span class="k">JOIN</span> <span class="n">NEAREST</span> <span class="p">(</span>
+    <span class="k">FROM</span> <span class="n">quotes</span>
+    <span class="k">WHERE</span> <span class="n">quotes</span><span class="p">.</span><span class="n">symbol</span> <span class="o">=</span> <span class="n">trades</span><span class="p">.</span><span class="n">symbol</span>
+    <span class="k">MATCH</span> <span class="n">quotes</span><span class="p">.</span><span class="n">ts</span> <span class="o">&gt;=</span> <span class="n">trades</span><span class="p">.</span><span class="n">ts</span>
+<span class="p">)</span> <span class="k">ON</span> <span class="k">TRUE</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The current implementation supports <code class="docutils literal notranslate"><span class="pre">CROSS</span> <span class="pre">JOIN</span> <span class="pre">NEAREST</span> <span class="pre">(...)</span></code>, <code class="docutils literal notranslate"><span class="pre">INNER</span> <span class="pre">JOIN</span> <span class="pre">NEAREST</span> <span class="pre">(...)</span> <span class="pre">ON</span> <span class="pre">TRUE</span></code>, implicit comma joins with <code class="docutils literal notranslate"><span class="pre">NEAREST</span> <span class="pre">(...)</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span> <span class="pre">NEAREST</span> <span class="pre">(...)</span> <span class="pre">ON</span> <span class="pre">TRUE</span></code>.
+<code class="docutils literal notranslate"><span class="pre">JOIN</span> <span class="pre">USING</span></code>, <code class="docutils literal notranslate"><span class="pre">NATURAL</span> <span class="pre">JOIN</span></code>, and join conditions other than <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">TRUE</span></code> are not
+supported for <code class="docutils literal notranslate"><span class="pre">NEAREST</span></code>.</p>
 </section>
 <section id="qualifying-column-names">
 <h3 id="qualifying-column-names">Qualifying column names<a class="headerlink" href="#qualifying-column-names" title="Permalink to this heading">#</a></h3>
@@ -2246,7 +2404,7 @@ row. The returned value is <code class="docutils literal notranslate"><span clas
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Currently only single column can be returned from the scalar subquery.</p>
+<p>Currently only a single column can be returned from the scalar subquery.</p>
 </div>
 </section>
 </section>
