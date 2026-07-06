@@ -277,6 +277,10 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#performance">Performance</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="duckdb.html">DuckDB connector</a></li>
@@ -287,7 +291,6 @@
 <li class="toctree-l2"><a class="reference internal" href="lakehouse.html">Lakehouse connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="loki.html">Loki connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="mariadb.html">MariaDB connector</a></li>
-<li class="toctree-l2"><a class="reference internal" href="opensearch.html">OpenSearch connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="pinot.html">Pinot connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="prometheus.html">Prometheus connector</a></li>
 <li class="toctree-l2"><a class="reference internal" href="redis.html">Redis connector</a></li>
@@ -365,6 +368,10 @@
 </li>
 </ul>
 </li>
+<li><a class="reference internal" href="#performance">Performance</a><ul>
+<li><a class="reference internal" href="#pushdown">Pushdown</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -386,7 +393,7 @@ database from Trino.</p>
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <p>To connect to Druid, you need:</p>
 <ul class="simple">
-<li><p>Druid version 0.18.0 or higher.</p></li>
+<li><p>Druid version 0.22.0 or higher.</p></li>
 <li><p>Network access from the Trino coordinator and workers to your Druid broker.
 Port 8082 is the default port.</p></li>
 </ul>
@@ -715,10 +722,14 @@ following table:</p>
 </tbody>
 </table>
 <p>No other data types are supported.</p>
-<p>Druid does not have a real <code class="docutils literal notranslate"><span class="pre">NULL</span></code> value for any data type. By
-default, Druid treats <code class="docutils literal notranslate"><span class="pre">NULL</span></code> as the default value for a data type. For
-example, <code class="docutils literal notranslate"><span class="pre">LONG</span></code> would be <code class="docutils literal notranslate"><span class="pre">0</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> would be <code class="docutils literal notranslate"><span class="pre">0.0</span></code>, <code class="docutils literal notranslate"><span class="pre">STRING</span></code> would
-be an empty string <code class="docutils literal notranslate"><span class="pre">''</span></code>, and so forth.</p>
+<p>For results that match Trino semantics, Druid must use SQL-compatible null
+handling (<code class="docutils literal notranslate"><span class="pre">druid.generic.useDefaultValueForNull=false</span></code>), which preserves <code class="docutils literal notranslate"><span class="pre">NULL</span></code>
+values for all data types. This is the default since Druid 28.0.0 and mandatory
+from Druid 32.0.0; on earlier versions set it explicitly. With Druid’s legacy null
+handling (<code class="docutils literal notranslate"><span class="pre">druid.generic.useDefaultValueForNull=true</span></code>), <code class="docutils literal notranslate"><span class="pre">NULL</span></code> is replaced with
+default values such as <code class="docutils literal notranslate"><span class="pre">0</span></code> for <code class="docutils literal notranslate"><span class="pre">LONG</span></code>, <code class="docutils literal notranslate"><span class="pre">0.0</span></code> for <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code>, and an empty string
+<code class="docutils literal notranslate"><span class="pre">''</span></code> for <code class="docutils literal notranslate"><span class="pre">STRING</span></code>. Those results do not match Trino semantics, including for
+<a class="reference internal" href="#druid-pushdown"><span class="std std-ref">pushed-down aggregations</span></a>.</p>
 </section>
 <section id="type-mapping-configuration-properties">
 <h3 id="type-mapping-configuration-properties">Type mapping configuration properties<a class="headerlink" href="#type-mapping-configuration-properties" title="Link to this heading">#</a></h3>
@@ -843,6 +854,36 @@ function. If the passed query contains an <code class="docutils literal notransl
 function result may not be ordered as expected.</p>
 </div>
 </section>
+</section>
+</section>
+<section id="performance">
+<h2 id="performance">Performance<a class="headerlink" href="#performance" title="Link to this heading">#</a></h2>
+<section id="pushdown">
+<span id="druid-pushdown"></span><h3 id="pushdown">Pushdown<a class="headerlink" href="#pushdown" title="Link to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../optimizer/pushdown.html#aggregation-pushdown"><span class="std std-ref">aggregate pushdown</span></a> for the following functions:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../functions/aggregate.html#avg" title="avg"><code class="xref py py-func docutils literal notranslate"><span class="pre">avg()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#count" title="count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#max" title="max"><code class="xref py py-func docutils literal notranslate"><span class="pre">max()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#min" title="min"><code class="xref py py-func docutils literal notranslate"><span class="pre">min()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#sum" title="sum"><code class="xref py py-func docutils literal notranslate"><span class="pre">sum()</span></code></a></p></li>
+</ul>
+<p>Pushed-down aggregations follow Trino’s <code class="docutils literal notranslate"><span class="pre">NULL</span></code> semantics, which relies on Druid’s
+SQL-compatible null handling (<code class="docutils literal notranslate"><span class="pre">druid.generic.useDefaultValueForNull=false</span></code>, the
+default since Druid 28.0.0). For example, <code class="docutils literal notranslate"><span class="pre">avg</span></code>, <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">max</span></code>, and <code class="docutils literal notranslate"><span class="pre">sum</span></code> over empty
+input return <code class="docutils literal notranslate"><span class="pre">NULL</span></code> rather than Druid’s legacy default values.</p>
+<p>If your Druid cluster must keep legacy null handling enabled
+(<code class="docutils literal notranslate"><span class="pre">druid.generic.useDefaultValueForNull=true</span></code>), disable aggregate pushdown so that
+aggregation results stay consistent with Trino’s <code class="docutils literal notranslate"><span class="pre">NULL</span></code> semantics. Set the
+<code class="docutils literal notranslate"><span class="pre">aggregation-pushdown.enabled</span></code> catalog configuration property (or the
+<code class="docutils literal notranslate"><span class="pre">aggregation_pushdown_enabled</span></code> catalog session property) to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The connector performs pushdown where performance may be improved, but in
+order to preserve correctness an operation may not be pushed down. When
+pushdown of an operation may result in better performance but risks
+correctness, the connector prioritizes correctness.</p>
+</div>
 </section>
 </section>
 </section>

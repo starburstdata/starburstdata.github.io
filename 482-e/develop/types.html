@@ -289,7 +289,9 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#native-container-type">Native container type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#native-encoding">Native encoding</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#type-signature">Type signature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-descriptor">Type descriptor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-template">Type template</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-id">Type id</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="functions.html">Functions</a></li>
@@ -321,7 +323,9 @@
 <li><a class="reference internal" href="#">Types</a><ul>
 <li><a class="reference internal" href="#native-container-type">Native container type</a></li>
 <li><a class="reference internal" href="#native-encoding">Native encoding</a></li>
-<li><a class="reference internal" href="#type-signature">Type signature</a></li>
+<li><a class="reference internal" href="#type-descriptor">Type descriptor</a></li>
+<li><a class="reference internal" href="#type-template">Type template</a></li>
+<li><a class="reference internal" href="#type-id">Type id</a></li>
 </ul>
 </li>
 </ul>
@@ -363,12 +367,35 @@ combining the timezone and the milliseconds since the unix epoch. In particular,
 this means that you cannot compare two native values and expect a meaningful
 result, without knowing the native encoding.</p>
 </section>
-<section id="type-signature">
-<h2 id="type-signature">Type signature<a class="headerlink" href="#type-signature" title="Link to this heading">#</a></h2>
-<p>The signature of a type defines its identity, and also encodes some general
-information about the type, such as its type parameters (if it’s parametric),
+<section id="type-descriptor">
+<h2 id="type-descriptor">Type descriptor<a class="headerlink" href="#type-descriptor" title="Link to this heading">#</a></h2>
+<p>A type’s descriptor (<code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code>) defines its identity, and also encodes some
+general information about the type, such as its type parameters (if it’s parametric)
 and its literal parameters. The literal parameters are used in types like
-<code class="docutils literal notranslate"><span class="pre">VARCHAR(10)</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">VARCHAR(10)</span></code>. A descriptor is always <em>ground</em>: it denotes one concrete type, such as
+<code class="docutils literal notranslate"><span class="pre">varchar(10)</span></code> or <code class="docutils literal notranslate"><span class="pre">array(bigint)</span></code>.</p>
+</section>
+<section id="type-template">
+<h2 id="type-template">Type template<a class="headerlink" href="#type-template" title="Link to this heading">#</a></h2>
+<p>Where a <code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code> denotes one concrete type, a <code class="docutils literal notranslate"><span class="pre">TypeTemplate</span></code> denotes a
+<em>family</em> of types parameterized by variables — it is the open counterpart of the
+ground descriptor. Function signatures (<code class="docutils literal notranslate"><span class="pre">Signature</span></code>) carry their argument and return
+types as templates: <code class="docutils literal notranslate"><span class="pre">array(E)</span></code> has a type variable <code class="docutils literal notranslate"><span class="pre">E</span></code>, and <code class="docutils literal notranslate"><span class="pre">decimal(p,</span> <span class="pre">s)</span></code> has
+numeric variables <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code>.</p>
+<p>Binding a template’s variables against a call site — see <code class="docutils literal notranslate"><span class="pre">SignatureBinder</span></code> —
+substitutes the bound types and evaluates any calculated numeric expressions (for
+example the <code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">+</span> <span class="pre">y</span></code> in <code class="docutils literal notranslate"><span class="pre">char(x</span> <span class="pre">+</span> <span class="pre">y)</span></code>), producing a ground <code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code>. The
+reverse, lifting a variable-free <code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code> into a <code class="docutils literal notranslate"><span class="pre">TypeTemplate</span></code>, is also
+supported. A <code class="docutils literal notranslate"><span class="pre">Signature</span></code> therefore declares its type and numeric variables once and
+expresses every argument and return position as a template over them.</p>
+</section>
+<section id="type-id">
+<h2 id="type-id">Type id<a class="headerlink" href="#type-id" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">TypeId</span></code> is the opaque identifier under which a type is persisted, for example in
+the catalog properties of a materialized view. It wraps the rendered form of the
+type’s descriptor but guarantees nothing about its structure: where a <code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code>
+is structural identity that can be inspected and compared piecewise, a <code class="docutils literal notranslate"><span class="pre">TypeId</span></code> is
+only ever compared for equality and resolved back to a type through <code class="docutils literal notranslate"><span class="pre">TypeManager</span></code>.</p>
 </section>
 </section>
 
