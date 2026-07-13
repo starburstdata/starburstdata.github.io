@@ -237,6 +237,7 @@
 <li class="toctree-l2"><a class="reference internal" href="function.html">FUNCTION</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">SQL user-defined functions</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sql-udf-declaration">SQL UDF declaration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#named-arguments">Named arguments</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#labels">Labels</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
@@ -307,6 +308,7 @@
     <ul>
 <li><a class="reference internal" href="#">SQL user-defined functions</a><ul>
 <li><a class="reference internal" href="#sql-udf-declaration">SQL UDF declaration</a></li>
+<li><a class="reference internal" href="#named-arguments">Named arguments</a></li>
 <li><a class="reference internal" href="#labels">Labels</a></li>
 <li><a class="reference internal" href="#limitations">Limitations</a></li>
 </ul>
@@ -362,6 +364,30 @@ invocation with the value 21 to yield the result 42:</p>
 <p>Find simple examples in each statement documentation, and refer to the
 <a class="reference internal" href="sql/examples.html"><span class="doc std std-doc">Example SQL UDFs</span></a> for more complex use cases that combine multiple
 statements.</p>
+</section>
+<section id="named-arguments">
+<span id="udf-sql-named-arguments"></span><h2 id="named-arguments">Named arguments<a class="headerlink" href="#named-arguments" title="Link to this heading">#</a></h2>
+<p>Because a SQL UDF declares its parameters by name, you can invoke it using
+the named-argument form <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">=&gt;</span> <span class="pre">value</span></code> in addition to passing arguments by
+position. Named arguments can appear in any order, and you can mix positional
+arguments (which must come first) with named ones:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">WITH</span>
+<span class="w">  </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">clamp</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="nb">bigint</span><span class="p">,</span><span class="w"> </span><span class="n">hi</span><span class="w"> </span><span class="nb">bigint</span><span class="p">)</span>
+<span class="w">    </span><span class="k">RETURNS</span><span class="w"> </span><span class="nb">bigint</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">CASE</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">lo</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">hi</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">hi</span>
+<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="n">value</span>
+<span class="w">    </span><span class="k">END</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">clamp</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">),</span><span class="w">                       </span><span class="c1">-- positional: 5</span>
+<span class="w">    </span><span class="n">clamp</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">hi</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">),</span><span class="w">  </span><span class="c1">-- all named: 5</span>
+<span class="w">    </span><span class="n">clamp</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">hi</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">           </span><span class="c1">-- mixed: 5</span>
+</pre></div>
+</div>
+<p>If you pass a name the function does not declare, the query fails with a
+diagnostic that points at the offending identifier. Passing a positional
+argument after a named one is a syntax error.</p>
 </section>
 <section id="labels">
 <span id="udf-sql-label"></span><h2 id="labels">Labels<a class="headerlink" href="#labels" title="Link to this heading">#</a></h2>

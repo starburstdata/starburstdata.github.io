@@ -223,10 +223,14 @@
 <li class="toctree-l5"><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#general">General</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#security">Security</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#starburst-ai">Starburst AI</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#bigquery-connector">BigQuery connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#hive-connector">Hive connector</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#maxcompute-connector">MaxCompute connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#opensearch-connector">OpenSearch connector</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#oracle-connector">Oracle connector</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#snowflake-connector">Snowflake connector</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="release-481-e.html">Release 481-e STS (15 Jun 2026)</a></li>
@@ -328,10 +332,14 @@
 <li><a class="reference internal" href="#breaking-changes">Breaking changes</a></li>
 <li><a class="reference internal" href="#general">General</a></li>
 <li><a class="reference internal" href="#security">Security</a></li>
+<li><a class="reference internal" href="#starburst-ai">Starburst AI</a></li>
 <li><a class="reference internal" href="#bigquery-connector">BigQuery connector</a></li>
+<li><a class="reference internal" href="#hive-connector">Hive connector</a></li>
 <li><a class="reference internal" href="#iceberg-connector">Iceberg connector</a></li>
 <li><a class="reference internal" href="#maxcompute-connector">MaxCompute connector</a></li>
+<li><a class="reference internal" href="#opensearch-connector">OpenSearch connector</a></li>
 <li><a class="reference internal" href="#oracle-connector">Oracle connector</a></li>
+<li><a class="reference internal" href="#snowflake-connector">Snowflake connector</a></li>
 </ul>
 </li>
 </ul>
@@ -351,13 +359,35 @@
 <a class="reference internal" href="release-481-e.html"><span class="doc std std-doc">481-e</span></a>. It includes all improvements from the following
 Trino releases:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="../release.html"><span class="doc std std-doc">Trino 482</span></a></p></li>
+<li><p><a class="reference external" href="https://trino.io/docs/current/release/release-482">Trino 482</a></p></li>
 </ul>
 <p>This release is a <a class="reference internal" href="../versions.html#lts-sts"><span class="std std-ref">short term support (STS)</span></a> release.</p>
 <section id="breaking-changes">
 <h2 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li></li>
+<li><p>Removed support for Alluxio-backed exchange storage for fault-tolerant
+execution. If you configured Alluxio as the exchange storage provider for
+fault-tolerant execution, you must migrate to a supported alternative before
+upgrading.</p></li>
+<li><p>Removed support for the Alluxio file system in the Delta Lake, Hive, Hudi,
+and Iceberg connectors. This does not affect support for the Alluxio file
+system cache. If you use the Alluxio file system with any of these connectors,
+you must migrate to a supported file system before upgrading.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">hive.max-initial-splits</span></code> and <code class="docutils literal notranslate"><span class="pre">hive.max-initial-split-size</span></code> configuration
+properties have been removed from the Hive connector. Remove these from your
+connector configuration before upgrading.</p></li>
+<li><p>The implicit coercion between <code class="docutils literal notranslate"><span class="pre">char</span></code> and <code class="docutils literal notranslate"><span class="pre">varchar</span></code> has been reversed. A
+<code class="docutils literal notranslate"><span class="pre">char</span></code> value now coerces to <code class="docutils literal notranslate"><span class="pre">varchar</span></code> with trailing spaces removed, and
+comparisons between <code class="docutils literal notranslate"><span class="pre">char</span></code> and <code class="docutils literal notranslate"><span class="pre">varchar</span></code> now follow <code class="docutils literal notranslate"><span class="pre">varchar</span></code> semantics with
+no blank padding, making trailing spaces significant. Review any queries or
+applications that rely on the previous behavior before upgrading.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">lower_bounds</span></code> and <code class="docutils literal notranslate"><span class="pre">upper_bounds</span></code> columns of the Iceberg <code class="docutils literal notranslate"><span class="pre">$files</span></code>
+metadata table have changed from <code class="docutils literal notranslate"><span class="pre">map(integer,</span> <span class="pre">varchar)</span></code> to typed <code class="docutils literal notranslate"><span class="pre">row</span></code>
+values. Update any queries that read these columns before upgrading.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">target_max_file_size</span></code> and <code class="docutils literal notranslate"><span class="pre">parquet_writer_row_group_size</span></code> Iceberg session
+properties have been removed, including the deprecated
+<code class="docutils literal notranslate"><span class="pre">parquet_writer_block_size</span></code> alias. Remove any references to these session
+properties before upgrading.</p></li>
 </ul>
 </section>
 <section id="general">
@@ -371,12 +401,32 @@ Starburst Control Plane.</p></li>
 <section id="security">
 <h2 id="security">Security<a class="headerlink" href="#security" title="Link to this heading">#</a></h2>
 </section>
+<section id="starburst-ai">
+<h2 id="starburst-ai">Starburst AI<a class="headerlink" href="#starburst-ai" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>When accessing <a class="reference internal" href="../starburst-ai/aida-ai.html"><span class="doc std std-doc">AIDA</span></a> through your coordinator URL,
+AIDA now defaults to the <code class="docutils literal notranslate"><span class="pre">ALL</span></code> role when you have no previously selected role,
+rather than <code class="docutils literal notranslate"><span class="pre">public</span></code>, removing the need to manually select a role to reach
+data products and AI models. Opening AIDA through the Starburst Enterprise web UI is
+unaffected.</p></li>
+<li><p>Added <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> support for <a class="reference internal" href="../starburst-ai/aida-ai.html#aida-download-tables"><span class="std std-ref">downloading
+tables</span></a> created by AIDA as CSV files.</p></li>
+</ul>
+</section>
 <section id="bigquery-connector">
 <h2 id="bigquery-connector">BigQuery connector<a class="headerlink" href="#bigquery-connector" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p>Added support for <code class="docutils literal notranslate"><span class="pre">partitioned_by</span></code> <a class="reference internal" href="../connector/bigquery.html#bigquery-table-properties"><span class="std std-ref">table
 property</span></a>. Partition columns are now shown in
 <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">TABLE</span></code> output for partitioned tables.</p></li>
+</ul>
+</section>
+<section id="hive-connector">
+<h2 id="hive-connector">Hive connector<a class="headerlink" href="#hive-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Added the <code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code> <a class="reference internal" href="../connector/hive.html#hive-table-metastore-statistics"><span class="std std-ref">system
+table</span></a>, exposing whether HMS column
+statistics are collected for each table.</p></li>
 </ul>
 </section>
 <section id="iceberg-connector">
@@ -399,6 +449,14 @@ property to the MaxCompute connector to control byte array decoding for
 external tables when the SerDe class cannot be determined from table metadata.</p></li>
 </ul>
 </section>
+<section id="opensearch-connector">
+<h2 id="opensearch-connector">OpenSearch connector<a class="headerlink" href="#opensearch-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Added support for <a class="reference internal" href="../connector/opensearch.html#sb-opensearch-mf-pushdown"><span class="std std-ref">multi-field pushdown</span></a>.</p></li>
+<li><p>Fixed an issue where schemas were not merged when querying wildcard tables
+with inconsistent field mappings.</p></li>
+</ul>
+</section>
 <section id="oracle-connector">
 <h2 id="oracle-connector">Oracle connector<a class="headerlink" href="#oracle-connector" title="Link to this heading">#</a></h2>
 <ul class="simple">
@@ -408,6 +466,15 @@ regular table regardless of partitioning. <code class="docutils literal notransl
 best available strategy.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">oracle.parallel.max-splits-per-scan</span></code> property now requires a value of
   1 or greater.</p></li>
+</ul>
+</section>
+<section id="snowflake-connector">
+<h2 id="snowflake-connector">Snowflake connector<a class="headerlink" href="#snowflake-connector" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Added the <code class="docutils literal notranslate"><span class="pre">snowflake.max-chunk-retries</span></code> <a class="reference internal" href="../connector/snowflake.html#snowflake-configuration-properties"><span class="std std-ref">configuration
+property</span></a>. This property controls the
+number of retries for transient HTTP errors that occur when fetching Arrow
+query result chunks.</p></li>
 </ul>
 </section>
 </section>

@@ -286,6 +286,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#metadata-tables">Metadata tables</a><ul>
 <li class="toctree-l7"><a class="reference internal" href="#properties-table"><code class="docutils literal notranslate"><span class="pre">$properties</span></code> table</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#partitions-table"><code class="docutils literal notranslate"><span class="pre">$partitions</span></code> table</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#table-metastore-statistics"><code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l6"><a class="reference internal" href="#column-properties">Column properties</a></li>
@@ -440,6 +441,7 @@
 <li><a class="reference internal" href="#metadata-tables">Metadata tables</a><ul>
 <li><a class="reference internal" href="#properties-table"><code class="docutils literal notranslate"><span class="pre">$properties</span></code> table</a></li>
 <li><a class="reference internal" href="#partitions-table"><code class="docutils literal notranslate"><span class="pre">$partitions</span></code> table</a></li>
+<li><a class="reference internal" href="#table-metastore-statistics"><code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code></a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#column-properties">Column properties</a></li>
@@ -1779,11 +1781,109 @@ of a partitioned table.</p>
 </pre></div>
 </div>
 </section>
+<section id="table-metastore-statistics">
+<span id="hive-table-metastore-statistics"></span><h5 id="table-metastore-statistics"><code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code><a class="headerlink" href="#table-metastore-statistics" title="Link to this heading">#</a></h5>
+<p>The <code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code> system table exposes whether Hive metastore
+(HMS) column statistics have been collected for tables accessed through the
+catalog. Use it to find tables that are missing statistics before running
+<a class="reference internal" href="../sql/analyze.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code></span></a>, since the <a class="reference internal" href="../optimizer/cost-based-optimizations.html"><span class="doc std std-doc">cost-based
+optimizer</span></a> relies on column statistics to
+produce efficient query plans.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">table_metastore_statistics</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> schema_name | table_name  | statistics_present
+-------------+-------------+---------------------
+ web         | page_views  | true
+ web         | request_logs| false
+</pre></div>
+</div>
+<table id="id10">
+<caption><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code> columns</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25%"/>
+<col style="width: 15%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Column name</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">schema_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>The schema containing the table.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">table_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>The table name.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">statistics_present</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if HMS column statistics have been collected for the table,
+<code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise.</p></td>
+</tr>
+</tbody>
+</table>
+<p>This table only lists tables that have been accessed since the SEP
+coordinator last started. A table is added or updated in this table whenever:</p>
+<ul class="simple">
+<li><p>The optimizer fetches table statistics from HMS while planning a query
+against the table, such as a <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> or <code class="docutils literal notranslate"><span class="pre">JOIN</span></code>.</p></li>
+<li><p>You run <a class="reference internal" href="../sql/show-stats.html"><span class="doc std std-doc"><code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">STATS</span> <span class="pre">FOR</span></code></span></a> against the table, which you can
+use to explicitly trigger a check without running a full query.</p></li>
+<li><p>You run <a class="reference internal" href="#hive-analyze"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code></span></a> on the table, which sets
+<code class="docutils literal notranslate"><span class="pre">statistics_present</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+<li><p>You call <a class="reference internal" href="#hive-procedures"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">system.drop_stats</span></code></span></a> for the table, which sets
+<code class="docutils literal notranslate"><span class="pre">statistics_present</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></li>
+</ul>
+<p>A table not appearing in <code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code> does not mean it has no
+statistics in HMS. It means the table has not yet been observed by SEP.
+Query the table, or run <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">STATS</span> <span class="pre">FOR</span></code>, to populate its row.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">table_metastore_statistics</span></code> is populated in memory and is not persisted. The
+table is empty after a coordinator restart, and repopulates as queries run.</p>
+</div>
+<p>Find tables in the <code class="docutils literal notranslate"><span class="pre">sales</span></code> schema that are missing column statistics. First
+query or run <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">STATS</span> <span class="pre">FOR</span></code> against the tables you want to check, so they
+are populated in the cache, then filter for <code class="docutils literal notranslate"><span class="pre">false</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">schema_name</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">table_metastore_statistics</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">schema_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'sales'</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">statistics_present</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Run <code class="docutils literal notranslate"><span class="pre">ANALYZE</span></code> on a table returned by the query, then confirm the table now has
+statistics:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ANALYZE</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+
+<span class="k">SHOW</span><span class="w"> </span><span class="n">STATS</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">sales</span><span class="p">.</span><span class="n">orders</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="n">statistics_present</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="k">system</span><span class="p">.</span><span class="n">table_metastore_statistics</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">schema_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'sales'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'orders'</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span> statistics_present
+---------------------
+ true
+</pre></div>
+</div>
+<p>This table is only available when HMS impersonation or HDFS authorization is
+enabled with one of the following catalog configuration properties:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.metastore.thrift.impersonation.enabled</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hive.hdfs.authorization.enabled</span></code></p></li>
+</ul>
+</section>
 </section>
 <section id="column-properties">
 <span id="hive-column-properties"></span><h4 id="column-properties">Column properties<a class="headerlink" href="#column-properties" title="Link to this heading">#</a></h4>
-<table id="id10">
-<caption><span class="caption-text">Hive connector column properties</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
+<table id="id11">
+<caption><span class="caption-text">Hive connector column properties</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 60%"/>
@@ -2066,8 +2166,8 @@ default port:</p>
 <p>The following table lists all available catalog configuration properties related
 to materialized views. Instructions for creating the required storage schema
 follow this table.</p>
-<table id="id11">
-<caption><span class="caption-text">Catalog configuration properties for materialized views</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
+<table id="id12">
+<caption><span class="caption-text">Catalog configuration properties for materialized views</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 55%"/>
@@ -2234,8 +2334,8 @@ processing time depends on the complexity of the query, the cluster performance,
 and the performance of the storage.</p>
 <p>Configuration properties are specified in the <code class="docutils literal notranslate"><span class="pre">WITH</span></code> clause when creating a
 materialized view:</p>
-<table id="id12">
-<caption><span class="caption-text">Properties for materialized view refresh automation</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">Properties for materialized view refresh automation</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 60%"/>
@@ -2530,8 +2630,8 @@ statistics</span></a> to improve query processing performance.</p>
 <p>When writing data, the Hive connector always collects basic statistics
 (<code class="docutils literal notranslate"><span class="pre">numFiles</span></code>, <code class="docutils literal notranslate"><span class="pre">numRows</span></code>, <code class="docutils literal notranslate"><span class="pre">rawDataSize</span></code>, <code class="docutils literal notranslate"><span class="pre">totalSize</span></code>) and by default will also
 collect column level statistics:</p>
-<table id="id13">
-<caption><span class="caption-text">Available table statistics</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">Available table statistics</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 65%"/>
@@ -2750,8 +2850,8 @@ when the values do not appear in any clustered order naturally.</p>
 network is further reduced. You get access to higher query performance and a
 reduced cost.</p>
 <p>You can use the following properties to configure dynamic row filtering:</p>
-<table id="id14">
-<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
+<table id="id15">
+<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 45%"/>
 <col style="width: 55%"/>
@@ -2865,23 +2965,17 @@ limit, which results in SEP maximizing the parallelization of data
 access.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.max-initial-splits</span></code></p></td>
-<td><p>For each table scan, the coordinator first assigns file sections of up to
-<code class="docutils literal notranslate"><span class="pre">max-initial-split-size</span></code>. After <code class="docutils literal notranslate"><span class="pre">max-initial-splits</span></code> have been assigned,
-<code class="docutils literal notranslate"><span class="pre">max-split-size</span></code> is used for the remaining splits.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">200</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.max-initial-split-size</span></code></p></td>
-<td><p>The size of a single file section assigned to a worker until
-<code class="docutils literal notranslate"><span class="pre">max-initial-splits</span></code> have been assigned. Smaller splits results in more
-parallelism, which gives a boost to smaller queries.</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">32</span> <span class="pre">MB</span></code></p></td>
-</tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hive.max-split-size</span></code></p></td>
 <td><p>The largest size of a single file section assigned to a worker. Smaller
 splits result in more parallelism and thus can decrease latency, but
 also have more overhead and increase load on the system.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">64</span> <span class="pre">MB</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hive.parquet.max-split-size</span></code></p></td>
+<td><p>The largest size of a single file section assigned to a worker for Parquet
+files. Defaults to slightly below the typical Parquet row group size so that
+splits align to row group boundaries.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">120</span> <span class="pre">MB</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -2906,8 +3000,8 @@ connector that provide global, system-level security:</p>
 <span id="hive-authorization"></span><h3 id="authorization">Authorization<a class="headerlink" href="#authorization" title="Link to this heading">#</a></h3>
 <p>You can enable authorization checks by setting the <code class="docutils literal notranslate"><span class="pre">hive.security</span></code> property in
 the catalog properties file. This property must be one of the following values:</p>
-<table id="id15">
-<caption><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">hive.security</span></code> property values</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
+<table id="id16">
+<caption><span class="caption-text"><code class="docutils literal notranslate"><span class="pre">hive.security</span></code> property values</span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -2949,8 +3043,8 @@ metastore. To alter these privileges, use the <a class="reference internal" href
 <p>The Hive connector supports reading Parquet files encrypted with Parquet
 Modular Encryption (PME). Decryption keys can be provided via environment
 variables. Writing encrypted Parquet files is not supported.</p>
-<table id="id16">
-<caption><span class="caption-text">Parquet encryption properties</span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
+<table id="id17">
+<caption><span class="caption-text">Parquet encryption properties</span><a class="headerlink" href="#id17" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 35%"/>
 <col style="width: 50%"/>

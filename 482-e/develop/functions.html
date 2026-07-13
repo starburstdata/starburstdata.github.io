@@ -420,6 +420,29 @@ primitive native container type, such as <code class="docutils literal notransla
 native container type when using <code class="docutils literal notranslate"><span class="pre">@SqlNullable</span></code>. The method must be annotated with
 <code class="docutils literal notranslate"><span class="pre">@SqlNullable</span></code> if it can return <code class="docutils literal notranslate"><span class="pre">NULL</span></code> when the arguments are non-null.</p>
 </li>
+<li><p><code class="docutils literal notranslate"><span class="pre">@Name</span></code>:</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">@Name</span></code> annotation declares the SQL-visible parameter name for an
+argument. With a declared name the function is invocable using the
+named-argument form <code class="docutils literal notranslate"><span class="pre">f(name</span> <span class="pre">=&gt;</span> <span class="pre">value)</span></code> in addition to the positional form.
+Functions without <code class="docutils literal notranslate"><span class="pre">@Name</span></code> annotations on their parameters can only be called
+positionally. For example:</p>
+<div class="highlight-java notranslate"><div class="highlight"><pre><span></span><span class="nd">@ScalarFunction</span><span class="p">(</span><span class="s">"clamp"</span><span class="p">)</span>
+<span class="nd">@SqlType</span><span class="p">(</span><span class="n">StandardTypes</span><span class="p">.</span><span class="na">BIGINT</span><span class="p">)</span>
+<span class="kd">public</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="nf">clamp</span><span class="p">(</span>
+<span class="w">        </span><span class="nd">@Name</span><span class="p">(</span><span class="s">"value"</span><span class="p">)</span><span class="w"> </span><span class="nd">@SqlType</span><span class="p">(</span><span class="n">StandardTypes</span><span class="p">.</span><span class="na">BIGINT</span><span class="p">)</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">value</span><span class="p">,</span>
+<span class="w">        </span><span class="nd">@Name</span><span class="p">(</span><span class="s">"lo"</span><span class="p">)</span><span class="w"> </span><span class="nd">@SqlType</span><span class="p">(</span><span class="n">StandardTypes</span><span class="p">.</span><span class="na">BIGINT</span><span class="p">)</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">lo</span><span class="p">,</span>
+<span class="w">        </span><span class="nd">@Name</span><span class="p">(</span><span class="s">"hi"</span><span class="p">)</span><span class="w"> </span><span class="nd">@SqlType</span><span class="p">(</span><span class="n">StandardTypes</span><span class="p">.</span><span class="na">BIGINT</span><span class="p">)</span><span class="w"> </span><span class="kt">long</span><span class="w"> </span><span class="n">hi</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">max</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span><span class="w"> </span><span class="n">Math</span><span class="p">.</span><span class="na">min</span><span class="p">(</span><span class="n">hi</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After registration the function is callable both ways:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">clamp</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">clamp</span><span class="p">(</span><span class="n">value</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">7</span><span class="p">,</span><span class="w"> </span><span class="n">hi</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">lo</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
 </ul>
 </section>
 <section id="parametric-scalar-functions">
