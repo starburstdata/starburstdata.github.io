@@ -77,7 +77,7 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="AI Data Assistant (AIDA)" href="aida-ai.html" />
+    <link rel="next" title="Trusted connections" href="trusted-connections.html" />
     <link rel="prev" title="Starburst AI" href="index.html" />
 
   
@@ -248,12 +248,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#model-configuration">Model configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#select-a-model-integration-and-type">Select a model integration and type</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#model-alias-and-description">Model alias and description</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#connection-details">Connection details</a><ul>
-<li class="toctree-l5"><a class="reference internal" href="#amazon-bedrock-connection-details">Amazon Bedrock connection details</a></li>
-<li class="toctree-l5"><a class="reference internal" href="#openai-connection-details">OpenAI connection details</a></li>
-</ul>
-</li>
-<li class="toctree-l4"><a class="reference internal" href="#advanced-connection-configuration">Advanced connection configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#select-a-trusted-connection">Select a trusted connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#custom-request-headers">Custom request headers</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#advanced-configuration-options">Advanced configuration options</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#general-system-prompts">General system prompts</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#prompt-overrides">Prompt overrides</a></li>
@@ -264,6 +260,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#access-control">Access control</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="trusted-connections.html">Trusted connections</a></li>
 <li class="toctree-l2"><a class="reference internal" href="aida-ai.html">AI Data Assistant (AIDA)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="data-product-enrichment-ai.html">Data product AI agent-based enrichment</a></li>
 <li class="toctree-l2"><a class="reference internal" href="functions-ai.html">AI functions</a></li>
@@ -369,12 +366,8 @@
 <li><a class="reference internal" href="#model-configuration">Model configuration</a><ul>
 <li><a class="reference internal" href="#select-a-model-integration-and-type">Select a model integration and type</a></li>
 <li><a class="reference internal" href="#model-alias-and-description">Model alias and description</a></li>
-<li><a class="reference internal" href="#connection-details">Connection details</a><ul>
-<li><a class="reference internal" href="#amazon-bedrock-connection-details">Amazon Bedrock connection details</a></li>
-<li><a class="reference internal" href="#openai-connection-details">OpenAI connection details</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#advanced-connection-configuration">Advanced connection configuration</a></li>
+<li><a class="reference internal" href="#select-a-trusted-connection">Select a trusted connection</a></li>
+<li><a class="reference internal" href="#custom-request-headers">Custom request headers</a></li>
 <li><a class="reference internal" href="#advanced-configuration-options">Advanced configuration options</a><ul>
 <li><a class="reference internal" href="#general-system-prompts">General system prompts</a></li>
 <li><a class="reference internal" href="#prompt-overrides">Prompt overrides</a></li>
@@ -409,12 +402,17 @@ provider.</p>
 <li><p>The <strong>Models</strong> tab requires SEP’s <a class="reference internal" href="../security/biac-overview.html"><span class="doc std std-doc">built-in access
 control</span></a> authorization.</p></li>
 <li><p>You must have the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ui"><span class="std std-ref">AI models</span></a> user interface entities feature
-privilege.</p></li>
+privilege to access the <strong>Models</strong> tab.</p></li>
+<li><p>Only a user with the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role can create, view, edit, or delete
+<a class="reference internal" href="trusted-connections.html"><span class="doc std std-doc">trusted connections</span></a>, which store the endpoint and
+credentials for an AI model.</p></li>
 <li><p>To connect a new model, you must have the <a class="reference internal" href="../security/biac-privileges.html#biac-entity-ai-models"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">CREATE</span></code>
-permission</span></a> and access to <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">AI</span> <span class="pre">models</span></code>.</p></li>
-<li><p>All credentials should be stored using a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a>.
-Keys or secrets cannot be entered as plaintext in the configuration and should
-be provided by secret reference.</p></li>
+permission</span></a> and access to <code class="docutils literal notranslate"><span class="pre">All</span> <span class="pre">AI</span> <span class="pre">models</span></code>. You select
+an existing trusted connection when you connect the model. You do not enter
+connection credentials directly.</p></li>
+<li><p>All credentials are configured on the trusted connection and stored using a
+<a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a>. Keys or secrets cannot be entered as
+plaintext and must be provided by secret reference.</p></li>
 <li><p>For AWS Bedrock connections:</p>
 <ul>
 <li><p>The AWS account must have Bedrock service enabled and access to the desired
@@ -438,16 +436,6 @@ encoding requirements.</p></li>
 </section>
 <section id="configuration">
 <span id="sb-ai-configuration"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<div class="admonition caution">
-<p class="admonition-title">Caution</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">starburst</span></code> catalog is created automatically. The former mechanism of
-configuring the catalog via a <code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code> file is no longer
-supported. If you have an existing <code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code> file, or if you are
-using dynamic catalogs and have previously created a <code class="docutils literal notranslate"><span class="pre">starburst</span></code> catalog,
-startup fails. All configuration properties that were previously placed in
-<code class="docutils literal notranslate"><span class="pre">starburst.properties</span></code> must now be migrated to <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> on both the
-worker and coordinator.</p>
-</div>
 <p>To use the AI functionality, Starburst Enterprise now auto-creates a built-in catalog
 named <code class="docutils literal notranslate"><span class="pre">starburst</span></code> referencing the <code class="docutils literal notranslate"><span class="pre">sep_ai</span></code> connector if a valid license is
 present.</p>
@@ -633,20 +621,22 @@ models</a>
 hosted in the Microsoft Azure cloud through Azure AI Foundry (formerly Azure
 Studio). You can use Azure OpenAI for both language and embedding tasks by
 connecting through the OpenAI-compatible API.</p>
-<p>To configure Azure OpenAI with Starburst, select <strong>OpenAI</strong> as the provider during
-model configuration. Then, log in to your Azure OpenAI portal, copy the
-deployment URL and API key from Azure OpenAI foundry portal, and enter them in
-the appropriate fields in the <a class="reference internal" href="#sb-ai-model-connection"><span class="std std-ref">connection details
-section</span></a> of the Starburst model configuration.</p>
+<p>To configure Azure OpenAI with Starburst, select <strong>OpenAI</strong> as the provider when
+you configure a <a class="reference internal" href="trusted-connections.html#trusted-connections-configuration-openai"><span class="std std-ref">trusted connection</span></a>.
+Then, log in to your Azure OpenAI portal, copy the deployment URL and API key
+from Azure OpenAI foundry portal, and enter them in the connection information
+fields.</p>
 </section>
 <section id="gemini-api">
 <h3 id="gemini-api">Gemini API<a class="headerlink" href="#gemini-api" title="Link to this heading">#</a></h3>
 <p><a class="reference external" href="https://ai.google.dev/gemini-api/docs/openai">Gemini</a> provides <a class="reference external" href="https://ai.google.dev/gemini-api/docs/models">large language
 and embedding models</a> accessible
 through an OpenAI-compatible API. To use Gemini with Starburst, select <strong>OpenAI</strong>
-as the provider during model configuration, get the API key from your <a class="reference external" href="https://cloud.google.com/docs/authentication/api-keys-use">cloud
-console in Google</a>,
-and use the following endpoint:</p>
+as the provider when you configure a <a class="reference internal" href="trusted-connections.html#trusted-connections-configuration-openai"><span class="std std-ref">trusted
+connection</span></a>, get the API key from your
+<a class="reference external" href="https://cloud.google.com/docs/authentication/api-keys-use">cloud console in
+Google</a>, and use the
+following endpoint:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>`https://generativelanguage.googleapis.com/v1beta/openai/`
 </pre></div>
 </div>
@@ -664,6 +654,11 @@ and catalog, navigate to <strong>AI &gt; Models</strong> and click <strong>Conne
 <p>Starburst recommends that you restrict AI model creation and management to
 the <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> role.</p>
 </div>
+<p>Before you connect a model, a <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> must configure a <a class="reference internal" href="trusted-connections.html#trusted-connections-configuration"><span class="std std-ref">trusted
+connection</span></a> for the provider you want to use.
+When you connect a model, you select an existing trusted connection instead of
+entering connection credentials.</p>
+<p>The following sections provide more detail for connecting to an AI model.</p>
 <section id="select-a-model-integration-and-type">
 <span id="sb-ai-model-provider"></span><h3 id="select-a-model-integration-and-type">Select a model integration and type<a class="headerlink" href="#select-a-model-integration-and-type" title="Link to this heading">#</a></h3>
 <p>Follow these steps to select one of the supported providers and connect to a
@@ -680,7 +675,7 @@ profile</a>.
 When the model integration is <code class="docutils literal notranslate"><span class="pre">Amazon</span> <span class="pre">Bedrock</span></code> and model type is <code class="docutils literal notranslate"><span class="pre">Embedding</span></code>,
 the <strong>Model ID</strong> field becomes a drop-down menu.</p>
 <p>For more information about AWS Bedrock’s providers and models, read the
-<a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html">documentation</a>.</p>
+<a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards.html">documentation</a>.</p>
 </li>
 </ul>
 </section>
@@ -699,98 +694,24 @@ tables in client applications. The model alias has the following requirements:</
 <p>The <strong>Description</strong> is a short optional paragraph that provides further details
 about the AI model.</p>
 </section>
-<section id="connection-details">
-<span id="sb-ai-model-connection"></span><h3 id="connection-details">Connection details<a class="headerlink" href="#connection-details" title="Link to this heading">#</a></h3>
-<p>Specify the connection credentials for AWS or OpenAI.</p>
-<p>Security-sensitive properties such as private keys and passwords cannot be
-passed as plaintext. If you provide the properties in plaintext, you may get an
-error prompting you to reference these properties using a <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets
-manager</span></a>.</p>
-<section id="amazon-bedrock-connection-details">
-<span id="sb-ai-model-connection-amazon"></span><h4 id="amazon-bedrock-connection-details">Amazon Bedrock connection details<a class="headerlink" href="#amazon-bedrock-connection-details" title="Link to this heading">#</a></h4>
-<ul class="simple">
-<li><p>Authenticate using <strong>AWS default credentials</strong>. Use your AWS credentials that
-are already configured for your environment. Starburst uses the <a class="reference external" href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html">AWS Default
-credentials provider
-chain</a>
-to detect credentials.</p></li>
-<li><p>Authenticate with an <strong>AWS IAM role</strong>:</p>
-<ul>
-<li><p><strong>AWS IAM role arn</strong>: Specify the ARN of the IAM role to assume when
-connecting to AWS.</p></li>
-<li><p><strong>STS AWS access key ID</strong>: Specify the Security Token Service (STS) AWS access
-key to use for authentication for the specified role.</p></li>
-<li><p><strong>STS AWS secret access key</strong>: Specify the Security Token Service (STS) AWS
-secret key to use for authentication for the specified role.</p></li>
-<li><p><strong>AWS region code</strong>: The AWS region code. For example, the region code for
-US East (Ohio) is <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>.</p></li>
-</ul>
-</li>
-</ul>
-<p>For more information about AWS regions and region codes, read the <a class="reference external" href="https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html#available-regions">AWS
-documentation</a>.</p>
-<ul class="simple">
-<li><p>Authenticate with an <strong>AWS access key</strong>:</p>
-<ul>
-<li><p><strong>AWS access key ID</strong>: Specify the AWS access key to use for authentication.</p></li>
-<li><p><strong>AWS secret access key</strong>: Specify the AWS secret key to use for
-authentication</p></li>
-<li><p><strong>AWS region code</strong>: The AWS region code. For example, the region code for
-US East (Ohio) is <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>.</p></li>
-</ul>
-</li>
-<li><p>Authenticate with <strong>AWS anonymous credentials</strong>:</p>
-<ul>
-<li><p><strong>AWS region code</strong>: Specify the AWS region code for the proxy or gateway
-that manages authentication and routes requests to Amazon Bedrock. For
-example, the region code for US East (Ohio) is <code class="docutils literal notranslate"><span class="pre">us-east-2</span></code>. Ensure the
-region code matches the <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/bedrock.html">Amazon Bedrock
-endpoint</a> your
-proxy uses. For more information about AWS Anonymous credentials, read the
-<a class="reference external" href="https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AnonymousCredentialsProvider.html">AWS
-documentation</a>.</p></li>
-</ul>
-</li>
-</ul>
+<section id="select-a-trusted-connection">
+<span id="sb-ai-model-connection"></span><h3 id="select-a-trusted-connection">Select a trusted connection<a class="headerlink" href="#select-a-trusted-connection" title="Link to this heading">#</a></h3>
+<p>In the <strong>Connection information</strong> section, select a <strong>Trusted connection</strong>. The
+drop-down menu groups connections by provider type. The model uses the endpoint
+and credentials from the selected connection. You cannot view or change them.</p>
+<p>Only a <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code> can manage trusted connections. See <a class="reference internal" href="trusted-connections.html"><span class="doc std std-doc">Trusted
+connections</span></a>.</p>
 </section>
-<section id="openai-connection-details">
-<span id="sb-ai-model-connection-openai"></span><h4 id="openai-connection-details">OpenAI connection details<a class="headerlink" href="#openai-connection-details" title="Link to this heading">#</a></h4>
+<section id="custom-request-headers">
+<span id="sb-ai-model-custom-headers"></span><h3 id="custom-request-headers">Custom request headers<a class="headerlink" href="#custom-request-headers" title="Link to this heading">#</a></h3>
+<p>In the <strong>Custom request headers</strong> section, you can add custom HTTP headers to
+include with this model’s requests to the AI provider. These headers apply only
+to this model, and are separate from the <a class="reference internal" href="trusted-connections.html#trusted-connections-headers"><span class="std std-ref">additional
+headers</span></a> configured on the trusted connection.</p>
 <ul class="simple">
-<li><p>Authenticate with an <strong>OpenAI</strong> endpoint:</p>
-<ul>
-<li><p><strong>OpenAI endpoint</strong>: Specify the URL for the OpenAI API endpoint. For
-example, <code class="docutils literal notranslate"><span class="pre">https://api.openai.com/</span></code>.</p></li>
-<li><p><strong>OpenAI key</strong>: Specify the API key value for OpenAI API access. This
-property is optional when using a compatible OpenAI API that does not
-require a key.</p></li>
-</ul>
-</li>
-</ul>
-<p>Use <a class="reference internal" href="../security/secrets.html"><span class="doc std std-doc">secrets manager</span></a> to avoid exposing API or secret key
-values.</p>
-</section>
-</section>
-<section id="advanced-connection-configuration">
-<span id="sb-ai-model-additional-connection"></span><h3 id="advanced-connection-configuration">Advanced connection configuration<a class="headerlink" href="#advanced-connection-configuration" title="Link to this heading">#</a></h3>
-<p>In addition to the basic connection details for an external AI model, you can
-specify alternate Amazon Bedrock endpoints and add custom HTTP headers to
-include with requests to your AI provider.</p>
-<ul class="simple">
-<li><p><strong>Alternative bedrock endpoint</strong>: Specify the proxy URL, custom Amazon Bedrock
-endpoint, or an alternate <a class="reference external" href="https://docs.aws.amazon.com/general/latest/gr/bedrock.html">Amazon Bedrock
-endpoint</a>.</p></li>
-<li><p>Add custom HTTP headers:</p>
-<ul>
-<li><p>Click <strong>Add header</strong> to include one or more custom HTTP headers with
-requests to your AI provider inputs:</p></li>
-<li><p><strong>Header name</strong>: Specify the header name or key. For example, an
-<code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header sends a bearer token that allows your proxy to
-authenticate the request before it reaches the Amazon Bedrock service.</p></li>
-<li><p><strong>Values</strong>: Specify one or more comma-separated values for the header. For
-example, the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header uses the  <code class="docutils literal notranslate"><span class="pre">Bearer</span> <span class="pre">token</span></code> value to
-authorize the request.</p></li>
-</ul>
-</li>
+<li><p>Click <strong>Add header</strong>.</p></li>
+<li><p><strong>Header name</strong>: Specify the header name or key.</p></li>
+<li><p><strong>Values</strong>: Specify one or more comma-separated values for the header.</p></li>
 </ul>
 </section>
 <section id="advanced-configuration-options">
@@ -1005,12 +926,12 @@ feedback();
             </a>
           
           
-            <a href="aida-ai.html" title="AI Data Assistant (AIDA)"
+            <a href="trusted-connections.html" title="Trusted connections"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> AI Data Assistant (AIDA) </span>
+                class="md-footer-nav__direction"> "Next" </span> Trusted connections </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
