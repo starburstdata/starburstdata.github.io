@@ -255,6 +255,7 @@
 <li class="toctree-l2"><a class="reference internal" href="api.html">Control Plane API</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#license-requirements">License requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#use-cases">Use cases</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#api">API</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../starburst-ai/index.html">Starburst AI</a></li>
@@ -392,15 +393,31 @@ separate client application.</p>
 </div>
 </section>
 <section id="clusters">
-<h2 id="clusters">Clusters<a class="headerlink" href="#clusters" title="Link to this heading">#</a></h2>
+<span id="control-plane-clusters"></span><h2 id="clusters">Clusters<a class="headerlink" href="#clusters" title="Link to this heading">#</a></h2>
 <p>Use the <strong>Clusters</strong> pane to associate SEP clusters with the Starburst
 Control Plane and to assign clusters to routing groups. A routing group is a set
 of clusters that Starburst Control Plane treats as interchangeable.</p>
+<p>Before you add a cluster, make sure of the following:</p>
+<ul class="simple">
+<li><p>The cluster has an Elite SEP license and runs SEP version <code class="docutils literal notranslate"><span class="pre">480-e</span></code> or
+later. Otherwise, Control Plane marks the cluster as <code class="docutils literal notranslate"><span class="pre">UNSUPPORTED</span></code>.</p></li>
+<li><p>The cluster’s authentication configuration matches Starburst Control Plane,
+including the authentication type, user mapping rules, and the authentication
+signing secret (<code class="docutils literal notranslate"><span class="pre">web-ui.shared-secret</span></code> for password or insecure authentication,
+or <code class="docutils literal notranslate"><span class="pre">http-server.authentication.oauth2.state-key</span></code> for OAuth2). See <a class="reference internal" href="security.html"><span class="doc std std-doc">Control Plane security</span></a>
+and <a class="reference internal" href="security.html#control-plane-shared-secrets"><span class="std std-ref">Shared secrets</span></a>.</p></li>
+<li><p>The cluster’s coordinator <code class="docutils literal notranslate"><span class="pre">node.environment</span></code> matches the cluster name you use
+when you add the cluster. Otherwise, Control Plane marks the cluster as
+<code class="docutils literal notranslate"><span class="pre">UNSUPPORTED</span></code>.</p></li>
+<li><p>You have the cluster’s <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code> value available
+to enter in the <strong>Shared secret</strong> field.</p></li>
+</ul>
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <ul class="simple">
 <li><p>Make sure all clusters across all routing groups have the same catalog, access
-control, and authentication configurations.</p></li>
+control, and authentication configurations. The authentication configuration
+must also match Starburst Control Plane. See <a class="reference internal" href="security.html#control-plane-shared-secrets"><span class="std std-ref">Shared secrets</span></a>.</p></li>
 <li><p>Make sure all clusters within a routing group have the same physical
 properties (size and worker node count), execution modes (such as FTE or Warp
 Speed), and database objects (tables, materialized views, data products).
@@ -409,34 +426,42 @@ These properties can vary across routing groups.</p></li>
 </div>
 <p>To associate a cluster with Starburst Control Plane and assign it to a routing
 group, click <strong>Create cluster</strong>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The cluster’s coordinator environment name must match the cluster name you
-specify. Otherwise, Starburst Control Plane marks the cluster as unhealthy.</p>
-</div>
 <p>In the <strong>Create cluster</strong> dialog, enter the cluster details. In the <strong>Routing
 group</strong> field, enter the name of an existing routing group to add the cluster to
 that group, or enter a new name to create a new routing group. In the <strong>Shared
-secret</strong> field, enter the shared secret that your cluster uses for internal
-communication. For more information, see <a class="reference internal" href="../../security/internal-communication.html"><span class="doc std std-doc">Secure internal communication</span></a>.</p>
+secret</strong> field, enter the value of the <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code>
+property configured on that cluster. The values must match, or Control Plane
+marks the cluster as <code class="docutils literal notranslate"><span class="pre">UNHEALTHY</span></code>. For more information, see
+<a class="reference internal" href="security.html#control-plane-shared-secrets"><span class="std std-ref">Shared secrets</span></a> and <a class="reference internal" href="../../security/internal-communication.html"><span class="doc std std-doc">Secure internal communication</span></a>.</p>
 <p>To remove a shared secret from an existing cluster, select <strong>Delete shared
-secret</strong> from the cluster’s menu. Leaving the <strong>Shared secret</strong> field empty when
-editing a cluster does not remove the existing secret.</p>
-<p>To remove a shared secret from an existing cluster, use the action menu on the
-cluster row. Leaving the <strong>Shared secret</strong> field empty when editing a cluster
-does not remove the existing secret.</p>
+secret</strong> from the cluster’s menu. Leaving the <strong>Shared secret</strong> field
+empty when editing a cluster does not remove the existing secret.</p>
 <p>Click the <strong>Active</strong> toggle to enable Starburst Control Plane monitoring of the
 cluster status. Starburst Control Plane checks the status every few seconds and
 reports one of the following:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">PENDING</span></code>: The cluster is starting up.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">HEALTHY</span></code>: The cluster is ready and available.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">UNHEALTHY</span></code>: The cluster failed health checks, or the shared secret does not
-match the cluster’s internal communication secret.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">UNHEALTHY</span></code>: The cluster failed health checks, or the <strong>Shared secret</strong> does
+not match the cluster’s <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code>. See
+<a class="reference internal" href="security.html#control-plane-shared-secrets"><span class="std std-ref">Shared secrets</span></a>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code>: Starburst Control Plane cannot communicate with the cluster.
 Possible reasons include the cluster going offline or a typo in the cluster
 URL.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">UNSUPPORTED</span></code>: The cluster is not a supported SEP cluster.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">UNSUPPORTED</span></code>: The cluster is not a supported SEP cluster. Control Plane
+reports this status in any of the following cases:</p>
+<ul>
+<li><p>The cluster does not have an Elite SEP license.</p></li>
+<li><p>The cluster runs a SEP version earlier than <code class="docutils literal notranslate"><span class="pre">480-e</span></code>.</p></li>
+<li><p>The cluster’s coordinator does not expose the metrics that Control Plane
+requires for monitoring, which typically happens with older SEP
+versions.</p></li>
+<li><p>The cluster name is invalid, which can happen if the cluster was added
+before internal communication monitoring was supported.</p></li>
+<li><p>The cluster’s coordinator <code class="docutils literal notranslate"><span class="pre">node.environment</span></code> property does not match the
+cluster name you use when you add the cluster.</p></li>
+</ul>
+</li>
 </ul>
 <section id="limitations">
 <h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h3>
