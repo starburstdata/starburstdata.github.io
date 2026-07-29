@@ -848,7 +848,7 @@ The <code class="docutils literal notranslate"><span class="pre">domain-compacti
 <code class="docutils literal notranslate"><span class="pre">256</span></code> for this threshold.</p>
 </section>
 <section id="specific-configuration-properties">
-<h3 id="specific-configuration-properties">Specific configuration properties<a class="headerlink" href="#specific-configuration-properties" title="Link to this heading">#</a></h3>
+<span id="sqlserver-configuration-properties"></span><h3 id="specific-configuration-properties">Specific configuration properties<a class="headerlink" href="#specific-configuration-properties" title="Link to this heading">#</a></h3>
 <p>The SQL Server connector supports additional catalog properties to configure the
 behavior of the connector.</p>
 <table>
@@ -863,12 +863,37 @@ behavior of the connector.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sqlserver.snapshot-isolation.disabled</span></code></p></td>
-<td><p>Control the automatic use of snapshot isolation for transactions issued by
-Trino in SQL Server. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>, which means that snapshot
-isolation is enabled.</p></td>
+<td><p><strong>Deprecated.</strong> Use <code class="docutils literal notranslate"><span class="pre">sqlserver.transaction-isolation-level</span></code> instead.</p>
+<p>Controls the automatic use of snapshot isolation for transactions issued
+by Trino in SQL Server. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>, which means that snapshot
+isolation is enabled.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sqlserver.transaction-isolation-level</span></code></p></td>
+<td><p>Sets the <a class="reference external" href="https://learn.microsoft.com/sql/t-sql/statements/set-transaction-isolation-level-transact-sql">JDBC transaction isolation
+level</a>
+for every connection the connector opens. Valid values are
+<code class="docutils literal notranslate"><span class="pre">READ_UNCOMMITTED</span></code>, <code class="docutils literal notranslate"><span class="pre">READ_COMMITTED</span></code>, and <code class="docutils literal notranslate"><span class="pre">SNAPSHOT</span></code>. <code class="docutils literal notranslate"><span class="pre">SERIALIZABLE</span></code> and
+<code class="docutils literal notranslate"><span class="pre">REPEATABLE_READ</span></code> aren’t supported because they aren’t compatible with
+Trino’s distributed query engine. This property is unset by default.</p>
+<p>Don’t set this property together with
+<code class="docutils literal notranslate"><span class="pre">sqlserver.snapshot-isolation.disabled</span></code>. Setting both properties causes the
+catalog to fail validation at startup.</p>
+</td>
 </tr>
 </tbody>
 </table>
+<p>When neither property is set, the connector automatically uses <code class="docutils literal notranslate"><span class="pre">SNAPSHOT</span></code>
+isolation if the target database has <code class="docutils literal notranslate"><span class="pre">ALLOW_SNAPSHOT_ISOLATION</span></code> enabled.
+Otherwise, it falls back to the JDBC driver default.</p>
+<p>To enable snapshot isolation on the database, run the following statement:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="o">&lt;</span><span class="n">DATABASE_NAME</span><span class="o">&gt;</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">ALLOW_SNAPSHOT_ISOLATION</span><span class="w"> </span><span class="k">ON</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>If you set <code class="docutils literal notranslate"><span class="pre">sqlserver.transaction-isolation-level</span></code> to <code class="docutils literal notranslate"><span class="pre">SNAPSHOT</span></code> and the target
+database doesn’t have <code class="docutils literal notranslate"><span class="pre">ALLOW_SNAPSHOT_ISOLATION</span></code> enabled, queries fail with a
+<code class="docutils literal notranslate"><span class="pre">CONFIGURATION_INVALID</span></code> error. The connector doesn’t fall back to another
+isolation level.</p>
 </section>
 <section id="case-insensitive-matching">
 <h3 id="case-insensitive-matching">Case insensitive matching<a class="headerlink" href="#case-insensitive-matching" title="Link to this heading">#</a></h3>
