@@ -283,6 +283,7 @@
 <li class="toctree-l7"><a class="reference internal" href="#considerations">Considerations</a></li>
 </ul>
 </li>
+<li class="toctree-l6"><a class="reference internal" href="#create-changelog-view">create_changelog_view</a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#functions">Functions</a><ul>
@@ -472,6 +473,7 @@
 <li><a class="reference internal" href="#considerations">Considerations</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#create-changelog-view">create_changelog_view</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#functions">Functions</a><ul>
@@ -1701,6 +1703,113 @@ column must already be created before executing this procedure.</p></li>
 </ul>
 </section>
 </section>
+<section id="create-changelog-view">
+<span id="iceberg-create-changelog-view"></span><h4 id="create-changelog-view">create_changelog_view<a class="headerlink" href="#create-changelog-view" title="Link to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">create_changelog_view</span></code> table procedure creates a view that classifies
+row-level changes between two snapshots as <code class="docutils literal notranslate"><span class="pre">insert</span></code>, <code class="docutils literal notranslate"><span class="pre">delete</span></code>, <code class="docutils literal notranslate"><span class="pre">update_before</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">update_after</span></code>. Use this procedure for change data capture (CDC) workflows.</p>
+<p>This procedure is only supported on <a class="reference internal" href="#iceberg-cow-mode"><span class="std std-ref">copy-on-write</span></a> tables.</p>
+<p>Run the procedure with <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">...</span> <span class="pre">EXECUTE</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">create_changelog_view</span><span class="p">(</span>
+<span class="w">    </span><span class="n">start_snapshot_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1234567890</span><span class="p">,</span>
+<span class="w">    </span><span class="n">end_snapshot_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">9876543210</span><span class="p">,</span>
+<span class="w">    </span><span class="n">identifier_columns</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'order_id'</span><span class="p">]);</span>
+</pre></div>
+</div>
+<p>This procedure creates or replaces a view named <code class="docutils literal notranslate"><span class="pre">orders_changes</span></code> in the same
+schema as the source table. You can query the view like any other view:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">orders_changes</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">_change_ordinal</span><span class="p">,</span><span class="w"> </span><span class="n">_change_type</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The procedure accepts the following parameters:</p>
+<table id="id8">
+<caption><span class="caption-text">create_changelog_view parameters</span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 24%"/>
+<col style="width: 20%"/>
+<col style="width: 10%"/>
+<col style="width: 46%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">start_snapshot_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Starting snapshot, exclusive.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">end_snapshot_id</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></td>
+<td><p>Yes</p></td>
+<td><p>Ending snapshot, inclusive. Must be a descendant of <code class="docutils literal notranslate"><span class="pre">start_snapshot_id</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">identifier_columns</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ARRAY(VARCHAR)</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Top-level columns that uniquely identify each row. Defaults to the table’s
+Iceberg <code class="docutils literal notranslate"><span class="pre">identifier-field-ids</span></code> schema property when omitted. If neither is
+provided, the procedure returns an error.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">view_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Name of the view to create. Defaults to <code class="docutils literal notranslate"><span class="pre">{table_name}_changes</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">schema_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Schema in which to create the view. Defaults to the source table schema.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">identifier_columns</span></code> parameter follows the Iceberg specification for
+<code class="docutils literal notranslate"><span class="pre">identifier-field-ids</span></code>:</p>
+<ul class="simple">
+<li><p>Top-level columns and struct-nested columns are supported. Refer to a
+struct-nested column with a dotted path, for example <code class="docutils literal notranslate"><span class="pre">'customer.id'</span></code>.</p></li>
+<li><p>Columns nested inside an <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code> or <code class="docutils literal notranslate"><span class="pre">MAP</span></code> are not supported.</p></li>
+<li><p>Every struct ancestor of a nested identifier column must be <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code>.</p></li>
+<li><p>Identifier columns must be <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">REAL</span></code> and <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> columns are not supported.</p></li>
+</ul>
+<p>The following example uses a struct-nested identifier column:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="n">create_changelog_view</span><span class="p">(</span>
+<span class="w">    </span><span class="n">start_snapshot_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">1234567890</span><span class="p">,</span>
+<span class="w">    </span><span class="n">end_snapshot_id</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="mi">9876543210</span><span class="p">,</span>
+<span class="w">    </span><span class="n">identifier_columns</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'customer.id'</span><span class="p">]);</span>
+</pre></div>
+</div>
+<p>Ensure that the values in <code class="docutils literal notranslate"><span class="pre">identifier_columns</span></code> uniquely identify each row. If
+they do not, the view returns the error <code class="docutils literal notranslate"><span class="pre">Identifier</span> <span class="pre">columns</span> <span class="pre">do</span> <span class="pre">not</span> <span class="pre">uniquely</span> <span class="pre">identify</span> <span class="pre">a</span> <span class="pre">row</span></code> when queried. Verify uniqueness with a query such as the
+following:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">col1</span><span class="p">,</span><span class="w"> </span><span class="n">col2</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">cnt</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">your_table</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">col1</span><span class="p">,</span><span class="w"> </span><span class="n">col2</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This procedure creates a cataloged view, not a temporary view. The
+view persists until you drop it with <a class="reference internal" href="../sql/drop-view.html"><span class="doc std std-doc">DROP VIEW</span></a>. When running
+concurrent sessions, use unique <code class="docutils literal notranslate"><span class="pre">view_name</span></code> values to avoid overwriting each
+other’s views.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The view is backed by the <a class="reference internal" href="#iceberg-table-functions"><span class="std std-ref">table_changes</span></a> table
+function and reads metadata for every snapshot between <code class="docutils literal notranslate"><span class="pre">start_snapshot_id</span></code> and
+<code class="docutils literal notranslate"><span class="pre">end_snapshot_id</span></code>. If any of those snapshots are removed, for example by
+<a class="reference internal" href="#iceberg-expire-snapshots"><span class="std std-ref">expire_snapshots</span></a>, queries against the view fail.
+Re-create the view with a new snapshot range, or retain the relevant snapshots
+until you no longer need the view.</p>
+</div>
+</section>
 </section>
 <section id="functions">
 <span id="iceberg-functions"></span><h3 id="functions">Functions<a class="headerlink" href="#functions" title="Link to this heading">#</a></h3>
@@ -2037,8 +2146,8 @@ time is recommended to keep size of a table’s data directory under control.</p
 procedure fails with a similar message: <code class="docutils literal notranslate"><span class="pre">Retention</span> <span class="pre">specified</span> <span class="pre">(1.00d)</span> <span class="pre">is</span> <span class="pre">shorter</span> <span class="pre">than</span> <span class="pre">the</span> <span class="pre">minimum</span> <span class="pre">retention</span> <span class="pre">configured</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">system</span> <span class="pre">(7.00d)</span></code>. The default value
 for this property is <code class="docutils literal notranslate"><span class="pre">7d</span></code>.</p>
 <p>The output of the query has the following metrics:</p>
-<table id="id8">
-<caption><span class="caption-text">Output</span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
+<table id="id9">
+<caption><span class="caption-text">Output</span><a class="headerlink" href="#id9" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -2154,8 +2263,8 @@ TABLE</span></a>.</p>
 <p>Table properties supply or set metadata for the underlying tables. This is key
 for <a class="reference internal" href="../sql/create-table-as.html"><span class="doc std std-doc">CREATE TABLE AS</span></a> statements. Table properties are passed to the
 connector using a <a class="reference internal" href="../sql/create-table-as.html"><span class="doc std std-doc">WITH</span></a> clause.</p>
-<table id="id9">
-<caption><span class="caption-text">Iceberg table properties</span><a class="headerlink" href="#id9" title="Link to this table">#</a></caption>
+<table id="id10">
+<caption><span class="caption-text">Iceberg table properties</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -2337,8 +2446,8 @@ following query:</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id10">
-<caption><span class="caption-text">History columns</span><a class="headerlink" href="#id10" title="Link to this table">#</a></caption>
+<table id="id11">
+<caption><span class="caption-text">History columns</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -2386,8 +2495,8 @@ table <code class="docutils literal notranslate"><span class="pre">test_table</s
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id11">
-<caption><span class="caption-text">Metadata log entries columns</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
+<table id="id12">
+<caption><span class="caption-text">Metadata log entries columns</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -2440,8 +2549,8 @@ contents are represented by the union of all the data files in those manifests.<
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id12">
-<caption><span class="caption-text">Snapshots columns</span><a class="headerlink" href="#id12" title="Link to this table">#</a></caption>
+<table id="id13">
+<caption><span class="caption-text">Snapshots columns</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -2507,8 +2616,8 @@ corresponding to the snapshots performed in the log of the Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id13">
-<caption><span class="caption-text">Manifests columns</span><a class="headerlink" href="#id13" title="Link to this table">#</a></caption>
+<table id="id14">
+<caption><span class="caption-text">Manifests columns</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -2599,8 +2708,8 @@ Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id14">
-<caption><span class="caption-text">Partitions columns</span><a class="headerlink" href="#id14" title="Link to this table">#</a></caption>
+<table id="id15">
+<caption><span class="caption-text">Partitions columns</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -2652,8 +2761,8 @@ snapshot of the  Iceberg table.</p>
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id15">
-<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id15" title="Link to this table">#</a></caption>
+<table id="id16">
+<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 30%"/>
@@ -2818,8 +2927,8 @@ current snapshot. The <code class="docutils literal notranslate"><span class="pr
 </pre></div>
 </div>
 <p>The metadata tables include the following columns:</p>
-<table id="id16">
-<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id16" title="Link to this table">#</a></caption>
+<table id="id17">
+<caption><span class="caption-text">Files columns</span><a class="headerlink" href="#id17" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 30%"/>
@@ -2883,8 +2992,8 @@ example_branch  | BRANCH | 20000000000 | 20000                   | 2            
 </pre></div>
 </div>
 <p>The output of the query has the following columns:</p>
-<table id="id17">
-<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id17" title="Link to this table">#</a></caption>
+<table id="id18">
+<caption><span class="caption-text">Refs columns</span><a class="headerlink" href="#id18" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 20%"/>
 <col style="width: 30%"/>
@@ -2992,8 +3101,8 @@ even if the table cannot be handled in any way by the iceberg connector. This
 can happen if other connectors like Hive or Delta Lake, use the same metastore,
 catalog, and schema to store its tables.</p>
 <p>The table includes following columns:</p>
-<table id="id18">
-<caption><span class="caption-text">iceberg_tables columns</span><a class="headerlink" href="#id18" title="Link to this table">#</a></caption>
+<table id="id19">
+<caption><span class="caption-text">iceberg_tables columns</span><a class="headerlink" href="#id19" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 30%"/>
@@ -3071,8 +3180,8 @@ on existing entities.</p>
 <p>Iceberg supports partitioning by specifying transforms over the table columns. A
 partition is created for each unique tuple value produced by the transforms.
 Identity transforms are simply the column name. Other transforms are:</p>
-<table id="id19">
-<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id19" title="Link to this table">#</a></caption>
+<table id="id20">
+<caption><span class="caption-text">Iceberg column transforms</span><a class="headerlink" href="#id20" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 40%"/>
 <col style="width: 60%"/>
@@ -3501,7 +3610,7 @@ table.</p>
 for each change:</p>
 <ul class="simple">
 <li><dl class="simple myst">
-<dt><code class="docutils literal notranslate"><span class="pre">_change_type</span></code></dt><dd><p>The type of change that occurred. Possible value is <code class="docutils literal notranslate"><span class="pre">insert</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">_change_type</span></code></dt><dd><p>The type of change that occurred. Possible values are <code class="docutils literal notranslate"><span class="pre">insert</span></code> and <code class="docutils literal notranslate"><span class="pre">delete</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -3729,8 +3838,8 @@ when the values do not appear in any clustered order naturally.</p>
 network is further reduced. You get access to higher query performance and a
 reduced cost.</p>
 <p>You can use the following properties to configure dynamic row filtering:</p>
-<table id="id20">
-<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id20" title="Link to this table">#</a></caption>
+<table id="id21">
+<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id21" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 45%"/>
 <col style="width: 55%"/>
@@ -3771,8 +3880,8 @@ using the <a class="reference internal" href="../object-storage/file-system-cach
 implementation</span></a>. If <code class="docutils literal notranslate"><span class="pre">fs.cache.enabled</span></code> is
 enabled, metadata caching in coordinator memory is deactivated.</p>
 <p>Additionally, you can use the following catalog configuration properties:</p>
-<table id="id21">
-<caption><span class="caption-text">Memory metadata caching configuration properties</span><a class="headerlink" href="#id21" title="Link to this table">#</a></caption>
+<table id="id22">
+<caption><span class="caption-text">Memory metadata caching configuration properties</span><a class="headerlink" href="#id22" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 75%"/>
@@ -3820,8 +3929,8 @@ authorization at the catalog level.</p>
 <p>You can enable authorization checks for the connector by setting the
 <code class="docutils literal notranslate"><span class="pre">iceberg.security</span></code> property in the catalog properties file. This property must
 be one of the following values:</p>
-<table id="id22">
-<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id22" title="Link to this table">#</a></caption>
+<table id="id23">
+<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id23" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -3887,8 +3996,8 @@ your catalog configuration file:</p>
 <span class="na">dynamic.aws-s3-endpoint.credential-name</span><span class="o">=</span><span class="s">s3_endpoint</span>
 </pre></div>
 </div>
-<table id="id23">
-<caption><span class="caption-text">Dynamic configuration passthrough configuration properties</span><a class="headerlink" href="#id23" title="Link to this table">#</a></caption>
+<table id="id24">
+<caption><span class="caption-text">Dynamic configuration passthrough configuration properties</span><a class="headerlink" href="#id24" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 50%"/>
 <col style="width: 50%"/>
