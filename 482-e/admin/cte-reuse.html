@@ -285,6 +285,7 @@
 <li class="toctree-l8"><a class="reference internal" href="#azure-blob-storage">Azure Blob Storage</a></li>
 </ul>
 </li>
+<li class="toctree-l7"><a class="reference internal" href="#configure-local-disk-tier">Configure local disk tier</a></li>
 </ul>
 </li>
 </ul>
@@ -351,6 +352,7 @@
 <li><a class="reference internal" href="#azure-blob-storage">Azure Blob Storage</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#configure-local-disk-tier">Configure local disk tier</a></li>
 </ul>
 </li>
 </ul>
@@ -598,6 +600,92 @@ configuration properties:</p>
 </tbody>
 </table>
 </section>
+</section>
+<section id="configure-local-disk-tier">
+<span id="buffer-local-disk"></span><h4 id="configure-local-disk-tier">Configure local disk tier<a class="headerlink" href="#configure-local-disk-tier" title="Link to this heading">#</a></h4>
+<p>The local disk tier is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a>
+feature.</p>
+<p>The local disk tier adds an intermediate spooling step between memory and remote
+object storage. When memory crosses <code class="docutils literal notranslate"><span class="pre">memory-high-watermark</span></code>, the buffer service
+writes to local SSD instead of remote storage. When local disk crosses
+<code class="docutils literal notranslate"><span class="pre">spooling-high-watermark</span></code>, it falls through to remote object storage.</p>
+<p>Before enabling the local disk tier:</p>
+<ul class="simple">
+<li><p>Each node must have local or instance-attached SSD storage. Network-attached
+volumes offer no latency advantage over spooling directly to remote storage.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">buffer.spooling.storage-driver=TRINO_FS</span></code> must be set on all nodes.</p></li>
+<li><p>The <a class="reference internal" href="#embedded-buffer-service"><span class="std std-ref">embedded buffer service</span></a> must be enabled.</p></li>
+</ul>
+<p>To configure the local disk tier, use the following configuration properties:</p>
+<table id="id6">
+<caption><span class="caption-text">Local disk tier configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 45%"/>
+<col style="width: 15%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.enabled</span></code></p></td>
+<td><p>Enables the local disk tier. Requires
+<code class="docutils literal notranslate"><span class="pre">buffer.spooling.storage-driver=TRINO_FS</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.directory</span></code></p></td>
+<td><p>Local filesystem path for disk-tier data. <strong>Required.</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.capacity</span></code></p></td>
+<td><p>Maximum disk space the tier may use. <strong>Required.</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.routing.memory-high-watermark</span></code></p></td>
+<td><p>Fraction of memory capacity at which disk routing activates (0.0–1.0).</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.routing.memory-low-watermark</span></code></p></td>
+<td><p>Fraction of memory capacity at which disk routing deactivates after being
+triggered. Must be ≤ <code class="docutils literal notranslate"><span class="pre">memory-high-watermark</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.5</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.spooling-high-watermark</span></code></p></td>
+<td><p>Disk utilization ratio above which spooling to remote storage is triggered.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.8</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.spooling-low-watermark</span></code></p></td>
+<td><p>Disk utilization ratio at which spooling to remote storage stops.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.6</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.io-threads</span></code></p></td>
+<td><p>Threads dispatching disk-chunk writes.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">128</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.routing.max-open-disk-chunks</span></code></p></td>
+<td><p>Maximum number of concurrently open disk chunks. Routing pauses when this
+limit is reached.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4096</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">buffer.local-disk.routing.exchange-memory-fraction</span></code></p></td>
+<td><p>Once a single exchange’s allocated bytes exceed this fraction of total
+memory capacity, it is routed to disk regardless of watermarks. Set to
+<code class="docutils literal notranslate"><span class="pre">0.0</span></code> to disable.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.3</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The following example enables the local disk tier with a 200 GB capacity on a
+node with a local SSD mounted at <code class="docutils literal notranslate"><span class="pre">/mnt/ssd0</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">buffer.spooling.storage-driver</span><span class="o">=</span><span class="s">TRINO_FS</span>
+<span class="na">buffer.local-disk.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">buffer.local-disk.directory</span><span class="o">=</span><span class="s">/mnt/ssd0/trino-buffer-local-disk</span>
+<span class="na">buffer.local-disk.capacity</span><span class="o">=</span><span class="s">200GB</span>
+</pre></div>
+</div>
 </section>
 </section>
 </section>
