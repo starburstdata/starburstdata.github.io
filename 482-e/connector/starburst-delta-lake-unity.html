@@ -271,6 +271,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#external-tables">External tables</a></li>
 </ul>
 </li>
+<li class="toctree-l4"><a class="reference internal" href="#dynamic-configuration-passthrough">Dynamic configuration passthrough</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#location-alias-mapping">Location alias mapping</a></li>
 </ul>
 </li>
@@ -336,6 +337,7 @@
 <li><a class="reference internal" href="#external-tables">External tables</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#dynamic-configuration-passthrough">Dynamic configuration passthrough</a></li>
 <li><a class="reference internal" href="#location-alias-mapping">Location alias mapping</a></li>
 </ul>
 </li>
@@ -588,6 +590,114 @@ be configured with associated credentials in Unity.</p></td>
 </tbody>
 </table>
 </section>
+</section>
+<section id="dynamic-configuration-passthrough">
+<span id="unity-dynamic-configuration-passthrough"></span><h2 id="dynamic-configuration-passthrough">Dynamic configuration passthrough<a class="headerlink" href="#dynamic-configuration-passthrough" title="Link to this heading">#</a></h2>
+<p>The Delta Lake connector supports dynamic configuration passthrough, which lets
+a single catalog connect to different Delta Lake Unity Catalog metastores and
+Amazon S3 backends on a per-connection basis. Instead of setting fixed Unity
+Catalog connection and storage values in the catalog configuration file, you
+configure the catalog to read these values from extra credentials that each
+client supplies at query time.</p>
+<p>To enable dynamic configuration passthrough, add the following
+properties to your catalog configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">delta-lake</span>
+<span class="na">hive.metastore</span><span class="o">=</span><span class="s">unity</span>
+<span class="na">delta.dynamic-configuration-passthrough.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>If Unity Catalog provides vended credentials for storage access, configure the
+Unity connection properties only:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">delta.dynamic-configuration-passthrough.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">dynamic.hive-metastore-unity-host.credential-name</span><span class="o">=</span><span class="s">unity_host_credential</span>
+<span class="na">dynamic.hive-metastore-unity-token.credential-name</span><span class="o">=</span><span class="s">unity_token_credential</span>
+<span class="na">dynamic.hive-metastore-unity-catalog-name.credential-name</span><span class="o">=</span><span class="s">unity_extra_credential</span>
+<span class="na">dynamic.hive-metastore-unity-vended-credentials-enabled.credential-name</span><span class="o">=</span><span class="s">unity_vended_credentials_extra_credential</span>
+</pre></div>
+</div>
+<table id="id5">
+<caption><span class="caption-text">Unity Catalog dynamic connection properties</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 55%"/>
+<col style="width: 45%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.hive-metastore-unity-host.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the Unity Catalog host.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.hive-metastore-unity-token.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the Unity Catalog access
+token.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.hive-metastore-unity-catalog-name.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the Unity Catalog catalog
+name.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.hive-metastore-unity-vended-credentials-enabled.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that sets whether to use Unity-vended
+credentials for file system access. When present, this values overrides the
+static <code class="docutils literal notranslate"><span class="pre">hive.metastore.unity.vended-credentials-credentials-enabled</span></code> catalog
+setting for that request. Optional.</p></td>
+</tr>
+</tbody>
+</table>
+<p>If clients supply Amazon S3 credentials directly, add the S3 credential name
+mappings:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">delta.dynamic-configuration-passthrough.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">dynamic.hive-metastore-unity-host.credential-name</span><span class="o">=</span><span class="s">unity_host_credential</span>
+<span class="na">dynamic.hive-metastore-unity-token.credential-name</span><span class="o">=</span><span class="s">unity_token_credential</span>
+<span class="na">dynamic.hive-metastore-unity-catalog-name.credential-name</span><span class="o">=</span><span class="s">unity_extra_credential</span>
+<span class="na">dynamic.hive-metastore-unity-vended-credentials-enabled.credential-name</span><span class="o">=</span><span class="s">unity_vended_credentials_extra_credential</span>
+<span class="na">dynamic.s3.region.credential-name</span><span class="o">=</span><span class="s">s3_region</span>
+<span class="na">dynamic.s3.aws-access-key.credential-name</span><span class="o">=</span><span class="s">aws_s3_access_key_id</span>
+<span class="na">dynamic.s3.aws-secret-key.credential-name</span><span class="o">=</span><span class="s">aws_s3_secret_key</span>
+<span class="na">dynamic.s3.aws-account-id.credential-name</span><span class="o">=</span><span class="s">aws_s3_account_id</span>
+<span class="na">dynamic.s3.aws-session-token.credential-name</span><span class="o">=</span><span class="s">aws_s3_session_token</span>
+<span class="na">dynamic.s3.aws-endpoint.credential-name</span><span class="o">=</span><span class="s">s3_endpoint</span>
+</pre></div>
+</div>
+<table id="id6">
+<caption><span class="caption-text">S3 direct access properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 55%"/>
+<col style="width: 45%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.region.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the S3 region.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.aws-access-key.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the AWS access key.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.aws-secret-key.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the AWS secret key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.aws-account-id.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the AWS account ID. Optional.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.aws-session-token.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the AWS session token.
+Optional.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dynamic.s3.aws-endpoint.credential-name</span></code></p></td>
+<td><p>Name of the extra credential key that supplies the S3 endpoint URL.
+Optional.</p></td>
+</tr>
+</tbody>
+</table>
+<p>After you configure the catalog with the appropriate properties, you can run
+queries using the Trino CLI by supplying <code class="docutils literal notranslate"><span class="pre">--extra-credential</span></code> values whose key
+names match the credential names defined in the catalog configuration file.</p>
 </section>
 <section id="location-alias-mapping">
 <span id="unity-location-alias-mapping"></span><h2 id="location-alias-mapping">Location alias mapping<a class="headerlink" href="#location-alias-mapping" title="Link to this heading">#</a></h2>
