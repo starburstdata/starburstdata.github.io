@@ -486,20 +486,35 @@ you must add the following line to the <code class="docutils literal notranslate
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector is deprecated and will be removed after 480-e,
+the May 2026 LTS release. <a class="reference internal" href="#snowflake-parallel-migration"><span class="std std-ref">Migrate to the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>
+connector</span></a> before upgrading beyond 480-e to avoid
+disruption.</p>
+</div>
 <p>To configure the Snowflake connector, create a catalog properties file in
 <code class="docutils literal notranslate"><span class="pre">etc/catalog</span></code> named <code class="docutils literal notranslate"><span class="pre">example.properties</span></code>, to mount the Snowflake connector
 as the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog (replace <code class="docutils literal notranslate"><span class="pre">example</span></code> with your database name or some
 other descriptive name of the catalog).</p>
-<p>The Snowflake connector uses the JDBC client to execute queries and requests
-data in Arrow format. The connector then reads each file independently from
-different nodes.</p>
+<p>There are two connectors for Snowflake:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code></p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> uses JDBC for all reads and writes and is more efficient
+when the result set returned from Snowflake is small.</p>
+<p>We recommend using the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector, which uses the JDBC
+client to execute queries, and requests data in Arrow format. The connector then
+reads each file independently from different nodes, which results in more
+efficient querying.</p>
 <p>Create the catalog properties file, for example
 <code class="docutils literal notranslate"><span class="pre">etc/catalog/example.properties</span></code>, with the following contents, replacing the
 connection properties as appropriate for your setup (for example, replace
 <code class="docutils literal notranslate"><span class="pre">&lt;account_name&gt;</span></code> with the full name of your account, as provided by
 Snowflake).</p>
 <p>For AWS:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=snowflake_parallel
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 snowflake.connection-private-key-file=&lt;private_key_file_path&gt;
@@ -508,7 +523,7 @@ snowflake.database=&lt;database_name&gt;
 </pre></div>
 </div>
 <p>For Azure:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=snowflake_parallel
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>connector.name=&lt;snowflake_jdbc or snowflake_parallel&gt;
 connection-url=jdbc:snowflake://&lt;account_name&gt;.&lt;azure_region&gt;.azure.snowflakecomputing.com/
 connection-user=&lt;user_name&gt;
 snowflake.connection-private-key-file=&lt;private_key_file_path&gt;
@@ -628,11 +643,10 @@ exclusive with <code class="docutils literal notranslate"><span class="pre">snow
 </table>
 <section id="migrate-to-snowflake-parallel">
 <span id="snowflake-parallel-migration"></span><h3 id="migrate-to-snowflake-parallel">Migrate to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code><a class="headerlink" href="#migrate-to-snowflake-parallel" title="Link to this heading">#</a></h3>
-<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector has been removed. To configure an existing
-Snowflake catalog to use the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector, change the value of
-<code class="docutils literal notranslate"><span class="pre">connector.name</span></code> in the catalog configuration properties to
-<code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>. The following catalog configuration properties are not
-used by the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connector and must be removed:</p>
+<p>To configure an existing Snowflake catalog to use the <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>
+connector, change the value of <code class="docutils literal notranslate"><span class="pre">connector.name</span></code> in the catalog configuration
+properties to <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code>. The following catalog configuration
+properties are not used by the parallel connector and must be removed:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake.stage-schema</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake.max-export-retries</span></code></p></li>
@@ -641,7 +655,8 @@ used by the <code class="docutils literal notranslate"><span class="pre">snowfla
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake.max-initial-split-size</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">snowflake.export-file-max-size</span></code></p></li>
 </ul>
-<p>No other configuration changes are required.</p>
+<p>The rest of the configuration is identical
+to the <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> connector.</p>
 </section>
 <section id="general-configuration-properties">
 <h3 id="general-configuration-properties">General configuration properties<a class="headerlink" href="#general-configuration-properties" title="Link to this heading">#</a></h3>
@@ -1092,7 +1107,7 @@ SEP collect statistics from Snowflake, including column statistics.</p>
 </section>
 <section id="managed-statistics">
 <h3 id="managed-statistics">Managed statistics<a class="headerlink" href="#managed-statistics" title="Link to this heading">#</a></h3>
-<p>The Snowflake connector supports
+<p>The <code class="docutils literal notranslate"><span class="pre">snowflake_jdbc</span></code> and <code class="docutils literal notranslate"><span class="pre">snowflake_parallel</span></code> connectors support
 <a class="reference internal" href="../optimizer/managed-statistics.html"><span class="doc">Managed statistics</span></a> allowing SEP to collect and store its own
 table and column statistics that can then be used for performance optimizations
 in query planning.</p>
