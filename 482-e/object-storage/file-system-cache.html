@@ -297,8 +297,13 @@
 <li><a class="reference internal" href="#">File system cache</a><ul>
 <li><a class="reference internal" href="#distributed-caching">Distributed caching</a></li>
 <li><a class="reference internal" href="#benefits">Benefits</a></li>
-<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#cache-managers">Cache managers</a></li>
+<li><a class="reference internal" href="#catalog-configuration">Catalog configuration</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#monitoring">Monitoring</a></li>
+<li><a class="reference internal" href="#migration-from-catalog-level-caching">Migration from catalog-level caching</a></li>
 <li><a class="reference internal" href="#recommendations">Recommendations</a></li>
 </ul>
 </li>
@@ -321,9 +326,16 @@ retrieved from HDFS, or any other supported object storage, by multiple workers
 and processed on these workers. Repeated queries with different parameters, or
 even different queries from different users, often access, and therefore
 transfer, the same objects.</p>
-<p>Trino includes support for caching these files with the help of the open
-source <a class="reference external" href="https://github.com/Alluxio/alluxio">Alluxio</a> libraries with catalogs
-using the following connectors:</p>
+<p>Trino caches these files with a <em>cache manager</em>, configured on every node of the
+cluster. Two cache managers are available:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">alluxio</span></code> caches files on local disks with the help of the open source
+<a class="reference external" href="https://github.com/Alluxio/alluxio">Alluxio</a> libraries, and is the cache
+manager to use for caching table data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">memory</span></code> caches files on the Java heap, and is used by the coordinator to cache
+the metadata files it reads during query planning.</p></li>
+</ul>
+<p>Caching of table data is available for catalogs using the following connectors:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta Lake connector</span></a></p></li>
 <li><p><a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive connector</span></a></p></li>
@@ -348,14 +360,15 @@ file for processing a specific task. Each cache on each node is managed
 separately, following the TTL and size configuration, and cached files are
 evicted from the cache.</p>
 <p>You can limit the number of hosts that are preferred to process these tasks with
-<code class="docutils literal notranslate"><span class="pre">fs.cache.preferred-hosts-count</span></code>. Query processing still uses all other nodes as
-required for the parallel processing of tasks, and therefore potentially caches
-files on more nodes than the preferred hosts only. A low setting, such as the
-default 2, can reduce the overall size of the cache because it can reduce how
-often the same file is cached on multiple nodes. A higher setting, up to the
-number of nodes in the cluster, distributes the workload across more workers by
-default, and leads to more resilience against node failures at the expense of
-effective cache size.</p>
+the <code class="docutils literal notranslate"><span class="pre">node-scheduler.cache-preferred-hosts-count</span></code> property in the coordinator’s
+<code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code>.
+Query processing still uses all other nodes as required for the parallel
+processing of tasks, and therefore potentially caches files on more nodes than
+the preferred hosts only. A low setting, such as the default 2, can reduce the
+overall size of the cache because it can reduce how often the same file is
+cached on multiple nodes. A higher setting, up to the number of nodes in the
+cluster, distributes the workload across more workers by default, and leads to
+more resilience against node failures at the expense of effective cache size.</p>
 </section>
 <section id="benefits">
 <span id="fs-cache-benefits"></span><h2 id="benefits">Benefits<a class="headerlink" href="#benefits" title="Link to this heading">#</a></h2>
@@ -390,10 +403,40 @@ also when hosted in public cloud provider systems.</p>
 </section>
 <section id="configuration">
 <span id="fs-cache-configuration"></span><h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>Use the properties from the following table in your catalog properties files to
-enable and configure caching for the specific catalogs.</p>
+<p>Configuring the cache takes two steps:</p>
+<ol class="arabic simple">
+<li><p>Configure one or more cache managers on every node of the cluster, as
+described in <a class="reference internal" href="#fs-cache-managers"><span class="std std-ref">Cache managers</span></a>. All nodes must use the same
+configuration.</p></li>
+<li><p>Enable caching in each catalog that must use it, as described in
+<a class="reference internal" href="#fs-cache-catalogs"><span class="std std-ref">Catalog configuration</span></a>.</p></li>
+</ol>
+<section id="cache-managers">
+<span id="fs-cache-managers"></span><h3 id="cache-managers">Cache managers<a class="headerlink" href="#cache-managers" title="Link to this heading">#</a></h3>
+<p>Cache managers are configured per node, not per catalog. Set
+<code class="docutils literal notranslate"><span class="pre">cache-manager.config-files</span></code> in the node’s <code class="docutils literal notranslate"><span class="pre">etc/config.properties</span></code> to a
+comma-separated list of properties files, one per cache manager:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">cache-manager.config-files</span><span class="o">=</span><span class="s">etc/cache-manager-alluxio.properties,etc/cache-manager-memory.properties</span>
+</pre></div>
+</div>
+<p>Every listed file must set <code class="docutils literal notranslate"><span class="pre">cache-manager.name</span></code> to the name of the cache
+manager, followed by that manager’s own properties. For example
+<code class="docutils literal notranslate"><span class="pre">etc/cache-manager-alluxio.properties</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">cache-manager.name</span><span class="o">=</span><span class="s">alluxio</span>
+<span class="na">fs.cache.directories</span><span class="o">=</span><span class="s">/tmp/trino-cache</span>
+<span class="na">fs.cache.max-sizes</span><span class="o">=</span><span class="s">500GB</span>
+</pre></div>
+</div>
+<p>A cluster can load at most one cache manager for each kind of caching. Loading
+both <code class="docutils literal notranslate"><span class="pre">alluxio</span></code> and <code class="docutils literal notranslate"><span class="pre">memory</span></code> therefore uses <code class="docutils literal notranslate"><span class="pre">alluxio</span></code> for table data, since it is
+the only one that can cache more data than fits on the heap, and <code class="docutils literal notranslate"><span class="pre">memory</span></code> for
+coordinator metadata caching.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">cache-manager.config-files</span></code> is not set, Trino loads the <code class="docutils literal notranslate"><span class="pre">memory</span></code> cache
+manager with default configuration, so that the coordinator caches metadata
+files. Once the property is set, only the listed cache managers are loaded, and
+metadata caching requires listing a <code class="docutils literal notranslate"><span class="pre">memory</span></code> cache manager explicitly.</p>
 <table id="id1">
-<caption><span class="caption-text">File system cache configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<caption><span class="caption-text">Alluxio cache manager properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 75%"/>
@@ -404,27 +447,22 @@ enable and configure caching for the specific catalogs.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.enabled</span></code></p></td>
-<td><p>Enable object storage caching. Defaults to no caching with the value <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code></p></td>
 <td><p>Required, comma-separated list of absolute paths to directories to use for
 caching. All directories must exist on the coordinator and all workers.
 Trino must have read and write permissions for files and nested directories.
 A valid example with only one directory is <code class="docutils literal notranslate"><span class="pre">/tmp/trino-cache</span></code>.</p>
-<p>Directories must be specific for each catalog with caching enabled. When
-enabling caching in multiple catalogs, you must use different directories
-and set the values for <code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code> or
-<code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code> accordingly.</p>
+<p>All catalogs with caching enabled share these directories, and entries are
+separated by catalog within the cache.</p>
 </td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code></p></td>
 <td><p>Comma-separated list of maximum <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">data sizes</span></a> for each
 caching directory. Order of values must be identical to the directories
 list. Configuring either <code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code> or
 <code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code> is required.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code></p></td>
 <td><p>Comma-separated list of maximum percentage values of the used disk for each
 directory. Each value is an integer between 1 and 100. Order of values must
 be identical to the directories list. If multiple directories use the same
@@ -432,17 +470,10 @@ disk, ensure that total percentages per drive remains below 100 percent.
 Configuring either <code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code> or
 <code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code> is required.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.ttl</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.ttl</span></code></p></td>
 <td><p>The maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for objects to remain in the cache
 before eviction. Defaults to <code class="docutils literal notranslate"><span class="pre">7d</span></code>. The minimum value of <code class="docutils literal notranslate"><span class="pre">0s</span></code> means that caching
 is effectively turned off.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.preferred-hosts-count</span></code></p></td>
-<td><p>The number of preferred nodes for caching files. Defaults to 2. Processing
-identifies and subsequently prefers using specific nodes. If the preferred
-nodes identified for caching a split are unavailable or too busy, then an
-available node is chosen at random from the cluster. More information in
-<a class="reference internal" href="#fs-cache-distributed"><span class="std std-ref">Distributed caching</span></a>.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.page-size</span></code></p></td>
 <td><p>The page <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">data size</span></a> used for caching data. Each transfer of files
@@ -452,27 +483,95 @@ smaller values are less efficient since they result in more individual downloads
 </tr>
 </tbody>
 </table>
+<table id="id2">
+<caption><span class="caption-text">Memory cache manager properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 25%"/>
+<col style="width: 75%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.memory-cache.max-size</span></code></p></td>
+<td><p>Maximum total <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">data size</span></a> of the cache on the heap.
+Defaults to two percent of the maximum heap size.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fs.memory-cache.max-content-length</span></code></p></td>
+<td><p>Maximum <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">data size</span></a> of a single cached file. Larger
+files are read directly from storage and never cached. Defaults to <code class="docutils literal notranslate"><span class="pre">8MB</span></code>,
+and must not exceed <code class="docutils literal notranslate"><span class="pre">15MB</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.memory-cache.ttl</span></code></p></td>
+<td><p>The maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for files to remain in the cache
+before eviction. Defaults to <code class="docutils literal notranslate"><span class="pre">1h</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="catalog-configuration">
+<span id="fs-cache-catalogs"></span><h3 id="catalog-configuration">Catalog configuration<a class="headerlink" href="#catalog-configuration" title="Link to this heading">#</a></h3>
+<p>Set <code class="docutils literal notranslate"><span class="pre">fs.cache.enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> in the catalog properties file of every catalog
+that must cache table data:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">fs.cache.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>Every node must have a cache manager that can cache table data, <code class="docutils literal notranslate"><span class="pre">alluxio</span></code>, when
+a catalog enables caching. Trino fails to start the catalog otherwise.</p>
+<p>Enabling table data caching does not replace metadata caching on the
+coordinator. If a <code class="docutils literal notranslate"><span class="pre">memory</span></code> cache manager is loaded as well, the coordinator
+looks up that cache first and reads through to <code class="docutils literal notranslate"><span class="pre">alluxio</span></code> on a miss, so planning
+keeps the lower latency of the heap cache.</p>
+</section>
 </section>
 <section id="monitoring">
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Link to this heading">#</a></h2>
-<p>The cache exposes the
+<p>The Alluxio cache manager exposes the
 <a class="reference external" href="https://docs.alluxio.io/ee-da/user/stable/en/reference/Metrics-List.html#client-metrics">Alluxio JMX client metrics</a>
-under the <code class="docutils literal notranslate"><span class="pre">org.alluxio</span></code> package, and metrics on external reads and cache reads under
-<code class="docutils literal notranslate"><span class="pre">io.trino.filesystem.alluxio.AlluxioCacheStats</span></code>.</p>
+under the <code class="docutils literal notranslate"><span class="pre">org.alluxio</span></code> package, and metrics on external reads and cache reads
+per catalog under <code class="docutils literal notranslate"><span class="pre">io.trino.blob.cache.alluxio:type=AlluxioCacheStats,name=&lt;catalog&gt;</span></code>.</p>
+<p>The memory cache manager exposes per-catalog metrics under
+<code class="docutils literal notranslate"><span class="pre">io.trino.blob.cache.memory:type=MemoryBlobCacheStats,name=&lt;catalog&gt;</span></code>, and metrics
+for the shared cache under <code class="docutils literal notranslate"><span class="pre">io.trino.blob.cache.memory:name=MemoryBlobCache</span></code>.</p>
 <p>The cache code uses <a class="reference internal" href="../admin/opentelemetry.html"><span class="doc std std-doc">OpenTelemetry tracing</span></a>.</p>
+</section>
+<section id="migration-from-catalog-level-caching">
+<span id="fs-cache-migration"></span><h2 id="migration-from-catalog-level-caching">Migration from catalog-level caching<a class="headerlink" href="#migration-from-catalog-level-caching" title="Link to this heading">#</a></h2>
+<p>In earlier versions the Alluxio cache was configured with <code class="docutils literal notranslate"><span class="pre">fs.cache.*</span></code>
+properties in each catalog properties file. When upgrading:</p>
+<ul class="simple">
+<li><p>Move <code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code>, <code class="docutils literal notranslate"><span class="pre">fs.cache.max-sizes</span></code>,
+<code class="docutils literal notranslate"><span class="pre">fs.cache.max-disk-usage-percentages</span></code>, <code class="docutils literal notranslate"><span class="pre">fs.cache.ttl</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">fs.cache.page-size</span></code> out of the catalog properties files and into an
+<code class="docutils literal notranslate"><span class="pre">alluxio</span></code> cache manager properties file on every node. Catalogs keep only
+<code class="docutils literal notranslate"><span class="pre">fs.cache.enabled</span></code>.</p></li>
+<li><p>Catalogs no longer need separate cache directories. All catalogs that enable
+caching share the directories of the node’s cache manager.</p></li>
+<li><p>Existing cached data on disk is not reused, because cache entries are
+identified differently. The cache repopulates from storage on the first
+queries after the upgrade, and the previous cache directory contents are
+evicted by the configured size limit.</p></li>
+<li><p>JMX object names changed. The Alluxio cache statistics moved from
+<code class="docutils literal notranslate"><span class="pre">io.trino.filesystem.alluxio:type=AlluxioCacheStats,name=&lt;catalog&gt;</span></code> to
+<code class="docutils literal notranslate"><span class="pre">io.trino.blob.cache.alluxio:type=AlluxioCacheStats,name=&lt;catalog&gt;</span></code>, and the
+Hive connector’s <code class="docutils literal notranslate"><span class="pre">io.trino.plugin.hive.fs:type=TrinoFileSystemCache</span></code> bean no
+longer exists. Update dashboards and alerts accordingly.</p></li>
+</ul>
 </section>
 <section id="recommendations">
 <h2 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Link to this heading">#</a></h2>
 <p>The speed of the local cache storage is crucial to the performance of the cache.
-The most common and cost-efficient approach is to attach high performance SSD
-disk or equivalents. Fast cache performance can be also be achieved with a RAM
-disk used as in-memory cache.</p>
+The most common and cost-efficient approach is to attach high-performance SSD
+disks or equivalent storage. Fast cache performance can also be achieved with a
+RAM disk used as an in-memory cache.</p>
 <p>In all cases, avoid using the root partition and disk of the node. Instead
 attach one or more dedicated storage devices for the cache on each node. Storage
 should be local, dedicated on each node, and not shared.</p>
 <p>Your deployment method for Trino decides how to attach storage and create the
 directories for caching. Typically you need to connect a fast storage system,
-like an SSD drive, and ensure that is it mounted on the configured path.</p>
+like an SSD drive, and ensure that it is mounted on the configured path.</p>
 </section>
 </section>
 
