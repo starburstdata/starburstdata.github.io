@@ -228,10 +228,15 @@
 <li class="toctree-l2"><a class="reference internal" href="aida-ai.html">AI Data Assistant (AIDA)</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Data product AI agent-based enrichment</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#profiling-configuration-properties">Profiling configuration properties</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#enrich-a-data-product">Enrich a data product</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-sampling-and-profiling">Data sampling and profiling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#generated-column-metadata">Generated column metadata</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#enrich-a-specific-field">Enrich a specific field</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#resetting-dataset-fields">Resetting dataset fields</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reset-dataset-fields">Reset dataset fields</a></li>
 </ul>
 </li>
 </ul>
@@ -316,10 +321,15 @@
     <ul>
 <li><a class="reference internal" href="#">Starburst AI agent-based data product enrichment</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements</a></li>
-<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#profiling-configuration-properties">Profiling configuration properties</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#enrich-a-data-product">Enrich a data product</a><ul>
+<li><a class="reference internal" href="#data-sampling-and-profiling">Data sampling and profiling</a></li>
+<li><a class="reference internal" href="#generated-column-metadata">Generated column metadata</a></li>
 <li><a class="reference internal" href="#enrich-a-specific-field">Enrich a specific field</a></li>
-<li><a class="reference internal" href="#resetting-dataset-fields">Resetting dataset fields</a></li>
+<li><a class="reference internal" href="#reset-dataset-fields">Reset dataset fields</a></li>
 </ul>
 </li>
 </ul>
@@ -338,8 +348,9 @@
   <section id="starburst-ai-agent-based-data-product-enrichment">
 <h1 id="starburst-ai-data-product-enrichment-ai--page-root">Starburst AI agent-based data product enrichment<a class="headerlink" href="#starburst-ai-data-product-enrichment-ai--page-root" title="Link to this heading">#</a></h1>
 <p>Starburst supports data product enrichment using the Starburst AI agent. This
-feature automatically generates descriptions for data products and datasets
-using metadata and relationships between data elements.</p>
+feature automatically generates descriptions for data products, datasets, and
+columns. It uses metadata and the relationships between data elements, and,
+optionally, sampled data and column statistics from the datasets.</p>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <p>To use the data products enrichment feature, you need:</p>
@@ -348,6 +359,8 @@ using metadata and relationships between data elements.</p>
 <li><p>A valid Agentic layer license.</p></li>
 <li><p>Access to at least one configured language <a class="reference internal" href="configuration-ai.html"><span class="doc std std-doc">AI model</span></a>.</p></li>
 <li><p>Write permissions for <a class="reference internal" href="../data-products/index.html"><span class="doc std std-doc">data products</span></a>.</p></li>
+<li><p>Read permissions for the data product’s datasets when using <a class="reference internal" href="#sb-ai-data-product-enrich-sampling"><span class="std std-ref">data
+sampling</span></a>.</p></li>
 </ul>
 </section>
 <section id="configuration">
@@ -357,6 +370,64 @@ coordinator configuration file:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.agent.enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
+<section id="profiling-configuration-properties">
+<span id="sb-ai-enrichment-configuration-properties"></span><h3 id="profiling-configuration-properties">Profiling configuration properties<a class="headerlink" href="#profiling-configuration-properties" title="Link to this heading">#</a></h3>
+<p>The following properties control the queries that enrichment runs against your
+datasets when you allow <a class="reference internal" href="#sb-ai-data-product-enrich-sampling"><span class="std std-ref">data sampling</span></a>. Add
+relevant properties to the coordinator configuration file.</p>
+<table id="id1">
+<caption><span class="caption-text">Enrichment profiling configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 55%"/>
+<col style="width: 15%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.sample-row-limit</span></code></p></td>
+<td><p>Maximum number of rows sampled per dataset. Valid values range from <code class="docutils literal notranslate"><span class="pre">1</span></code> to
+<code class="docutils literal notranslate"><span class="pre">1000</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.profiling-query-timeout</span></code></p></td>
+<td><p>The maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> allowed for each sampling or
+statistics query. When a query exceeds this limit, it is canceled and
+enrichment continues without that query’s results.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">30s</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.profile-cache-ttl</span></code></p></td>
+<td><p>The <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> sampled data and statistics are cached
+per user after they are collected. Set to <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable caching.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10m</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.aggregation-sample-percentage</span></code></p></td>
+<td><p>Percentage of each dataset scanned by the statistics-aggregation query.
+Valid values range from <code class="docutils literal notranslate"><span class="pre">0.01</span></code> to <code class="docutils literal notranslate"><span class="pre">100</span></code>. A value below <code class="docutils literal notranslate"><span class="pre">100</span></code> applies
+<code class="docutils literal notranslate"><span class="pre">TABLESAMPLE</span> <span class="pre">BERNOULLI</span></code> to lower query cost. The measured counts reflect
+only the sampled rows rather than the whole dataset.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">100</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.profiling-columns-per-query</span></code></p></td>
+<td><p>Number of columns projected per sampling or aggregation query. Wider
+datasets are profiled with several queries, because a single projection over
+hundreds of columns exceeds <code class="docutils literal notranslate"><span class="pre">ai.agent.max-result-set-size</span></code>. Valid values
+range from <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">200</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">50</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">enrichment.semantics-columns-per-request</span></code></p></td>
+<td><p>Number of columns described per AI model request. Wider datasets are split
+across several requests so that the prompt and the expected response both
+fit the AI model’s context.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">50</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="enrich-a-data-product">
 <span id="sb-ai-data-product-enrichment"></span><h2 id="enrich-a-data-product">Enrich a data product<a class="headerlink" href="#enrich-a-data-product" title="Link to this heading">#</a></h2>
@@ -366,16 +437,28 @@ metadata for a data product:</p>
 <li><p>In the <strong>Data products</strong> tab of the Starburst Enterprise web UI, select an existing data
 product.</p></li>
 <li><p>Click the <img alt="AI Agent Icon
-Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong> button to open the <strong>Datasets</strong> section of the
-<em>Enrich data product</em> dialog.</p></li>
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong> button to open the <strong>Context &amp; permissions</strong>
+section of the <strong>Enrich data product</strong> dialog.</p></li>
+<li><p>Optionally, describe the data product in the <strong>Business context</strong> field, for
+example its business purpose, the meaning of domain-specific codes, or the
+conventions its datasets follow. This text is passed to the model with each
+generation request in this run. It is limited to 2000 characters, and it is
+not saved to the data product.</p></li>
+<li><p>Optionally, enable <strong>Allow data sampling</strong> so the agent reads a bounded data
+sample, measures column statistics, and sends them to the selected AI model.
+See <a class="reference internal" href="#sb-ai-data-product-enrich-sampling"><span class="std std-ref">Data sampling and profiling</span></a>. This setting defaults to off and
+is not saved. You must enable it on each run.</p></li>
+<li><p>Click <strong>Next</strong> to open the <strong>Datasets</strong> section.</p></li>
 <li><p>From the drop-down menu, choose an AI model.</p></li>
 <li><p>Click <img alt="AI Agent Icon
 Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate all datasets</strong> to enrich each dataset within the data
 product:</p>
 <ul class="simple">
-<li><p>Column descriptions are generated based on their names, types, any existing
-descriptions, and the surrounding context such as dataset and data product
-names.</p></li>
+<li><p>Column descriptions are generated from column names and types, any existing
+descriptions, the SQL that defines the dataset, context such as dataset and
+data product names, and the business context you provided. When sampling is
+allowed, they are also generated from sampled values and column statistics.
+Measured column facts are appended to each description as plain <code class="docutils literal notranslate"><span class="pre">key:</span> <span class="pre">value</span></code> lines. See <a class="reference internal" href="#sb-ai-data-product-enrich-column-fields"><span class="std std-ref">Generated column metadata</span></a>.</p></li>
 <li><p>Dataset descriptions are generated based on column descriptions, existing
 dataset descriptions (if available), and context.</p></li>
 </ul>
@@ -383,40 +466,166 @@ dataset descriptions (if available), and context.</p></li>
 generate this dataset</strong> from the <img alt="AI Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI
 generate all</strong> drop-down menu and click <img alt="AI Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/> <strong>AI
 generate this dataset</strong>.</p>
+<p>Use the <strong>Columns</strong> and <strong>Show data</strong> tabs to review the generated column
+descriptions and to preview the dataset’s data.</p>
 </li>
 <li><p>Click <strong>Next</strong>.</p></li>
 <li><p>In the <strong>Data product details</strong> section, click <img alt="AI Agent Icon
 Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Generate values for all fields</strong>.</p>
 <p>This generates a description for the data product, based on its name, current
 description (if any), and its datasets and their descriptions. The
-<strong>Summary</strong> and <strong>Tags</strong> are based on the generated description.</p>
+description also includes a block of plain-text lines stating what the agent
+could determine with confidence about the data product as a whole:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">relationships</span></code>: foreign-key to primary-key joins between datasets, each
+with a ready-to-use SQL <code class="docutils literal notranslate"><span class="pre">LEFT</span> <span class="pre">JOIN</span></code> clause. These are inferred from the
+SQL that defines the datasets, from column names, and, when sampling is
+allowed, from distinct-value counts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mandatory_table_usage_rules</span></code>: topics that must be answered from a specific
+dataset.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">no_mandatory_table_usage_rules_match</span></code>: the default behavior and refusal
+message for questions that are out of scope.</p></li>
+</ul>
+<p>The <strong>Summary</strong> and <strong>Tags</strong> are based on the generated description. Only
+tags that already exist in your account are suggested.</p>
 </li>
 <li><p>Click <strong>Save</strong>.</p></li>
 </ol>
+<p>Generated descriptions are suggestions. Review and edit them before saving;
+anything the agent could not determine with confidence is left out rather than
+guessed.</p>
+<section id="data-sampling-and-profiling">
+<span id="sb-ai-data-product-enrich-sampling"></span><h3 id="data-sampling-and-profiling">Data sampling and profiling<a class="headerlink" href="#data-sampling-and-profiling" title="Link to this heading">#</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This feature is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a>in
+Starburst Enterprise. Contact your Starburst account team with questions or feedback.</p>
+</div>
+<p>When a user enables <strong>Allow data sampling</strong>, the agent runs the following
+queries per dataset before generating descriptions, using the requesting user’s
+own privileges. Enrichment never exposes data the user cannot already query. Row
+filters and column masks apply.</p>
+<ul class="simple">
+<li><p>A sample of up to <code class="docutils literal notranslate"><span class="pre">enrichment.sample-row-limit</span></code> rows. Long values are
+truncated.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">STATS</span></code> for the dataset, which reports the connector’s statistics
+estimates.</p></li>
+<li><p>An aggregation query that measures per-column row counts, distinct values,
+null counts, minimum and maximum values, maximum string length, and mean,
+standard deviation, and median for numeric columns. Because <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">STATS</span></code>
+returns no values for logical views, these measured statistics are the usual
+source for data products built from views.</p></li>
+<li><p>A query against <code class="docutils literal notranslate"><span class="pre">information_schema.columns</span></code> to detect columns declared <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code>.</p></li>
+</ul>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Sampled values and statistics are included in the prompts sent to the selected
+AI model, and measured facts are written into the generated column descriptions.
+Both can contain actual data values, so consider the exposure before you enable
+sampling on datasets that hold sensitive or regulated data.</p>
+</div>
+<p>Profiling is best effort. Queries that fail or time out are skipped, and
+enrichment continues with whatever was collected, or from metadata alone if
+nothing was collected. Results are cached per user for
+<code class="docutils literal notranslate"><span class="pre">enrichment.profile-cache-ttl</span></code>, so repeated generation within that duration does
+not re-query the data.</p>
+<p>When data sampling is not allowed, no sampling, statistics, or
+<code class="docutils literal notranslate"><span class="pre">information_schema</span></code> queries are run, and descriptions are generated from
+metadata only.</p>
+</section>
+<section id="generated-column-metadata">
+<span id="sb-ai-data-product-enrich-column-fields"></span><h3 id="generated-column-metadata">Generated column metadata<a class="headerlink" href="#generated-column-metadata" title="Link to this heading">#</a></h3>
+<p>Column descriptions consist of the AI model’s prose description followed by the
+measured fields, written as plain <code class="docutils literal notranslate"><span class="pre">key:</span> <span class="pre">value</span></code> lines in the description field.
+Fields that cannot be determined are omitted, and no measured fields are
+appended when the dataset is not profiled:</p>
+<table id="id2">
+<caption><span class="caption-text">Column metadata fields</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 70%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">data_type</span></code></p></td>
+<td><p>The column’s data type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cardinality</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">low</span></code> when the column has fewer than 15 distinct values, otherwise <code class="docutils literal notranslate"><span class="pre">high</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">distinct_count</span></code></p></td>
+<td><p>Number of distinct values.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">null_count</span></code></p></td>
+<td><p>Number of null values.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nullable</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code> only when nulls are observed, <code class="docutils literal notranslate"><span class="pre">false</span></code> only when the column is
+declared <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">NULL</span></code>. It is omitted when neither is established.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">max_length</span></code></p></td>
+<td><p>Length of the longest value, for string columns.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">value_stats</span></code></p></td>
+<td><p>Mean, median, and standard deviation, for numeric columns.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sample_values</span></code></p></td>
+<td><p>Up to 10 sampled values, for high-cardinality columns.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exhaustive_values</span></code></p></td>
+<td><p>The column’s complete set of values, for low-cardinality columns whose
+sampled values cover every distinct value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">value_range</span></code></p></td>
+<td><p>Minimum and maximum values, for high-cardinality columns.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 <section id="enrich-a-specific-field">
 <span id="sb-ai-data-product-enrich-specific"></span><h3 id="enrich-a-specific-field">Enrich a specific field<a class="headerlink" href="#enrich-a-specific-field" title="Link to this heading">#</a></h3>
 <p>To enrich a specific dataset field using the Starburst AI agent:</p>
-<ol class="arabic simple">
+<ol class="arabic">
 <li><p>Navigate to the <strong>Data products</strong> tab and select a data product.</p></li>
 <li><p>Click <img alt="AI Agent Icon
-Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>.</p></li>
-<li><p>Click the <strong>AI generate</strong> button for the field you want to generate metadata
-for. You can generate metadata for an individual column, all columns, or the
-dataset description.</p></li>
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>, then click <strong>Next</strong> to open the <strong>Datasets</strong>
+section.</p></li>
+<li><p>Select the dataset, then generate metadata for the field you want:</p>
+<ul class="simple">
+<li><p>For the dataset description, click the <img alt="AI Agent Icon
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate</strong> button in the <strong>Description</strong> field.</p></li>
+<li><p>For every column at once, click <img alt="AI Agent Icon
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate all columns</strong> above the columns table.</p></li>
+<li><p>For a single column, open the column’s actions menu in the columns table
+and select <strong>Generate description</strong>. You can also select <strong>Edit
+description</strong> to write the description yourself.</p></li>
+</ul>
+<p>In the <strong>Data product details</strong> section, the <strong>Summary</strong>, <strong>Description</strong>,
+and <strong>Tags</strong> fields each have their own <img alt="AI Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI
+generate</strong> button.</p>
+</li>
 </ol>
 </section>
-<section id="resetting-dataset-fields">
-<span id="sb-ai-data-product-enrich-reset"></span><h3 id="resetting-dataset-fields">Resetting dataset fields<a class="headerlink" href="#resetting-dataset-fields" title="Link to this heading">#</a></h3>
+<section id="reset-dataset-fields">
+<span id="sb-ai-data-product-enrich-reset"></span><h3 id="reset-dataset-fields">Reset dataset fields<a class="headerlink" href="#reset-dataset-fields" title="Link to this heading">#</a></h3>
 <p>You can reset metadata fields during the initial AI generation, either for all
-datasets or for specific ones.</p>
+datasets or for specific ones. Resetting restores the values last saved to the
+data product; it does not undo saved changes.</p>
 <p>To reset a single field within a dataset, navigate to the field and click the
-corresponding <i class="material-symbols-rounded"> autorenew </i> reset button.</p>
+corresponding <i class="material-symbols-rounded"> autorenew </i> reset button.
+For a single column, open the column’s actions menu in the columns table and
+select <strong>Refresh description</strong>.</p>
 <p>To reset all fields in a specific dataset:</p>
 <ol class="arabic simple">
 <li><p>Navigate to the <strong>Data products</strong> tab and select a data product.</p></li>
-<li><p>Select the dataset you want to reset.</p></li>
 <li><p>Click <img alt="AI Agent Icon
-Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>.</p></li>
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>, then click <strong>Next</strong> to open the <strong>Datasets</strong>
+section.</p></li>
+<li><p>Select the dataset you want to reset.</p></li>
 <li><p>From the <img alt="AI Agent Icon
 Sparkle" src="../_static/img/starburst-ai-agent.svg"/> <strong>AI generate all datasets</strong> drop-down menu, select <strong>Reset this
 dataset</strong>.</p></li>
@@ -425,7 +634,7 @@ dataset</strong>.</p></li>
 <li><p>Click <strong>Next</strong>.</p></li>
 <li><p>In the <strong>Data product details</strong> section, select <strong>Reset values for all
 fields</strong> from the <img alt="AI
-Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate all datasets</strong> drop-down menu.</p></li>
+Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Generate values for all fields</strong> drop-down menu.</p></li>
 <li><p>Click <i class="material-symbols-rounded"> autorenew </i> <strong>Reset values for
 all fields</strong>.</p></li>
 <li><p>Click <strong>Save</strong>.</p></li>
@@ -434,22 +643,24 @@ all fields</strong>.</p></li>
 <ol class="arabic simple">
 <li><p>Navigate to the <strong>Data products</strong> tab and select a data product.</p></li>
 <li><p>Click <img alt="AI Agent Icon
-Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>.</p></li>
+Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Enrich with AI</strong>, then click <strong>Next</strong> to open the <strong>Datasets</strong>
+section.</p></li>
 <li><p>From the <img alt="AI Agent Icon
 Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate all datasets</strong> drop-down menu, select <strong>Reset all</strong>.</p></li>
 <li><p>Click <i class="material-symbols-rounded"> autorenew </i><strong>Reset all</strong> to
-resets all fields across all datasets in the selected data product.</p></li>
+reset all fields across all datasets in the selected data product.</p></li>
 <li><p>Click <strong>Next</strong>.</p></li>
 <li><p>In the <strong>Data product details</strong> section, select <strong>Reset values for all
 fields</strong> from the <img alt="AI
-Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>AI generate all datasets</strong> drop-down menu.</p></li>
+Agent Icon Sparkle" src="../_static/img/starburst-ai-agent.svg"/><strong>Generate values for all fields</strong> drop-down menu.</p></li>
 <li><p>Click <i class="material-symbols-rounded"> autorenew </i> <strong>Reset values for
 all fields</strong>.</p></li>
-<li><p>Click <strong>Save</strong>.</p></li>
-</ol>
-</section>
-</section>
-</section>
+<li><p>Click <strong>Save</strong>.
+</p></li></ol></section></section></section>
+
+
+
+
 
 
           </article>
