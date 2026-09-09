@@ -77,7 +77,7 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Object storage file formats" href="file-formats.html" />
+    <link rel="next" title="Starburst Metastore managed credentials" href="managed-credentials.html" />
     <link rel="prev" title="File system cache" href="file-system-cache.html" />
 
   
@@ -312,6 +312,7 @@
 <li><a class="reference internal" href="#starburst-metastore">Starburst Metastore</a><ul>
 <li><a class="reference internal" href="#installation">Installation</a></li>
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
+<li><a class="reference internal" href="#managed-credentials">Managed credentials</a></li>
 <li><a class="reference internal" href="#secrets">Secrets</a></li>
 <li><a class="reference internal" href="#logging-configuration">Logging configuration</a></li>
 </ul>
@@ -944,6 +945,8 @@ purpose of accelerating <code class="docutils literal notranslate"><span class="
 </section>
 <section id="starburst-metastore">
 <span id="id1"></span><h2 id="starburst-metastore">Starburst Metastore<a class="headerlink" href="#starburst-metastore" title="Link to this heading">#</a></h2>
+<div class="toctree-wrapper compound">
+</div>
 <p>Starburst offers a self-hosted, Glue-compatible metastore called Starburst
 Metastore. Starburst Metastore is deployable in Kubernetes environments using
 Helm, and lets you run self-managed SEP clusters with Glue-compatible
@@ -1005,6 +1008,37 @@ the Glue-compatible API:</p>
 <span class="w">    </span><span class="no">]</span>
 </pre></div>
 </div>
+<section id="managed-credentials">
+<h4 id="managed-credentials">Managed credentials<a class="headerlink" href="#managed-credentials" title="Link to this heading">#</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Managed credentials is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> feature.</p>
+</div>
+<p>Starburst Metastore can issue and store credentials centrally. SEP uses the
+generated key pairs to authenticate to the Glue-compatible endpoint, removing
+the need to hardcode secrets in configuration files. Credentials are created and
+managed using the Starburst Metastore REST API.</p>
+<p>The following example shows a <code class="docutils literal notranslate"><span class="pre">values.yaml</span></code> configuration using managed
+credentials with a local master key:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">etcFiles</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">    </span><span class="no">node.environment=starburst_portal</span>
+<span class="w">    </span><span class="no">http-server.http.port=8080</span>
+<span class="w">    </span><span class="no">http-server.http.enabled=true</span>
+<span class="w">    </span><span class="no">credentials-provider.type=managed</span>
+<span class="w">    </span><span class="no">credentials-provider.master-key.provider=LOCAL</span>
+<span class="w">    </span><span class="no">credentials-provider.master-key.local.keystore.path=/etc/starburst/keyring/keyring.p12</span>
+<span class="w">    </span><span class="no">credentials-provider.master-key.local.keystore.key=&lt;keystore-password&gt;</span>
+<span class="w">    </span><span class="no">credentials-provider.master-key.local.active-key.path=/etc/starburst/keyring/keyring.active</span>
+<span class="w">    </span><span class="no">credentials-provider.master-key.local.refresh-interval=1h</span>
+<span class="w">    </span><span class="no">persistence.jdbc.url=jdbc:postgresql://postgresql:5432/&lt;db/schema-name&gt;</span>
+<span class="w">    </span><span class="no">persistence.jdbc.user=&lt;db-username&gt;</span>
+<span class="w">    </span><span class="no">persistence.jdbc.password=&lt;db-password&gt;</span>
+</pre></div>
+</div>
+<p>For more details on setup, credential management, and key rotation, see
+<a class="reference internal" href="managed-credentials.html"><span class="doc std std-doc">Starburst Metastore managed credentials</span></a>.</p>
+</section>
 <section id="secrets">
 <h4 id="secrets">Secrets<a class="headerlink" href="#secrets" title="Link to this heading">#</a></h4>
 <p>Starburst Metastore supports using secrets for sensitive configuration values
@@ -1023,7 +1057,7 @@ such as passwords, keys, and credentials.</p>
 </section>
 </section>
 <section id="configuration-properties">
-<h3 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h3>
+<span id="starburst-metastore-configuration-properties"></span><h3 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h3>
 <p>Starburst Metastore includes the following optional configuration properties.</p>
 <table id="id11">
 <caption><span class="caption-text">Starburst Metastore configuration properties</span><a class="headerlink" href="#id11" title="Link to this table">#</a></caption>
@@ -1050,27 +1084,45 @@ such as passwords, keys, and credentials.</p>
 <td><p>Specifies the file path for HTTP server logs.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.type</span></code></p></td>
-<td><p>Defines the type of credentials provider to use.</p></td>
+<td><p>Defines the type of credentials provider to use. Accepted values are <code class="docutils literal notranslate"><span class="pre">file</span></code>
+and <code class="docutils literal notranslate"><span class="pre">managed</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.credentials-file-path</span></code></p></td>
 <td><p>Specifies the path to the credentials file when using file-based credentials
 provider.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.url</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.master-key.provider</span></code></p></td>
+<td><p>Master key provider type for managed credentials. Currently only <code class="docutils literal notranslate"><span class="pre">LOCAL</span></code> is
+supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.master-key.local.keystore.path</span></code></p></td>
+<td><p>Path to the PKCS12 keystore file containing the master key or keys used to
+encrypt managed credentials.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.master-key.local.keystore.key</span></code></p></td>
+<td><p>Password for the PKCS12 keystore.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.master-key.local.active-key.path</span></code></p></td>
+<td><p>Path to the plain-text file containing the alias of the active master key.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">credentials-provider.master-key.local.refresh-interval</span></code></p></td>
+<td><p>How often the keyring files are polled for changes. Defaults to <code class="docutils literal notranslate"><span class="pre">10s</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.url</span></code></p></td>
 <td><p>Specifies the JDBC URL for the metadata database connection.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.user</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.user</span></code></p></td>
 <td><p>Sets the username for authenticating to the metadata database.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.password</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">persistence.jdbc.password</span></code></p></td>
 <td><p>Sets the password for authenticating to the metadata database.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metastore.default.catalog.id</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metastore.default.catalog.id</span></code></p></td>
 <td><p>Sets the default namespace to use for SEP catalogs that do not specify a
 <code class="docutils literal notranslate"><span class="pre">catalogid</span></code>. Starburst Metastore uses namespaces to separate metadata from
 different SEP catalogs. The default value is <code class="docutils literal notranslate"><span class="pre">starburst-catalog</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">metastore.default.location.uri</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metastore.default.location.uri</span></code></p></td>
 <td><p>Specifies a default storage location URI for schemas in SEP catalogs
 that do not specify a <code class="docutils literal notranslate"><span class="pre">location</span></code> property. Use as a fallback location prefix
 for storage-backed metadata. When you set this property, database names are
@@ -2303,12 +2355,12 @@ feedback();
             </a>
           
           
-            <a href="file-formats.html" title="Object storage file formats"
+            <a href="managed-credentials.html" title="Starburst Metastore managed credentials"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> Object storage file formats </span>
+                class="md-footer-nav__direction"> "Next" </span> Starburst Metastore managed credentials </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
