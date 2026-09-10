@@ -257,6 +257,14 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#studio">Studio</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#skills">Skills</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#skill-format">Skill format</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#example-skill">Example skill</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#create-a-skill-in-aida">Create a skill in AIDA</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#upload-a-skill">Upload a skill</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#manage-skills">Manage skills</a></li>
+</ul>
+</li>
 <li class="toctree-l4"><a class="reference internal" href="#external-mcp-servers">External MCP servers</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#add-an-mcp-server">Add an MCP server</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#configure-oauth-authentication">Configure OAuth authentication</a></li>
@@ -392,6 +400,14 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#studio">Studio</a><ul>
+<li><a class="reference internal" href="#skills">Skills</a><ul>
+<li><a class="reference internal" href="#skill-format">Skill format</a></li>
+<li><a class="reference internal" href="#example-skill">Example skill</a></li>
+<li><a class="reference internal" href="#create-a-skill-in-aida">Create a skill in AIDA</a></li>
+<li><a class="reference internal" href="#upload-a-skill">Upload a skill</a></li>
+<li><a class="reference internal" href="#manage-skills">Manage skills</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#external-mcp-servers">External MCP servers</a><ul>
 <li><a class="reference internal" href="#add-an-mcp-server">Add an MCP server</a></li>
 <li><a class="reference internal" href="#configure-oauth-authentication">Configure OAuth authentication</a></li>
@@ -906,6 +922,170 @@ collapse it.</p>
 <figure class="align-default">
 <img alt="Starburst AIDA create custom persona dialog" class="imgborder" src="../_images/starburst-ai-aida-stuido-panel.png"/>
 </figure>
+<section id="skills">
+<span id="studio-skills"></span><h3 id="skills">Skills<a class="headerlink" href="#skills" title="Link to this heading">#</a></h3>
+<p>A skill is a reusable set of instructions that extend AIDA with business context
+or domain-specific knowledge for certain tasks.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Skills feature is available as a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a>.
+Contact your Starburst account team with questions or feedback.</p>
+</div>
+<p>Skills are useful when:</p>
+<ul class="simple">
+<li><p>You want to capture and share organizational knowledge in a portable format.</p></li>
+<li><p>You have a repeatable analytical workflow, such as a monthly revenue
+report or churn analysis, that AIDA should execute consistently.</p></li>
+<li><p>AIDA needs instructions for interacting with a specific MCP server, including
+which tools to call and what arguments to provide.</p></li>
+</ul>
+<p>To use skills, you can either upload an existing skill in the
+<a class="reference external" href="https://agentskills.io/specification#skill-md-format">agentskills.io</a> structure, or create a
+skill directly in AIDA by providing information in a skill dialog.</p>
+<p>You can individually select which skills AIDA is able to execute within a
+specific chat session. Available skills appear under the <strong>Skills</strong> option
+within Studio. AIDA does not execute skills that you have not specifically
+selected.</p>
+<p>When you ask AIDA a question, it searches the selected skills and automatically
+loads any that are relevant before generating a response. You can also execute a
+specific skill by asking AIDA to run it by name. AIDA always indicates when it
+used a particular skill in its response. If AIDA uses a skill in its response,
+you cannot deselect that skill within the session.</p>
+<p>AIDA executes skills under the current role’s privileges. If a role does not
+have the privileges on a particular schema or table, a skill cannot read it for
+them.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To create and manage skills in AIDA, your role must have <a class="reference internal" href="../security/biac-privileges.html#biac-entity-agent-skills"><span class="std std-ref">Agent skills
+privileges</span></a>. After you create a skill, it is available
+to all AIDA users that have access to your cluster.</p>
+</div>
+<p>You can turn off and completely hide the <strong>Skills</strong> feature. Set the
+following property to <code class="docutils literal notranslate"><span class="pre">false</span></code> in your coordinator configuration file:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">ai.agent.skills.enabled</span><span class="o">=</span><span class="s">false</span>
+</pre></div>
+</div>
+<p>When set to <code class="docutils literal notranslate"><span class="pre">false</span></code>, skills in AIDA are completely turned off. Additionally, the
+<strong>Skills</strong> option is hidden from all users. The property defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<section id="skill-format">
+<span id="aida-skills-format"></span><h4 id="skill-format">Skill format<a class="headerlink" href="#skill-format" title="Link to this heading">#</a></h4>
+<p>Each skill is defined by a <a class="reference external" href="https://agentskills.io/specification"><code class="docutils literal notranslate"><span class="pre">SKILL.md</span></code></a>
+file that contains two parts:</p>
+<ul class="simple">
+<li><p><strong>YAML frontmatter</strong>. The frontmatter appears at the top of the file and
+provides metadata that AIDA uses to determine when to load the skill. It must
+include a name and description.</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">name</span></code>: A unique identifier using only lowercase alphanumeric characters and
+hyphens (for example, <code class="docutils literal notranslate"><span class="pre">monthly-revenue-report</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code>: A description of what the skill does and when it should be
+used. AIDA reads this field to decide whether the skill is relevant to the
+current question.</p></li>
+<li><p>Optional fields include license information, environment compatibility
+requirements, and custom metadata.</p></li>
+</ul>
+</li>
+<li><p><strong>Markdown body</strong>. The body contains the instructions AIDA follows when the
+skill is active. The body can include step-by-step guidance, example inputs
+and outputs, and any SQL or tool-call patterns AIDA should use. When a skill
+requires SQL, include it as a parameterized Trino statement.</p></li>
+</ul>
+</section>
+<section id="example-skill">
+<h4 id="example-skill">Example skill<a class="headerlink" href="#example-skill" title="Link to this heading">#</a></h4>
+<div class="highlight-md notranslate"><div class="highlight"><pre><span></span>---
+name: monte-carlo-revenue
+description: Run a Monte Carlo simulation on quarterly revenue using
+<span class="gu">  historical variance to produce P10/P50/P90 forecasts.</span>
+<span class="gu">---</span>
+
+<span class="gu">## When to use</span>
+
+User asks for revenue scenarios, probabilistic forecasts, or
+"what is the range we should plan for."
+
+<span class="gu">## Parameters</span>
+
+<span class="k">-</span><span class="w"> </span><span class="sb">`quarter`</span>: target fiscal quarter (e.g., "Q4 2026")
+<span class="k">-</span><span class="w"> </span><span class="sb">`iterations`</span>: simulation runs (default 10000)
+
+<span class="gu">## Outputs</span>
+
+A table with percentile bands and a short summary of assumptions.
+
+<span class="gu">## Example prompts</span>
+
+<span class="k">-</span><span class="w"> </span>"Give me a P90 revenue forecast for next quarter."
+<span class="k">-</span><span class="w"> </span>"What is the downside scenario for Q4 revenue?"
+
+<span class="gu">## Instructions</span>
+
+<span class="k">1.</span> Pull the last 16 quarters of revenue from the <span class="sb">`finance.revenue_actuals`</span>
+data product.
+<span class="k">2.</span> Compute the quarter-over-quarter percent change distribution.
+<span class="k">3.</span> Run <span class="sb">`{{iterations}}`</span> Monte Carlo simulations against the most recent
+quarter to project <span class="sb">`{{quarter}}`</span>.
+<span class="k">4.</span>  Return percentile bands and a brief explanation of assumptions.
+
+<span class="gu">## SQL template</span>
+
+WITH historical AS (
+  SELECT quarter, total_revenue
+  FROM finance.revenue_actuals
+  ORDER BY quarter DESC
+  LIMIT 16
+)
+...
+</pre></div>
+</div>
+</section>
+<section id="create-a-skill-in-aida">
+<h4 id="create-a-skill-in-aida">Create a skill in AIDA<a class="headerlink" href="#create-a-skill-in-aida" title="Link to this heading">#</a></h4>
+<ol class="arabic simple">
+<li><p>In AIDA, click the <i class="material-symbols-rounded">keyboard_arrow_right</i> arrow icon to
+expand Studio.</p></li>
+<li><p>Click the <i class="material-symbols-rounded" style="color:#5511fe">add</i>
+add icon next to <strong>Skills</strong> and then <strong>Create skill</strong>.</p></li>
+<li><p>Enter a <strong>Name</strong> and <strong>Description</strong>. See <a class="reference internal" href="#aida-skills-format"><span class="std std-ref">skill format</span></a>
+for guidelines.</p></li>
+<li><p>Optional: Enter tools accessible to the agent in the <strong>Allowed tools</strong>
+field.</p></li>
+<li><p>Expand <strong>Additional options</strong> to provide a license name or reference,
+environmental requirements, or metadata.</p></li>
+<li><p>In the <strong>Instructions</strong> text box, provide the instructions that AIDA follows
+when the skill is active. Use Markdown format.</p></li>
+<li><p>Click <strong>Preview instructions</strong> to review the instructions you provided, then
+click <strong>Create</strong>.</p></li>
+</ol>
+</section>
+<section id="upload-a-skill">
+<h4 id="upload-a-skill">Upload a skill<a class="headerlink" href="#upload-a-skill" title="Link to this heading">#</a></h4>
+<ol class="arabic simple">
+<li><p>In AIDA, click the <i class="material-symbols-rounded">keyboard_arrow_right</i> arrow icon to
+expand Studio.</p></li>
+<li><p>Click the <i class="material-symbols-rounded" style="color:#5511fe">add</i>
+add icon next to <strong>Skills</strong> and then <strong>Upload skill</strong>.</p></li>
+<li><p>Drag and drop a <code class="docutils literal notranslate"><span class="pre">.md</span></code> file to the center of the upload box, for example <code class="docutils literal notranslate"><span class="pre">SKILL.md</span></code>, or click
+inside the box to browse the file system on your device and select a skill
+file.</p></li>
+<li><p>Click <strong>Next</strong>.
+The <strong>Create skill</strong> dialog appears, with the fields automatically
+populated from the <code class="docutils literal notranslate"><span class="pre">SKILL.md</span></code> file.</p></li>
+<li><p>Review the skill configuration, make changes if necessary, and click
+<strong>Create</strong>.</p></li>
+</ol>
+</section>
+<section id="manage-skills">
+<h4 id="manage-skills">Manage skills<a class="headerlink" href="#manage-skills" title="Link to this heading">#</a></h4>
+<p>After you create a skill, you can manage it and others by clicking the <i class="material-symbols-rounded" style="color:#5511fe">settings</i> settings
+icon next to <strong>Skills</strong> in Studio. This opens the <strong>Skills</strong> dialog, where you
+can edit or delete skills from the <i class="material-symbols-rounded" style="color:black">more_vert</i> options menu. In the <strong>Skills</strong> dialog, you
+can also create or upload a new skill.</p>
+<figure class="align-default">
+<img alt="Starburst AIDA Skills settings pane" class="imgborder" src="../_images/starburst-ai-aida-skill-settings.png"/>
+</figure>
+</section>
+</section>
 <section id="external-mcp-servers">
 <span id="studio-external-mcp-servers"></span><h3 id="external-mcp-servers">External MCP servers<a class="headerlink" href="#external-mcp-servers" title="Link to this heading">#</a></h3>
 <p>The <strong>MCP servers</strong> option in Studio lets you add external <a class="reference external" href="https://modelcontextprotocol.io/docs/getting-started/intro">Model Context
@@ -1272,14 +1452,20 @@ chat session’s history are summarized to control LLM context size while
 preserving key information needed for context.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.trusted-connections.oauth.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.skills.enabled</span></code></p></td>
+<td><p>Enables Skills creation and usage. When set to <code class="docutils literal notranslate"><span class="pre">false</span></code>, the <strong>Skills</strong>
+option is hidden from the Studio panel, and created skills cannot be used by
+AIDA.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.trusted-connections.oauth.enabled</span></code></p></td>
 <td><p>Enables OAuth 2.0 authentication for OpenAI-compatible <a class="reference internal" href="trusted-connections.html#trusted-connections-configuration-openai"><span class="std std-ref">trusted
 connections</span></a>. When set to <code class="docutils literal notranslate"><span class="pre">false</span></code>,
 the <strong>OAuth 2.0</strong> authentication option is hidden in the UI and rejected by
 the API.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.use-extracted-tool-call</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ai.agent.use-extracted-tool-call</span></code></p></td>
 <td><p>Some LLMs do not format tool calls properly and return them inline as part
 of the assistant response. When this property is enabled, if the model
 returns inline tool calls in its response, the agent attempts to extract the
@@ -1288,7 +1474,7 @@ tool calls from the response and to execute it. When this property is set to
 response from the model.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.agent.enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">starburst.agent.enabled</span></code></p></td>
 <td><p>Enables or disables the Starburst AI agent. When disabled, it also disables
 AI features that rely on the AI agent.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
