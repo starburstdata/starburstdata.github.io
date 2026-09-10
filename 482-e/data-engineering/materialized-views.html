@@ -242,6 +242,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#create-and-use-a-materialized-view">Create and use a materialized view</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#automatically-refresh-materialized-views-in-hive">Automatically refresh materialized views in Hive</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#enable-iceberg-materialized-views">Enable Iceberg materialized views</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-materialized-view-substitution">Automatic materialized view substitution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="data-maintenance.html">Data maintenance</a></li>
@@ -304,6 +310,12 @@
 <li><a class="reference internal" href="#create-and-use-a-materialized-view">Create and use a materialized view</a></li>
 <li><a class="reference internal" href="#automatically-refresh-materialized-views-in-hive">Automatically refresh materialized views in Hive</a></li>
 <li><a class="reference internal" href="#enable-iceberg-materialized-views">Enable Iceberg materialized views</a></li>
+<li><a class="reference internal" href="#automatic-materialized-view-substitution">Automatic materialized view substitution</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#configuration">Configuration</a></li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -448,6 +460,100 @@ determined by the <code class="docutils literal notranslate"><span class="pre">s
 <p>Built-in access control (BIAC) must be configured to own table entities in order
 to enable materialized views in an Iceberg catalog.</p>
 <p>See <a class="reference internal" href="../security/biac-overview.html#biac-iceberg-mv"><span class="std std-ref">Using BIAC with Iceberg materialized views</span></a> for more details.</p>
+</section>
+<section id="automatic-materialized-view-substitution">
+<span id="materialized-view-substitution"></span><h2 id="automatic-materialized-view-substitution">Automatic materialized view substitution<a class="headerlink" href="#automatic-materialized-view-substitution" title="Link to this heading">#</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Automatic materialized view substitution is a <a class="reference internal" href="../versions.html#feature-release-status"><span class="std std-ref">public preview</span></a> feature.</p>
+</div>
+<p>Automatic materialized view substitution is a query-time acceleration feature
+that uses pre-computed materialized views to execute part or all of a query,
+without requiring the query to reference the materialized view directly. When a
+query reads from base tables that are also covered by an eligible materialized
+view, SEP identifies the materialized view and substitutes it into the query
+plan, avoiding the need to scan the base tables and repeat the computation at
+query time.</p>
+<p>The source data for a materialized view eligible for substitution can come
+from many SEP connectors, including the following:</p>
+<ul class="simple">
+<li><p>Iceberg</p></li>
+<li><p>Cassandra</p></li>
+<li><p>BigQuery</p></li>
+<li><p>Most relational database sources, such as Oracle, PostgreSQL, MySQL, SQL
+Server, and Teradata</p></li>
+</ul>
+<p>Materializations are always stored as Iceberg tables, regardless of the source
+of the data.</p>
+<p>The definition of a materialized view eligible for automatic substitution can only contain:</p>
+<ul class="simple">
+<li><p>Table scans</p></li>
+<li><p>Projections of a subset of columns</p></li>
+</ul>
+<p>A materialized view is only considered for substitution while its content is
+not stale, based on the <a class="reference internal" href="../sql/create-materialized-view.html#mv-grace-period"><span class="std std-ref">grace period</span></a> configured for the
+view.</p>
+<section id="requirements">
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h3>
+<p>Automatic materialized view substitution requires the following:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../admin/control-plane/index.html"><span class="doc std std-doc">Starburst Control Plane</span></a> is
+<a class="reference internal" href="../admin/control-plane/installation.html"><span class="doc std std-doc">installed</span></a> and accessible. Control Plane
+hosts the materialization metastore used to track materialized views
+eligible for substitution.</p></li>
+<li><p>The Starburst Control Plane and SEP cluster versions match.</p></li>
+</ul>
+</section>
+<section id="configuration">
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h3>
+<p>Automatic materialized view substitution requires the materialization
+metastore, which Starburst Control Plane enables by default with the
+<code class="docutils literal notranslate"><span class="pre">materialization.metastore.enabled</span></code> property.</p>
+<p>The coordinator uses the following properties to control automatic
+materialized view substitution. Both properties are enabled by default when
+the coordinator is configured to use Starburst Control Plane:</p>
+<table id="id1">
+<caption><span class="caption-text">Automatic materialized view substitution configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 50%"/>
+<col style="width: 20%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-view-substitution.support.enabled</span></code></p></td>
+<td><p>Allows a materialized view to be marked as eligible for substitution.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">materialized-view-substitution.enabled</span></code></p></td>
+<td><p>Enables substitution on the query side.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>Automatic materialized view substitution can be disabled for an individual
+session using the <code class="docutils literal notranslate"><span class="pre">materialized_view_substitution_enabled</span></code> session property:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SET SESSION materialized_view_substitution_enabled = false;
+</pre></div>
+</div>
+</section>
+<section id="limitations">
+<h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h3>
+<p>The following operations are not currently eligible for automatic
+materialized view substitution:</p>
+<ul class="simple">
+<li><p>Filters</p></li>
+<li><p>Arbitrary expressions, including <a class="reference internal" href="../functions.html"><span class="doc std std-doc">SQL functions</span></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html"><span class="doc std std-doc">Aggregations</span></a>, including <a class="reference internal" href="../functions/window.html"><span class="doc std std-doc">window functions</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/select.html"><span class="doc std std-doc">Joins</span></a></p></li>
+<li><p><a class="reference internal" href="../sql/select.html"><span class="doc std std-doc">Subqueries</span></a></p></li>
+</ul>
+</section>
 </section>
 </section>
 
