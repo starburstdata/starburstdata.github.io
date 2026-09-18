@@ -347,6 +347,7 @@
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#materialized-views">Materialized views</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#materialized-view-properties">Materialized view properties</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#automatic-refresh">Automatic refresh</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#incremental-column-refresh">Incremental column refresh</a></li>
 </ul>
@@ -538,6 +539,7 @@
 </ul>
 </li>
 <li><a class="reference internal" href="#materialized-views">Materialized views</a><ul>
+<li><a class="reference internal" href="#materialized-view-properties">Materialized view properties</a></li>
 <li><a class="reference internal" href="#automatic-refresh">Automatic refresh</a></li>
 <li><a class="reference internal" href="#incremental-column-refresh">Incremental column refresh</a></li>
 </ul>
@@ -967,6 +969,55 @@ values from Iceberg tables. Setting this property to a value other than
 <code class="docutils literal notranslate"><span class="pre">UTC</span></code> may impact predicate pushdown for time-related expressions such as
 <code class="docutils literal notranslate"><span class="pre">date_trunc</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">UTC</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.encryption.kms-type</span></code></p></td>
+<td><p>Key Management Service type for <a class="reference external" href="https://iceberg.apache.org/docs/latest/encryption/">Iceberg table
+encryption</a>. Possible
+values are <code class="docutils literal notranslate"><span class="pre">AWS</span></code>, <code class="docutils literal notranslate"><span class="pre">AZURE</span></code>, and <code class="docutils literal notranslate"><span class="pre">GCP</span></code>. Required to read encrypted tables.
+Writing to encrypted tables is not supported.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.encryption.plaintext-files-allowed-for-encrypted-tables</span></code></p></td>
+<td><p>Allow reading unencrypted files in tables with encryption enabled. When set
+to <code class="docutils literal notranslate"><span class="pre">false</span></code>, an error is raised if a file with encryption key metadata is not
+actually encrypted. The equivalent catalog session property is
+<code class="docutils literal notranslate"><span class="pre">plaintext_files_allowed_for_encrypted_tables</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.region</span></code></p></td>
+<td><p>AWS region for KMS. Required when <code class="docutils literal notranslate"><span class="pre">iceberg.encryption.kms-type</span></code> is <code class="docutils literal notranslate"><span class="pre">AWS</span></code>
+and the region cannot be determined from the environment.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.endpoint</span></code></p></td>
+<td><p>KMS API endpoint URL. Use to override the default AWS KMS endpoint.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.sts.region</span></code></p></td>
+<td><p>AWS STS signing region for KMS authentication.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.sts.endpoint</span></code></p></td>
+<td><p>AWS STS endpoint for KMS authentication.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.iam-role</span></code></p></td>
+<td><p>ARN of an IAM role to assume when connecting to KMS.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.external-id</span></code></p></td>
+<td><p>External ID for the IAM role trust policy when connecting to KMS.</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.access-key</span></code></p></td>
+<td><p>AWS access key for KMS authentication. When set,
+<code class="docutils literal notranslate"><span class="pre">aws.kms.secret-key</span></code> must also be set.</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">aws.kms.secret-key</span></code></p></td>
+<td><p>AWS secret key for KMS authentication. When set,
+<code class="docutils literal notranslate"><span class="pre">aws.kms.access-key</span></code> must also be set.</p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -2420,9 +2471,11 @@ the table name:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"test_table$properties"</span>
 </pre></div>
 </div>
-<p>Metadata tables are also available for materialized views. Append the metadata
-table name to the materialized view name to query the underlying storage table:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"test_mv$files"</span><span class="p">;</span>
+<p>The same metadata tables are also available for a materialized view (see
+<a class="reference internal" href="#iceberg-materialized-views"><span class="std std-ref">Materialized views</span></a>) by appending the metadata table name to the
+materialized view name. The query resolves against the materialized view’s
+storage table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"test_materialized_view$files"</span><span class="p">;</span>
 </pre></div>
 </div>
 <section id="properties-table">
@@ -3333,8 +3386,9 @@ providing the previous state of the table:</p>
 <span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="s1">'2022-03-23 09:59:29.803 Europe/Vienna'</span>
 </pre></div>
 </div>
-<p>You can use a date to specify a point a time in the past for using a snapshot of a table in a query.
-Assuming that the session time zone is <code class="docutils literal notranslate"><span class="pre">Europe/Vienna</span></code> the following queries are equivalent:</p>
+<p>You can use a date to specify a point a time in the past for using a snapshot of
+a table in a query. Assuming that the session time zone is <code class="docutils literal notranslate"><span class="pre">Europe/Vienna</span></code>, the
+following queries are equivalent:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">testdb</span><span class="p">.</span><span class="n">customer_orders</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="s1">'2022-03-23'</span>
 </pre></div>
@@ -3433,6 +3487,36 @@ use the data from the storage tables, even after the grace period expired.</p>
 view is stale.</p>
 <p>Dropping a materialized view with <a class="reference internal" href="../sql/drop-materialized-view.html"><span class="doc std std-doc">DROP MATERIALIZED VIEW</span></a> removes
 the definition and the storage table.</p>
+<section id="materialized-view-properties">
+<span id="iceberg-materialized-view-properties"></span><h4 id="materialized-view-properties">Materialized view properties<a class="headerlink" href="#materialized-view-properties" title="Link to this heading">#</a></h4>
+<p>Materialized view properties can be used with <a class="reference internal" href="../sql/create-materialized-view.html"><span class="doc std std-doc">CREATE MATERIALIZED VIEW</span></a>
+to control behavior specific to the materialized view. Materialized view
+properties are passed to the connector using a
+<a class="reference internal" href="../sql/create-materialized-view.html"><span class="doc std std-doc">WITH</span></a> clause.</p>
+<table id="id21">
+<caption><span class="caption-text">Iceberg materialized view properties</span><a class="headerlink" href="#id21" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 40%"/>
+<col style="width: 60%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">storage_schema</span></code></p></td>
+<td><p>Schema for creating the materialized view storage table. Defaults to the
+schema of the materialized view definition.</p></td>
+</tr>
+</tbody>
+</table>
+<p>In addition to the above, all <a class="reference internal" href="#iceberg-table-properties"><span class="std std-ref">Table properties</span></a> are supported and
+control the layout and performance of the underlying storage table.</p>
+<p>For example, you can use the following clause with
+<a class="reference internal" href="../sql/create-materialized-view.html"><span class="doc std std-doc">CREATE MATERIALIZED VIEW</span></a> to use the ORC format for the data files and
+partition the storage per day using the column <code class="docutils literal notranslate"><span class="pre">event_date</span></code>:</p>
+</section>
 <section id="automatic-refresh">
 <span id="iceberg-automatic-refresh"></span><h4 id="automatic-refresh">Automatic refresh<a class="headerlink" href="#automatic-refresh" title="Link to this heading">#</a></h4>
 <p>You can configure automatic refreshes on both new and existing Iceberg
@@ -3898,8 +3982,8 @@ when the values do not appear in any clustered order naturally.</p>
 network is further reduced. You get access to higher query performance and a
 reduced cost.</p>
 <p>You can use the following properties to configure dynamic row filtering:</p>
-<table id="id21">
-<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id21" title="Link to this table">#</a></caption>
+<table id="id22">
+<caption><span class="caption-text">Dynamic row filtering properties</span><a class="headerlink" href="#id22" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 45%"/>
 <col style="width: 55%"/>
@@ -3940,8 +4024,8 @@ using the <a class="reference internal" href="../object-storage/file-system-cach
 implementation</span></a>. If <code class="docutils literal notranslate"><span class="pre">fs.cache.enabled</span></code> is
 enabled, metadata caching in coordinator memory is deactivated.</p>
 <p>Additionally, you can use the following catalog configuration properties:</p>
-<table id="id22">
-<caption><span class="caption-text">Memory metadata caching configuration properties</span><a class="headerlink" href="#id22" title="Link to this table">#</a></caption>
+<table id="id23">
+<caption><span class="caption-text">Memory metadata caching configuration properties</span><a class="headerlink" href="#id23" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 75%"/>
@@ -3989,8 +4073,8 @@ authorization at the catalog level.</p>
 <p>You can enable authorization checks for the connector by setting the
 <code class="docutils literal notranslate"><span class="pre">iceberg.security</span></code> property in the catalog properties file. This property must
 be one of the following values:</p>
-<table id="id23">
-<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id23" title="Link to this table">#</a></caption>
+<table id="id24">
+<caption><span class="caption-text">Iceberg security values</span><a class="headerlink" href="#id24" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 33%"/>
 <col style="width: 67%"/>
@@ -4056,8 +4140,8 @@ your catalog configuration file:</p>
 <span class="na">dynamic.aws-s3-endpoint.credential-name</span><span class="o">=</span><span class="s">s3_endpoint</span>
 </pre></div>
 </div>
-<table id="id24">
-<caption><span class="caption-text">Dynamic configuration passthrough configuration properties</span><a class="headerlink" href="#id24" title="Link to this table">#</a></caption>
+<table id="id25">
+<caption><span class="caption-text">Dynamic configuration passthrough configuration properties</span><a class="headerlink" href="#id25" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 50%"/>
 <col style="width: 50%"/>
