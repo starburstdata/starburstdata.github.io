@@ -423,7 +423,7 @@ comma-separated list of properties files, one per cache manager:</p>
 manager, followed by that manager’s own properties. For example
 <code class="docutils literal notranslate"><span class="pre">etc/cache-manager-alluxio.properties</span></code>:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">cache-manager.name</span><span class="o">=</span><span class="s">alluxio</span>
-<span class="na">fs.cache.directories</span><span class="o">=</span><span class="s">/tmp/trino-cache</span>
+<span class="na">fs.cache.directories</span><span class="o">=</span><span class="s">/opt/data/alluxio-fs-cache</span>
 <span class="na">fs.cache.max-disk-usage-percentages</span><span class="o">=</span><span class="s">90</span>
 </pre></div>
 </div>
@@ -435,6 +435,26 @@ coordinator metadata caching.</p>
 manager with default configuration, so that the coordinator caches metadata
 files. Once the property is set, only the listed cache managers are loaded, and
 metadata caching requires listing a <code class="docutils literal notranslate"><span class="pre">memory</span></code> cache manager explicitly.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Don’t point <code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code> at <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> or any path that
+doesn’t have a dedicated volume mounted. Unless a volume is explicitly mounted
+at that path, it resolves to the container’s writable overlay layer, which is
+backed by the node’s root disk instead of a dedicated local SSD. Writing the
+cache there can exhaust the node’s root filesystem and trigger
+ephemeral-storage eviction of the pod and potentially other pods on the same
+node.</p>
+<p>If Warp Speed is enabled on this cluster, a dedicated local NVMe SSD is
+already mounted into the coordinator and worker pods at the path set by
+<code class="docutils literal notranslate"><span class="pre">warpSpeed.fileSystem.localStorageMountPath</span></code>, commonly <code class="docutils literal notranslate"><span class="pre">/opt/data</span></code>. For
+details, see <a class="reference internal" href="../data-engineering/cost-and-performance/set-mode-ws.html"><span class="doc std std-doc">Enable Starburst Warp
+Speed</span></a>. Point
+<code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code> at a distinct subdirectory under that same mount, such
+as <code class="docutils literal notranslate"><span class="pre">/opt/data/alluxio-fs-cache</span></code>, instead of provisioning a separate device.
+Don’t reuse Warp Speed’s own index directory, <code class="docutils literal notranslate"><span class="pre">INDEX-CACHE</span></code>, for this. Keep
+the file system cache in its own subdirectory so the file system cache and the
+index directory have independent usage and lifecycles.</p>
+</div>
 <table id="id1">
 <caption><span class="caption-text">Alluxio cache manager properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
@@ -450,8 +470,8 @@ metadata caching requires listing a <code class="docutils literal notranslate"><
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fs.cache.directories</span></code></p></td>
 <td><p>Required, comma-separated list of absolute paths to directories to use for
 caching. All directories must exist on the coordinator and all workers.
-Trino must have read and write permissions for files and nested directories.
-A valid example with only one directory is <code class="docutils literal notranslate"><span class="pre">/tmp/trino-cache</span></code>.</p>
+Trino must have read and write permissions for files and nested
+directories.</p>
 <p>All catalogs with caching enabled share these directories, and entries are
 separated by catalog within the cache.</p>
 </td>
