@@ -938,15 +938,15 @@ this table:</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NUMBER(p,</span> <span class="pre">s)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code> or <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(pʹ,</span> <span class="pre">sʹ)</span></code> or <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code></p></td>
 <td><p>Maps to Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> when input data can be represented as Trino
 <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> losslessly. When <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">≤</span> <span class="pre">p</span> <span class="pre">≤</span> <span class="pre">38</span></code> and <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">≤</span> <span class="pre">s</span> <span class="pre">≤</span> <span class="pre">p</span></code>, then <code class="docutils literal notranslate"><span class="pre">pʹ</span> <span class="pre">=</span> <span class="pre">p</span></code> and
 <code class="docutils literal notranslate"><span class="pre">sʹ</span> <span class="pre">=</span> <span class="pre">s</span></code>, otherwise, a wider type is used. <br/>
 When input cannot be represented as Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> losslessly, maps to
-<code class="docutils literal notranslate"><span class="pre">NUMBER</span></code>.</p></td>
+<code class="docutils literal notranslate"><span class="pre">NUMBER</span></code>. See <a class="reference internal" href="#oracle-number-mapping"><span class="std std-ref">Mapping numeric types</span></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NUMBER(p)</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">0)</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NUMBER</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">NUMBER</span></code></p></td>
 <td><p>See <a class="reference internal" href="#oracle-number-mapping"><span class="std std-ref">Mapping numeric types</span></a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FLOAT[(p)]</span></code></p></td>
@@ -1105,20 +1105,24 @@ tables, <code class="docutils literal notranslate"><span class="pre">Oracle</spa
 </section>
 <section id="mapping-numeric-types">
 <span id="oracle-number-mapping"></span><h3 id="mapping-numeric-types">Mapping numeric types<a class="headerlink" href="#mapping-numeric-types" title="Link to this heading">#</a></h3>
-<p>An Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER(p,</span> <span class="pre">s)</span></code> maps to Trino’s <code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code> except in these
-conditions:</p>
+<p>An Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER(p,</span> <span class="pre">s)</span></code> maps to Trino’s <code class="docutils literal notranslate"><span class="pre">DECIMAL(pʹ,</span> <span class="pre">sʹ)</span></code> when the values
+can be represented losslessly:</p>
 <ul class="simple">
-<li><p>No precision is specified for the column (example: <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> or
-<code class="docutils literal notranslate"><span class="pre">NUMBER(*)</span></code>), unless <code class="docutils literal notranslate"><span class="pre">oracle.number.default-scale</span></code> is set.</p></li>
-<li><p>Scale (<code class="docutils literal notranslate"><span class="pre">s</span></code> ) is greater than precision.</p></li>
-<li><p>Precision (<code class="docutils literal notranslate"><span class="pre">p</span></code> ) is greater than 38.</p></li>
-<li><p>Scale is negative and the difference between <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">s</span></code> is greater than
-38, unless <code class="docutils literal notranslate"><span class="pre">oracle.number.rounding-mode</span></code> is set to a different value than
-<code class="docutils literal notranslate"><span class="pre">UNNECESSARY</span></code>.</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">≤</span> <span class="pre">p</span> <span class="pre">≤</span> <span class="pre">38</span></code> and <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">≤</span> <span class="pre">s</span> <span class="pre">≤</span> <span class="pre">p</span></code>, then <code class="docutils literal notranslate"><span class="pre">pʹ</span> <span class="pre">=</span> <span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">sʹ</span> <span class="pre">=</span> <span class="pre">s</span></code>.</p></li>
+<li><p>When scale (<code class="docutils literal notranslate"><span class="pre">s</span></code>) is negative, <code class="docutils literal notranslate"><span class="pre">pʹ</span> <span class="pre">=</span> <span class="pre">p</span> <span class="pre">+</span> <span class="pre">|s|</span></code> and <code class="docutils literal notranslate"><span class="pre">sʹ</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p></li>
+<li><p>When scale (<code class="docutils literal notranslate"><span class="pre">s</span></code>) is greater than precision (<code class="docutils literal notranslate"><span class="pre">p</span></code>), <code class="docutils literal notranslate"><span class="pre">pʹ</span> <span class="pre">=</span> <span class="pre">s</span></code> and <code class="docutils literal notranslate"><span class="pre">sʹ</span> <span class="pre">=</span> <span class="pre">s</span></code>.</p></li>
 </ul>
-<p>If <code class="docutils literal notranslate"><span class="pre">s</span></code> is negative, <code class="docutils literal notranslate"><span class="pre">NUMBER(p,</span> <span class="pre">s)</span></code> maps to <code class="docutils literal notranslate"><span class="pre">DECIMAL(p</span> <span class="pre">+</span> <span class="pre">s,</span> <span class="pre">0)</span></code>.</p>
-<p>For Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> (without precision and scale), you can change
-<code class="docutils literal notranslate"><span class="pre">oracle.number.default-scale=s</span></code> and map the column to <code class="docutils literal notranslate"><span class="pre">DECIMAL(38,</span> <span class="pre">s)</span></code>.</p>
+<p>In all other cases the column maps to Trino’s <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code>, which supports
+arbitrary precision. This includes columns with no specified precision, such
+as <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> or <code class="docutils literal notranslate"><span class="pre">NUMBER(*)</span></code>, and columns where <code class="docutils literal notranslate"><span class="pre">pʹ</span></code> is greater than 38.</p>
+<p>The deprecated <code class="docutils literal notranslate"><span class="pre">oracle.number.default-scale</span></code> and <code class="docutils literal notranslate"><span class="pre">oracle.number.rounding-mode</span></code>
+properties replace the mapping to <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> with a lossy mapping to <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>.
+Setting either property maps a column with no specified precision to
+<code class="docutils literal notranslate"><span class="pre">DECIMAL(38,</span> <span class="pre">s)</span></code>, with <code class="docutils literal notranslate"><span class="pre">s</span></code> taken from <code class="docutils literal notranslate"><span class="pre">oracle.number.default-scale</span></code>, and
+rounds values that exceed the scale of the resulting <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> type according
+to <code class="docutils literal notranslate"><span class="pre">oracle.number.rounding-mode</span></code>. A column with no specified precision is
+treated as unsupported when only <code class="docutils literal notranslate"><span class="pre">oracle.number.rounding-mode</span></code> is set. Avoid
+both properties, and use the <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> type instead.</p>
 </section>
 <section id="mapping-datetime-types">
 <span id="oracle-datetime-mapping"></span><h3 id="mapping-datetime-types">Mapping datetime types<a class="headerlink" href="#mapping-datetime-types" title="Link to this heading">#</a></h3>
@@ -1213,15 +1217,17 @@ unbounded <code class="docutils literal notranslate"><span class="pre">VARCHAR</
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">oracle.number.default-scale</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">number_default_scale</span></code></p></td>
-<td><p>Default Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> scale for Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> (without precision and
-scale) date type. When not set, the column is treated as not supported.</p></td>
+<td><p>Deprecated. Default Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> scale for Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> (without
+precision and scale) data type. When not set, such a column maps to
+<code class="docutils literal notranslate"><span class="pre">NUMBER</span></code>. See <a class="reference internal" href="#oracle-number-mapping"><span class="std std-ref">Mapping numeric types</span></a>.</p></td>
 <td><p>not set</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">oracle.number.rounding-mode</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">number_rounding_mode</span></code></p></td>
-<td><p>Rounding mode for the Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> data type. This is useful when Oracle
-<code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> data type specifies a higher scale than is supported in Trino.
-Possible values are:</p>
+<td><p>Deprecated. Rounding mode for the Oracle <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> data type. Setting this
+property disables the mapping to <code class="docutils literal notranslate"><span class="pre">NUMBER</span></code> and restores the legacy mapping
+to <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>, which rejects columns that cannot be represented as a
+Trino <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>. See <a class="reference internal" href="#oracle-number-mapping"><span class="std std-ref">Mapping numeric types</span></a>. Possible values are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">UNNECESSARY</span></code> - Rounding mode to assert that the
 requested operation has an exact result,
