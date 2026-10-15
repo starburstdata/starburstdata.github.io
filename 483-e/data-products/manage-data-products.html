@@ -245,6 +245,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#cli-commands">CLI commands</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#validation">Validation</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#cli-workflow">CLI workflow</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#migrate-a-legacy-file">Migrate a legacy file</a></li>
 </ul>
 </li>
 </ul>
@@ -343,6 +344,7 @@
 <li><a class="reference internal" href="#cli-commands">CLI commands</a></li>
 <li><a class="reference internal" href="#validation">Validation</a></li>
 <li><a class="reference internal" href="#cli-workflow">CLI workflow</a></li>
+<li><a class="reference internal" href="#migrate-a-legacy-file">Migrate a legacy file</a></li>
 </ul>
 </li>
 </ul>
@@ -584,10 +586,14 @@ product definition does not change.</p>
 products as YAML files. This provides a standard, repeatable definition for data
 products and supports versioning and auditing of metadata changes through the
 <a class="reference internal" href="../overview/sep-ui.html"><span class="doc std std-doc">Starburst Enterprise web UI</span></a> and <a class="reference internal" href="../starburst-rest-api.html"><span class="doc std std-doc">Starburst Enterprise platform (SEP) REST API</span></a>.</p>
-<p>By default, the Data Products as Code feature is visible in the UI, to make it
+<p>By default, the Data Products as Code feature is visible in the UI. To make it
 hidden, set <code class="docutils literal notranslate"><span class="pre">starburst.data-product-as-code.enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p>
 <p>Additionally, you can use the <a class="reference internal" href="#dp-as-code-cli"><span class="std std-ref">CLI to import or export data
 products</span></a>.</p>
+<p>Every YAML document declares <code class="docutils literal notranslate"><span class="pre">apiVersion:</span> <span class="pre">sep/v1</span></code>. Files exported from SEP
+and files generated with <code class="docutils literal notranslate"><span class="pre">starburst</span> <span class="pre">data-product</span> <span class="pre">init</span></code> both use this value.
+SEP rejects files that declare the legacy <code class="docutils literal notranslate"><span class="pre">apiVersion:</span> <span class="pre">v1</span></code>. To convert a legacy file, see
+<a class="reference internal" href="#dp-as-code-migrate"><span class="std std-ref">Migrate a legacy file</span></a>.</p>
 <section id="export-a-data-product">
 <h3 id="export-a-data-product">Export a data product<a class="headerlink" href="#export-a-data-product" title="Link to this heading">#</a></h3>
 <p>Export a data product to download its definition as a YAML file. To export a
@@ -607,6 +613,8 @@ one. To import a data product, you must have the
 <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">CREATE</span></a> privilege. If you want to overwrite an
 existing data product and are not the owner, you must also have the
 <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">ALTER</span></a> privilege.</p>
+<p>Import fails if a view or materialized view has a missing or blank
+<code class="docutils literal notranslate"><span class="pre">definitionQuery</span></code>.</p>
 <ul class="simple">
 <li><p>Click <strong>Import data product</strong>.</p></li>
 <li><p>In the <strong>Import Data Product</strong> dialog, drag and drop a YAML file or click to
@@ -618,12 +626,21 @@ option and a data product with the same name exists, import fails.</p></li>
 <li><p>Click <strong>Import</strong>.</p></li>
 <li><p>In the <strong>Data product details</strong> pane, click <strong>Publish</strong>.</p></li>
 </ul>
+<p>A data product file groups its datasets under one <code class="docutils literal notranslate"><span class="pre">datasets</span></code> section with
+separate <code class="docutils literal notranslate"><span class="pre">views</span></code> and <code class="docutils literal notranslate"><span class="pre">materializedViews</span></code> lists. All datasets in a data product share one schema, so dataset names must be unique across both lists. The comparison is case-insensitive.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Files in the legacy <code class="docutils literal notranslate"><span class="pre">apiVersion:</span> <span class="pre">v1</span></code> format declare <code class="docutils literal notranslate"><span class="pre">views</span></code> and
+<code class="docutils literal notranslate"><span class="pre">materializedViews</span></code> as top-level sections instead of nesting them under
+<code class="docutils literal notranslate"><span class="pre">datasets</span></code>. SEP doesn’t import these files. To convert them, use the <a class="reference internal" href="#dp-as-code-migrate"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">migrate</span></code>
+command</span></a> to convert them.</p>
+</div>
 <p>The following example shows a complete YAML file for a data product using Data
 Products as Code. The <code class="docutils literal notranslate"><span class="pre">businessContext</span></code> field corresponds to the <a class="reference internal" href="#dp-define"><span class="std std-ref">business
 rules</span></a> field on the data product. See the <a class="reference internal" href="../starburst-ai/aida-ai.html#aida-business-rules"><span class="std std-ref">Business
 rules</span></a> section of the AIDA documentation for details on how
 AIDA uses this field.</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep/v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DataProduct</span>
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Comprehensive Data Product</span>
@@ -677,219 +694,223 @@ AIDA uses this field.</p>
 <span class="w">      </span><span class="no">ORDER BY event_date DESC</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Top 10 Customers</span>
 <span class="w">    </span><span class="nt">query</span><span class="p">:</span><span class="w"> </span><span class="s">"SELECT</span><span class="nv"> </span><span class="s">customer_id,</span><span class="nv"> </span><span class="s">customer_name,</span><span class="nv"> </span><span class="s">total_purchases</span><span class="nv"> </span><span class="s">FROM</span><span class="nv"> </span><span class="s">customer_summary</span><span class="nv"> </span><span class="s">ORDER</span><span class="nv"> </span><span class="s">BY</span><span class="nv"> </span><span class="s">total_purchases</span><span class="nv"> </span><span class="s">DESC</span><span class="nv"> </span><span class="s">LIMIT</span><span class="nv"> </span><span class="s">10"</span>
-<span class="nt">views</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_activity</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cleaned and enriched user activity events with user dimensions</span>
-<span class="w">    </span><span class="nt">viewSecurityMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEFINER</span>
-<span class="w">    </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">      </span><span class="no">SELECT</span>
-<span class="w">        </span><span class="no">e.event_id,</span>
-<span class="w">        </span><span class="no">e.event_timestamp,</span>
-<span class="w">        </span><span class="no">e.event_type,</span>
-<span class="w">        </span><span class="no">e.user_id,</span>
-<span class="w">        </span><span class="no">u.user_name,</span>
-<span class="w">        </span><span class="no">u.user_email,</span>
-<span class="w">        </span><span class="no">u.user_segment,</span>
-<span class="w">        </span><span class="no">e.session_id,</span>
-<span class="w">        </span><span class="no">e.device_type,</span>
-<span class="w">        </span><span class="no">e.country_code,</span>
-<span class="w">        </span><span class="no">e.properties</span>
-<span class="w">      </span><span class="no">FROM raw.events.user_events e</span>
-<span class="w">      </span><span class="no">LEFT JOIN raw.dimensions.users u ON e.user_id = u.id</span>
-<span class="w">      </span><span class="no">WHERE e.event_timestamp &gt;= CURRENT_DATE - INTERVAL '90' DAY</span>
-<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier for the event</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_timestamp</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">When the event occurred</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_type</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Type</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">event</span><span class="nv"> </span><span class="s">(click,</span><span class="nv"> </span><span class="s">view,</span><span class="nv"> </span><span class="s">purchase,</span><span class="nv"> </span><span class="s">etc.)"</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_name</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Full name of the user</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_email</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Email address of the user</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_segment</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"User</span><span class="nv"> </span><span class="s">segment</span><span class="nv"> </span><span class="s">(premium,</span><span class="nv"> </span><span class="s">standard,</span><span class="nv"> </span><span class="s">trial)"</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">session_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Session identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">device_type</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Device</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">(mobile,</span><span class="nv"> </span><span class="s">desktop,</span><span class="nv"> </span><span class="s">tablet)"</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">country_code</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar(2)</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ISO 3166-1 alpha-2 country code</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">properties</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"map(varchar,</span><span class="nv"> </span><span class="s">varchar)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Additional event properties as key-value pairs</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales_summary</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Aggregated</span><span class="nv"> </span><span class="s">sales</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">product,</span><span class="nv"> </span><span class="s">category,</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">dimensions"</span>
-<span class="w">    </span><span class="nt">viewSecurityMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INVOKER</span>
-<span class="w">    </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">      </span><span class="no">SELECT</span>
-<span class="w">        </span><span class="no">DATE_TRUNC('day', s.sale_timestamp) as sale_date,</span>
-<span class="w">        </span><span class="no">YEAR(s.sale_timestamp) as year,</span>
-<span class="w">        </span><span class="no">MONTH(s.sale_timestamp) as month,</span>
-<span class="w">        </span><span class="no">p.product_id,</span>
-<span class="w">        </span><span class="no">p.product_name,</span>
-<span class="w">        </span><span class="no">p.category,</span>
-<span class="w">        </span><span class="no">c.customer_id,</span>
-<span class="w">        </span><span class="no">c.customer_segment,</span>
-<span class="w">        </span><span class="no">SUM(s.quantity) as total_quantity,</span>
-<span class="w">        </span><span class="no">SUM(s.amount) as total_revenue,</span>
-<span class="w">        </span><span class="no">AVG(s.amount) as avg_transaction_value</span>
-<span class="w">      </span><span class="no">FROM raw.transactions.sales s</span>
-<span class="w">      </span><span class="no">LEFT JOIN raw.dimensions.products p ON s.product_id = p.id</span>
-<span class="w">      </span><span class="no">LEFT JOIN raw.dimensions.customers c ON s.customer_id = c.id</span>
-<span class="w">      </span><span class="no">GROUP BY 1, 2, 3, 4, 5, 6, 7, 8</span>
-<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sale_date</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of the sale</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">year</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Year of the sale</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">month</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Month of the sale (1-12)</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">product_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">product_name</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the product</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">category</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product category</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_segment</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer segment</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_quantity</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total units sold</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_revenue</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total revenue in USD</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_transaction_value</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average transaction value</span>
-<span class="nt">materializedViews</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_user_metrics</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pre-aggregated daily user metrics for fast dashboard queries</span>
-<span class="w">    </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">      </span><span class="no">SELECT</span>
-<span class="w">        </span><span class="no">DATE_TRUNC('day', event_timestamp) as metric_date,</span>
-<span class="w">        </span><span class="no">user_id,</span>
-<span class="w">        </span><span class="no">user_segment,</span>
-<span class="w">        </span><span class="no">COUNT(*) as event_count,</span>
-<span class="w">        </span><span class="no">COUNT(DISTINCT session_id) as session_count,</span>
-<span class="w">        </span><span class="no">COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN event_id END) as purchase_count,</span>
-<span class="w">        </span><span class="no">SUM(CASE WHEN event_type = 'purchase' THEN CAST(properties['amount'] AS DECIMAL(18,2)) END) as total_revenue,</span>
-<span class="w">        </span><span class="no">MIN(event_timestamp) as first_event_time,</span>
-<span class="w">        </span><span class="no">MAX(event_timestamp) as last_event_time</span>
-<span class="w">      </span><span class="no">FROM user_activity</span>
-<span class="w">      </span><span class="no">GROUP BY 1, 2, 3</span>
-<span class="w">    </span><span class="nt">definitionProperties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">grace_period</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
-<span class="w">      </span><span class="nt">incremental_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_date</span>
-<span class="w">      </span><span class="nt">refresh_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
-<span class="w">      </span><span class="nt">storage_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mv_storage</span>
-<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_date</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of the metrics</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_segment</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User segment</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_count</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total number of events</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">session_count</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of distinct sessions</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">purchase_count</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of purchase events</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_revenue</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total revenue from purchases</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">first_event_time</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Timestamp of first event</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_event_time</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Timestamp of last event</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_lifetime_value</span>
-<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer lifetime value metrics refreshed weekly</span>
-<span class="w">    </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">      </span><span class="no">SELECT</span>
-<span class="w">        </span><span class="no">c.customer_id,</span>
-<span class="w">        </span><span class="no">c.customer_segment,</span>
-<span class="w">        </span><span class="no">c.signup_date,</span>
-<span class="w">        </span><span class="no">COUNT(DISTINCT s.sale_date) as purchase_days,</span>
-<span class="w">        </span><span class="no">SUM(s.total_quantity) as lifetime_quantity,</span>
-<span class="w">        </span><span class="no">SUM(s.total_revenue) as lifetime_revenue,</span>
-<span class="w">        </span><span class="no">AVG(s.total_revenue) as avg_order_value,</span>
-<span class="w">        </span><span class="no">MIN(s.sale_date) as first_purchase_date,</span>
-<span class="w">        </span><span class="no">MAX(s.sale_date) as last_purchase_date,</span>
-<span class="w">        </span><span class="no">DATEDIFF('day', MIN(s.sale_date), MAX(s.sale_date)) as customer_age_days</span>
-<span class="w">      </span><span class="no">FROM raw.dimensions.customers c</span>
-<span class="w">      </span><span class="no">LEFT JOIN sales_summary s ON c.customer_id = s.customer_id</span>
-<span class="w">      </span><span class="no">GROUP BY 1, 2, 3</span>
-<span class="w">    </span><span class="nt">definitionProperties</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">refresh_schedule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0 0 * * 0</span>
-<span class="w">      </span><span class="nt">storage_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics_warehouse</span>
-<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer identifier</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_segment</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer segment</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">signup_date</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date customer signed up</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">purchase_days</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of days with purchases</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lifetime_quantity</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total items purchased</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lifetime_revenue</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total lifetime revenue</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_order_value</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average order value</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">first_purchase_date</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of first purchase</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_purchase_date</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of most recent purchase</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_age_days</span>
-<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
-<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Days between first and last purchase</span>
+<span class="nt">datasets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">views</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_activity</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cleaned and enriched user activity events with user dimensions</span>
+<span class="w">      </span><span class="nt">viewSecurityMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEFINER</span>
+<span class="w">      </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">SELECT</span>
+<span class="w">          </span><span class="no">e.event_id,</span>
+<span class="w">          </span><span class="no">e.event_timestamp,</span>
+<span class="w">          </span><span class="no">e.event_type,</span>
+<span class="w">          </span><span class="no">e.user_id,</span>
+<span class="w">          </span><span class="no">u.user_name,</span>
+<span class="w">          </span><span class="no">u.user_email,</span>
+<span class="w">          </span><span class="no">u.user_segment,</span>
+<span class="w">          </span><span class="no">e.session_id,</span>
+<span class="w">          </span><span class="no">e.device_type,</span>
+<span class="w">          </span><span class="no">e.country_code,</span>
+<span class="w">          </span><span class="no">e.properties</span>
+<span class="w">        </span><span class="no">FROM raw.events.user_events e</span>
+<span class="w">        </span><span class="no">LEFT JOIN raw.dimensions.users u ON e.user_id = u.id</span>
+<span class="w">        </span><span class="no">WHERE e.event_timestamp &gt;= CURRENT_DATE - INTERVAL '90' DAY</span>
+<span class="w">      </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Unique identifier for the event</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_timestamp</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">When the event occurred</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_type</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Type</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">event</span><span class="nv"> </span><span class="s">(click,</span><span class="nv"> </span><span class="s">view,</span><span class="nv"> </span><span class="s">purchase,</span><span class="nv"> </span><span class="s">etc.)"</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_name</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Full name of the user</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_email</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Email address of the user</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_segment</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"User</span><span class="nv"> </span><span class="s">segment</span><span class="nv"> </span><span class="s">(premium,</span><span class="nv"> </span><span class="s">standard,</span><span class="nv"> </span><span class="s">trial)"</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">session_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Session identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">device_type</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Device</span><span class="nv"> </span><span class="s">type</span><span class="nv"> </span><span class="s">(mobile,</span><span class="nv"> </span><span class="s">desktop,</span><span class="nv"> </span><span class="s">tablet)"</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">country_code</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar(2)</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ISO 3166-1 alpha-2 country code</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">properties</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"map(varchar,</span><span class="nv"> </span><span class="s">varchar)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Additional event properties as key-value pairs</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales_summary</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Aggregated</span><span class="nv"> </span><span class="s">sales</span><span class="nv"> </span><span class="s">data</span><span class="nv"> </span><span class="s">by</span><span class="nv"> </span><span class="s">product,</span><span class="nv"> </span><span class="s">category,</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">dimensions"</span>
+<span class="w">      </span><span class="nt">viewSecurityMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INVOKER</span>
+<span class="w">      </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">SELECT</span>
+<span class="w">          </span><span class="no">DATE_TRUNC('day', s.sale_timestamp) as sale_date,</span>
+<span class="w">          </span><span class="no">YEAR(s.sale_timestamp) as year,</span>
+<span class="w">          </span><span class="no">MONTH(s.sale_timestamp) as month,</span>
+<span class="w">          </span><span class="no">p.product_id,</span>
+<span class="w">          </span><span class="no">p.product_name,</span>
+<span class="w">          </span><span class="no">p.category,</span>
+<span class="w">          </span><span class="no">c.customer_id,</span>
+<span class="w">          </span><span class="no">c.customer_segment,</span>
+<span class="w">          </span><span class="no">SUM(s.quantity) as total_quantity,</span>
+<span class="w">          </span><span class="no">SUM(s.amount) as total_revenue,</span>
+<span class="w">          </span><span class="no">AVG(s.amount) as avg_transaction_value</span>
+<span class="w">        </span><span class="no">FROM raw.transactions.sales s</span>
+<span class="w">        </span><span class="no">LEFT JOIN raw.dimensions.products p ON s.product_id = p.id</span>
+<span class="w">        </span><span class="no">LEFT JOIN raw.dimensions.customers c ON s.customer_id = c.id</span>
+<span class="w">        </span><span class="no">GROUP BY 1, 2, 3, 4, 5, 6, 7, 8</span>
+<span class="w">      </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sale_date</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of the sale</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">year</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Year of the sale</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">month</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Month of the sale (1-12)</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">product_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">product_name</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Name of the product</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">category</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product category</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_segment</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer segment</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_quantity</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total units sold</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_revenue</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total revenue in USD</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_transaction_value</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average transaction value</span>
+<span class="w">  </span><span class="nt">materializedViews</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_user_metrics</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pre-aggregated daily user metrics for fast dashboard queries</span>
+<span class="w">      </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">SELECT</span>
+<span class="w">          </span><span class="no">DATE_TRUNC('day', event_timestamp) as metric_date,</span>
+<span class="w">          </span><span class="no">user_id,</span>
+<span class="w">          </span><span class="no">user_segment,</span>
+<span class="w">          </span><span class="no">COUNT(*) as event_count,</span>
+<span class="w">          </span><span class="no">COUNT(DISTINCT session_id) as session_count,</span>
+<span class="w">          </span><span class="no">COUNT(DISTINCT CASE WHEN event_type = 'purchase' THEN event_id END) as purchase_count,</span>
+<span class="w">          </span><span class="no">SUM(CASE WHEN event_type = 'purchase' THEN CAST(properties['amount'] AS DECIMAL(18,2)) END) as total_revenue,</span>
+<span class="w">          </span><span class="no">MIN(event_timestamp) as first_event_time,</span>
+<span class="w">          </span><span class="no">MAX(event_timestamp) as last_event_time</span>
+<span class="w">        </span><span class="no">FROM user_activity</span>
+<span class="w">        </span><span class="no">GROUP BY 1, 2, 3</span>
+<span class="w">      </span><span class="nt">definitionProperties</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">incremental_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_date</span>
+<span class="w">        </span><span class="nt">refresh_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
+<span class="w">        </span><span class="nt">storage_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mv_storage</span>
+<span class="w">      </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metric_date</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of the metrics</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user_segment</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">User segment</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_count</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total number of events</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">session_count</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of distinct sessions</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">purchase_count</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of purchase events</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_revenue</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total revenue from purchases</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">first_event_time</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Timestamp of first event</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_event_time</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">timestamp(3) with time zone</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Timestamp of last event</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_lifetime_value</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer lifetime value metrics refreshed weekly</span>
+<span class="w">      </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">        </span><span class="no">SELECT</span>
+<span class="w">          </span><span class="no">c.customer_id,</span>
+<span class="w">          </span><span class="no">c.customer_segment,</span>
+<span class="w">          </span><span class="no">c.signup_date,</span>
+<span class="w">          </span><span class="no">COUNT(DISTINCT s.sale_date) as purchase_days,</span>
+<span class="w">          </span><span class="no">SUM(s.total_quantity) as lifetime_quantity,</span>
+<span class="w">          </span><span class="no">SUM(s.total_revenue) as lifetime_revenue,</span>
+<span class="w">          </span><span class="no">AVG(s.total_revenue) as avg_order_value,</span>
+<span class="w">          </span><span class="no">MIN(s.sale_date) as first_purchase_date,</span>
+<span class="w">          </span><span class="no">MAX(s.sale_date) as last_purchase_date,</span>
+<span class="w">          </span><span class="no">DATEDIFF('day', MIN(s.sale_date), MAX(s.sale_date)) as customer_age_days</span>
+<span class="w">        </span><span class="no">FROM raw.dimensions.customers c</span>
+<span class="w">        </span><span class="no">LEFT JOIN sales_summary s ON c.customer_id = s.customer_id</span>
+<span class="w">        </span><span class="no">GROUP BY 1, 2, 3</span>
+<span class="w">      </span><span class="nt">definitionProperties</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">refresh_schedule</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0 0 * * 0</span>
+<span class="w">        </span><span class="nt">storage_schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics_warehouse</span>
+<span class="w">      </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer identifier</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_segment</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">varchar</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customer segment</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">signup_date</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date customer signed up</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">purchase_days</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Number of days with purchases</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lifetime_quantity</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bigint</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total items purchased</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lifetime_revenue</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Total lifetime revenue</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_order_value</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"decimal(18,2)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Average order value</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">first_purchase_date</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of first purchase</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_purchase_date</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">date</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Date of most recent purchase</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_age_days</span>
+<span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">integer</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Days between first and last purchase</span>
 <span class="nt">exportMetadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2f86c60f-1a2b-4c3d-9e8f-0a1b2c3d4e5f</span>
 <span class="w">  </span><span class="nt">exportedAt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025-12-09T15:30:45.123Z</span>
 <span class="w">  </span><span class="nt">exportedBy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.engineer@example.com</span>
 <span class="w">  </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PUBLISHED</span>
 <span class="w">  </span><span class="nt">createdAt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025-11-15T09:00:00Z</span>
+<span class="w">  </span><span class="nt">createdBy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.engineer@example.com</span>
+<span class="w">  </span><span class="nt">modifiedAt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025-12-01T10:15:00Z</span>
+<span class="w">  </span><span class="nt">modifiedBy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.engineer@example.com</span>
 <span class="w">  </span><span class="nt">publishedAt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2025-11-20T14:30:00Z</span>
 </pre></div>
 </div>
@@ -914,7 +935,7 @@ or a previously obtained OAuth 2.0 access token.</p>
 </pre></div>
 </div>
 <p>Run <code class="docutils literal notranslate"><span class="pre">starburst</span> <span class="pre">data-product</span> <span class="pre">--help</span></code> to display all available commands. Run
-<code class="docutils literal notranslate"><span class="pre">starburst</span> <span class="pre">data-product</span> <span class="pre">&lt;COMMAND&gt;</span> <span class="pre">--help</span></code> to display the options for a specific
+<code class="docutils literal notranslate"><span class="pre">starburst</span> <span class="pre">data-product</span> <span class="pre">help</span> <span class="pre">&lt;COMMAND&gt;</span></code> to display the options for a specific
 command.</p>
 <p>The following describes the supported CLI commands:</p>
 <table>
@@ -939,22 +960,28 @@ command.</p>
 does not require a cluster connection.</p></td>
 <td><p>None</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">import</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">migrate</span></code></p></td>
+<td><p>Convert a data product YAML definition file to another <code class="docutils literal notranslate"><span class="pre">apiVersion</span></code>. This
+command runs offline and does not require a cluster connection. See
+<a class="reference internal" href="#dp-as-code-migrate"><span class="std std-ref">Migrate a legacy file</span></a>.</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">import</span></code></p></td>
 <td><p>Upload a YAML file to a target cluster and create a new data product in
 <code class="docutils literal notranslate"><span class="pre">Draft</span></code> status.</p></td>
 <td><p><a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">CREATE</span></a>, and
 <a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">ALTER</span></a> when overwriting an existing data
 product</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">export</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">export</span></code></p></td>
 <td><p>Download a data product definition as a YAML file.</p></td>
 <td><p><a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">SHOW</span></a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">publish</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">publish</span></code></p></td>
 <td><p>Publish a draft or pending data product.</p></td>
 <td><p>See <a class="reference internal" href="#dp-security"><span class="std std-ref">Data product security</span></a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delete</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delete</span></code></p></td>
 <td><p>Delete a data product from the target cluster.</p></td>
 <td><p><a class="reference internal" href="../security/biac-privileges.html#biac-entity-data-products"><span class="std std-ref">DROP</span></a></p></td>
 </tr>
@@ -966,7 +993,7 @@ product</p></td>
 <p>The CLI applies validation in three layers, so structural errors surface
 locally before they reach the server:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">lint</span></code> catches structural issues such as duplicate column names, missing
+<li><p><code class="docutils literal notranslate"><span class="pre">lint</span></code> catches structural issues such as duplicate dataset names, missing
 required fields, and YAML formatting errors. It runs on your workstation and
 does not require a cluster connection.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">import</span></code> validates that the user has the required privileges and that the
@@ -997,6 +1024,17 @@ import failures.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>starburst data-product lint -f data-products/my-product.yaml
 </pre></div>
 </div>
+<p>If the file fails to parse, <code class="docutils literal notranslate"><span class="pre">lint</span></code> writes a message to stderr that identifies
+the offending field and its location, for example:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ERROR: Failed to parse YAML in data-products/my-product.yaml (line 13, column 17): datasets.views[0].columns[0].name must be a string.
+</pre></div>
+</div>
+<p>If the file parses but fails validation, <code class="docutils literal notranslate"><span class="pre">lint</span></code> writes each validation error to stderr and exits with a non-zero status:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ERROR: Validation failed for data-products/my-product.yaml:
+  - metadata.name must not be blank
+  - datasets.views[0].definitionQuery is required for an authored view
+</pre></div>
+</div>
 <p>Import the file to the target cluster as a draft:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>starburst data-product import \
   -f data-products/my-product.yaml \
@@ -1012,6 +1050,10 @@ import failures.</p>
 environment variable. If not set, the CLI prompts for the password. Passwords
 cannot be passed inline on the command.</p>
 </div>
+<p>To skip the client-side validation that <code class="docutils literal notranslate"><span class="pre">lint</span></code> also runs, pass the
+<code class="docutils literal notranslate"><span class="pre">--skip-validations</span></code> parameter. The CLI prints <code class="docutils literal notranslate"><span class="pre">Warning:</span> <span class="pre">client-side</span> <span class="pre">validation</span> <span class="pre">skipped</span></code> and sends the file to the server. The CLI still parses the file first,
+so a file that fails to parse never reaches the server. The server runs its own
+validation and rejects an invalid file.</p>
 <p>Publish the data product:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>starburst data-product publish \
   --domain "Product" \
@@ -1022,6 +1064,98 @@ cannot be passed inline on the command.</p>
   --role "$ROLE"
 </pre></div>
 </div>
+</section>
+<section id="migrate-a-legacy-file">
+<span id="dp-as-code-migrate"></span><h4 id="migrate-a-legacy-file">Migrate a legacy file<a class="headerlink" href="#migrate-a-legacy-file" title="Link to this heading">#</a></h4>
+<p>SEP doesn’t accept files that declare the legacy <code class="docutils literal notranslate"><span class="pre">apiVersion:</span> <span class="pre">v1</span></code>. The UI
+rejects these files on import, including the <code class="docutils literal notranslate"><span class="pre">lint</span></code> and <code class="docutils literal notranslate"><span class="pre">import</span></code> commands. The
+CLI reports the following error:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ERROR: Failed to parse YAML in data-products/my-product.yaml: apiVersion 'v1' is retired. Convert the file with `starburst data-product migrate`, or re-export the data product.
+</pre></div>
+</div>
+<p>To convert a legacy file to <code class="docutils literal notranslate"><span class="pre">sep/v1</span></code>, use the <code class="docutils literal notranslate"><span class="pre">migrate</span></code> command . Alternatively,
+re-export the data product from SEP.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>starburst data-product migrate \
+  --to sep/v1 \
+  -f data-products/my-product.yaml \
+  -o data-products/my-product-sep.yaml
+</pre></div>
+</div>
+<p>The command takes the following options:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--to</span></code>: the <code class="docutils literal notranslate"><span class="pre">apiVersion</span></code> to convert the file to, either <code class="docutils literal notranslate"><span class="pre">sep/v1</span></code> or
+<code class="docutils literal notranslate"><span class="pre">galaxy/v1</span></code>. This option is required.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-f</span></code>, <code class="docutils literal notranslate"><span class="pre">--file</span></code>: the file to convert.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o</span></code>, <code class="docutils literal notranslate"><span class="pre">--output</span></code>: the file to write. If you omit this option, the command
+writes the converted file to stdout.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--overwrite</span></code>: replace the output file if it exists. To convert a file in
+place pass the same path to <code class="docutils literal notranslate"><span class="pre">-f</span></code> and <code class="docutils literal notranslate"><span class="pre">-o</span></code> and add <code class="docutils literal notranslate"><span class="pre">--overwrite</span></code>.</p></li>
+</ul>
+<p>The command runs offline and lists every change it makes. It keeps the comments
+from the input file. It doesn’t add placeholder values. If the converted file
+fails validation, the command lists each problem and adds a <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">FIXME:</span></code> comment
+before the affected field. If a required field is missing, the command also adds
+a commented-out line for that field, such as <code class="docutils literal notranslate"><span class="pre">#</span> <span class="pre">summary:</span></code>. Fill in each value,
+then validate the file with <code class="docutils literal notranslate"><span class="pre">lint</span></code>. The command exits with status <code class="docutils literal notranslate"><span class="pre">0</span></code> even when
+problems remain, so always run <code class="docutils literal notranslate"><span class="pre">lint</span></code> before you import.</p>
+<p>For example, the following legacy file has no <code class="docutils literal notranslate"><span class="pre">summary</span></code> and no
+<code class="docutils literal notranslate"><span class="pre">definitionQuery</span></code> for the <code class="docutils literal notranslate"><span class="pre">top_customers</span></code> view:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DataProduct</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My Product</span>
+<span class="w">  </span><span class="nt">catalogName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hive</span>
+<span class="w">  </span><span class="nt">dataDomainName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product</span>
+<span class="c1"># Refreshed by the nightly pipeline</span>
+<span class="nt">views</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_sales</span>
+<span class="w">    </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SELECT * FROM raw.sales.daily</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">top_customers</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customers ranked by revenue</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">migrate</span></code> command reports the following:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Migrated data-products/my-product.yaml from v1 to sep/v1:
+  - apiVersion changed from 'v1' to 'sep/v1'
+  - views moved to datasets.views
+Data product definition written to: /home/user/data-products/my-product-sep.yaml
+Fill in or fix these before importing. The output marks each one with a FIXME comment:
+  - metadata.summary must not be blank
+  - datasets.views[1].definitionQuery is required for an authored view
+Hint: run `starburst data-product lint --file 'data-products/my-product-sep.yaml'` after editing.
+</pre></div>
+</div>
+<p>It writes the following file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DataProduct</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># FIXME: metadata.summary must not be blank</span>
+<span class="w">  </span><span class="c1"># summary:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">My Product</span>
+<span class="w">  </span><span class="nt">catalogName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hive</span>
+<span class="w">  </span><span class="nt">dataDomainName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Product</span>
+<span class="nt">datasets</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># Refreshed by the nightly pipeline</span>
+<span class="w">  </span><span class="nt">views</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_sales</span>
+<span class="w">      </span><span class="nt">definitionQuery</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SELECT * FROM raw.sales.daily</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="c1"># FIXME: datasets.views[1].definitionQuery is required for an authored view</span>
+<span class="w">      </span><span class="c1"># definitionQuery:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">top_customers</span>
+<span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Customers ranked by revenue</span>
+</pre></div>
+</div>
+<p>If a legacy file already has a <code class="docutils literal notranslate"><span class="pre">datasets</span></code> section, change only its
+<code class="docutils literal notranslate"><span class="pre">apiVersion</span></code> to <code class="docutils literal notranslate"><span class="pre">sep/v1</span></code>. The <code class="docutils literal notranslate"><span class="pre">migrate</span></code> command doesn’t convert this type of
+file and reports the following error instead:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>ERROR: Failed to parse YAML in data-products/my-product.yaml (line 12, column 1): datasets is a sep/v1 section so this file already has the sep/v1 shape. Change its apiVersion from v1 to sep/v1.
+</pre></div>
+</div>
+<p>To convert a <code class="docutils literal notranslate"><span class="pre">v1</span></code> or <code class="docutils literal notranslate"><span class="pre">sep/v1</span></code> file for import into Starburst Galaxy, use <code class="docutils literal notranslate"><span class="pre">--to</span> <span class="pre">galaxy/v1</span></code>.
+The command omits data product tags and owner names because Starburst Galaxy doesn’t
+support them. It also omits the SEP <code class="docutils literal notranslate"><span class="pre">exportMetadata</span></code>. It lists each
+omission. It copies <code class="docutils literal notranslate"><span class="pre">catalogName</span></code> and <code class="docutils literal notranslate"><span class="pre">dataDomainName</span></code> unchanged, so verify that
+they exist in Starburst Galaxy. <code class="docutils literal notranslate"><span class="pre">lint</span></code> validates only <code class="docutils literal notranslate"><span class="pre">sep/v1</span></code> files.</p>
 </section>
 </section>
 </section>
