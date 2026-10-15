@@ -296,6 +296,7 @@
     <ul>
 <li><a class="reference internal" href="#">Azure Storage file system support</a><ul>
 <li><a class="reference internal" href="#general-configuration">General configuration</a></li>
+<li><a class="reference internal" href="#microsoft-fabric-onelake-support">Microsoft Fabric OneLake support</a></li>
 <li><a class="reference internal" href="#user-assigned-managed-identity-authentication">User-assigned managed identity authentication</a></li>
 <li><a class="reference internal" href="#access-key-authentication">Access key authentication</a></li>
 <li><a class="reference internal" href="#oauth-2-0-authentication">OAuth 2.0 authentication</a></li>
@@ -322,6 +323,9 @@ with a catalog using the Delta Lake, Hive, Hudi, or Iceberg connectors.</p>
 <p>Enable the native implementation with <code class="docutils literal notranslate"><span class="pre">fs.azure.enabled=true</span></code> in your
 catalog properties file. Additionally, the Azure storage account must have
 hierarchical namespace enabled.</p>
+<p>SEP also supports <a class="reference external" href="https://learn.microsoft.com/en-us/fabric/onelake/onelake-overview">Microsoft Fabric
+OneLake</a>
+locations. See <a class="reference internal" href="#azure-onelake"><span class="std std-ref">Microsoft Fabric OneLake support</span></a> for details.</p>
 <section id="general-configuration">
 <h2 id="general-configuration">General configuration<a class="headerlink" href="#general-configuration" title="Link to this heading">#</a></h2>
 <p>Use the following properties to configure general aspects of Azure Storage file
@@ -347,50 +351,81 @@ loads from environment variables if configured or <a class="reference internal" 
 Use <code class="docutils literal notranslate"><span class="pre">ACCESS_KEY</span></code> for <a class="reference internal" href="#azure-access-key-authentication"><span class="std std-ref">Access key authentication</span></a> or and <code class="docutils literal notranslate"><span class="pre">OAUTH</span></code>
 for <a class="reference internal" href="#azure-oauth-authentication"><span class="std std-ref">OAuth 2.0 authentication</span></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.endpoint</span></code></p></td>
-<td><p>Hostname suffix of the Azure storage endpoint.
-Defaults to <code class="docutils literal notranslate"><span class="pre">core.windows.net</span></code> for the global Azure cloud.
-Use <code class="docutils literal notranslate"><span class="pre">core.usgovcloudapi.net</span></code> for the Azure US Government cloud,
-<code class="docutils literal notranslate"><span class="pre">core.cloudapi.de</span></code> for the Azure Germany cloud,
-or <code class="docutils literal notranslate"><span class="pre">core.chinacloudapi.cn</span></code> for the Azure China cloud.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.endpoints</span></code></p></td>
+<td><p>Comma-separated list of hostname suffixes of the Azure storage endpoints
+that locations in the catalog can reference. Defaults to <code class="docutils literal notranslate"><span class="pre">core.windows.net</span></code>
+for the global Azure cloud. Use <code class="docutils literal notranslate"><span class="pre">core.usgovcloudapi.net</span></code> for the Azure US
+Government cloud, <code class="docutils literal notranslate"><span class="pre">core.cloudapi.de</span></code> for the Azure Germany cloud, or
+<code class="docutils literal notranslate"><span class="pre">core.chinacloudapi.cn</span></code> for the Azure China cloud. Add
+<code class="docutils literal notranslate"><span class="pre">fabric.microsoft.com</span></code> to access <a class="reference internal" href="#azure-onelake"><span class="std std-ref">Microsoft Fabric OneLake support</span></a>. Locations that use an
+endpoint that is not in the list are rejected.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.read-block-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.endpoint</span></code></p></td>
+<td><p>Deprecated. Use <code class="docutils literal notranslate"><span class="pre">azure.endpoints</span></code> instead. Accepts a single endpoint suffix
+and is treated as an <code class="docutils literal notranslate"><span class="pre">azure.endpoints</span></code> list with one value.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.read-block-size</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">Data size</span></a> for blocks during read operations. Defaults
 to <code class="docutils literal notranslate"><span class="pre">4MB</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.write-block-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.write-block-size</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">Data size</span></a> for blocks during write operations.
 Defaults to <code class="docutils literal notranslate"><span class="pre">4MB</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-write-concurrency</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-write-concurrency</span></code></p></td>
 <td><p>Maximum number of concurrent write operations. Defaults to 8.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-single-upload-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-single-upload-size</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">Data size</span></a> Defaults to <code class="docutils literal notranslate"><span class="pre">4MB</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-http-requests</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.max-http-requests</span></code></p></td>
 <td><p>Maximum <a class="reference internal" href="../admin/properties.html#prop-type-integer"><span class="std std-ref">integer</span></a> number of concurrent HTTP requests to
 Azure from every node. Defaults to double the number of processors on the
 node. Minimum <code class="docutils literal notranslate"><span class="pre">1</span></code>. Use this property to reduce the number of requests when
 you encounter rate limiting issues.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.connection-pool-max-idle-time</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.connection-pool-max-idle-time</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> that a connection can remain idle in the
 connection pool before it is closed. Defaults to <code class="docutils literal notranslate"><span class="pre">5m</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.http-request-timeout</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.http-request-timeout</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> for HTTP request timeouts, including the
 time taken by the Azure SDK to retry a request. Defaults to <code class="docutils literal notranslate"><span class="pre">10m</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.application-id</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.application-id</span></code></p></td>
 <td><p>Specify the application identifier appended to the <code class="docutils literal notranslate"><span class="pre">User-Agent</span></code> header
 for all requests sent to Azure Storage. Defaults to <code class="docutils literal notranslate"><span class="pre">Trino</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">azure.multipart-write-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">azure.multipart-write-enabled</span></code></p></td>
 <td><p>Enable multipart writes for large files. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="microsoft-fabric-onelake-support">
+<span id="azure-onelake"></span><h2 id="microsoft-fabric-onelake-support">Microsoft Fabric OneLake support<a class="headerlink" href="#microsoft-fabric-onelake-support" title="Link to this heading">#</a></h2>
+<p>SEP can access data in <a class="reference external" href="https://learn.microsoft.com/en-us/fabric/onelake/onelake-overview">Microsoft Fabric
+OneLake</a>
+with a catalog using the Delta Lake, Hive, Hudi, or Iceberg connectors. OneLake
+is always hierarchical, so SEP does not check for hierarchical namespace
+support on OneLake locations.</p>
+<p>OneLake is served from the <code class="docutils literal notranslate"><span class="pre">fabric.microsoft.com</span></code> endpoint instead of
+<code class="docutils literal notranslate"><span class="pre">core.windows.net</span></code>. To enable access, add <code class="docutils literal notranslate"><span class="pre">fabric.microsoft.com</span></code> to the
+<code class="docutils literal notranslate"><span class="pre">azure.endpoints</span></code> catalog configuration property. A single catalog can
+reference locations from multiple endpoints, so you can keep <code class="docutils literal notranslate"><span class="pre">core.windows.net</span></code>
+in the list to continue accessing Azure Data Lake Storage Gen2 locations:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">fs.azure.enabled</span><span class="o">=</span><span class="s">true</span>
+<span class="na">azure.endpoints</span><span class="o">=</span><span class="s">core.windows.net,fabric.microsoft.com</span>
+</pre></div>
+</div>
+<p>Reference OneLake data with an <code class="docutils literal notranslate"><span class="pre">abfs[s]</span></code> location in the following form, where
+<code class="docutils literal notranslate"><span class="pre">&lt;workspace&gt;</span></code> is the name of your Fabric workspace:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>abfss://&lt;workspace&gt;@onelake.dfs.fabric.microsoft.com/&lt;item&gt;.lakehouse/Files/&lt;path&gt;
+</pre></div>
+</div>
+<p>Regional hostnames, such as <code class="docutils literal notranslate"><span class="pre">&lt;region&gt;-onelake.dfs.fabric.microsoft.com</span></code>, and
+private endpoint hostnames, such as <code class="docutils literal notranslate"><span class="pre">&lt;guid&gt;.z54.dfs.fabric.microsoft.com</span></code>, are
+also supported.</p>
 </section>
 <section id="user-assigned-managed-identity-authentication">
 <span id="azure-user-assigned-managed-identity-authentication"></span><h2 id="user-assigned-managed-identity-authentication">User-assigned managed identity authentication<a class="headerlink" href="#user-assigned-managed-identity-authentication" title="Link to this heading">#</a></h2>
