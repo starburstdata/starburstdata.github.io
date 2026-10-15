@@ -273,6 +273,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#refresh">Refresh</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#catalog-schema-and-table-access">Catalog, schema, and table access</a><ul>
 <li class="toctree-l7"><a class="reference internal" href="#visibility">Visibility</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#user-substitution">User substitution</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#catalog-rules">Catalog rules</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#schema-rules">Schema rules</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#table-rules">Table rules</a></li>
@@ -359,6 +360,7 @@
 <li><a class="reference internal" href="#refresh">Refresh</a></li>
 <li><a class="reference internal" href="#catalog-schema-and-table-access">Catalog, schema, and table access</a><ul>
 <li><a class="reference internal" href="#visibility">Visibility</a></li>
+<li><a class="reference internal" href="#user-substitution">User substitution</a></li>
 <li><a class="reference internal" href="#catalog-rules">Catalog rules</a></li>
 <li><a class="reference internal" href="#schema-rules">Schema rules</a></li>
 <li><a class="reference internal" href="#table-rules">Table rules</a></li>
@@ -710,6 +712,31 @@ set session properties in the catalog.</p></li>
 on any nested table or function.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">table</span></code>: Visible if the user has any permissions on the table.</p></li>
 </ul>
+</section>
+<section id="user-substitution">
+<span id="system-file-auth-user-substitution"></span><h4 id="user-substitution">User substitution<a class="headerlink" href="#user-substitution" title="Link to this heading">#</a></h4>
+<p>The <code class="docutils literal notranslate"><span class="pre">catalog</span></code>, <code class="docutils literal notranslate"><span class="pre">schema</span></code>, and <code class="docutils literal notranslate"><span class="pre">table</span></code> fields of the catalog, schema, table,
+function, procedure, and catalog session property rules support the <code class="docutils literal notranslate"><span class="pre">{user}</span></code>
+placeholder. Before a rule is matched, every occurrence of <code class="docutils literal notranslate"><span class="pre">{user}</span></code> in these
+fields is replaced with the name of the current user. The user name is matched
+literally, so user names containing regular expression metacharacters, such as
+<code class="docutils literal notranslate"><span class="pre">.</span></code> or <code class="docutils literal notranslate"><span class="pre">-</span></code>, do not change the meaning of the pattern.</p>
+<p>The following example grants each user all table privileges on tables in the
+schema that matches their own user name in the <code class="docutils literal notranslate"><span class="pre">sandbox</span></code> catalog:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"tables"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"catalog"</span><span class="p">:</span><span class="w"> </span><span class="s2">"sandbox"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"^{user}$"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"privileges"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"SELECT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"INSERT"</span><span class="p">,</span><span class="w"> </span><span class="s2">"DELETE"</span><span class="p">,</span><span class="w"> </span><span class="s2">"UPDATE"</span><span class="p">,</span><span class="w"> </span><span class="s2">"OWNERSHIP"</span><span class="p">,</span><span class="w"> </span><span class="s2">"GRANT_SELECT"</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Patterns that do not contain the <code class="docutils literal notranslate"><span class="pre">{user}</span></code> placeholder are validated when the
+rules are loaded, so any other use of <code class="docutils literal notranslate"><span class="pre">{</span></code> and <code class="docutils literal notranslate"><span class="pre">}</span></code> that is not a valid regular
+expression is still reported as an error at startup.</p>
 </section>
 <section id="catalog-rules">
 <h4 id="catalog-rules">Catalog rules<a class="headerlink" href="#catalog-rules" title="Link to this heading">#</a></h4>
@@ -1441,7 +1468,9 @@ order from top to bottom:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">session_properties</span></code></p></li>
 </ol>
 <p>The user is granted the privileges from the first matching rule. All regexes
-default to <code class="docutils literal notranslate"><span class="pre">.*</span></code> if not specified.</p>
+default to <code class="docutils literal notranslate"><span class="pre">.*</span></code> if not specified. The <code class="docutils literal notranslate"><span class="pre">schema</span></code> and <code class="docutils literal notranslate"><span class="pre">table</span></code> fields support the
+<code class="docutils literal notranslate"><span class="pre">{user}</span></code> placeholder as described in
+<a class="reference internal" href="#system-file-auth-user-substitution"><span class="std std-ref">user substitution</span></a>.</p>
 <section id="id2">
 <h4 id="id2">Schema rules<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
 <p>These rules govern who is considered an owner of a schema.</p>
