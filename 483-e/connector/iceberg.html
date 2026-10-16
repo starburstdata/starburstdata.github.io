@@ -300,6 +300,7 @@
 <li class="toctree-l6"><a class="reference internal" href="#deletion-by-partition">Deletion by partition</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#row-level-deletion">Row level deletion</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#row-lineage">Row lineage</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#commit-queue">Commit queue</a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#schema-and-table-management">Schema and table management</a><ul>
@@ -493,6 +494,7 @@
 <li><a class="reference internal" href="#deletion-by-partition">Deletion by partition</a></li>
 <li><a class="reference internal" href="#row-level-deletion">Row level deletion</a></li>
 <li><a class="reference internal" href="#row-lineage">Row lineage</a></li>
+<li><a class="reference internal" href="#commit-queue">Commit queue</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#schema-and-table-management">Schema and table management</a><ul>
@@ -918,6 +920,20 @@ property is <code class="docutils literal notranslate"><span class="pre">idle_wr
 <td><p>Enable <a class="reference internal" href="#iceberg-sorted-files"><span class="std std-ref">sorted writing</span></a> to tables with a specified
 sort order. Equivalent session property is <code class="docutils literal notranslate"><span class="pre">sorted_writing_enabled</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">true</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.commit-queue.enabled</span></code></p></td>
+<td><p>Serialize <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">MERGE</span></code>, and <code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> commits to
+the same table through a <a class="reference internal" href="#iceberg-commit-queue"><span class="std std-ref">commit queue</span></a> on the
+coordinator. Concurrent writers take turns committing to the catalog
+instead of retrying when their commits conflict. Equivalent session
+property is <code class="docutils literal notranslate"><span class="pre">commit_queue_enabled</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.commit-queue.max-wait</span></code></p></td>
+<td><p>Maximum time a commit waits for its turn in the commit queue. A commit that
+waits longer proceeds without serialization and retries if it conflicts
+with another commit.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5m</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.optimize-partial-topn-enabled</span></code></p></td>
 <td><p>Enable optimization of TopN queries on sorted tables. When enabled, the
@@ -2029,6 +2045,31 @@ metadata columns. The metadata columns help keep track of the lifecycle of rows
 over time. These columns are automatically available and require no schema
 changes. For examples and more information about specific properties, read
 <a class="reference internal" href="#iceberg-metadata-columns"><span class="std std-ref">Metadata columns</span></a>.</p>
+</section>
+<section id="commit-queue">
+<span id="iceberg-commit-queue"></span><h4 id="commit-queue">Commit queue<a class="headerlink" href="#commit-queue" title="Link to this heading">#</a></h4>
+<p>Concurrent writes to the same table can fail with commit conflicts. When two
+queries commit changes to a table at the same time, one of them must retry, and
+the query fails if it runs out of retries. The <code class="docutils literal notranslate"><span class="pre">max_commit_retry</span></code> <a class="reference internal" href="#iceberg-table-properties"><span class="std std-ref">table
+property</span></a> sets the number of retries.</p>
+<p>To avoid these failures, enable the commit queue in your catalog configuration:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">iceberg.commit-queue.enabled</span><span class="o">=</span><span class="s">true</span>
+</pre></div>
+</div>
+<p>To enable the commit queue for the current session only, use the
+<code class="docutils literal notranslate"><span class="pre">commit_queue_enabled</span></code> session property:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SET</span><span class="w"> </span><span class="k">SESSION</span><span class="w"> </span><span class="n">example</span><span class="p">.</span><span class="n">commit_queue_enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>With the commit queue enabled, <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>, <code class="docutils literal notranslate"><span class="pre">MERGE</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">OPTIMIZE</span></code> statements on the same table take turns committing to the catalog.
+Data files are still written in parallel, and only the final commit waits for
+its turn.</p>
+<p>A commit that waits longer than <code class="docutils literal notranslate"><span class="pre">iceberg.commit-queue.max-wait</span></code> skips the queue
+and is retried if it conflicts with another commit, so the queue never causes a
+query to fail. The queue only applies to commits made through the same catalog
+on the same coordinator. Writes from other catalogs or clusters can still
+conflict with queued commits.</p>
 </section>
 </section>
 <section id="schema-and-table-management">
