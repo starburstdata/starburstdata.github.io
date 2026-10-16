@@ -257,6 +257,24 @@ orderable type. For example, a <code class="docutils literal notranslate"><span 
 be the same type. For example, Trino produces an error if you ask it if <code class="docutils literal notranslate"><span class="pre">John</span></code>
 is between <code class="docutils literal notranslate"><span class="pre">2.3</span></code> and <code class="docutils literal notranslate"><span class="pre">35.2</span></code>.</p>
 
+<h3 id="symmetric-and-asymmetric-ranges">Symmetric and asymmetric ranges<a class="headerlink" href="#symmetric-and-asymmetric-ranges" title="Permalink to this heading">#</a></h3>
+<p>By default the bounds are interpreted in order, so <code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">BETWEEN</span> <span class="pre">min</span> <span class="pre">AND</span> <span class="pre">max</span></code>
+only matches when <code class="docutils literal notranslate"><span class="pre">min</span> <span class="pre">&lt;=</span> <span class="pre">max</span></code>. This default can be made explicit with
+<code class="docutils literal notranslate"><span class="pre">ASYMMETRIC</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="mi">3</span> <span class="k">BETWEEN</span> <span class="k">ASYMMETRIC</span> <span class="mi">2</span> <span class="k">AND</span> <span class="mi">6</span><span class="p">;</span> <span class="c1">-- true</span>
+<span class="k">SELECT</span> <span class="mi">3</span> <span class="k">BETWEEN</span> <span class="k">ASYMMETRIC</span> <span class="mi">6</span> <span class="k">AND</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">SYMMETRIC</span></code>, the two bounds are treated as an unordered pair, so the test
+succeeds when the value lies between them in either order. <code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">BETWEEN</span> <span class="pre">SYMMETRIC</span> <span class="pre">min</span> <span class="pre">AND</span> <span class="pre">max</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">value</span> <span class="pre">BETWEEN</span> <span class="pre">ASYMMETRIC</span> <span class="pre">min</span> <span class="pre">AND</span> <span class="pre">max</span> <span class="pre">OR</span> <span class="pre">value</span> <span class="pre">BETWEEN</span> <span class="pre">ASYMMETRIC</span> <span class="pre">max</span> <span class="pre">AND</span> <span class="pre">min</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="mi">3</span> <span class="k">BETWEEN</span> <span class="k">SYMMETRIC</span> <span class="mi">2</span> <span class="k">AND</span> <span class="mi">6</span><span class="p">;</span> <span class="c1">-- true</span>
+<span class="k">SELECT</span> <span class="mi">3</span> <span class="k">BETWEEN</span> <span class="k">SYMMETRIC</span> <span class="mi">6</span> <span class="k">AND</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">-- true</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">SYMMETRIC</span></code> can be combined with <code class="docutils literal notranslate"><span class="pre">NOT</span></code>, and follows the same <code class="docutils literal notranslate"><span class="pre">NULL</span></code> evaluation
+rules as the equivalent expanded expression.</p>
+
+
 
 <span id="is-null-operator"></span><h2 id="is-null-and-is-not-null">IS NULL and IS NOT NULL<a class="headerlink" href="#is-null-and-is-not-null" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NULL</span></code> and <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NOT</span> <span class="pre">NULL</span></code> operators test whether a value is null
@@ -269,6 +287,62 @@ is between <code class="docutils literal notranslate"><span class="pre">2.3</spa
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="mi">3</span><span class="p">.</span><span class="mi">0</span> <span class="k">IS</span> <span class="k">NULL</span><span class="p">;</span> <span class="c1">-- false</span>
 </pre></div>
 </div>
+
+
+<span id="is-boolean-test"></span><h2 id="is-true-is-false-and-is-unknown">IS TRUE, IS FALSE, and IS UNKNOWN<a class="headerlink" href="#is-true-is-false-and-is-unknown" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">[NOT]</span> <span class="pre">TRUE</span></code>, <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">[NOT]</span> <span class="pre">FALSE</span></code>, and <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">[NOT]</span> <span class="pre">UNKNOWN</span></code> operators test the
+three-valued result of a boolean expression. Unlike a direct comparison against
+<code class="docutils literal notranslate"><span class="pre">TRUE</span></code> or <code class="docutils literal notranslate"><span class="pre">FALSE</span></code>, these operators always return a non-null boolean, treating a
+<code class="docutils literal notranslate"><span class="pre">NULL</span></code> (unknown) operand as a known value. <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">UNKNOWN</span></code> is equivalent to <code class="docutils literal notranslate"><span class="pre">IS</span> <span class="pre">NULL</span></code>
+on a boolean operand:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">IS</span> <span class="k">TRUE</span><span class="p">;</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="k">IS</span> <span class="k">FALSE</span><span class="p">;</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="p">(</span><span class="k">NULL</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">IS</span> <span class="k">UNKNOWN</span><span class="p">;</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="p">(</span><span class="k">NULL</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="k">IS</span> <span class="k">NOT</span> <span class="k">TRUE</span><span class="p">;</span> <span class="c1">-- true</span>
+</pre></div>
+</div>
+<p>The following truth table demonstrates the handling of each truth value:</p>
+<table border="1">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">a</th>
+<th class="head">a IS TRUE</th>
+<th class="head">a IS FALSE</th>
+<th class="head">a IS UNKNOWN</th>
+<th class="head">a IS NOT TRUE</th>
+<th class="head">a IS NOT FALSE</th>
+<th class="head">a IS NOT UNKNOWN</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">NULL</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TRUE</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">FALSE</span></code></td>
+</tr>
+</tbody>
+</table>
 
 
 <span id="is-distinct-operator"></span><h2 id="is-distinct-from-and-is-not-distinct-from">IS DISTINCT FROM and IS NOT DISTINCT FROM<a class="headerlink" href="#is-distinct-from-and-is-not-distinct-from" title="Permalink to this heading">#</a></h2>
@@ -484,6 +558,118 @@ letter <code class="docutils literal notranslate"><span class="pre">A</span></co
 <span class="p">)</span>
 <span class="k">ORDER</span> <span class="k">by</span> <span class="n">nation</span><span class="p">.</span><span class="n">name</span><span class="p">;</span>
 </pre></div>
+</div>
+
+
+<span id="match-predicate"></span><h2 id="row-matching-match">Row matching: MATCH<a class="headerlink" href="#row-matching-match" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">MATCH</span></code> predicate tests whether a row value matches a row returned by a
+subquery:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>row MATCH [UNIQUE] [SIMPLE | PARTIAL | FULL] ( subquery )
+</pre></div>
+</div>
+<p>The left-hand side is a row value and the subquery must return rows of the same
+degree. The optional match type controls how a <code class="docutils literal notranslate"><span class="pre">NULL</span></code> in the row is treated, and
+defaults to <code class="docutils literal notranslate"><span class="pre">SIMPLE</span></code>.</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">));</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="mi">99</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">));</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+<p>A typical use is to keep the rows of one relation that also occur in another.
+The subquery may be correlated with the enclosing query:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">a</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">))</span> <span class="n">t</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
+<span class="k">WHERE</span> <span class="k">ROW</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="k">MATCH</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">'c'</span><span class="p">));</span> <span class="c1">-- returns 1 and 3</span>
+</pre></div>
+</div>
+
+<h3 id="match-types">Match types<a class="headerlink" href="#match-types" title="Permalink to this heading">#</a></h3>
+<p>The match type determines the result when the row on the left contains a <code class="docutils literal notranslate"><span class="pre">NULL</span></code>:</p>
+<table border="1">
+<colgroup>
+<col width="20%"/>
+<col width="80%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Match type</th>
+<th class="head">Treatment of a <code class="docutils literal notranslate"><span class="pre">NULL</span></code> field in the row</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">SIMPLE</span></code></td>
+<td>The default. A row that contains any <code class="docutils literal notranslate"><span class="pre">NULL</span></code> always matches, regardless of
+the contents of the subquery.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">PARTIAL</span></code></td>
+<td>A <code class="docutils literal notranslate"><span class="pre">NULL</span></code> field is a wildcard that matches any value in that position, while
+the non-null fields must still equal those of a subquery row. A row whose
+fields are all <code class="docutils literal notranslate"><span class="pre">NULL</span></code> always matches.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">FULL</span></code></td>
+<td>A row matches only if it contains no <code class="docutils literal notranslate"><span class="pre">NULL</span></code> and equals a subquery row, or if
+all of its fields are <code class="docutils literal notranslate"><span class="pre">NULL</span></code>. A row with a mix of <code class="docutils literal notranslate"><span class="pre">NULL</span></code> and non-null fields
+never matches.</td>
+</tr>
+</tbody>
+</table>
+<p>The following examples use a row with a <code class="docutils literal notranslate"><span class="pre">NULL</span></code> first field to show the
+difference between the match types:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">SIMPLE</span>  <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">));</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">PARTIAL</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">));</span> <span class="c1">-- true</span>
+<span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">PARTIAL</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">));</span> <span class="c1">-- false</span>
+
+<span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="k">NULL</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">FULL</span>    <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">));</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+
+
+<h3 id="unique-matches">Unique matches<a class="headerlink" href="#unique-matches" title="Permalink to this heading">#</a></h3>
+<p>Add the <code class="docutils literal notranslate"><span class="pre">UNIQUE</span></code> keyword to require that the row matches exactly one row of the
+subquery. The result is <code class="docutils literal notranslate"><span class="pre">false</span></code> when the matching row occurs more than once.
+<code class="docutils literal notranslate"><span class="pre">UNIQUE</span></code> can be combined with any match type, for example <code class="docutils literal notranslate"><span class="pre">MATCH</span> <span class="pre">UNIQUE</span> <span class="pre">PARTIAL</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">));</span>           <span class="c1">-- true</span>
+<span class="k">SELECT</span> <span class="k">ROW</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">)</span> <span class="k">MATCH</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'a'</span><span class="p">));</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+
+
+
+<span id="unique-predicate"></span><h2 id="uniqueness-test-unique">Uniqueness test: UNIQUE<a class="headerlink" href="#uniqueness-test-unique" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">UNIQUE</span></code> predicate tests whether a subquery contains duplicate rows. It
+returns <code class="docutils literal notranslate"><span class="pre">true</span></code> when no two rows of the subquery are equal, and <code class="docutils literal notranslate"><span class="pre">false</span></code>
+otherwise:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>UNIQUE ( subquery )
+</pre></div>
+</div>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">);</span> <span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+<p>A row that contains a <code class="docutils literal notranslate"><span class="pre">NULL</span></code> in any column is never counted as a duplicate, not
+even of an identical row. Only rows whose columns are all non-null can form a
+duplicate pair:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- the two rows are identical, but each contains a NULL, so they are not duplicates</span>
+<span class="k">SELECT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="k">NULL</span> <span class="k">AS</span> <span class="nb">integer</span><span class="p">),</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="k">NULL</span> <span class="k">AS</span> <span class="nb">integer</span><span class="p">),</span> <span class="s1">'a'</span><span class="p">));</span> <span class="c1">-- true</span>
+
+<span class="c1">-- the (1, 'b') pair is a duplicate; the NULL row is irrelevant</span>
+<span class="k">SELECT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="k">NULL</span> <span class="k">AS</span> <span class="nb">integer</span><span class="p">),</span> <span class="s1">'a'</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">'b'</span><span class="p">));</span> <span class="c1">-- false</span>
+</pre></div>
+</div>
+<p>As a result, an empty subquery and a subquery in which every row contains a
+<code class="docutils literal notranslate"><span class="pre">NULL</span></code> both satisfy <code class="docutils literal notranslate"><span class="pre">UNIQUE</span></code>:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">SELECT</span> <span class="mi">1</span> <span class="k">WHERE</span> <span class="k">false</span><span class="p">);</span> <span class="c1">-- true</span>
+</pre></div>
+</div>
+<p>Use <code class="docutils literal notranslate"><span class="pre">NOT</span></code> to test for the presence of a duplicate:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">NOT</span> <span class="k">UNIQUE</span> <span class="p">(</span><span class="k">VALUES</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="c1">-- true</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The subquery of a <code class="docutils literal notranslate"><span class="pre">UNIQUE</span></code> predicate cannot be correlated with the enclosing
+query.</p>
 </div>
 
 

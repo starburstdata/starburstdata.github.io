@@ -193,6 +193,9 @@ produced by the following functions.</p>
 <a class="reference internal" href="#json-query"><span class="std std-ref">json_query</span></a>, and <a class="reference internal" href="#json-value"><span class="std std-ref">json_value</span></a>. Each of them
 is based on the same mechanism of exploring and processing JSON input using
 JSON path.</p>
+<p>For convenient navigation of <code class="docutils literal notranslate"><span class="pre">JSON</span></code>-typed columns, Trino also supports the
+<a class="reference internal" href="#json-simplified-accessor"><span class="std std-ref">JSON simplified accessor</span></a> syntax, which lets
+you reach into JSON values using familiar dotted/subscripted notation.</p>
 <p>Trino also supports two functions for generating JSON data –
 <a class="reference internal" href="#json-array"><span class="std std-ref">json_array</span></a>, and <a class="reference internal" href="#json-object"><span class="std std-ref">json_object</span></a>.</p>
 
@@ -673,9 +676,104 @@ non-array items are wrapped in singleton JSON arrays, so their size is <code cla
 
 
 
-<h3 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h3>
-<p>The SQL standard describes the <code class="docutils literal notranslate"><span class="pre">datetime()</span></code> JSON path item method and the
-<code class="docutils literal notranslate"><span class="pre">like_regex()</span></code> JSON path predicate. Trino does not support them.</p>
+<h3 id="trino-specific-behavior">Trino-specific behavior<a class="headerlink" href="#trino-specific-behavior" title="Permalink to this heading">#</a></h3>
+<p>Without a format template, <code class="docutils literal notranslate"><span class="pre">datetime()</span></code> parses the value as the most specific of
+<code class="docutils literal notranslate"><span class="pre">DATE</span></code> / <code class="docutils literal notranslate"><span class="pre">TIME(p)</span></code> / <code class="docutils literal notranslate"><span class="pre">TIME(p)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code> / <code class="docutils literal notranslate"><span class="pre">TIMESTAMP(p)</span></code> /
+<code class="docutils literal notranslate"><span class="pre">TIMESTAMP(p)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code> based on the value’s shape.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">datetime()</span></code> format template is a string of fields and literal text.
+Fields are case-insensitive and consume digits from the value; literal text
+must match the value verbatim.</p>
+<p>Supported fields:</p>
+<table border="1">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Field</th>
+<th class="head">Width</th>
+<th class="head">Description</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">YYYY</span></code> <code class="docutils literal notranslate"><span class="pre">YYY</span></code> <code class="docutils literal notranslate"><span class="pre">YY</span></code> <code class="docutils literal notranslate"><span class="pre">Y</span></code></td>
+<td>4 / 3 / 2 / 1</td>
+<td>Year. Widths below 4 are prefixed with the leading digits of the reference year <code class="docutils literal notranslate"><span class="pre">1970</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">YY=24</span></code> → <code class="docutils literal notranslate"><span class="pre">1924</span></code>).</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">RRRR</span></code> <code class="docutils literal notranslate"><span class="pre">RR</span></code></td>
+<td>4 / 2</td>
+<td>Rounded year. With width 2, values 0–49 map to the current century, 50–99 to the previous century.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">MM</span></code></td>
+<td>2</td>
+<td>Month, 1–12.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">DD</span></code></td>
+<td>2</td>
+<td>Day of month, 1–31.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">DDD</span></code></td>
+<td>3</td>
+<td>Day of year, 1–366. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">MM</span></code> / <code class="docutils literal notranslate"><span class="pre">DD</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">HH24</span></code></td>
+<td>2</td>
+<td>Hour of day, 0–23. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">HH</span></code> / <code class="docutils literal notranslate"><span class="pre">HH12</span></code> / <code class="docutils literal notranslate"><span class="pre">A.M.</span></code> / <code class="docutils literal notranslate"><span class="pre">P.M.</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">HH</span></code> <code class="docutils literal notranslate"><span class="pre">HH12</span></code></td>
+<td>2</td>
+<td>Hour of half-day, 1–12. Requires <code class="docutils literal notranslate"><span class="pre">A.M.</span></code> or <code class="docutils literal notranslate"><span class="pre">P.M.</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">A.M.</span></code> <code class="docutils literal notranslate"><span class="pre">P.M.</span></code></td>
+<td>4</td>
+<td>Half-day marker. Case-insensitive (both <code class="docutils literal notranslate"><span class="pre">a.m.</span></code> and <code class="docutils literal notranslate"><span class="pre">A.M.</span></code> are accepted). Requires <code class="docutils literal notranslate"><span class="pre">HH</span></code> or <code class="docutils literal notranslate"><span class="pre">HH12</span></code>.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">MI</span></code></td>
+<td>2</td>
+<td>Minute, 0–59.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">SS</span></code></td>
+<td>2</td>
+<td>Second, 0–59.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">SSSSS</span></code></td>
+<td>5</td>
+<td>Second of day, 0–86399. Mutually exclusive with <code class="docutils literal notranslate"><span class="pre">HH</span></code> / <code class="docutils literal notranslate"><span class="pre">HH12</span></code> / <code class="docutils literal notranslate"><span class="pre">HH24</span></code> / <code class="docutils literal notranslate"><span class="pre">MI</span></code> / <code class="docutils literal notranslate"><span class="pre">SS</span></code> / <code class="docutils literal notranslate"><span class="pre">A.M.</span></code> / <code class="docutils literal notranslate"><span class="pre">P.M.</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">FF1</span></code>–<code class="docutils literal notranslate"><span class="pre">FF9</span></code></td>
+<td>1–9</td>
+<td>Fractional seconds, with the given digit width.</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">TZH</span></code></td>
+<td>3</td>
+<td>Time zone hour offset with sign, e.g. <code class="docutils literal notranslate"><span class="pre">+05</span></code> or <code class="docutils literal notranslate"><span class="pre">-08</span></code>.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">TZM</span></code></td>
+<td>2</td>
+<td>Time zone minute offset, 0–59. Requires <code class="docutils literal notranslate"><span class="pre">TZH</span></code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Literal text is any of the single-character delimiters <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">.</span></code>, <code class="docutils literal notranslate"><span class="pre">/</span></code>, <code class="docutils literal notranslate"><span class="pre">,</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'</span></code>, <code class="docutils literal notranslate"><span class="pre">;</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span></code>, <code class="docutils literal notranslate"> </code> (space), or a double-quoted string (escape an embedded <code class="docutils literal notranslate"><span class="pre">"</span></code>
+as <code class="docutils literal notranslate"><span class="pre">""</span></code>). Two adjacent delimiters are rejected; a delimiter next to a quoted
+literal is fine.</p>
+<p>Examples:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>YYYY-MM-DD                          -&gt; 2024-01-02
+YYYY-MM-DD"T"HH24:MI:SS.FF3         -&gt; 2024-01-02T12:34:56.789
+HH12:MI:SS A.M.                     -&gt; 09:30:00 P.M.
+YYYY-MM-DD HH24:MI:SS.FF3 TZH:TZM   -&gt; 2024-01-02 12:34:56.789 +05:30
+</pre></div>
+</div>
+<p>Trino additionally accepts <code class="docutils literal notranslate"><span class="pre">FF10</span></code>, <code class="docutils literal notranslate"><span class="pre">FF11</span></code>, and <code class="docutils literal notranslate"><span class="pre">FF12</span></code> to match Trino’s maximum
+<code class="docutils literal notranslate"><span class="pre">TIME(p)</span></code> / <code class="docutils literal notranslate"><span class="pre">TIMESTAMP(p)</span></code> precision of 12 — these widths are a Trino
+extension and may not be portable across other SQL/JSON implementations.</p>
+<p><code class="docutils literal notranslate"><span class="pre">like_regex()</span></code> accepts the standard SQL/XQuery flags (<code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">s</span></code>, <code class="docutils literal notranslate"><span class="pre">x</span></code>).</p>
+
+<h4 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">#</a></h4>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">\s</span></code>, <code class="docutils literal notranslate"><span class="pre">\d</span></code>, and <code class="docutils literal notranslate"><span class="pre">\w</span></code> match only ASCII characters, not the full Unicode
+character classes defined by XQuery.</li>
+<li>The XML name-class escapes <code class="docutils literal notranslate"><span class="pre">\i</span></code>, <code class="docutils literal notranslate"><span class="pre">\I</span></code>, <code class="docutils literal notranslate"><span class="pre">\c</span></code>, and <code class="docutils literal notranslate"><span class="pre">\C</span></code> are not supported.</li>
+<li>The <code class="docutils literal notranslate"><span class="pre">x</span></code> extended-mode flag may not be supported in all configurations.</li>
+</ul>
+
 
 
 <span id="id3"></span><h3 id="json-path-modes">JSON path modes<a class="headerlink" href="#json-path-modes" title="Permalink to this heading">#</a></h3>
@@ -751,7 +849,165 @@ method, the item <code class="docutils literal notranslate"><span class="pre">"a
 
 
 
-<span id="id4"></span><h2 id="json-exists">json_exists<a class="headerlink" href="#json-exists" title="Permalink to this heading">#</a></h2>
+<span id="id4"></span><h2 id="json-simplified-accessor">JSON simplified accessor<a class="headerlink" href="#json-simplified-accessor" title="Permalink to this heading">#</a></h2>
+<p>For convenient navigation of a <code class="docutils literal notranslate"><span class="pre">JSON</span></code>-typed value, Trino lets you write
+dotted/subscripted accessor chains that read as if you were navigating a row
+or array. The receiver of the chain must be a value of declared type <code class="docutils literal notranslate"><span class="pre">JSON</span></code>;
+each step extends a JSON path applied to that value.</p>
+<table border="1">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Syntax</th>
+<th class="head">Equivalent to</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">j.name</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$.name'</span> <span class="pre">WITH</span> <span class="pre">CONDITIONAL</span> <span class="pre">ARRAY</span> <span class="pre">WRAPPER</span> <span class="pre">NULL</span> <span class="pre">ON</span> <span class="pre">EMPTY</span> <span class="pre">NULL</span> <span class="pre">ON</span> <span class="pre">ERROR)</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">j."FooBar"</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$."FooBar"'</span> <span class="pre">…)</span></code> — delimited identifier, case-sensitive</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">j.'foo</span> <span class="pre">bar'</span></code></td>
+<td>same as the delimited form</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">j[3]</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$[3]'</span> <span class="pre">…)</span></code> — integer subscript</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">j[*]</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$[*]'</span> <span class="pre">…)</span></code> — array wildcard</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">j.*</span></code> (in <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>)</td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$.*'</span> <span class="pre">…)</span></code> — member wildcard, produces one <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> column</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">j.name.bigint()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_VALUE(j,</span> <span class="pre">'lax</span> <span class="pre">$.name'</span> <span class="pre">RETURNING</span> <span class="pre">BIGINT</span> <span class="pre">…)</span></code> — item method</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">j.payload.amount.decimal(18,2)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">JSON_VALUE(j,</span> <span class="pre">'lax</span> <span class="pre">$.payload.amount'</span> <span class="pre">RETURNING</span> <span class="pre">DECIMAL(18,2)</span> <span class="pre">…)</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>Member, index, wildcard, and item-method steps compose freely:
+<code class="docutils literal notranslate"><span class="pre">j.rows[1].cells[*]</span></code>, <code class="docutils literal notranslate"><span class="pre">j.items[0].label</span></code>, <code class="docutils literal notranslate"><span class="pre">j.payload.*</span></code>, etc.</p>
+
+<h3 id="case-sensitivity">Case sensitivity<a class="headerlink" href="#case-sensitivity" title="Permalink to this heading">#</a></h3>
+<p>Member-name identifiers are matched case-sensitively against the JSON keys
+they reference:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">j.Foo</span></code> matches the member literally named <code class="docutils literal notranslate"><span class="pre">Foo</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">j."Foo"</span></code> and <code class="docutils literal notranslate"><span class="pre">j.'Foo'</span></code> are the same path — both quote the member name.</li>
+</ul>
+<p>This is different from regular SQL identifier handling, where <code class="docutils literal notranslate"><span class="pre">j.foo</span></code> and
+<code class="docutils literal notranslate"><span class="pre">j.FOO</span></code> refer to the same column. The JSON path language is case-sensitive,
+and the simplified accessor preserves the source case so JSON keys match
+exactly as written.</p>
+<p>Item-method names (<code class="docutils literal notranslate"><span class="pre">bigint</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">decimal</span></code>, …) are SQL identifiers and
+remain case-insensitive — <code class="docutils literal notranslate"><span class="pre">j.x.BIGINT()</span></code>, <code class="docutils literal notranslate"><span class="pre">j.x.Bigint()</span></code>, and <code class="docutils literal notranslate"><span class="pre">j.x.bigint()</span></code>
+all resolve to the same item method.</p>
+
+
+<h3 id="item-methods">Item methods<a class="headerlink" href="#item-methods" title="Permalink to this heading">#</a></h3>
+<p>Item methods cover the same set of casts that <code class="docutils literal notranslate"><span class="pre">json_value</span></code>’s <code class="docutils literal notranslate"><span class="pre">RETURNING</span></code>
+clause does. The supported names and the type they return:</p>
+<table border="1">
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Method</th>
+<th class="head">Returns</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">bigint()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">boolean()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">BOOLEAN</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">date()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">DATE</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">decimal()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code> (unparameterized)</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">decimal(p)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">DECIMAL(p)</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">decimal(p,</span> <span class="pre">s)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">DECIMAL(p,</span> <span class="pre">s)</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">integer()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">INTEGER</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">number()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">string()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">time()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIME(3)</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">time(p)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIME(p)</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">time_tz()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIME(3)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">time_tz(p)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIME(p)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">timestamp()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(3)</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">timestamp(p)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(p)</span></code></td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">timestamp_tz()</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(3)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">timestamp_tz(p)</span></code></td>
+<td><code class="docutils literal notranslate"><span class="pre">TIMESTAMP(p)</span> <span class="pre">WITH</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">EMPTY</span></code> and <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">ERROR</span></code> clauses default to <code class="docutils literal notranslate"><span class="pre">NULL</span></code>.</p>
+
+
+<h3 id="member-wildcard-in-select">Member wildcard in <code class="docutils literal notranslate"><span class="pre">SELECT</span></code><a class="headerlink" href="#member-wildcard-in-select" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">j.*</span></code> is shorthand for <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">JSON_QUERY(j,</span> <span class="pre">'lax</span> <span class="pre">$.*'</span> <span class="pre">…)</span></code>. It
+produces one <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> output column whose value is a JSON array of the
+top-level members of <code class="docutils literal notranslate"><span class="pre">j</span></code>. An optional <code class="docutils literal notranslate"><span class="pre">AS</span> <span class="pre">(column_alias)</span></code> may supply the
+output column’s name:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">j</span><span class="p">.</span><span class="o">*</span> <span class="k">AS</span> <span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="s1">'{"a":1,"b":2}'</span> <span class="k">AS</span> <span class="n">JSON</span><span class="p">)))</span> <span class="k">AS</span> <span class="n">t</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>  payload
+-----------
+ [1,2]
+(1 row)
+</pre></div>
+</div>
+<p>The same wildcard is also recognized inside subscripted chains in a value-
+expression position, where it expands the path under that prefix:
+<code class="docutils literal notranslate"><span class="pre">j.payload.*</span></code>, <code class="docutils literal notranslate"><span class="pre">j.items[*]</span></code>, <code class="docutils literal notranslate"><span class="pre">j.items[*].label</span></code>, etc.</p>
+
+
+<h3 id="outer-scope">Outer scope<a class="headerlink" href="#outer-scope" title="Permalink to this heading">#</a></h3>
+<p>The receiver of the chain may reference a column from an outer scope, for
+correlated subqueries:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="p">(</span><span class="k">SELECT</span> <span class="n">o</span><span class="p">.</span><span class="n">j</span><span class="p">.</span><span class="n">foo</span><span class="p">)</span>
+<span class="k">FROM</span> <span class="p">(</span><span class="k">VALUES</span> <span class="p">(</span><span class="k">CAST</span><span class="p">(</span><span class="s1">'{"foo":1}'</span> <span class="k">AS</span> <span class="n">JSON</span><span class="p">)))</span> <span class="k">AS</span> <span class="n">o</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>An outer-scope receiver is supported for member access (<code class="docutils literal notranslate"><span class="pre">o.j.foo</span></code>),
+subscripts (<code class="docutils literal notranslate"><span class="pre">o.j.items[0]</span></code>), item methods on a subscripted chain
+(<code class="docutils literal notranslate"><span class="pre">o.j.items[0].bigint()</span></code>), and the member wildcard (<code class="docutils literal notranslate"><span class="pre">o.j.*</span></code>). Item methods
+applied directly to a dotted member chain without an intervening subscript —
+e.g. <code class="docutils literal notranslate"><span class="pre">o.j.foo.bigint()</span></code> — are not supported on outer-scope columns; query
+the column locally or insert an explicit <code class="docutils literal notranslate"><span class="pre">JSON_VALUE</span></code> call in those cases.</p>
+
+
+
+<span id="id5"></span><h2 id="json-exists">json_exists<a class="headerlink" href="#json-exists" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_exists</span></code> function determines whether a JSON value satisfies a JSON
 path specification.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>JSON_EXISTS(
@@ -890,7 +1146,7 @@ FROM customers
 
 
 
-<span id="id5"></span><h2 id="json-query">json_query<a class="headerlink" href="#json-query" title="Permalink to this heading">#</a></h2>
+<span id="id6"></span><h2 id="json-query">json_query<a class="headerlink" href="#json-query" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_query</span></code> function extracts a JSON value from a JSON value.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>JSON_QUERY(
     json_input [ FORMAT JSON [ ENCODING { UTF8 | UTF16 | UTF32 } ] ],
@@ -950,7 +1206,7 @@ array or JSON object. <code class="docutils literal notranslate"><span class="pr
 <p>The <code class="docutils literal notranslate"><span class="pre">QUOTES</span></code> clause lets you modify the result for a scalar string by
 removing the double quotes being part of the JSON string representation.</p>
 
-<h3 id="id6">Examples<a class="headerlink" href="#id6" title="Permalink to this heading">#</a></h3>
+<h3 id="id7">Examples<a class="headerlink" href="#id7" title="Permalink to this heading">#</a></h3>
 <p>Let <code class="docutils literal notranslate"><span class="pre">customers</span></code> be a table containing two columns: <code class="docutils literal notranslate"><span class="pre">id:bigint</span></code>,
 <code class="docutils literal notranslate"><span class="pre">description:varchar</span></code>.</p>
 <table border="1">
@@ -1138,7 +1394,7 @@ to the <code class="docutils literal notranslate"><span class="pre">ON</span> <s
 
 
 
-<span id="id7"></span><h2 id="json-value">json_value<a class="headerlink" href="#json-value" title="Permalink to this heading">#</a></h2>
+<span id="id8"></span><h2 id="json-value">json_value<a class="headerlink" href="#json-value" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_value</span></code> function extracts a scalar SQL value from a JSON value.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>JSON_VALUE(
     json_input [ FORMAT JSON [ ENCODING { UTF8 | UTF16 | UTF32 } ] ],
@@ -1207,7 +1463,7 @@ the corresponding branch is taken. If evaluation of the <code class="docutils li
 itself raises a data exception, the failure cascades to the <code class="docutils literal notranslate"><span class="pre">ON</span> <span class="pre">ERROR</span></code> clause.
 Subqueries are not supported in <code class="docutils literal notranslate"><span class="pre">DEFAULT</span></code> expressions.</p>
 
-<h3 id="id8">Examples<a class="headerlink" href="#id8" title="Permalink to this heading">#</a></h3>
+<h3 id="id9">Examples<a class="headerlink" href="#id9" title="Permalink to this heading">#</a></h3>
 <p>Let <code class="docutils literal notranslate"><span class="pre">customers</span></code> be a table containing two columns: <code class="docutils literal notranslate"><span class="pre">id:bigint</span></code>,
 <code class="docutils literal notranslate"><span class="pre">description:varchar</span></code>.</p>
 <table border="1">
@@ -1344,7 +1600,7 @@ FROM customers
 
 
 
-<span id="id9"></span><h2 id="json-table">json_table<a class="headerlink" href="#json-table" title="Permalink to this heading">#</a></h2>
+<span id="id10"></span><h2 id="json-table">json_table<a class="headerlink" href="#json-table" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_table</span></code> clause extracts a table from a JSON value. Use this clause to
 transform JSON data into a relational format, making it easier to query and
 analyze. Use <code class="docutils literal notranslate"><span class="pre">json_table</span></code> in the <code class="docutils literal notranslate"><span class="pre">FROM</span></code> clause of a
@@ -1434,7 +1690,7 @@ combine multiple arrays from your JSON data.</p>
 times.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">json_table</span></code> as a lateral join to process JSON data from another table.</p>
 
-<h3 id="id10">Examples<a class="headerlink" href="#id10" title="Permalink to this heading">#</a></h3>
+<h3 id="id11">Examples<a class="headerlink" href="#id11" title="Permalink to this heading">#</a></h3>
 <p>The following query uses <code class="docutils literal notranslate"><span class="pre">json_table</span></code> to extract values from a JSON array and
 return them as rows in a table with three columns:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span>
@@ -1602,7 +1858,7 @@ and a child path:</p>
 
 
 
-<span id="id11"></span><h2 id="json-array">json_array<a class="headerlink" href="#json-array" title="Permalink to this heading">#</a></h2>
+<span id="id12"></span><h2 id="json-array">json_array<a class="headerlink" href="#json-array" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_array</span></code> function creates a JSON array containing given elements.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>JSON_ARRAY(
     [ array_element [, ...]
@@ -1699,7 +1955,7 @@ The default encoding is UTF8:</p>
 
 
 
-<span id="id12"></span><h2 id="json-object">json_object<a class="headerlink" href="#json-object" title="Permalink to this heading">#</a></h2>
+<span id="id13"></span><h2 id="json-object">json_object<a class="headerlink" href="#json-object" title="Permalink to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">json_object</span></code> function creates a JSON object containing given key-value pairs.</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>JSON_OBJECT(
     [ key_value [, ...]
@@ -1726,7 +1982,7 @@ The default encoding is UTF8:</p>
 </div>
 
 
-<h3 id="id13">Argument types<a class="headerlink" href="#id13" title="Permalink to this heading">#</a></h3>
+<h3 id="id14">Argument types<a class="headerlink" href="#id14" title="Permalink to this heading">#</a></h3>
 <p>The keys can be arbitrary expressions. They must be of character string type.
 Each key is converted into a JSON text item, and it becomes a key in the
 created JSON object. Keys must not be null.</p>
@@ -1770,7 +2026,7 @@ option is implicit:</p>
 </div>
 
 
-<h3 id="id14">Null handling<a class="headerlink" href="#id14" title="Permalink to this heading">#</a></h3>
+<h3 id="id15">Null handling<a class="headerlink" href="#id15" title="Permalink to this heading">#</a></h3>
 <p>The values passed for JSON object keys must not be null. It is allowed to pass
 <code class="docutils literal notranslate"><span class="pre">null</span></code> for JSON object values. A null value is treated according to the
 specified null treatment option. If <code class="docutils literal notranslate"><span class="pre">NULL</span> <span class="pre">ON</span> <span class="pre">NULL</span></code> is specified, a JSON
@@ -1805,7 +2061,7 @@ to implementation limitation. <code class="docutils literal notranslate"><span c
 configuration.</p>
 
 
-<h3 id="id15">Returned type<a class="headerlink" href="#id15" title="Permalink to this heading">#</a></h3>
+<h3 id="id16">Returned type<a class="headerlink" href="#id16" title="Permalink to this heading">#</a></h3>
 <p>The SQL standard imposes that there is no dedicated data type to represent JSON
 data in SQL. Instead, JSON data is represented as character or binary strings.
 By default, the <code class="docutils literal notranslate"><span class="pre">json_object</span></code> function returns varchar containing the textual

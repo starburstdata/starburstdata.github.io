@@ -253,6 +253,40 @@
 <span class="c1">-- 2012-10-30 18:00:00.000 America/Los_Angeles</span>
 </pre></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">AT</span> <span class="pre">LOCAL</span></code> operator renders a datetime in the current session time zone:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="k">timestamp</span> <span class="s1">'2012-10-31 01:00 UTC'</span> <span class="k">AT</span> <span class="k">LOCAL</span><span class="p">;</span>
+<span class="c1">-- 2012-10-30 18:00:00.000 America/Los_Angeles  (session zone)</span>
+</pre></div>
+</div>
+
+
+<h2 id="overlaps">OVERLAPS<a class="headerlink" href="#overlaps" title="Permalink to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">OVERLAPS</span></code> predicate tests whether two periods of time share any instant.
+Each operand is a row value of two elements:</p>
+<ul class="simple">
+<li>The first element is the period’s start point, a datetime value.</li>
+<li>The second element is either the period’s end point (a datetime value) or
+the period’s length (an interval value, in which case the end is computed
+as <code class="docutils literal notranslate"><span class="pre">start</span> <span class="pre">+</span> <span class="pre">interval</span></code>).</li>
+</ul>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-01-01'</span><span class="p">,</span> <span class="nb">DATE</span> <span class="s1">'2020-06-01'</span><span class="p">)</span> <span class="k">OVERLAPS</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-05-01'</span><span class="p">,</span> <span class="nb">DATE</span> <span class="s1">'2020-12-31'</span><span class="p">);</span>
+<span class="c1">-- true</span>
+
+<span class="k">SELECT</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-01-01'</span><span class="p">,</span> <span class="nb">DATE</span> <span class="s1">'2020-03-01'</span><span class="p">)</span> <span class="k">OVERLAPS</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-05-01'</span><span class="p">,</span> <span class="nb">DATE</span> <span class="s1">'2020-07-01'</span><span class="p">);</span>
+<span class="c1">-- false</span>
+
+<span class="k">SELECT</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-01-01'</span><span class="p">,</span> <span class="nb">INTERVAL</span> <span class="s1">'5'</span> <span class="k">MONTH</span><span class="p">)</span> <span class="k">OVERLAPS</span> <span class="p">(</span><span class="nb">DATE</span> <span class="s1">'2020-05-01'</span><span class="p">,</span> <span class="nb">INTERVAL</span> <span class="s1">'7'</span> <span class="k">MONTH</span><span class="p">);</span>
+<span class="c1">-- true</span>
+</pre></div>
+</div>
+<p>If the start and end of an operand are given in reverse, they are normalized
+before evaluation. The half-open semantics mean that periods which touch only
+at a boundary (one period’s end equal to the other’s start) do not overlap;
+however, two periods that share the same start point always overlap.</p>
+<p>If one endpoint of a period is <code class="docutils literal notranslate"><span class="pre">NULL</span></code>, the period is treated as open-ended on
+that side: its known endpoint still anchors the comparison, so the result is
+<code class="docutils literal notranslate"><span class="pre">true</span></code> whenever that known endpoint falls inside the other period, and <code class="docutils literal notranslate"><span class="pre">NULL</span></code>
+(unknown) only when the open side leaves the outcome undetermined.</p>
 
 
 <h2 id="date-and-time-functions">Date and time functions<a class="headerlink" href="#date-and-time-functions" title="Permalink to this heading">#</a></h2>
@@ -297,6 +331,7 @@ with <code class="docutils literal notranslate"><span class="pre">3</span></code
 <dt class="sig sig-object py" id="last_day_of_month">
 <code class="sig-name descname"><span class="pre">last_day_of_month</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">date</span></span></span><a class="headerlink" href="#last_day_of_month" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the last day of the month.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="from_iso8601_timestamp">
@@ -347,8 +382,9 @@ of year combined:</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="at_timezone">
-<code class="sig-name descname"><span class="pre">at_timezone</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">timestamp(p)</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></span></em>, <em><span class="n"><span class="pre">zone</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">timestamp(p)</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></span></span><a class="headerlink" href="#at_timezone" title="Permalink to this definition">#</a></dt>
-<dd><p>Converts a <code class="docutils literal notranslate"><span class="pre">timestamp(p)</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code> to a time zone specified in <code class="docutils literal notranslate"><span class="pre">zone</span></code>.</p>
+<code class="sig-name descname"><span class="pre">at_timezone</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em>, <em><span class="n"><span class="pre">zone</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">timestamp(p)</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></span></span><a class="headerlink" href="#at_timezone" title="Permalink to this definition">#</a></dt>
+<dd><p>Converts <code class="docutils literal notranslate"><span class="pre">x</span></code> to a time zone specified in <code class="docutils literal notranslate"><span class="pre">zone</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 <p>In the following example, the input timezone is <code class="docutils literal notranslate"><span class="pre">GMT</span></code>, which is seven hours
 ahead of <code class="docutils literal notranslate"><span class="pre">America/Los_Angeles</span></code> in November 2022:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span> <span class="n">at_timezone</span><span class="p">(</span><span class="k">TIMESTAMP</span> <span class="s1">'2022-11-01 09:08:07.321 GMT'</span><span class="p">,</span> <span class="s1">'America/Los_Angeles'</span><span class="p">)</span>
@@ -437,8 +473,9 @@ of the query, with <code class="docutils literal notranslate"><span class="pre">
 <dl class="py function">
 <dt class="sig sig-object py" id="to_iso8601">
 <code class="sig-name descname"><span class="pre">to_iso8601</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">varchar</span></span></span><a class="headerlink" href="#to_iso8601" title="Permalink to this definition">#</a></dt>
-<dd><p>Formats <code class="docutils literal notranslate"><span class="pre">x</span></code> as an ISO 8601 string. <code class="docutils literal notranslate"><span class="pre">x</span></code> can be date, timestamp, or
-timestamp with time zone.</p>
+<dd><p>Formats <code class="docutils literal notranslate"><span class="pre">x</span></code> as an ISO 8601 string.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">timezone</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="to_milliseconds">
@@ -897,6 +934,7 @@ field to be extracted. Most fields support all date and time types.</p>
 <dt class="sig sig-object py" id="day">
 <code class="sig-name descname"><span class="pre">day</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#day" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the day of the month from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="day_of_month">
@@ -908,12 +946,14 @@ field to be extracted. Most fields support all date and time types.</p>
 <code class="sig-name descname"><span class="pre">day_of_week</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#day_of_week" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the ISO day of the week from <code class="docutils literal notranslate"><span class="pre">x</span></code>.
 The value ranges from <code class="docutils literal notranslate"><span class="pre">1</span></code> (Monday) to <code class="docutils literal notranslate"><span class="pre">7</span></code> (Sunday).</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="day_of_year">
 <code class="sig-name descname"><span class="pre">day_of_year</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#day_of_year" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the day of the year from <code class="docutils literal notranslate"><span class="pre">x</span></code>.
 The value ranges from <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">366</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="dow">
@@ -930,32 +970,42 @@ The value ranges from <code class="docutils literal notranslate"><span class="pr
 <code class="sig-name descname"><span class="pre">hour</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#hour" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the hour of the day from <code class="docutils literal notranslate"><span class="pre">x</span></code>.
 The value ranges from <code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">23</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="millisecond">
 <code class="sig-name descname"><span class="pre">millisecond</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#millisecond" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the millisecond of the second from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="minute">
 <code class="sig-name descname"><span class="pre">minute</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#minute" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the minute of the hour from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="month">
 <code class="sig-name descname"><span class="pre">month</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#month" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the month of the year from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="quarter">
 <code class="sig-name descname"><span class="pre">quarter</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#quarter" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the quarter of the year from <code class="docutils literal notranslate"><span class="pre">x</span></code>.
 The value ranges from <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">4</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="second">
 <code class="sig-name descname"><span class="pre">second</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#second" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the second of the minute from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">time</span></code>, <code class="docutils literal notranslate"><span class="pre">time</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or
+<code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="timezone_hour">
@@ -972,6 +1022,7 @@ The value ranges from <code class="docutils literal notranslate"><span class="pr
 <code class="sig-name descname"><span class="pre">week</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#week" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the <a class="reference external" href="https://wikipedia.org/wiki/ISO_week_date" rel="noopener noreferrer" target="_blank">ISO week</a> of the year from <code class="docutils literal notranslate"><span class="pre">x</span></code>.
 The value ranges from <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">53</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="week_of_year">
@@ -982,11 +1033,13 @@ The value ranges from <code class="docutils literal notranslate"><span class="pr
 <dt class="sig sig-object py" id="year">
 <code class="sig-name descname"><span class="pre">year</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#year" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the year from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="year_of_week">
 <code class="sig-name descname"><span class="pre">year_of_week</span></code><span class="sig-paren">(</span><em><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#year_of_week" title="Permalink to this definition">#</a></dt>
 <dd><p>Returns the year of the <a class="reference external" href="https://wikipedia.org/wiki/ISO_week_date" rel="noopener noreferrer" target="_blank">ISO week</a> from <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>The type of <code class="docutils literal notranslate"><span class="pre">x</span></code> can be <code class="docutils literal notranslate"><span class="pre">date</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code> or <code class="docutils literal notranslate"><span class="pre">timestamp</span> <span class="pre">with</span> <span class="pre">time</span> <span class="pre">zone</span></code>.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="yow">
