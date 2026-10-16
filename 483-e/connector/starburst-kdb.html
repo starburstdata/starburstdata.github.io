@@ -274,7 +274,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#security-and-encryption">Security and encryption</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security-and-encryption">Security and encryption</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#password-credential-pass-through">Password credential pass-through</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="kudu.html">Kudu connector</a></li>
@@ -361,7 +364,10 @@
 <li><a class="reference internal" href="#pushdown">Pushdown</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#security-and-encryption">Security and encryption</a></li>
+<li><a class="reference internal" href="#security-and-encryption">Security and encryption</a><ul>
+<li><a class="reference internal" href="#password-credential-pass-through">Password credential pass-through</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -421,6 +427,8 @@ specifies the connector by setting the <code class="docutils literal notranslate
 <span class="na">kdb.password</span><span class="o">=</span><span class="s">secret</span>
 </pre></div>
 </div>
+<p>To authenticate to kdb+ with the credentials of each SEP user instead of a
+shared service account, use <a class="reference internal" href="#kdb-password-passthrough"><span class="std std-ref">Password credential pass-through</span></a>.</p>
 <section id="configuration-properties">
 <h3 id="configuration-properties">Configuration properties<a class="headerlink" href="#configuration-properties" title="Link to this heading">#</a></h3>
 <table id="id1">
@@ -445,13 +453,27 @@ specifies the connector by setting the <code class="docutils literal notranslate
 <td><p>TCP port of the kdb+ server. Must be between 1 and 65535.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">5000</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kdb.user</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kdb.authentication.type</span></code></p></td>
+<td><p>Authentication type to use for connections to the kdb+ server. Possible
+values are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> uses the static <code class="docutils literal notranslate"><span class="pre">kdb.user</span></code> and <code class="docutils literal notranslate"><span class="pre">kdb.password</span></code> credentials from
+the catalog properties file.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PASSWORD_PASS_THROUGH</span></code> uses the credentials of the user running the
+query. See <a class="reference internal" href="#kdb-password-passthrough"><span class="std std-ref">Password credential pass-through</span></a>.</p></li>
+</ul>
+</td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kdb.user</span></code></p></td>
 <td><p>Username for authenticating with the kdb+ server. If omitted, the
-connector connects without credentials.</p></td>
+connector connects without credentials. Must not be set when
+<code class="docutils literal notranslate"><span class="pre">kdb.authentication.type</span></code> is <code class="docutils literal notranslate"><span class="pre">PASSWORD_PASS_THROUGH</span></code>.</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kdb.password</span></code></p></td>
-<td><p>Password for authenticating with the kdb+ server.</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kdb.password</span></code></p></td>
+<td><p>Password for authenticating with the kdb+ server. Must not be set when
+<code class="docutils literal notranslate"><span class="pre">kdb.authentication.type</span></code> is <code class="docutils literal notranslate"><span class="pre">PASSWORD_PASS_THROUGH</span></code>.</p></td>
 <td></td>
 </tr>
 </tbody>
@@ -644,6 +666,37 @@ For large tables, this can result in significant data transfer.</p>
 <p>The current release uses an unencrypted TCP connection to kdb+. Deploy the
 connector only on trusted private networks or over an encrypted tunnel (for
 example, a VPN or SSH port forward).</p>
+<section id="password-credential-pass-through">
+<span id="kdb-password-passthrough"></span><h3 id="password-credential-pass-through">Password credential pass-through<a class="headerlink" href="#password-credential-pass-through" title="Link to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../security/password-passthrough.html"><span class="doc std std-doc">password credential
+pass-through</span></a>. With pass-through enabled,
+SEP sends the username and password of the user running the query to kdb+,
+rather than the shared <code class="docutils literal notranslate"><span class="pre">kdb.user</span></code> and <code class="docutils literal notranslate"><span class="pre">kdb.password</span></code> from the catalog properties
+file. kdb+ can then authenticate and audit access for each individual user.</p>
+<p>To enable password credential pass-through, set the authentication type in the
+catalog properties file and remove the static credentials:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">starburst_kdb</span>
+<span class="na">kdb.host</span><span class="o">=</span><span class="s">kdb-host.example.com</span>
+<span class="na">kdb.port</span><span class="o">=</span><span class="s">5000</span>
+<span class="na">kdb.authentication.type</span><span class="o">=</span><span class="s">PASSWORD_PASS_THROUGH</span>
+</pre></div>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Remove <code class="docutils literal notranslate"><span class="pre">kdb.user</span></code> and <code class="docutils literal notranslate"><span class="pre">kdb.password</span></code> from the catalog properties file. When
+<code class="docutils literal notranslate"><span class="pre">kdb.authentication.type</span></code> is <code class="docutils literal notranslate"><span class="pre">PASSWORD_PASS_THROUGH</span></code>, the connector doesn’t use
+these properties, and the catalog fails to start with an error such as
+<code class="docutils literal notranslate"><span class="pre">Configuration</span> <span class="pre">property</span> <span class="pre">'kdb.user'</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">used</span></code>.</p>
+</div>
+<p>Clients must supply the credentials with each query. To configure SEP to
+accept and forward them, and to supply them from the <a class="reference internal" href="../client/jdbc.html"><span class="doc std std-doc">JDBC driver</span></a>
+or the <a class="reference internal" href="../client/cli.html"><span class="doc std std-doc">CLI</span></a>, follow the steps in
+<a class="reference internal" href="../security/password-passthrough.html"><span class="doc std std-doc">Password credential pass-through</span></a>.</p>
+<p>Because user passwords are sent to SEP, use TLS-secured connections between
+clients and the cluster. See <a class="reference internal" href="../security/tls.html"><span class="doc std std-doc">TLS and HTTPS</span></a>.</p>
+<p>If a query runs without pass-through credentials, kdb+ refuses the connection
+and the query fails.</p>
+</section>
 </section>
 </section>
 
