@@ -996,17 +996,31 @@ testing and troubleshooting purposes.</p></td>
 </table>
 </section>
 <section id="predicate-pushdown-support">
-<h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Link to this heading">#</a></h4>
-<p>The connector does not support pushdown of any predicates on columns with
-<a class="reference internal" href="../language/types.html#string-data-types"><span class="std std-ref">textual types</span></a> like <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> or <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>.
-This ensures correctness of results since the data source may compare strings
-case-insensitively.</p>
-<p>In the following example, the predicate is not pushed down for either query
-since <code class="docutils literal notranslate"><span class="pre">name</span></code> is a column of type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">nation</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">'CANADA'</span><span class="p">;</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">nation</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'CANADA'</span><span class="p">;</span>
-</pre></div>
-</div>
+<span id="synapse-predicate-pushdown"></span><h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Link to this heading">#</a></h4>
+<p>The connector supports pushdown of predicates on <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> columns if the
+underlying columns in Synapse use a case-sensitive (<code class="docutils literal notranslate"><span class="pre">_CS_</span></code>) or binary (<code class="docutils literal notranslate"><span class="pre">_BIN</span></code>
+or <code class="docutils literal notranslate"><span class="pre">_BIN2</span></code>)
+<a class="reference external" href="https://learn.microsoft.com/sql/relational-databases/collations/collation-and-unicode-support">collation</a>.</p>
+<p>The following operators are pushed down:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">IN</span></code></p></li>
+</ul>
+<p>Synapse compares <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> values with PAD SPACE semantics,
+which ignore trailing spaces. For example, Synapse treats <code class="docutils literal notranslate"><span class="pre">'abc'</span></code> and <code class="docutils literal notranslate"><span class="pre">'abc</span> <span class="pre">'</span></code>
+as equal values, while SEP treats them as different values.</p>
+<p>For <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns and for columns that use a case-insensitive collation,
+the connector pushes down <code class="docutils literal notranslate"><span class="pre">=</span></code> and <code class="docutils literal notranslate"><span class="pre">IN</span></code> predicates to reduce the rows that
+Synapse returns. SEP then reapplies the predicate to the returned rows.</p>
+<p>The connector does not push down the following predicates on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> or
+<code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> columns with any collation:</p>
+<ul class="simple">
+<li><p>Inequality predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code>.</p></li>
+<li><p>Range predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">IN</span></code> predicates with more values than the domain compaction threshold.</p></li>
+</ul>
+<p>The connector does not push down join operations where the join condition uses
+an <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> column with a case-sensitive or binary collation.</p>
 </section>
 </section>
 <section id="starburst-cached-views">
