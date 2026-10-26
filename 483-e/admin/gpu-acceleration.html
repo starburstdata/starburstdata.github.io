@@ -59,7 +59,7 @@
 </script>
   
   
-    <title>GPU acceleration &#8212; Starburst Enterprise</title>
+    <title>GPU execution &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=bbebba6e" />
     <link rel="stylesheet" type="text/css" href="../_static/material.css?v=79c92029" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
@@ -128,7 +128,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 483-e STS</a>
-          <span class="md-header-nav__topic"> GPU acceleration </span>
+          <span class="md-header-nav__topic"> GPU execution </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -265,7 +265,7 @@
 <li class="toctree-l4"><a class="reference internal" href="dist-sort.html">Distributed sort</a></li>
 <li class="toctree-l4"><a class="reference internal" href="dynamic-filtering.html">Dynamic filtering</a></li>
 <li class="toctree-l4"><a class="reference internal" href="fault-tolerant-execution.html">Fault-tolerant execution</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">GPU acceleration</a><ul>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">GPU execution</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#requirements">Requirements</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#supported-data-sources">Supported data sources</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#supported-data-types">Supported data types</a></li>
@@ -333,7 +333,7 @@
   <div class="local-toc">
     <strong>Contents</strong>
     <ul>
-<li><a class="reference internal" href="#">GPU acceleration</a><ul>
+<li><a class="reference internal" href="#">GPU execution</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements</a></li>
 <li><a class="reference internal" href="#supported-data-sources">Supported data sources</a></li>
 <li><a class="reference internal" href="#supported-data-types">Supported data types</a></li>
@@ -358,54 +358,55 @@
         <div class="md-content">
           <article class="md-content__inner md-typeset" role="main">
             
-  <section id="gpu-acceleration">
-<span id="id1"></span><h1 id="admin-gpu-acceleration--page-root">GPU acceleration<a class="headerlink" href="#admin-gpu-acceleration--page-root" title="Link to this heading">#</a></h1>
+  <section id="gpu-execution">
+<span id="gpu-acceleration"></span><h1 id="admin-gpu-acceleration--page-root">GPU execution<a class="headerlink" href="#admin-gpu-acceleration--page-root" title="Link to this heading">#</a></h1>
+<p>Starburst Torin is the GPU execution engine in SEP. It improves query
+performance by offloading eligible parts of query processing to NVIDIA GPUs
+installed on worker nodes. SEP automatically decides how much of a given
+query to run on GPUs based on the query plan and input data, so no query
+changes are required. Performance gains vary by query, ranging from no
+improvement to an order of magnitude faster than running on CPU alone.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>GPU acceleration is a limited general availability (limited GA) feature. It is
-supported for production use only on qualified hardware configurations.</p>
+<p>Starburst Torin is supported for production use only on qualified hardware
+configurations.</p>
 </div>
-<p>GPU acceleration improves query performance in SEP by offloading eligible
-parts of query processing to Nvidia GPUs installed on worker nodes. SEP
-automatically decides how much of a given query to run on GPUs based on the
-query plan and input data, so no query changes are required. Performance
-gains vary by query, ranging from no improvement to an order of magnitude
-faster than running on CPU alone.</p>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
-<p>GPU acceleration requires the following:</p>
+<p>Torin requires the following:</p>
 <ul class="simple">
-<li><p>A supported Nvidia GPU (Ampere, Ada Lovelace, Hopper, or Blackwell
+<li><p>A supported NVIDIA GPU (Ampere, Ada Lovelace, Hopper, or Blackwell
 architecture) on each SEP worker. For example, the AWS EC2 <code class="docutils literal notranslate"><span class="pre">g6</span></code> and <code class="docutils literal notranslate"><span class="pre">g7e</span></code>
 instance families provide compatible GPU hardware.</p></li>
 <li><p>At least 24 GB of GPU memory (VRAM). 80 GB or more is recommended.</p></li>
 <li><p>SEP uses only one GPU per worker. On physical hosts with multiple
 GPUs, run multiple workers to take advantage of all of them.</p></li>
-<li><p>The Nvidia driver installed on each machine running a SEP worker. For
-Kubernetes deployments, install the <a class="reference external" href="https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html">Nvidia GPU
+<li><p><a class="reference external" href="https://docs.nvidia.com/cuda/">CUDA 13</a>, which SEP uses to run queries
+on the GPU.</p></li>
+<li><p>The NVIDIA driver installed on each machine running a SEP worker. For
+Kubernetes deployments, install the <a class="reference external" href="https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/getting-started.html">NVIDIA GPU
 operator</a>
 so the driver is loaded in each pod.</p></li>
 </ul>
 </section>
 <section id="supported-data-sources">
 <span id="gpu-acceleration-data-sources"></span><h2 id="supported-data-sources">Supported data sources<a class="headerlink" href="#supported-data-sources" title="Link to this heading">#</a></h2>
-<p>You can use GPU acceleration with data from most SEP <a class="reference internal" href="../connector.html"><span class="doc std std-doc">connectors</span></a>.
-The best
-performance is achieved with the <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg</span></a> and
-<a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive</span></a> connectors. The <a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta
-Lake</span></a> and <a class="reference internal" href="../connector/starburst-great-lakes.html"><span class="doc std std-doc">Great Lakes</span></a>
-connectors, and <a class="reference internal" href="../data-engineering/cost-and-performance/set-mode-ws.html"><span class="doc std std-doc">Starburst Warp Speed</span></a>,
-are not yet fully supported.</p>
+<p>You can use Torin with data from most SEP <a class="reference internal" href="../connector.html"><span class="doc std std-doc">connectors</span></a>. It is
+fully supported with the <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg</span></a>,
+<a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive</span></a>, <a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta Lake</span></a>, and
+<a class="reference internal" href="../connector/starburst-great-lakes.html"><span class="doc std std-doc">Great Lakes</span></a> connectors.
+<a class="reference internal" href="../data-engineering/cost-and-performance/set-mode-ws.html"><span class="doc std std-doc">Starburst Warp Speed</span></a> is not yet fully
+supported.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>For best performance, configure <a class="reference internal" href="../object-storage/file-system-cache.html"><span class="doc std std-doc">file system
 cache</span></a> on SSD-backed worker nodes for
-Iceberg and Hive catalogs.</p>
+Iceberg, Hive, and Delta Lake catalogs.</p>
 </div>
 </section>
 <section id="supported-data-types">
 <h2 id="supported-data-types">Supported data types<a class="headerlink" href="#supported-data-types" title="Link to this heading">#</a></h2>
-<p>GPU acceleration supports the following data types:</p>
+<p>Torin supports the following data types:</p>
 <ul class="simple">
 <li><p>Integers of all sizes: <code class="docutils literal notranslate"><span class="pre">TINYINT</span></code>, <code class="docutils literal notranslate"><span class="pre">SMALLINT</span></code>, <code class="docutils literal notranslate"><span class="pre">INTEGER</span></code>, <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></li>
 <li><p>Floating-point numbers: <code class="docutils literal notranslate"><span class="pre">REAL</span></code>, <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></li>
@@ -419,32 +420,40 @@ Iceberg and Hive catalogs.</p>
 </section>
 <section id="supported-query-operations">
 <h2 id="supported-query-operations">Supported query operations<a class="headerlink" href="#supported-query-operations" title="Link to this heading">#</a></h2>
-<p>GPU acceleration supports the following query operations:</p>
+<p>Torin supports the following query operations:</p>
 <ul class="simple">
 <li><p>Table scans</p></li>
 <li><p>Filters</p></li>
 <li><p>Projections</p></li>
 <li><p>Arithmetic and logical expressions</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">LIKE</span></code> patterns</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CASE</span></code> statements with a single <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clause</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CASE</span></code> statements</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">GROUP</span> <span class="pre">BY</span></code> clauses, and aggregate functions such as <code class="docutils literal notranslate"><span class="pre">min</span></code>, <code class="docutils literal notranslate"><span class="pre">max</span></code>, <code class="docutils literal notranslate"><span class="pre">sum</span></code>,
 <code class="docutils literal notranslate"><span class="pre">avg</span></code>, <code class="docutils literal notranslate"><span class="pre">count</span></code>, and <code class="docutils literal notranslate"><span class="pre">any_value</span></code></p></li>
-<li><p>Inner and left joins</p></li>
-<li><p>A limited subset of built-in scalar functions, such as <code class="docutils literal notranslate"><span class="pre">length</span></code>,
-<code class="docutils literal notranslate"><span class="pre">substring</span></code>, <code class="docutils literal notranslate"><span class="pre">date_trunc</span></code>, <code class="docutils literal notranslate"><span class="pre">regexp_replace</span></code>, and extracting the day, hour,
-minute, or second from a date or timestamp value</p></li>
+<li><p>Inner, left, right, and cross joins</p></li>
+<li><p>Window functions: <code class="docutils literal notranslate"><span class="pre">row_number</span></code>, <code class="docutils literal notranslate"><span class="pre">rank</span></code>, <code class="docutils literal notranslate"><span class="pre">dense_rank</span></code>, and <code class="docutils literal notranslate"><span class="pre">avg</span></code> on <code class="docutils literal notranslate"><span class="pre">DECIMAL</span></code>
+values</p></li>
+<li><p>A limited subset of built-in functions and expressions, including:</p>
+<ul>
+<li><p>String functions: <code class="docutils literal notranslate"><span class="pre">concat</span></code>, <code class="docutils literal notranslate"><span class="pre">length</span></code>, <code class="docutils literal notranslate"><span class="pre">lower</span></code>, <code class="docutils literal notranslate"><span class="pre">regexp_replace</span></code>, <code class="docutils literal notranslate"><span class="pre">replace</span></code>,
+<code class="docutils literal notranslate"><span class="pre">substring</span></code>, <code class="docutils literal notranslate"><span class="pre">trim</span></code>, and <code class="docutils literal notranslate"><span class="pre">upper</span></code></p></li>
+<li><p>Conditional and comparison functions: <code class="docutils literal notranslate"><span class="pre">coalesce</span></code>, <code class="docutils literal notranslate"><span class="pre">nullif</span></code>, and <code class="docutils literal notranslate"><span class="pre">least</span></code></p></li>
+<li><p>Date and time functions: <code class="docutils literal notranslate"><span class="pre">date_add</span></code>, <code class="docutils literal notranslate"><span class="pre">date_trunc</span></code>, <code class="docutils literal notranslate"><span class="pre">from_unixtime</span></code>,
+<code class="docutils literal notranslate"><span class="pre">last_day_of_month</span></code>, <code class="docutils literal notranslate"><span class="pre">to_unixtime</span></code>, and extracting the day, hour, minute,
+or second from a date or timestamp value</p></li>
+</ul>
+</li>
 <li><p><code class="docutils literal notranslate"><span class="pre">TopN</span></code> queries</p></li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Use <a class="reference internal" href="../sql/explain-analyze.html"><span class="doc std std-doc">EXPLAIN ANALYZE</span></a> to see which parts of a query
-plan ran on a GPU, and why any remaining parts were not eligible for GPU
-acceleration.</p>
+plan ran on a GPU, and why any remaining parts were not eligible for Torin.</p>
 </div>
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
-<p>Set the following configuration properties to enable GPU acceleration.</p>
+<p>Set the following configuration properties to enable Torin.</p>
 <p>In the coordinator’s <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> file:</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">gpu-execution</span><span class="o">=</span><span class="s">true</span>
 <span class="na">experimental.force-single-node-query</span><span class="o">=</span><span class="s">true</span>
@@ -454,8 +463,8 @@ acceleration.</p>
 <div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">task.gpu-execution.enabled</span><span class="o">=</span><span class="s">true</span>
 </pre></div>
 </div>
-<table id="id2">
-<caption><span class="caption-text">GPU acceleration configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<table id="id1">
+<caption><span class="caption-text">Torin configuration properties</span><a class="headerlink" href="#id1" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
@@ -487,10 +496,11 @@ fail at startup. GPU execution is not supported on the coordinator.</p>
 </div>
 <section id="catalog-configuration">
 <h3 id="catalog-configuration">Catalog configuration<a class="headerlink" href="#catalog-configuration" title="Link to this heading">#</a></h3>
-<p>For <a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive</span></a> and <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg</span></a> catalogs, tune
-the following properties to control split sizes for GPU-accelerated queries:</p>
-<table id="id3">
-<caption><span class="caption-text">GPU acceleration catalog configuration properties</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<p>For <a class="reference internal" href="../connector/hive.html"><span class="doc std std-doc">Hive</span></a>, <a class="reference internal" href="../connector/iceberg.html"><span class="doc std std-doc">Iceberg</span></a>, and <a class="reference internal" href="../connector/delta-lake.html"><span class="doc std std-doc">Delta
+Lake</span></a> catalogs, tune the following properties to control
+split sizes for queries that use Torin:</p>
+<table id="id2">
+<caption><span class="caption-text">Torin catalog configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 70%"/>
@@ -514,6 +524,14 @@ property: <code class="docutils literal notranslate"><span class="pre">max_split
 property: <code class="docutils literal notranslate"><span class="pre">max_split_size</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.experimental.composite-splits.enabled</span></code></p></td>
+<td><p>Improves performance when files are small. Equivalent session property:
+<code class="docutils literal notranslate"><span class="pre">experimental_composite_splits_enabled</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">delta.max-split-size</span></code></p></td>
+<td><p>Increases the split size for better performance. Equivalent session
+property: <code class="docutils literal notranslate"><span class="pre">max_split_size</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">delta.experimental.composite-splits.enabled</span></code></p></td>
 <td><p>Improves performance when files are small. Equivalent session property:
 <code class="docutils literal notranslate"><span class="pre">experimental_composite_splits_enabled</span></code>.</p></td>
 </tr>
@@ -559,12 +577,9 @@ GPU-enabled node group used by SEP workers, replacing
 <section id="monitoring">
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Link to this heading">#</a></h2>
 <p>GPU memory usage is available through JMX as <code class="docutils literal notranslate"><span class="pre">GpuDeviceStats</span></code> on each SEP
-worker. Retrieve the stats with a command such as:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-s<span class="w"> </span>http://&lt;worker-host&gt;:8080/v1/jmx/mbean/trino.operator.gpu:name<span class="o">=</span>GpuDeviceStats
-</pre></div>
-</div>
-<table id="id4">
-<caption><span class="caption-text">GPU acceleration JMX attributes</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+worker.</p>
+<table id="id3">
+<caption><span class="caption-text">Torin JMX attributes</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 25%"/>
 <col style="width: 15%"/>
@@ -611,22 +626,21 @@ including CUDA context overhead.</p></td>
 <section id="limitations">
 <h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
 <p>Queries against <a class="reference internal" href="../data-engineering/cost-and-performance/set-mode-ws.html"><span class="doc std std-doc">Starburst Warp Speed</span></a>
-catalogs do not benefit from GPU acceleration, regardless of the underlying
-source connector. See <a class="reference internal" href="#gpu-acceleration-data-sources"><span class="std std-ref">Supported data sources</span></a>
-for other connector restrictions.</p>
+catalogs don’t benefit from Torin, regardless of the underlying source
+connector.</p>
 <p>The following operations are not eligible to run on GPUs, and run on CPUs
 instead:</p>
 <ul class="simple">
 <li><p>Any non-<code class="docutils literal notranslate"><span class="pre">SELECT</span></code> portion of a query</p></li>
 <li><p>Unsupported SQL scalar functions</p></li>
 <li><p>Unsupported aggregation and window functions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">avg</span></code> window functions with a frame other than the default
+(<code class="docutils literal notranslate"><span class="pre">RANGE</span> <span class="pre">BETWEEN</span> <span class="pre">UNBOUNDED</span> <span class="pre">PRECEDING</span> <span class="pre">AND</span> <span class="pre">CURRENT</span> <span class="pre">ROW</span></code>)</p></li>
 <li><p>Custom user-defined functions (UDFs)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">RIGHT</span></code> and <code class="docutils literal notranslate"><span class="pre">CROSS</span></code> joins</p></li>
-<li><p>Table scans other than Iceberg and Hive tables using the Parquet file
-format</p></li>
+<li><p>Table scans other than Iceberg, Hive, and Delta Lake tables using the Parquet
+file format</p></li>
 <li><p>Data exchanges between workers</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">DISTINCT</span></code> clauses in <code class="docutils literal notranslate"><span class="pre">SELECT</span></code> clauses</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">CASE</span></code> statements with multiple <code class="docutils literal notranslate"><span class="pre">WHEN</span></code> clauses</p></li>
 <li><p>Unsupported data types, including <code class="docutils literal notranslate"><span class="pre">ROW</span></code>, <code class="docutils literal notranslate"><span class="pre">MAP</span></code>, <code class="docutils literal notranslate"><span class="pre">ARRAY</span></code>, and <code class="docutils literal notranslate"><span class="pre">JSON</span></code></p></li>
 </ul>
 </section>
