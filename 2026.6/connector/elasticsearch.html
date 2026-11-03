@@ -287,6 +287,8 @@
 <li class="toctree-l3"><a class="reference internal" href="#performance">Performance</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#parallelism">Parallelism</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#predicate-pushdown">Predicate pushdown</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#topn-push-down">TopN push down</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#aggregation-push-down">Aggregation push down</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#multi-field-pushdown">Multi-field pushdown</a></li>
 </ul>
 </li>
@@ -406,6 +408,8 @@
 <li><a class="reference internal" href="#performance">Performance</a><ul>
 <li><a class="reference internal" href="#parallelism">Parallelism</a></li>
 <li><a class="reference internal" href="#predicate-pushdown">Predicate pushdown</a></li>
+<li><a class="reference internal" href="#topn-push-down">TopN push down</a></li>
+<li><a class="reference internal" href="#aggregation-push-down">Aggregation push down</a></li>
 <li><a class="reference internal" href="#multi-field-pushdown">Multi-field pushdown</a></li>
 </ul>
 </li>
@@ -640,37 +644,42 @@ request</a>.</p></td>
 alive for scroll requests.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.request-timeout</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.aggregation-page-size</span></code></p></td>
+<td><p>Maximum number of buckets returned with each Elasticsearch aggregation
+request.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10000</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.request-timeout</span></code></p></td>
 <td><p>Timeout <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for all Elasticsearch requests.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10s</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.connect-timeout</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.connect-timeout</span></code></p></td>
 <td><p>Timeout <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> for all Elasticsearch connection
 attempts.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1s</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.backoff-init-delay</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.backoff-init-delay</span></code></p></td>
 <td><p>The minimum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> between backpressure retry
 attempts for a single request to Elasticsearch. Setting it too low can
 overwhelm an already struggling cluster.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">500ms</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.backoff-max-delay</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.backoff-max-delay</span></code></p></td>
 <td><p>The maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> between backpressure retry
 attempts for a single request to Elasticsearch.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">20s</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.max-retry-time</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.max-retry-time</span></code></p></td>
 <td><p>The maximum <a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">duration</span></a> across all retry attempts for a
 single request to Elasticsearch.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">30s</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.node-refresh-interval</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.node-refresh-interval</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> between requests to refresh the list of
 available Elasticsearch nodes.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.ignore-publish-address</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">elasticsearch.ignore-publish-address</span></code></p></td>
 <td><p>Disable using the address published by the Elasticsearch API to connect for
 queries. Some deployments map Elasticsearch ports to a random public port
 and enabling this property can help in these cases.</p></td>
@@ -957,8 +966,11 @@ these tasks. Only use passthrough queries to read data.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">query</span></code>: The query to execute, written in <a class="reference external" href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">Elastic Query
 DSL</a>.</p></li>
 </ul>
-<p>Once executed, the query returns a single row containing the resulting JSON
-payload returned by Elasticsearch.</p>
+<p>The function returns a single row with a <code class="docutils literal notranslate"><span class="pre">result</span></code> column of type <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>
+containing the JSON response from Elasticsearch. Trino does not reorder the hits
+within this response. Use the <code class="docutils literal notranslate"><span class="pre">sort</span></code> parameter in the query to specify the order
+of the hits. If you expand the hits into SQL rows, use <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span></code> in the
+outermost query to order those rows.</p>
 <p>For example, query the <code class="docutils literal notranslate"><span class="pre">example</span></code> catalog and use the <code class="docutils literal notranslate"><span class="pre">raw_query</span></code> table function
 to search for documents in the <code class="docutils literal notranslate"><span class="pre">orders</span></code> index where the country name is
 <code class="docutils literal notranslate"><span class="pre">ALGERIA</span></code> as defined as a JSON-formatted query matcher and passed to the
@@ -1047,7 +1059,52 @@ following data types:</p>
 </tr>
 </tbody>
 </table>
-<p>No other data types are supported for predicate push down.</p>
+<p>No other data types are supported.</p>
+<p>Predicate push down requires indexed values that match the values read by Trino.
+Predicates are processed in Trino for fields with a <code class="docutils literal notranslate"><span class="pre">null_value</span></code> replacement or
+<code class="docutils literal notranslate"><span class="pre">ignore_malformed:</span> <span class="pre">true</span></code>, keyword fields with <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> or a <code class="docutils literal notranslate"><span class="pre">normalizer</span></code>,
+scripted fields, fields rendered as raw JSON, and fields inside <code class="docutils literal notranslate"><span class="pre">nested</span></code> or
+disabled objects. Predicate push down is also disabled for <code class="docutils literal notranslate"><span class="pre">copy_to</span></code> target
+fields, runtime fields, and fields omitted by <code class="docutils literal notranslate"><span class="pre">_source</span></code> includes or excludes
+patterns. Other fields in these indexes remain eligible. Disabling <code class="docutils literal notranslate"><span class="pre">_source</span></code> or
+the root object disables predicate push down for all mapped fields. Aliases and
+wildcard tables require compatible field mappings in every index. Disabling
+<code class="docutils literal notranslate"><span class="pre">doc_values</span></code> alone does not disable predicate push down.</p>
+<p>The connector uses the effective <code class="docutils literal notranslate"><span class="pre">ignore_malformed</span></code> value for each field,
+including defaults from <code class="docutils literal notranslate"><span class="pre">index.mapping.ignore_malformed</span></code>. Explicit field
+settings override the index default. The index default does not affect field
+types that do not support <code class="docutils literal notranslate"><span class="pre">ignore_malformed</span></code>.</p>
+<p>These checks use the current mapping. Changing <code class="docutils literal notranslate"><span class="pre">ignore_malformed</span></code> to <code class="docutils literal notranslate"><span class="pre">false</span></code>
+does not repair malformed documents previously accepted by Elasticsearch.
+Elasticsearch also coerces numeric strings, so it indexes <code class="docutils literal notranslate"><span class="pre">"1.5"</span></code> in a <code class="docutils literal notranslate"><span class="pre">long</span></code>
+field as <code class="docutils literal notranslate"><span class="pre">1</span></code> while <code class="docutils literal notranslate"><span class="pre">_source</span></code> keeps <code class="docutils literal notranslate"><span class="pre">"1.5"</span></code>. Push down can bypass the source
+decoding errors Trino reports for these documents. Use <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">SESSION</span> <span class="pre">allow_pushdown_into_connectors</span> <span class="pre">=</span> <span class="pre">false</span></code> when querying an index that contains
+them.</p>
+<p>Floating-point predicates with a zero range bound are processed in Trino because
+Elasticsearch distinguishes positive and negative zero, while Trino treats them
+as equal. Predicates with nonzero bounds and null checks remain eligible for
+push down.</p>
+</section>
+<section id="topn-push-down">
+<h3 id="topn-push-down">TopN push down<a class="headerlink" href="#topn-push-down" title="Link to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../optimizer/pushdown.html#topn-pushdown"><span class="std std-ref">TopN push down</span></a> to improve query
+performance by pushing <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span> <span class="pre">...</span> <span class="pre">LIMIT</span></code> clauses to Elasticsearch for
+processing. TopN push down requires a column that supports predicate push down
+and has doc values enabled. <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> columns and the built-in columns
+are processed in Trino.</p>
+</section>
+<section id="aggregation-push-down">
+<h3 id="aggregation-push-down">Aggregation push down<a class="headerlink" href="#aggregation-push-down" title="Link to this heading">#</a></h3>
+<p>The connector supports <a class="reference internal" href="../optimizer/pushdown.html#aggregation-pushdown"><span class="std std-ref">aggregation push down</span></a> for
+queries with a single grouping set and the following functions:</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="../functions/aggregate.html#count" title="count"><code class="xref py py-func docutils literal notranslate"><span class="pre">count()</span></code></a></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#avg" title="avg"><code class="xref py py-func docutils literal notranslate"><span class="pre">avg()</span></code></a> on numeric types</p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#min" title="min"><code class="xref py py-func docutils literal notranslate"><span class="pre">min()</span></code></a> and <a class="reference internal" href="../functions/aggregate.html#max" title="max"><code class="xref py py-func docutils literal notranslate"><span class="pre">max()</span></code></a> on numeric types except <code class="docutils literal notranslate"><span class="pre">BIGINT</span></code></p></li>
+<li><p><a class="reference internal" href="../functions/aggregate.html#sum" title="sum"><code class="xref py py-func docutils literal notranslate"><span class="pre">sum()</span></code></a> on <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code></p></li>
+</ul>
+<p>Grouping columns and aggregate arguments have the same requirements as TopN
+push down, except that <code class="docutils literal notranslate"><span class="pre">REAL</span></code> and <code class="docutils literal notranslate"><span class="pre">DOUBLE</span></code> columns can be aggregate arguments.</p>
 </section>
 <section id="multi-field-pushdown">
 <span id="sb-elasticsearch-mf-pushdown-support"></span><h3 id="multi-field-pushdown">Multi-field pushdown<a class="headerlink" href="#multi-field-pushdown" title="Link to this heading">#</a></h3>
@@ -1061,7 +1118,7 @@ used for exact matching, filtering, sorting, and aggregations.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="nt">"product"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"type"</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">"text"</span><span class="p">,</span>
 <span class="w">    </span><span class="nt">"fields"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"product_code"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"keyword"</span><span class="w"> </span><span class="p">}</span><span class="w">  </span>
+<span class="w">      </span><span class="nt">"product_code"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"keyword"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 </pre></div>

@@ -237,6 +237,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#authentication">Authentication</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#username-and-password-authentication">Username and password authentication</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#external-authentication-sso">External authentication - SSO</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#oauth2-client-credentials-authentication">OAuth2 client credentials authentication</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#certificate-authentication">Certificate authentication</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#jwt-authentication">JWT authentication</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#kerberos-authentication">Kerberos authentication</a><ul>
@@ -348,6 +349,7 @@
 <li><a class="reference internal" href="#authentication">Authentication</a><ul>
 <li><a class="reference internal" href="#username-and-password-authentication">Username and password authentication</a></li>
 <li><a class="reference internal" href="#external-authentication-sso">External authentication - SSO</a></li>
+<li><a class="reference internal" href="#oauth2-client-credentials-authentication">OAuth2 client credentials authentication</a></li>
 <li><a class="reference internal" href="#certificate-authentication">Certificate authentication</a></li>
 <li><a class="reference internal" href="#jwt-authentication">JWT authentication</a></li>
 <li><a class="reference internal" href="#kerberos-authentication">Kerberos authentication</a><ul>
@@ -562,6 +564,28 @@ EMACS editors. Defaults to <code class="docutils literal notranslate"><span clas
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--extra-header</span></code></p></td>
 <td><p>HTTP header to add to the authenticated HTTP requests (property can be
 used multiple times; format is key=value).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--oauth2-client-id</span></code></p></td>
+<td><p>OAuth2 client ID for client credentials authentication. Requires
+<code class="docutils literal notranslate"><span class="pre">--oauth2-client-secret</span></code> to also be set.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--oauth2-client-secret</span></code></p></td>
+<td><p>Prompt for OAuth2 client secret for client credentials authentication. You
+can set the <code class="docutils literal notranslate"><span class="pre">TRINO_OAUTH2_CLIENT_SECRET</span></code> environment variable with the
+OAuth2 client secret value to avoid the prompt. For more information, see
+<a class="reference internal" href="#cli-oauth2-client-credentials-auth"><span class="std std-ref">OAuth2 client credentials authentication</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--oauth2-token-endpoint</span></code></p></td>
+<td><p>Optional <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL of the OAuth2 token endpoint that the client
+credentials are exchanged at. When set, the secret is only ever sent to
+this endpoint, and a token endpoint advertised by the server is used only
+when it matches this value. When not set, the token endpoint advertised by
+the server is used, and it must be an <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--oauth2-scope</span></code></p></td>
+<td><p>Optional OAuth2 scope requested for client credentials authentication.
+When set, it overrides the scope advertised by the server in its
+authentication challenge.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--http-proxy</span></code></p></td>
 <td><p>Configures the URL of the HTTP proxy to connect to Trino.</p></td>
@@ -778,6 +802,31 @@ authentication token remains valid. Token expiration depends on the external
 authentication type configuration.</p></li>
 <li><p>Expired tokens force you to log in again.</p></li>
 </ul>
+</section>
+<section id="oauth2-client-credentials-authentication">
+<span id="cli-oauth2-client-credentials-auth"></span><h3 id="oauth2-client-credentials-authentication">OAuth2 client credentials authentication<a class="headerlink" href="#oauth2-client-credentials-authentication" title="Link to this heading">#</a></h3>
+<p>OAuth2 client credentials authentication is used for non-interactive
+(machine-to-machine) authentication using the OAuth2 client credentials flow,
+as detailed in <a class="reference internal" href="../security/oauth2.html"><span class="doc">OAuth 2.0 authentication</span></a>. Unlike browser-based SSO, the client
+authenticates directly with a client ID and secret without user involvement.</p>
+<p>The following example connects to the server and prompts the CLI for your
+client secret:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>./trino https://trino.example.com --oauth2-client-id=myclientid --oauth2-client-secret
+</pre></div>
+</div>
+<p>The client secret is exchanged for a token at the OAuth2 token endpoint
+advertised by the server, which must be an <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL. To pin the token
+endpoint to a trusted value instead, set <code class="docutils literal notranslate"><span class="pre">--oauth2-token-endpoint</span></code>. The CLI then
+sends the secret only to that endpoint and rejects a server-advertised endpoint
+that does not match it.</p>
+<p>Alternatively, set the client secret as the value of the
+<code class="docutils literal notranslate"><span class="pre">TRINO_OAUTH2_CLIENT_SECRET</span></code> environment variable. Typically use single quotes
+to avoid problems with special characters such as <code class="docutils literal notranslate"><span class="pre">$</span></code>:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>export TRINO_OAUTH2_CLIENT_SECRET='MyClientSecret123!@#'
+</pre></div>
+</div>
+<p>If the <code class="docutils literal notranslate"><span class="pre">TRINO_OAUTH2_CLIENT_SECRET</span></code> environment variable is set, you are not
+prompted to provide a client secret to connect with the CLI.</p>
 </section>
 <section id="certificate-authentication">
 <span id="cli-certificate-auth"></span><h3 id="certificate-authentication">Certificate authentication<a class="headerlink" href="#certificate-authentication" title="Link to this heading">#</a></h3>

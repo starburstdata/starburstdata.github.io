@@ -1693,10 +1693,12 @@ Example: <code class="docutils literal notranslate"><span class="pre">dev</span>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.security</span></code></p></td>
 <td><p>The type of security to use (default: <code class="docutils literal notranslate"><span class="pre">NONE</span></code>). Possible values are <code class="docutils literal notranslate"><span class="pre">NONE</span></code>,
-<code class="docutils literal notranslate"><span class="pre">SIGV4</span></code>, <code class="docutils literal notranslate"><span class="pre">GOOGLE</span></code> or <code class="docutils literal notranslate"><span class="pre">OAUTH2</span></code>. <code class="docutils literal notranslate"><span class="pre">OAUTH2</span></code> requires either a <code class="docutils literal notranslate"><span class="pre">token</span></code> or
-<code class="docutils literal notranslate"><span class="pre">credential</span></code>. <code class="docutils literal notranslate"><span class="pre">SIGV4</span></code> signs requests with credentials from <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> if
-configured, otherwise from <code class="docutils literal notranslate"><span class="pre">s3.aws-access-key</span></code> and <code class="docutils literal notranslate"><span class="pre">s3.aws-secret-key</span></code> if
-set, and otherwise from the AWS default credentials provider chain.</p></td>
+<code class="docutils literal notranslate"><span class="pre">SIGV4</span></code>, <code class="docutils literal notranslate"><span class="pre">GOOGLE</span></code>, <code class="docutils literal notranslate"><span class="pre">OAUTH2</span></code> or <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code>. <code class="docutils literal notranslate"><span class="pre">OAUTH2</span></code> requires
+either a <code class="docutils literal notranslate"><span class="pre">token</span></code> or a <code class="docutils literal notranslate"><span class="pre">credential</span></code>. <code class="docutils literal notranslate"><span class="pre">SIGV4</span></code> signs requests with credentials
+from <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> if configured, otherwise from <code class="docutils literal notranslate"><span class="pre">s3.aws-access-key</span></code> and
+<code class="docutils literal notranslate"><span class="pre">s3.aws-secret-key</span></code> if set, and otherwise from the AWS default credentials
+provider chain. <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> forwards the OAuth2 access token of the
+user running the query to the REST catalog.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.session</span></code></p></td>
 <td><p>Session information included when communicating with the REST Catalog.
@@ -1746,7 +1748,26 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">true</s
 <td><p>Enables the OAuth2 Token Exchange flow for authenticating with the REST
 catalog. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.idp-name</span></code></p></td>
+<td><p>Name of the identity provider that issued the access token to forward with
+<code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> security. Use this property when multiple identity
+providers are configured. The name can only contain lowercase letters,
+digits, <code class="docutils literal notranslate"><span class="pre">-</span></code> and <code class="docutils literal notranslate"><span class="pre">_</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.enabled</span></code></p></td>
+<td><p>Exchange the user’s access token for a new token with the OAuth2 server
+configured in <code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.server-uri</span></code> before forwarding it
+to the REST catalog. Only used with <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> security. Defaults
+to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
+</tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.extra-credentials.prefix</span></code></p></td>
+<td><p>Prefix of the extra credentials to send as additional parameters in the
+token exchange request. The prefix is removed from the parameter names.
+For example, with the prefix <code class="docutils literal notranslate"><span class="pre">dbx</span></code>, the extra credential <code class="docutils literal notranslate"><span class="pre">dbx.client_id</span></code>
+is sent as the <code class="docutils literal notranslate"><span class="pre">client_id</span></code> parameter. Only used when
+<code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.enabled</span></code> is <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.extra-credentials.prefix</span></code></p></td>
 <td><p>The prefix for extra credential keys forwarded as additional parameters in the
 OAuth2 token exchange request.</p>
 <p><br/>When <code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.oauth2.token-exchange.enabled</span></code> is set to
@@ -1756,54 +1777,54 @@ example, set a credential with the <code class="docutils literal notranslate"><s
 principal UUID required for token exchange with Databricks.</p>
 </td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.vended-credentials-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.vended-credentials-enabled</span></code></p></td>
 <td><p>Use credentials provided by the REST backend for file system access.
 Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.nested-namespace-enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.nested-namespace-enabled</span></code></p></td>
 <td><p>Support querying objects under nested namespace.
 Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.view-endpoints-enabled</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.view-endpoints-enabled</span></code></p></td>
 <td><p>Enable view endpoints. Defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.server-assigned-table-location-enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.server-assigned-table-location-enabled</span></code></p></td>
 <td><p>Let the REST catalog server assign locations for created tables instead of
 computing a default location from the namespace location. Must be enabled
 for BigLake metastore, which assigns table locations with a random suffix
 and rejects client-chosen locations. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.signing-name</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.signing-name</span></code></p></td>
 <td><p>AWS SigV4 signing service name. Defaults to <code class="docutils literal notranslate"><span class="pre">execute-api</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.google-project-id</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.google-project-id</span></code></p></td>
 <td><p>Google Cloud project name. This property must be set when
 <code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.security</span></code> is set to <code class="docutils literal notranslate"><span class="pre">GOOGLE</span></code>. For example:
 <code class="docutils literal notranslate"><span class="pre">development-123456</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.case-insensitive-name-matching</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.case-insensitive-name-matching</span></code></p></td>
 <td><p>Match namespace, table, and view names case insensitively. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.case-insensitive-name-matching.cache-ttl</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.case-insensitive-name-matching.cache-ttl</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> for which case-insensitive namespace, table,
 and view names are cached. Defaults to <code class="docutils literal notranslate"><span class="pre">1m</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.ttl</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.ttl</span></code></p></td>
 <td><p><a class="reference internal" href="../admin/properties.html#prop-type-duration"><span class="std std-ref">Duration</span></a> to cache table and view metadata. Set to a
 non-zero value to enable it. Only takes effect when
 <code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.session</span></code> is set to <code class="docutils literal notranslate"><span class="pre">NONE</span></code>. The cache is silently
 disabled when set to <code class="docutils literal notranslate"><span class="pre">USER</span></code>, and is automatically disabled for any
 security mode whose properties vary by user. Defaults to <code class="docutils literal notranslate"><span class="pre">0m</span></code> (disabled).</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.maximum-size</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.maximum-size</span></code></p></td>
 <td><p>Maximum total <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">DataSize</span></a> of the metadata cache.
 Defaults to <code class="docutils literal notranslate"><span class="pre">200MB</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.maximum-entry-size</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.metastore-cache.maximum-entry-size</span></code></p></td>
 <td><p>Maximum <a class="reference internal" href="../admin/properties.html#prop-type-data-size"><span class="std std-ref">DataSize</span></a> of a single cached entry. Larger
 entries are served but not retained. Defaults to <code class="docutils literal notranslate"><span class="pre">10MB</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.http-headers</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.http-headers</span></code></p></td>
 <td><p>Additional <em>non-sensitive</em> HTTP headers to include with requests to the REST
 catalog. Example: <code class="docutils literal notranslate"><span class="pre">Header-1:</span> <span class="pre">value</span> <span class="pre">1,</span> <span class="pre">Header-2:</span> <span class="pre">value</span> <span class="pre">2</span></code>.</p></td>
 </tr>
@@ -1831,10 +1852,21 @@ BigLake metastore using an Iceberg REST catalog.</p>
 <span class="na">gcs.json-key-file-path</span><span class="o">=</span><span class="s">/path/to/gcs_keyfile.json</span>
 </pre></div>
 </div>
-<p><code class="docutils literal notranslate"><span class="pre">gcs.json-key-file-path</span></code> is optional. When omitted, <a class="reference external" href="https://cloud.google.com/docs/authentication/application-default-credentials">Application Default
+<p><code class="docutils literal notranslate"><span class="pre">gcs.json-key</span></code> and <code class="docutils literal notranslate"><span class="pre">gcs.json-key-file-path</span></code> are optional. When omitted,
+<a class="reference external" href="https://cloud.google.com/docs/authentication/application-default-credentials">Application Default
 Credentials</a>
 (ADC) are used, which supports GKE Workload Identity and other environment-based
 credential sources.</p>
+<p><code class="docutils literal notranslate"><span class="pre">iceberg.rest-catalog.security</span></code> must be <code class="docutils literal notranslate"><span class="pre">OAUTH2_PASSTHROUGH</span></code> to forward the
+OAuth2 access token of the user running the query to the REST catalog, instead
+of using a single token or credential for all users. Trino must be configured
+to obtain the user’s OAuth2 access token, otherwise the query fails:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">connector.name</span><span class="o">=</span><span class="s">iceberg</span>
+<span class="na">iceberg.catalog.type</span><span class="o">=</span><span class="s">rest</span>
+<span class="na">iceberg.rest-catalog.uri</span><span class="o">=</span><span class="s">https://iceberg-with-rest:8181</span>
+<span class="na">iceberg.rest-catalog.security</span><span class="o">=</span><span class="s">OAUTH2_PASSTHROUGH</span>
+</pre></div>
+</div>
 <section id="dynamic-configuration-passthrough">
 <span id="iceberg-rest-catalog-dynamic"></span><h4 id="dynamic-configuration-passthrough">Dynamic configuration passthrough<a class="headerlink" href="#dynamic-configuration-passthrough" title="Link to this heading">#</a></h4>
 <p>The Iceberg REST catalog supports dynamic configuration passthrough. To enable

@@ -321,6 +321,9 @@
 <li><a class="reference internal" href="#optimizer-min-input-size-per-task"><code class="docutils literal notranslate"><span class="pre">optimizer.min-input-size-per-task</span></code></a></li>
 <li><a class="reference internal" href="#optimizer-min-input-rows-per-task"><code class="docutils literal notranslate"><span class="pre">optimizer.min-input-rows-per-task</span></code></a></li>
 <li><a class="reference internal" href="#optimizer-use-cost-based-partitioning"><code class="docutils literal notranslate"><span class="pre">optimizer.use-cost-based-partitioning</span></code></a></li>
+<li><a class="reference internal" href="#optimizer-use-sub-plan-alternatives"><code class="docutils literal notranslate"><span class="pre">optimizer.use-sub-plan-alternatives</span></code></a></li>
+<li><a class="reference internal" href="#optimizer-masked-page-enabled"><code class="docutils literal notranslate"><span class="pre">optimizer.masked-page-enabled</span></code></a></li>
+<li><a class="reference internal" href="#experimental-query-distribution-mode"><code class="docutils literal notranslate"><span class="pre">experimental.query-distribution-mode</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -350,7 +353,7 @@ In the <code class="docutils literal notranslate"><span class="pre">files/coordi
 <h2 id="optimizer-dictionary-aggregation"><code class="docutils literal notranslate"><span class="pre">optimizer.dictionary-aggregation</span></code><a class="headerlink" href="#optimizer-dictionary-aggregation" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">boolean</span></a></p></li>
-<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">false</span></code></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
 <li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">dictionary_aggregation</span></code></p></li>
 </ul>
 <p>Enables optimization for aggregations on dictionaries.</p>
@@ -473,6 +476,8 @@ for any reason a cost could not be computed, the <code class="docutils literal n
 <ul class="simple">
 <li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-integer"><span class="std std-ref">integer</span></a></p></li>
 <li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">8</span></code></p></li>
+<li><p><strong>Minimum value:</strong> <code class="docutils literal notranslate"><span class="pre">2</span></code></p></li>
+<li><p><strong>Maximum value:</strong> <code class="docutils literal notranslate"><span class="pre">62</span></code></p></li>
 <li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">max_reordered_joins</span></code></p></li>
 </ul>
 <p>When optimizer.join-reordering-strategy is set to cost-based, this property determines
@@ -612,12 +617,15 @@ A value of <code class="docutils literal notranslate"><span class="pre">0</span>
 <li><p><strong>Min allowed value:</strong> <code class="docutils literal notranslate"><span class="pre">0MB</span></code></p></li>
 <li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">min_input_size_per_task</span></code></p></li>
 </ul>
-<p>The minimum input size required per task. This will help optimizer to determine hash
-partition count for joins and aggregations. Limiting hash partition count for small queries
-increases concurrency on large clusters where multiple small queries are running concurrently.
-The estimated value will always be between <code class="docutils literal notranslate"><span class="pre">min_hash_partition_count</span></code> and
-<code class="docutils literal notranslate"><span class="pre">max_hash_partition_count</span></code> session property.
-A value of <code class="docutils literal notranslate"><span class="pre">0MB</span></code> disables this optimization.</p>
+<p>The minimum input size required per task. This will help optimizer to determine
+hash partition count for joins and aggregations. Limiting hash partition count
+for small queries increases concurrency on large clusters where multiple small
+queries are running concurrently. The estimated value will always be between
+<code class="docutils literal notranslate"><span class="pre">min_hash_partition_count</span></code> and <code class="docutils literal notranslate"><span class="pre">max_hash_partition_count</span></code> session property. A
+value of <code class="docutils literal notranslate"><span class="pre">0MB</span></code> disables this optimization.</p>
+<p>A query whose estimated input is below this size and below half of
+<a class="reference internal" href="properties-resource-management.html#prop-resource-query-max-memory-per-node"><span class="std std-ref">query.max-memory-per-node</span></a> may also be planned as a single
+fragment; <code class="docutils literal notranslate"><span class="pre">0MB</span></code> disables that planning.</p>
 </section>
 <section id="optimizer-min-input-rows-per-task">
 <h2 id="optimizer-min-input-rows-per-task"><code class="docutils literal notranslate"><span class="pre">optimizer.min-input-rows-per-task</span></code><a class="headerlink" href="#optimizer-min-input-rows-per-task" title="Link to this heading">#</a></h2>
@@ -627,12 +635,15 @@ A value of <code class="docutils literal notranslate"><span class="pre">0MB</spa
 <li><p><strong>Min allowed value:</strong> <code class="docutils literal notranslate"><span class="pre">0</span></code></p></li>
 <li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">min_input_rows_per_task</span></code></p></li>
 </ul>
-<p>The minimum number of input rows required per task. This will help optimizer to determine hash
-partition count for joins and aggregations. Limiting hash partition count for small queries
-increases concurrency on large clusters where multiple small queries are running concurrently.
-The estimated value will always be between <code class="docutils literal notranslate"><span class="pre">min_hash_partition_count</span></code> and
-<code class="docutils literal notranslate"><span class="pre">max_hash_partition_count</span></code> session property.
-A value of <code class="docutils literal notranslate"><span class="pre">0</span></code> disables this optimization.</p>
+<p>The minimum number of input rows required per task. This will help optimizer to
+determine hash partition count for joins and aggregations. Limiting hash
+partition count for small queries increases concurrency on large clusters where
+multiple small queries are running concurrently. The estimated value will always
+be between <code class="docutils literal notranslate"><span class="pre">min_hash_partition_count</span></code> and <code class="docutils literal notranslate"><span class="pre">max_hash_partition_count</span></code> session
+property. A value of <code class="docutils literal notranslate"><span class="pre">0</span></code> disables this optimization.</p>
+<p>A query with a plan node estimated at this many rows or more, and at more rows
+than its table scans read, is not planned as a single fragment; <code class="docutils literal notranslate"><span class="pre">0</span></code> disables
+that planning.</p>
 </section>
 <section id="optimizer-use-cost-based-partitioning">
 <h2 id="optimizer-use-cost-based-partitioning"><code class="docutils literal notranslate"><span class="pre">optimizer.use-cost-based-partitioning</span></code><a class="headerlink" href="#optimizer-use-cost-based-partitioning" title="Link to this heading">#</a></h2>
@@ -641,8 +652,58 @@ A value of <code class="docutils literal notranslate"><span class="pre">0</span>
 <li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
 <li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">use_cost_based_partitioning</span></code></p></li>
 </ul>
-<p>When enabled the cost based optimizer is used to determine if repartitioning the output of an
-already partitioned stage is necessary.</p>
+<p>When enabled the cost based optimizer is used to determine if repartitioning the
+output of an already partitioned stage is necessary.</p>
+</section>
+<section id="optimizer-use-sub-plan-alternatives">
+<h2 id="optimizer-use-sub-plan-alternatives"><code class="docutils literal notranslate"><span class="pre">optimizer.use-sub-plan-alternatives</span></code><a class="headerlink" href="#optimizer-use-sub-plan-alternatives" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">boolean</span></a></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
+<li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">use_sub_plan_alternatives</span></code></p></li>
+</ul>
+<p>When enabled the optimizer might create several sub-plan alternatives.</p>
+</section>
+<section id="optimizer-masked-page-enabled">
+<h2 id="optimizer-masked-page-enabled"><code class="docutils literal notranslate"><span class="pre">optimizer.masked-page-enabled</span></code><a class="headerlink" href="#optimizer-masked-page-enabled" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">boolean</span></a></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
+<li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">masked_page_enabled</span></code></p></li>
+</ul>
+<p>Enable late materialization between supporting operators by passing undecoded
+“masked” pages, so that a consumer can defer decoding of columns it may not
+need. For example, an <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span> <span class="pre">...</span> <span class="pre">LIMIT</span> <span class="pre">n</span></code> query reads only the sort columns
+to decide which rows can enter the result, and decodes the remaining selected
+columns only for the rows that survive. This reduces work when most rows are
+discarded by the <code class="docutils literal notranslate"><span class="pre">LIMIT</span></code>.</p>
+</section>
+<section id="experimental-query-distribution-mode">
+<h2 id="experimental-query-distribution-mode"><code class="docutils literal notranslate"><span class="pre">experimental.query-distribution-mode</span></code><a class="headerlink" href="#experimental-query-distribution-mode" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-string"><span class="std std-ref">string</span></a></p></li>
+<li><p><strong>Allowed values:</strong> <code class="docutils literal notranslate"><span class="pre">DISTRIBUTED</span></code>, <code class="docutils literal notranslate"><span class="pre">SINGLE_NODE</span></code>, <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">DISTRIBUTED</span></code></p></li>
+<li><p><strong>Session property:</strong> <code class="docutils literal notranslate"><span class="pre">query_distribution_mode</span></code></p></li>
+</ul>
+<p>Whether a query runs on a single node, which skips remote exchanges at the cost
+of cross-node parallelism and data locality.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DISTRIBUTED</span></code> plans every query across the cluster.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SINGLE_NODE</span></code> runs every query on a single node.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> runs a query on a single node when the estimated output of its
+table scans, and of every plan node, is below
+<code class="docutils literal notranslate"><span class="pre">optimizer.min-input-size-per-task</span></code> and below half of
+<a class="reference internal" href="properties-resource-management.html#prop-resource-query-max-memory-per-node"><span class="std std-ref">query.max-memory-per-node</span></a>, and when every plan node is
+estimated at fewer rows than <code class="docutils literal notranslate"><span class="pre">optimizer.min-input-rows-per-task</span></code> or at no more
+rows than the table scans read. A query stays distributed when an estimate is
+unknown, when its input is not read from a table, or when tasks are retried
+(<code class="docutils literal notranslate"><span class="pre">retry-policy</span></code> set to <code class="docutils literal notranslate"><span class="pre">TASK</span></code>). A write stays distributed as well, because the
+plan node that commits it has no estimate.</p></li>
+</ul>
+<p>Under <code class="docutils literal notranslate"><span class="pre">SINGLE_NODE</span></code> and <code class="docutils literal notranslate"><span class="pre">AUTOMATIC</span></code> alike, a query that reads a table whose
+connector does not support single node execution, such as a system table, stays
+distributed.</p>
 </section>
 </section>
 

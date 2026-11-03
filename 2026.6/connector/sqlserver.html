@@ -803,7 +803,7 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">20s</sp
 <p>The optional parameter <code class="docutils literal notranslate"><span class="pre">query.comment-format</span></code> allows you to configure a SQL
 comment that is sent to the data source with each query. The format of this
 comment can contain letters, digits, underscores, hyphens, commas, spaces, equal
-signs, and the following metadata placeholders:</p>
+signs, and the following metadata:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">$QUERY_ID</span></code>: The identifier of the query.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">$USER</span></code>: The name of the user who submits the query to Trino.</p></li>
@@ -832,7 +832,7 @@ sent to the data source with the comment appended:</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">Jane</span></code> sent the query with the query identifier
 <code class="docutils literal notranslate"><span class="pre">20230622_180528_00000_bkizg</span></code>, the following comment string is sent to the
 data source:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SELECT * FROM example_table; /*Query 20230622_180528_00000_bkizg sent by user Jane from Trino.*/
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>SELECT * FROM example_table; /*Query 20230622_180528_00000_bkizg sent by user Jane from Trino*/
 </pre></div>
 </div>
 <div class="admonition note">
@@ -1679,18 +1679,21 @@ testing and troubleshooting purposes.</p></td>
 </section>
 <section id="predicate-pushdown-support">
 <h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Link to this heading">#</a></h4>
-<p>The connector supports pushdown of predicates on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code>
-columns if the underlying columns in SQL Server use a case-sensitive
-<a class="reference external" href="https://learn.microsoft.com/sql/relational-databases/collations/collation-and-unicode-support?view=sql-server-ver16">collation</a>.</p>
-<p>The following operators are pushed down:</p>
+<p>SQL Server compares character values with PAD SPACE semantics and with the column
+<a class="reference external" href="https://learn.microsoft.com/en-us/sql/relational-databases/collations/collation-and-unicode-support?view=sql-server-ver16">collation</a>,
+so it can match values that Trino, which compares <code class="docutils literal notranslate"><span class="pre">varchar</span></code> with NO PAD and is always
+case-sensitive, treats as different. Pushdown on character columns is restricted accordingly:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">IN</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code></p></li>
+<li><p>Fully pushed down, only on <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">NCHAR</span></code> columns with a case-sensitive
+collation: <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">IN</span></code>, and <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code> against a literal, and <code class="docutils literal notranslate"><span class="pre">IN</span></code>, <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code>, and <code class="docutils literal notranslate"><span class="pre">NULLIF</span></code> between two such columns.</p></li>
+<li><p>Pushed down only as a pre-filter that Trino re-checks, on all other character
+columns: <code class="docutils literal notranslate"><span class="pre">=</span></code> and <code class="docutils literal notranslate"><span class="pre">IN</span></code> against a literal. The query is not fully pushed down.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> join conditions on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> columns are not pushed down.</p></li>
+<li><p>Range predicates, such as <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>, are never pushed down on character columns.</p></li>
 </ul>
-<p>To ensure correct results, operators are not pushed down for columns using a
-case-insensitive collation.</p>
+<p>A collation counts as case-sensitive if its name contains <code class="docutils literal notranslate"><span class="pre">_CS</span></code> or <code class="docutils literal notranslate"><span class="pre">_BIN</span></code>, which
+still allows it to be accent-, width-, or kana-insensitive. Use a <code class="docutils literal notranslate"><span class="pre">_BIN2</span></code>
+collation to match Trino exactly.</p>
 </section>
 </section>
 <section id="bulk-insert">
