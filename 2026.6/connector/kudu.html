@@ -272,6 +272,18 @@
 <li class="toctree-l2"><a class="reference internal" href="starburst-kdb.html">KDB+ connector</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Kudu connector</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#upgrade-from-sep-483-e-to-sep-2026-6-0">Upgrade from SEP 483-e to SEP 2026.6.0</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#what-changes">What changes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#before-you-upgrade">Before you upgrade</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#install-the-plugin">Install the plugin</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#kubernetes-plugin-from-a-pvc">Kubernetes: Plugin from a PVC</a></li>
+</ul>
+</li>
+<li class="toctree-l4"><a class="reference internal" href="#upgrade-steps">Upgrade steps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rollback">Rollback</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-was-tested">What was tested</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#configuration-properties">Configuration properties</a></li>
 </ul>
@@ -393,6 +405,18 @@
     <ul>
 <li><a class="reference internal" href="#">Starburst Kudu connector</a><ul>
 <li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#upgrade-from-sep-483-e-to-sep-2026-6-0">Upgrade from SEP 483-e to SEP 2026.6.0</a><ul>
+<li><a class="reference internal" href="#what-changes">What changes</a></li>
+<li><a class="reference internal" href="#before-you-upgrade">Before you upgrade</a></li>
+<li><a class="reference internal" href="#install-the-plugin">Install the plugin</a><ul>
+<li><a class="reference internal" href="#kubernetes-plugin-from-a-pvc">Kubernetes: Plugin from a PVC</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#upgrade-steps">Upgrade steps</a></li>
+<li><a class="reference internal" href="#rollback">Rollback</a></li>
+<li><a class="reference internal" href="#what-was-tested">What was tested</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#configuration">Configuration</a><ul>
 <li><a class="reference internal" href="#configuration-properties">Configuration properties</a></li>
 </ul>
@@ -459,6 +483,14 @@ Kudu</a>.</p>
 existing Trino connector functionality. For more information on connector key
 feature differences between Trino and SEP, see the <a class="reference internal" href="starburst-connectors.html#sb-connectors-rdbms"><span class="std std-ref">connectors feature
 matrix</span></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The Kudu connector isn’t included with SEP. Before you can create a Kudu
+catalog, you must <a class="reference internal" href="#kudu-installation"><span class="std std-ref">install the Kudu connector plugin</span></a> on
+every node. SEP releases before 2026.6.0 include the connector. Upgrading
+from one of these releases removes it. To keep using your Kudu catalogs, follow
+the steps in <a class="reference internal" href="#kudu-upgrade"><span class="std std-ref">Upgrade from SEP 483-e to SEP 2026.6.0</span></a>.</p>
+</div>
 <section id="requirements">
 <h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h2>
 <p>To connect to Kudu, you need:</p>
@@ -466,8 +498,180 @@ matrix</span></a>.</p>
 <li><p>Kudu version 1.13.0 or higher.</p></li>
 <li><p>Network access from the Trino coordinator and workers to Kudu. Port 7051 is
 the default port.</p></li>
+<li><p>The Kudu connector plugin, installed on every node. See
+<a class="reference internal" href="#kudu-installation"><span class="std std-ref">Install the plugin</span></a>.</p></li>
 <li><p>A valid <a class="reference internal" href="../license-requirements.html"><span class="doc std std-doc">Starburst Enterprise license</span></a>.</p></li>
 </ul>
+</section>
+<section id="upgrade-from-sep-483-e-to-sep-2026-6-0">
+<span id="kudu-upgrade"></span><h2 id="upgrade-from-sep-483-e-to-sep-2026-6-0">Upgrade from SEP 483-e to SEP 2026.6.0<a class="headerlink" href="#upgrade-from-sep-483-e-to-sep-2026-6-0" title="Link to this heading">#</a></h2>
+<p>Starting with SEP 2026.6.0, the Kudu connector is no longer bundled in the
+SEP image. It ships as a separate plugin, <code class="docutils literal notranslate"><span class="pre">starburst-kudu</span></code>. Catalogs, data,
+and queries stay the same. The only new step is installing the plugin.</p>
+<section id="what-changes">
+<h3 id="what-changes">What changes<a class="headerlink" href="#what-changes" title="Link to this heading">#</a></h3>
+<table>
+<colgroup>
+<col style="width: 30%"/>
+<col style="width: 35%"/>
+<col style="width: 35%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>SEP 483-e</p></th>
+<th class="head"><p>SEP 2026.6.0+</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Kudu connector</p></td>
+<td><p>Bundled in <code class="docutils literal notranslate"><span class="pre">plugin/kudu</span></code></p></td>
+<td><p><strong>Not bundled. Install the plugin yourself.</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>Catalog <code class="docutils literal notranslate"><span class="pre">connector.name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">kudu</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">kudu</span></code> (unchanged)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kudu.*</span></code> catalog properties</p></td>
+<td></td>
+<td><p>Same set. None are renamed or removed. See, <a class="reference internal" href="#kudu-tested"><span class="std std-ref">What was tested</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Kudu client</p></td>
+<td><p>Bundled 483-e build</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1.18.1-e.1</span></code> (Netty 4.1.138.Final)</p></td>
+</tr>
+<tr class="row-even"><td><p>Plugin version</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">483-e</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2026.6.0</span></code>. One plugin release serves the whole 2026.6.0 line.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="before-you-upgrade">
+<span id="kudu-before-upgrade"></span><h3 id="before-you-upgrade">Before you upgrade<a class="headerlink" href="#before-you-upgrade" title="Link to this heading">#</a></h3>
+<ol class="arabic simple">
+<li><p><strong>Get the plugin.</strong> Download
+<a class="reference external" href="https://software.starburstdata.net/2026.6/2026.6.0/plugins/plugin-kudu_2026.6.0.zip"><code class="docutils literal notranslate"><span class="pre">plugin-kudu_2026.6.0.zip</span></code></a>,
+which is in the same location as the other plugins.</p></li>
+<li><p><strong>Do not start 2026.6.0 without the plugin.</strong> If any catalog uses
+<code class="docutils literal notranslate"><span class="pre">connector.name=kudu</span></code> and the plugin is missing, the coordinator and workers
+exit at startup with exit code <code class="docutils literal notranslate"><span class="pre">100</span></code> and the following error:
+<code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">factory</span> <span class="pre">for</span> <span class="pre">connector</span> <span class="pre">'kudu'.</span> <span class="pre">Available</span> <span class="pre">factories:</span> <span class="pre">[...]</span></code></p></li>
+<li><p>Keep your existing catalog files unchanged.</p></li>
+<li><p>Check that <code class="docutils literal notranslate"><span class="pre">kudu.schema-emulation.enabled</span></code> is not set. SEP 483-e already
+rejects this property. Use <code class="docutils literal notranslate"><span class="pre">kudu.schema-emulation.type</span></code> instead.</p></li>
+</ol>
+</section>
+<section id="install-the-plugin">
+<span id="kudu-installation"></span><h3 id="install-the-plugin">Install the plugin<a class="headerlink" href="#install-the-plugin" title="Link to this heading">#</a></h3>
+<p>The ZIP file is flat (JAR files at the root, no folder), like the other
+<code class="docutils literal notranslate"><span class="pre">plugin-*</span></code> ZIP files. Unpack it into a <code class="docutils literal notranslate"><span class="pre">kudu</span></code> directory under the SEP plugin
+directory on <strong>every</strong> node, including the coordinator and all workers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>/usr/lib/starburst/plugin/kudu
+unzip<span class="w"> </span>plugin-kudu_2026.6.0.zip<span class="w"> </span>-d<span class="w"> </span>/usr/lib/starburst/plugin/kudu
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Do not leave a ZIP file in <code class="docutils literal notranslate"><span class="pre">plugin/</span></code>. SEP does not read ZIP files.</p></li>
+<li><p>Docker: Build the plugin into your image, or mount the unpacked directory at
+<code class="docutils literal notranslate"><span class="pre">/usr/lib/starburst/plugin/kudu</span></code>.</p></li>
+<li><p>Kubernetes with Helm: Mount a PersistentVolumeClaim (PVC) that holds the
+unpacked plugin at <code class="docutils literal notranslate"><span class="pre">/usr/lib/starburst/plugin/kudu</span></code> on the coordinator and
+all workers. See <a class="reference internal" href="#kudu-installation-kubernetes"><span class="std std-ref">Kubernetes: Plugin from a PVC</span></a>.</p></li>
+</ul>
+<section id="kubernetes-plugin-from-a-pvc">
+<span id="kudu-installation-kubernetes"></span><h4 id="kubernetes-plugin-from-a-pvc">Kubernetes: Plugin from a PVC<a class="headerlink" href="#kubernetes-plugin-from-a-pvc" title="Link to this heading">#</a></h4>
+<ol class="arabic">
+<li><p>Create a PVC that the coordinator and all workers can mount. Use
+<code class="docutils literal notranslate"><span class="pre">ReadOnlyMany</span></code> or <code class="docutils literal notranslate"><span class="pre">ReadWriteMany</span></code> access, because several pods mount the PVC
+at the same time.</p></li>
+<li><p>Unpack <code class="docutils literal notranslate"><span class="pre">plugin-kudu_2026.6.0.zip</span></code> into the root of that volume, so that the
+JAR files are directly in it with no subfolder. For example, use a one-off
+Job or pod that mounts the PVC and runs <code class="docutils literal notranslate"><span class="pre">unzip</span></code>.</p></li>
+<li><p>Mount the PVC through the chart’s <a class="reference internal" href="../k8s/sep-configuration.html#helm-sep-volumes"><span class="std std-ref"><code class="docutils literal notranslate"><span class="pre">additionalVolumes</span></code></span></a>
+node, which applies to the coordinator and the workers:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">additionalVolumes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/lib/starburst/plugin/kudu</span>
+<span class="w">    </span><span class="nt">volume</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">persistentVolumeClaim</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">claimName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sep-kudu-plugin</span>
+<span class="w">        </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>To upgrade the plugin later, load the new version into a new PVC, change
+<code class="docutils literal notranslate"><span class="pre">claimName</span></code>, and then perform a rolling restart of the pods.</p>
+</section>
+</section>
+<section id="upgrade-steps">
+<h3 id="upgrade-steps">Upgrade steps<a class="headerlink" href="#upgrade-steps" title="Link to this heading">#</a></h3>
+<ol class="arabic">
+<li><p>Stop the cluster.</p></li>
+<li><p>Upgrade SEP to 2026.6.0.</p></li>
+<li><p>Install the plugin on every node. See <a class="reference internal" href="#kudu-installation"><span class="std std-ref">Install the plugin</span></a>.</p></li>
+<li><p>Start the cluster. The log shows the following lines, in order:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>-- Loading plugin kudu --
+Installing com.starburstdata.presto.plugin.kudu.StarburstKuduPlugin
+Registering connector kudu
+-- Loading catalog kudu --
+======== SERVER STARTED ========
+</pre></div>
+</div>
+</li>
+<li><p>Run test queries: <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">TABLES</span> <span class="pre">FROM</span> <span class="pre">kudu.&lt;schema&gt;;</span></code>, a <code class="docutils literal notranslate"><span class="pre">SELECT</span></code>, an
+<code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, an <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, and a <code class="docutils literal notranslate"><span class="pre">DELETE</span></code>.</p></li>
+</ol>
+</section>
+<section id="rollback">
+<h3 id="rollback">Rollback<a class="headerlink" href="#rollback" title="Link to this heading">#</a></h3>
+<p>Stop the cluster and start SEP 483-e again. The 483-e image bundles the
+previous version of the plugin. The upgrade doesn’t change anything in Kudu.
+SEP 483-e correctly reads tables that 2026.6.0 wrote to.</p>
+</section>
+<section id="what-was-tested">
+<span id="kudu-tested"></span><h3 id="what-was-tested">What was tested<a class="headerlink" href="#what-was-tested" title="Link to this heading">#</a></h3>
+<p>Starburst tested the SEP images <code class="docutils literal notranslate"><span class="pre">starburstdata/starburst-enterprise:483-e</span></code>
+and <code class="docutils literal notranslate"><span class="pre">:2026.6.0</span></code> (arm64) against Kudu 1.17 (<code class="docutils literal notranslate"><span class="pre">apache/kudu</span></code>, one master, one
+tablet server) in Docker, with the released <code class="docutils literal notranslate"><span class="pre">starburst-kudu</span></code> 2026.6.0 plugin.</p>
+<table>
+<colgroup>
+<col style="width: 70%"/>
+<col style="width: 30%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Check</p></th>
+<th class="head"><p>Result</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>483-e starts, creates a table, and inserts 3 rows.</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-odd"><td><p>2026.6.0 with the plugin starts and loads <code class="docutils literal notranslate"><span class="pre">StarburstKuduPlugin</span></code>.</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-even"><td><p>2026.6.0 reads the table created by 483-e (rows, sum, <code class="docutils literal notranslate"><span class="pre">SHOW</span> <span class="pre">CREATE</span> <span class="pre">TABLE</span></code>).</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-odd"><td><p>2026.6.0 runs <code class="docutils literal notranslate"><span class="pre">INSERT</span></code>, <code class="docutils literal notranslate"><span class="pre">UPDATE</span></code>, and <code class="docutils literal notranslate"><span class="pre">DELETE</span></code> on that table.</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-even"><td><p>2026.6.0 creates a new table and runs <code class="docutils literal notranslate"><span class="pre">INSERT</span> <span class="pre">...</span> <span class="pre">SELECT</span></code>.</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-odd"><td><p>483-e reads the data after 2026.6.0 modified it (rollback).</p></td>
+<td><p>Pass</p></td>
+</tr>
+<tr class="row-even"><td><p>Catalog properties: 483-e compared to the 2026.6.0 plugin.</p></td>
+<td><p>Same 10 <code class="docutils literal notranslate"><span class="pre">kudu.*</span></code> properties</p></td>
+</tr>
+<tr class="row-odd"><td><p>2026.6.0 without the plugin.</p></td>
+<td><p>Fails at startup with exit code <code class="docutils literal notranslate"><span class="pre">100</span></code> (expected, see
+<a class="reference internal" href="#kudu-before-upgrade"><span class="std std-ref">Before you upgrade</span></a>).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="configuration">
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
