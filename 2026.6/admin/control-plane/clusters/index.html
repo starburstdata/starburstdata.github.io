@@ -77,7 +77,7 @@
     <link rel="icon" href="../../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Catalogs on control plane" href="../catalogs/index.html" />
+    <link rel="next" title="Cluster requirements" href="cluster-requirements.html" />
     <link rel="prev" title="Configure a secrets provider" href="../install/secrets-provider.html" />
 
   
@@ -221,7 +221,17 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../get-started/index.html">About control plane</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Control plane installation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Clusters and cluster groups</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Clusters and cluster groups</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cluster-requirements.html">Cluster requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="connect-cluster.html">Connect a cluster to control plane</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manage-cluster-groups.html">Manage cluster groups</a></li>
+<li class="toctree-l2"><a class="reference internal" href="manage-clusters.html">Manage clusters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cluster-status.html">Monitor cluster status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verify-troubleshoot.html">Verify and troubleshoot load balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-load-balancing-works">How load balancing works</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#clusters-pane">Clusters pane</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../catalogs/index.html">Catalogs on control plane</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../routing/index.html">Routing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../lakeops/index.html">Icehouse LakeOps</a></li>
@@ -309,7 +319,11 @@
     <strong>Contents</strong>
     
     <ul>
-<li><a class="reference internal" href="#">Clusters and cluster groups</a></li>
+<li><a class="reference internal" href="#">Clusters and cluster groups</a><ul>
+<li><a class="reference internal" href="#how-load-balancing-works">How load balancing works</a></li>
+<li><a class="reference internal" href="#clusters-pane">Clusters pane</a></li>
+</ul>
+</li>
 </ul>
 
   </div>
@@ -323,10 +337,55 @@
             
   <section id="clusters-and-cluster-groups">
 <h1 id="admin-control-plane-clusters-index--page-root">Clusters and cluster groups<a class="headerlink" href="#admin-control-plane-clusters-index--page-root" title="Link to this heading">#</a></h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The previous name of the Starburst Control Plane was Starburst Portal.</p>
+<p>Starburst control plane increases the workload capacity of your deployment by
+distributing queries across multiple Starburst Enterprise platform (SEP) clusters.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cluster-requirements.html">Cluster requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="connect-cluster.html">Connect a cluster to control plane</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-cluster-groups.html">Manage cluster groups</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manage-clusters.html">Manage clusters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cluster-status.html">Monitor cluster status</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verify-troubleshoot.html">Verify and troubleshoot load balancing</a></li>
+</ul>
 </div>
+<section id="how-load-balancing-works">
+<h2 id="how-load-balancing-works">How load balancing works<a class="headerlink" href="#how-load-balancing-works" title="Link to this heading">#</a></h2>
+<p>When a cluster group has two or more active and healthy SEP clusters,
+control plane sends each query to one of them. It does this automatically, and
+you do not need to change your applications.</p>
+<p>By default, control plane holds each statement in a statement queue until a
+cluster in the group can run it. Control plane picks the cluster among those
+that are below their query limit, by using the load balancing strategy that you
+set:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">RANDOM</span></code>, the default, picks a cluster at random.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QUERY_COUNT_BASED</span></code> picks the cluster with the lowest load, which is the
+number of queries that run on it. If you turn off the statement queue, queries
+can also queue on the cluster, and control plane counts those too.</p></li>
+</ul>
+<p>If every cluster in the group is at its limit, the statement waits in the queue.
+See <a class="reference internal" href="manage-cluster-groups.html#control-plane-smart-load-balancing"><span class="std std-ref">Smart load balancing</span></a>.</p>
+<p>In standalone mode, the statement queue is off, so control plane sends each
+statement straight to a cluster.</p>
+<p>A query that matches no routing rule goes to the default cluster group. If the
+default cluster group has no active and healthy cluster, the query fails. To
+send other queries to a different cluster group, define routing rules. See
+<em>Routing</em>.</p>
+</section>
+<section id="clusters-pane">
+<h2 id="clusters-pane">Clusters pane<a class="headerlink" href="#clusters-pane" title="Link to this heading">#</a></h2>
+<p>Use the <strong>Clusters</strong> pane to see and manage the clusters and cluster groups that
+control plane routes queries to. The pane has two tabs:</p>
+<ul class="simple">
+<li><p>The <strong>Cluster groups</strong> tab lists each cluster group with its name, its number
+of clusters, and the concurrency limit for each cluster. To work with cluster
+groups, see <a class="reference internal" href="manage-cluster-groups.html"><span class="doc std std-doc">Manage cluster groups</span></a>.</p></li>
+<li><p>The <strong>Clusters</strong> tab lists each cluster with its status, its cluster group,
+and its running and queued queries. To add and manage clusters, see
+<a class="reference internal" href="manage-clusters.html"><span class="doc std std-doc">Manage clusters</span></a>. For the status values, see <a class="reference internal" href="cluster-status.html"><span class="doc std std-doc">Monitor cluster status</span></a>.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -460,12 +519,12 @@ feedback();
             </a>
           
           
-            <a href="../catalogs/index.html" title="Catalogs on control plane"
+            <a href="cluster-requirements.html" title="Cluster requirements"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> Catalogs on control plane </span>
+                class="md-footer-nav__direction"> "Next" </span> Cluster requirements </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
