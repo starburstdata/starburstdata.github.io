@@ -350,6 +350,8 @@
 </li>
 <li><a class="reference internal" href="#known-behavioral-differences-with-aws-glue">Known behavioral differences with AWS Glue</a></li>
 <li><a class="reference internal" href="#hms-to-starburst-metastore-migration-tool">HMS to Starburst Metastore migration tool</a><ul>
+<li><a class="reference internal" href="#transactional-tables">Transactional tables</a></li>
+<li><a class="reference internal" href="#prune-metadata-before-import">Prune metadata before import</a></li>
 <li><a class="reference internal" href="#exporting-from-a-kerberos-secured-hms">Exporting from a Kerberos-secured HMS</a></li>
 </ul>
 </li>
@@ -1554,6 +1556,23 @@ in this file serve as the base configuration, allowing complex setups such
 as Kerberos-secured HMS instances to be managed in a single file rather than
 passed as individual command-line arguments.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import</span></code></p></td>
+<td><p>Delete every schema in the export files from Starburst Metastore before the
+import starts, including all tables, partitions, functions, and statistics
+in those schemas. This operation cannot be undone. Optional. For more
+information, see <a class="reference internal" href="#hms-migration-prune-metadata"><span class="std std-ref">Prune metadata before import</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import-confirm</span></code></p></td>
+<td><p>Confirm <code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import</span></code> without a confirmation prompt.
+Required to prune metadata when the tool is not attached to a terminal.
+Optional.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--skip-transactional</span></code></p></td>
+<td><p>Skip transactional tables during import without a confirmation prompt.
+Required to import files that contain transactional tables when the tool
+is not attached to a terminal. Optional. For more information, see
+<a class="reference internal" href="#hms-migration-transactional-tables"><span class="std std-ref">Transactional tables</span></a>.</p></td>
+</tr>
 </tbody>
 </table>
 <div class="admonition caution">
@@ -1565,7 +1584,9 @@ result in broken export files and loss of data after import.</p>
 </div>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
-<p>Starburst Metastore does not support transactional tables migrated from HMS.</p>
+<p>Starburst Metastore does not support transactional tables from HMS, including
+insert-only tables. The migration tool skips these tables during import. For
+more information, see <a class="reference internal" href="#hms-migration-transactional-tables"><span class="std std-ref">Transactional tables</span></a>.</p>
 </div>
 <p>The following example exports metadata from an HMS instance and then imports it
 into Starburst Metastore:</p>
@@ -1589,6 +1610,49 @@ into Starburst Metastore:</p>
   --secretKey &lt;example-secret-key&gt;
 </pre></div>
 </div>
+<section id="transactional-tables">
+<span id="hms-migration-transactional-tables"></span><h4 id="transactional-tables">Transactional tables<a class="headerlink" href="#transactional-tables" title="Link to this heading">#</a></h4>
+<p>The export includes transactional tables from HMS and logs a warning for each
+one. Before the import starts, the tool lists each transactional table in the
+export files as <code class="docutils literal notranslate"><span class="pre">catalog.schema.table</span></code>. How the import continues depends on the
+session:</p>
+<ul class="simple">
+<li><p>If the tool is attached to a terminal, it prompts you to skip the tables and
+continue. Enter <code class="docutils literal notranslate"><span class="pre">y</span></code> or <code class="docutils literal notranslate"><span class="pre">yes</span></code> to continue the import. Any other response stops
+the import.</p></li>
+<li><p>If the tool is not attached to a terminal, it stops the import. To skip the
+tables, run the import again with the <code class="docutils literal notranslate"><span class="pre">--skip-transactional</span></code> argument. If you
+specify the <code class="docutils literal notranslate"><span class="pre">--skip-transactional</span></code> argument, the tool skips the tables without
+a prompt.</p></li>
+</ul>
+<p>The tool logs each table it skips. The tool checks for transactional tables
+before it <a class="reference internal" href="#hms-migration-prune-metadata"><span class="std std-ref">prunes metadata</span></a>, so a stopped import
+does not delete metadata from Starburst Metastore.</p>
+</section>
+<section id="prune-metadata-before-import">
+<span id="hms-migration-prune-metadata"></span><h4 id="prune-metadata-before-import">Prune metadata before import<a class="headerlink" href="#prune-metadata-before-import" title="Link to this heading">#</a></h4>
+<p>Use the <code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import</span></code> argument to delete the schemas in the
+export files from Starburst Metastore before the import starts. The tool deletes
+each schema and all of its tables, partitions, functions, and statistics,
+including objects that are not in the export files. After the import, the
+schemas in Starburst Metastore match the export.</p>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>Pruning permanently deletes metadata from Starburst Metastore. This operation
+cannot be undone.</p>
+</div>
+<p>Before the tool deletes any metadata, it lists each schema to delete. How the
+import continues depends on the session:</p>
+<ul class="simple">
+<li><p>If the tool is attached to a terminal, it prompts you to confirm the
+deletion. Enter <code class="docutils literal notranslate"><span class="pre">yes</span></code> to continue. Any other response stops the import.</p></li>
+<li><p>If the tool is not attached to a terminal, it stops the import. To prune
+metadata without a prompt, run the import again with both the
+<code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import</span></code> and <code class="docutils literal notranslate"><span class="pre">--prune-metadata-before-import-confirm</span></code>
+arguments.</p></li>
+</ul>
+<p>If the tool stops the import, it does not delete or import any metadata.</p>
+</section>
 <section id="exporting-from-a-kerberos-secured-hms">
 <h4 id="exporting-from-a-kerberos-secured-hms">Exporting from a Kerberos-secured HMS<a class="headerlink" href="#exporting-from-a-kerberos-secured-hms" title="Link to this heading">#</a></h4>
 <p>To export metadata from a Kerberos-secured HMS instance, use the
