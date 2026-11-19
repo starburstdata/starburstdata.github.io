@@ -286,13 +286,14 @@
 <li class="toctree-l5"><a class="reference internal" href="#encryption">Encryption</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#advanced-configuration">Advanced configuration</a><ul>
 <li class="toctree-l6"><a class="reference internal" href="#retry-limits">Retry limits</a></li>
+<li class="toctree-l6"><a class="reference internal" href="#query-restart-on-exchange-data-loss">Query restart on exchange data loss</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#task-sizing">Task sizing</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#node-allocation">Node allocation</a></li>
 <li class="toctree-l6"><a class="reference internal" href="#other-tuning">Other tuning</a></li>
 </ul>
 </li>
 <li class="toctree-l5"><a class="reference internal" href="#exchange-manager">Exchange manager</a><ul>
-<li class="toctree-l6"><a class="reference internal" href="#id1">Configuration</a><ul>
+<li class="toctree-l6"><a class="reference internal" href="#id2">Configuration</a><ul>
 <li class="toctree-l7"><a class="reference internal" href="#aws-s3">AWS S3</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#azure-blob-storage">Azure Blob Storage</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#google-cloud-storage">Google Cloud Storage</a></li>
@@ -375,13 +376,14 @@
 <li><a class="reference internal" href="#encryption">Encryption</a></li>
 <li><a class="reference internal" href="#advanced-configuration">Advanced configuration</a><ul>
 <li><a class="reference internal" href="#retry-limits">Retry limits</a></li>
+<li><a class="reference internal" href="#query-restart-on-exchange-data-loss">Query restart on exchange data loss</a></li>
 <li><a class="reference internal" href="#task-sizing">Task sizing</a></li>
 <li><a class="reference internal" href="#node-allocation">Node allocation</a></li>
 <li><a class="reference internal" href="#other-tuning">Other tuning</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#exchange-manager">Exchange manager</a><ul>
-<li><a class="reference internal" href="#id1">Configuration</a><ul>
+<li><a class="reference internal" href="#id2">Configuration</a><ul>
 <li><a class="reference internal" href="#aws-s3">AWS S3</a></li>
 <li><a class="reference internal" href="#azure-blob-storage">Azure Blob Storage</a></li>
 <li><a class="reference internal" href="#google-cloud-storage">Google Cloud Storage</a></li>
@@ -456,8 +458,8 @@ connector. The following connectors support fault-tolerant execution:</p>
 </div>
 <p>The following configuration properties control the behavior of fault-tolerant
 execution on a Trino cluster:</p>
-<table id="id2">
-<caption><span class="caption-text">Fault-tolerant execution configuration properties</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<table id="id3">
+<caption><span class="caption-text">Fault-tolerant execution configuration properties</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -570,8 +572,8 @@ troubleshooting purposes.</p>
 <h3 id="retry-limits">Retry limits<a class="headerlink" href="#retry-limits" title="Link to this heading">#</a></h3>
 <p>The following configuration properties control the thresholds at which
 queries/tasks are no longer retried in the event of repeated failures:</p>
-<table id="id3">
-<caption><span class="caption-text">Fault tolerance retry limit configuration properties</span><a class="headerlink" href="#id3" title="Link to this table">#</a></caption>
+<table id="id4">
+<caption><span class="caption-text">Fault tolerance retry limit configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
 <col style="width: 38%"/>
@@ -588,24 +590,34 @@ queries/tasks are no longer retried in the event of repeated failures:</p>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">query-retry-attempts</span></code></p></td>
 <td><p>Maximum number of times Trino may attempt to retry a query before declaring
-the query as failed.</p></td>
+the query as failed. Under the <code class="docutils literal notranslate"><span class="pre">TASK</span></code> policy this also limits the restarts
+performed by <code class="docutils literal notranslate"><span class="pre">fault-tolerant-execution-query-retry-enabled</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
-<td><p>Only <code class="docutils literal notranslate"><span class="pre">QUERY</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">task-retry-attempts-per-task</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fault-tolerant-execution-query-retry-enabled</span></code></p></td>
+<td><p>When set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, restarts the whole query on unrecoverable exchange data
+loss, up to <code class="docutils literal notranslate"><span class="pre">query-retry-attempts</span></code> times. See
+<a class="reference internal" href="#query-restart-on-exchange-data-loss"><span class="std std-ref">query restart on exchange data loss</span></a>.
+May be overridden with the <code class="docutils literal notranslate"><span class="pre">fault_tolerant_execution_query_retry_enabled</span></code>
+<a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">task-retry-attempts-per-task</span></code></p></td>
 <td><p>Maximum number of times Trino may attempt to retry a single task before
 declaring the query as failed.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
 <td><p>Only <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">retry-initial-delay</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">retry-initial-delay</span></code></p></td>
 <td><p>Minimum <a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">time</span></a> that a failed query or task must wait
 before it is retried. May be overridden with the <code class="docutils literal notranslate"><span class="pre">retry_initial_delay</span></code>
 <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session property</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">10s</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">retry-max-delay</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">retry-max-delay</span></code></p></td>
 <td><p>Maximum <a class="reference internal" href="properties.html#prop-type-duration"><span class="std std-ref">time</span></a> that a failed query or task must
 wait before it is retried. Wait time is increased on each subsequent
 failure. May be overridden with the <code class="docutils literal notranslate"><span class="pre">retry_max_delay</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session
@@ -613,7 +625,7 @@ property</span></a>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">1m</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">QUERY</span></code> and <code class="docutils literal notranslate"><span class="pre">TASK</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">retry-delay-scale-factor</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">retry-delay-scale-factor</span></code></p></td>
 <td><p>Factor by which retry delay is increased on each query or task failure. May
 be overridden with the <code class="docutils literal notranslate"><span class="pre">retry_delay_scale_factor</span></code> <a class="reference internal" href="../sql/set-session.html#session-properties-definition"><span class="std std-ref">session
 property</span></a>.</p></td>
@@ -622,6 +634,38 @@ property</span></a>.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="query-restart-on-exchange-data-loss">
+<span id="id1"></span><h3 id="query-restart-on-exchange-data-loss">Query restart on exchange data loss<a class="headerlink" href="#query-restart-on-exchange-data-loss" title="Link to this heading">#</a></h3>
+<p>Retrying a task cannot recover data that is no longer in exchange storage, for
+example when spooled exchange files are deleted before the query completes.
+Such a failure is reported with the <code class="docutils literal notranslate"><span class="pre">EXCHANGE_DATA_UNRECOVERABLE</span></code> error code.
+The task is retried once, in case the data is missing only temporarily, and
+then the query fails, without spending the rest of the task retry budget on
+attempts that cannot succeed.</p>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">fault-tolerant-execution-query-retry-enabled</span></code> to <code class="docutils literal notranslate"><span class="pre">true</span></code> makes Trino
+restart the whole query instead. All stages and their spooled exchange data are
+torn down and the query re-executes from scratch, up to <code class="docutils literal notranslate"><span class="pre">query-retry-attempts</span></code>
+times. Restarts are delayed by <code class="docutils literal notranslate"><span class="pre">retry-initial-delay</span></code>, growing with
+<code class="docutils literal notranslate"><span class="pre">retry-delay-scale-factor</span></code> up to <code class="docutils literal notranslate"><span class="pre">retry-max-delay</span></code>, because a restart re-runs
+work that had already succeeded. The delay is randomized by up to 25% in either
+direction, so that the queries affected by the same event do not all restart
+at the same moment.</p>
+<p>Queries that write data are restarted as well. Nothing is committed before the
+root stage finishes, and the connector discards the output of a failed attempt
+the same way it discards the output of a failed task attempt.</p>
+<p>The following restrictions apply:</p>
+<ul class="simple">
+<li><p>A query is not restarted once its output has been published to the client,
+which happens as soon as the root stage finishes.</p></li>
+<li><p>Data loss reported outside a stage failure, such as while the coordinator is
+collecting the output of the root stage, fails the query rather than
+restarting it.</p></li>
+<li><p>Query information reports the stages of the current attempt only. Counters
+that accumulate over the life of the query, such as CPU time and input bytes,
+do include the work of discarded attempts while the query is running, so
+<code class="docutils literal notranslate"><span class="pre">query-max-cpu-time</span></code> and resource group limits still apply across restarts.</p></li>
+</ul>
 </section>
 <section id="task-sizing">
 <h3 id="task-sizing">Task sizing<a class="headerlink" href="#task-sizing" title="Link to this heading">#</a></h3>
@@ -635,8 +679,8 @@ completing.</p>
 during fault-tolerant task execution, you can configure the following
 configuration properties to manually control task sizing. These configuration
 properties only apply to a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy.</p>
-<table id="id4">
-<caption><span class="caption-text">Task sizing configuration properties</span><a class="headerlink" href="#id4" title="Link to this table">#</a></caption>
+<table id="id5">
+<caption><span class="caption-text">Task sizing configuration properties</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -742,8 +786,8 @@ full node for its execution.</p>
 <p>The initial task memory-requirements estimation is static and configured with
 the <code class="docutils literal notranslate"><span class="pre">fault-tolerant-execution-task-memory</span></code> configuration property. This property only
 applies to a <code class="docutils literal notranslate"><span class="pre">TASK</span></code> retry policy.</p>
-<table id="id5">
-<caption><span class="caption-text">Node allocation configuration properties</span><a class="headerlink" href="#id5" title="Link to this table">#</a></caption>
+<table id="id6">
+<caption><span class="caption-text">Node allocation configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 30%"/>
 <col style="width: 50%"/>
@@ -771,8 +815,8 @@ for the current session with the
 <h3 id="other-tuning">Other tuning<a class="headerlink" href="#other-tuning" title="Link to this heading">#</a></h3>
 <p>The following additional configuration property can be used to manage
 fault-tolerant execution:</p>
-<table id="id6">
-<caption><span class="caption-text">Other fault-tolerant execution configuration properties</span><a class="headerlink" href="#id6" title="Link to this table">#</a></caption>
+<table id="id7">
+<caption><span class="caption-text">Other fault-tolerant execution configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
 <col style="width: 38%"/>
@@ -842,8 +886,8 @@ per query, before pausing scheduling for other tasks from this query.</p></td>
 fault-tolerant execution. You can configure a filesystem-based exchange manager
 that stores spooled data in a specified location, such as <a class="reference internal" href="#fte-exchange-aws-s3"><span class="std std-ref">AWS S3</span></a> and S3-compatible systems, <a class="reference internal" href="#fte-exchange-azure-blob"><span class="std std-ref">Azure Blob Storage</span></a>, <a class="reference internal" href="#fte-exchange-gcs"><span class="std std-ref">Google Cloud Storage</span></a>, or
 <a class="reference internal" href="#fte-exchange-hdfs"><span class="std std-ref">HDFS</span></a>.</p>
-<section id="id1">
-<h3 id="id1">Configuration<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<section id="id2">
+<h3 id="id2">Configuration<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
 <p>To configure an exchange manager, create a new
 <code class="docutils literal notranslate"><span class="pre">etc/exchange-manager.properties</span></code> configuration file on the coordinator and
 all worker nodes. In this file, set the <code class="docutils literal notranslate"><span class="pre">exchange-manager.name</span></code> configuration
@@ -856,8 +900,8 @@ specified path instead of the default <code class="docutils literal notranslate"
 <p>The following table lists the available configuration properties for
 <code class="docutils literal notranslate"><span class="pre">exchange-manager.properties</span></code>, their default values, and which file systems
 the property may be configured for:</p>
-<table id="id7">
-<caption><span class="caption-text">Exchange manager configuration properties</span><a class="headerlink" href="#id7" title="Link to this table">#</a></caption>
+<table id="id8">
+<caption><span class="caption-text">Exchange manager configuration properties</span><a class="headerlink" href="#id8" title="Link to this table">#</a></caption>
 <colgroup>
 <col style="width: 23%"/>
 <col style="width: 38%"/>
@@ -1365,8 +1409,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/2026.6/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
   </body>
 </html>

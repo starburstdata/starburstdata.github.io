@@ -552,7 +552,7 @@
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">+</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">interval</span> <span class="pre">'2'</span> <span class="pre">day</span> <span class="pre">+</span> <span class="pre">interval</span> <span class="pre">'3'</span> <span class="pre">hour</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">03:00:00</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">03:00:00.000</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">+</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">interval</span> <span class="pre">'3'</span> <span class="pre">year</span> <span class="pre">+</span> <span class="pre">interval</span> <span class="pre">'5'</span> <span class="pre">month</span></code></p></td>
@@ -576,7 +576,7 @@
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">interval</span> <span class="pre">'2'</span> <span class="pre">day</span> <span class="pre">-</span> <span class="pre">interval</span> <span class="pre">'3'</span> <span class="pre">hour</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">21:00:00</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">21:00:00.000</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">interval</span> <span class="pre">'3'</span> <span class="pre">year</span> <span class="pre">-</span> <span class="pre">interval</span> <span class="pre">'5'</span> <span class="pre">month</span></code></p></td>
@@ -584,47 +584,6 @@
 </tr>
 </tbody>
 </table>
-<p>Subtracting two datetimes produces an interval with the <a class="reference internal" href="../language/types.html#interval-leading-precision"><span class="std std-ref">field-maximum leading precision</span></a> and the <a class="reference internal" href="../language/types.html#interval-fractional-seconds-precision"><span class="std std-ref">fractional-seconds precision</span></a> of the datetimes, with a minimum
-of six fractional digits, so
-<code class="docutils literal notranslate"><span class="pre">timestamp1</span> <span class="pre">-</span> <span class="pre">timestamp2</span></code> of two <code class="docutils literal notranslate"><span class="pre">timestamp(9)</span></code> values has the type
-<code class="docutils literal notranslate"><span class="pre">INTERVAL</span> <span class="pre">DAY(9)</span> <span class="pre">TO</span> <span class="pre">SECOND(9)</span></code> and keeps all nine fractional digits.</p>
-<p>Adding or subtracting a day-time interval preserves the greater fractional
-precision of the datetime and interval, with a minimum of three digits.
-For example, <code class="docutils literal notranslate"><span class="pre">timestamp(3)</span> <span class="pre">+</span> <span class="pre">INTERVAL</span> <span class="pre">'1'</span> <span class="pre">DAY</span></code> returns <code class="docutils literal notranslate"><span class="pre">timestamp(3)</span></code>, while
-adding <code class="docutils literal notranslate"><span class="pre">INTERVAL</span> <span class="pre">'0.000001'</span> <span class="pre">SECOND</span></code> returns <code class="docutils literal notranslate"><span class="pre">timestamp(6)</span></code>.</p>
-<p>For intervals, <code class="docutils literal notranslate"><span class="pre">EXTRACT</span></code> requires a field present in the qualifier. The leading
-field is not wrapped: <code class="docutils literal notranslate"><span class="pre">hour(INTERVAL</span> <span class="pre">'36'</span> <span class="pre">HOUR)</span></code> returns <code class="docutils literal notranslate"><span class="pre">36</span></code>, while the hour
-component of a day-leading interval remains between 0 and 23 in magnitude.
-<code class="docutils literal notranslate"><span class="pre">day_of_month</span></code> remains an alias for <code class="docutils literal notranslate"><span class="pre">day</span></code> on intervals.</p>
-<p>To express a datetime difference with a specific day-time qualifier, enclose
-its subtraction in parentheses and follow it with an interval qualifier:</p>
-<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="k">timestamp</span><span class="w"> </span><span class="s1">'2012-10-31 01:00'</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="s1">'2012-10-30 01:00'</span><span class="p">)</span><span class="w"> </span><span class="k">DAY</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="k">SECOND</span>
-<span class="c1">-- 1 00:00:00.000000, of type interval day(2) to second(6)</span>
-
-<span class="p">(</span><span class="k">timestamp</span><span class="w"> </span><span class="s1">'2012-10-31 01:00'</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="s1">'2012-01-01 00:00'</span><span class="p">)</span><span class="w"> </span><span class="k">DAY</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="k">SECOND</span>
-</pre></div>
-</div>
-<p>Both operands must be datetimes. Dates are compared as midnight timestamps.
-The expression inside the parentheses follows normal operator precedence and
-must have subtraction as its outermost operation. For example,
-<code class="docutils literal notranslate"><span class="pre">(ts1</span> <span class="pre">-</span> <span class="pre">(ts2</span> <span class="pre">+</span> <span class="pre">i))</span> <span class="pre">DAY(3)</span></code> subtracts the adjusted second timestamp, while
-<code class="docutils literal notranslate"><span class="pre">(ts1</span> <span class="pre">-</span> <span class="pre">ts2</span> <span class="pre">+</span> <span class="pre">i)</span> <span class="pre">DAY(3)</span></code> is rejected because its outermost operation is addition.
-The qualifier uses the same precision rules as an interval type: an omitted
-leading precision is <code class="docutils literal notranslate"><span class="pre">2</span></code>, so a difference of 100 days overflows <code class="docutils literal notranslate"><span class="pre">DAY</span></code> but fits
-<code class="docutils literal notranslate"><span class="pre">DAY(3)</span></code>. Dropping trailing fields truncates toward zero, while reducing
-fractional seconds rounds with ties toward positive infinity. Overflow is
-checked after this conversion. Year-month (calendar) differences are not
-currently supported.</p>
-<p>A bare field after a SELECT expression can also be an implicit column alias.
-For compatibility, <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">day</span> <span class="pre">FROM</span> <span class="pre">t</span></code> and <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">x</span> <span class="pre">+</span> <span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">day</span> <span class="pre">FROM</span> <span class="pre">t</span></code> continue to use <code class="docutils literal notranslate"><span class="pre">day</span></code> as an
-alias. This also applies to ROW field aliases and PIVOT aggregation and value
-aliases. Ordinary arithmetic grouping is preserved: <code class="docutils literal notranslate"><span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b</span> <span class="pre">+</span> <span class="pre">c)</span> <span class="pre">day</span></code> gives
-the alias <code class="docutils literal notranslate"><span class="pre">day</span></code> to <code class="docutils literal notranslate"><span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">+</span> <span class="pre">c</span></code>. Add parentheses to select a qualified value:
-<code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">((a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">DAY)</span> <span class="pre">FROM</span> <span class="pre">t</span></code>. An explicit precision or a separate alias also
-removes the ambiguity, as in <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">DAY(3)</span> <span class="pre">FROM</span> <span class="pre">t</span></code> or
-<code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">(a</span> <span class="pre">-</span> <span class="pre">b)</span> <span class="pre">DAY</span> <span class="pre">AS</span> <span class="pre">elapsed</span> <span class="pre">FROM</span> <span class="pre">t</span></code>.
-Interval literals retain their qualifiers: <code class="docutils literal notranslate"><span class="pre">SELECT</span> <span class="pre">INTERVAL</span> <span class="pre">'1'</span> <span class="pre">DAY</span></code> selects
-an interval value without an alias.</p>
 </section>
 <section id="time-zone-conversion">
 <span id="at-time-zone-operator"></span><h2 id="time-zone-conversion">Time zone conversion<a class="headerlink" href="#time-zone-conversion" title="Link to this heading">#</a></h2>
@@ -636,8 +595,6 @@ an interval value without an alias.</p>
 <span class="c1">-- 2012-10-30 18:00:00.000 America/Los_Angeles</span>
 </pre></div>
 </div>
-<p>An interval offset for <code class="docutils literal notranslate"><span class="pre">AT</span> <span class="pre">TIME</span> <span class="pre">ZONE</span></code> must be an exact whole number of minutes.
-Fractional seconds are rejected at the interval’s full precision.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">AT</span> <span class="pre">LOCAL</span></code> operator renders a datetime in the current session time zone:</p>
 <div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="s1">'2012-10-31 01:00 UTC'</span><span class="w"> </span><span class="k">AT</span><span class="w"> </span><span class="k">LOCAL</span><span class="p">;</span>
 <span class="c1">-- 2012-10-30 18:00:00.000 America/Los_Angeles  (session zone)</span>
@@ -865,9 +822,7 @@ of the query, with <code class="docutils literal notranslate"><span class="pre">
 <dl class="py function">
 <dt class="sig sig-object py" id="to_milliseconds">
 <span class="sig-name descname"><span class="pre">to_milliseconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interval</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">bigint</span></span></span><a class="headerlink" href="#to_milliseconds" title="Link to this definition">#</a></dt>
-<dd><p>Returns the day-to-second <code class="docutils literal notranslate"><span class="pre">interval</span></code> as milliseconds, truncating any fractional
-millisecond toward zero. Intervals with up to twelve fractional-second digits
-are accepted.</p>
+<dd><p>Returns the day-to-second <code class="docutils literal notranslate"><span class="pre">interval</span></code> as milliseconds.</p>
 </dd></dl>
 <dl class="py function">
 <dt class="sig sig-object py" id="to_unixtime">
@@ -1068,8 +1023,6 @@ Subtraction can be performed by using a negative value:</p>
 </pre></div>
 </div>
 </dd></dl>
-<p><code class="docutils literal notranslate"><span class="pre">parse_duration</span></code> rejects durations that exceed the interval’s signed 64-bit
-microsecond range.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="human_readable_seconds">
 <span class="sig-name descname"><span class="pre">human_readable_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">double</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">→</span> <span class="sig-return-typehint"><span class="pre">varchar</span></span></span><a class="headerlink" href="#human_readable_seconds" title="Link to this definition">#</a></dt>
@@ -1655,8 +1608,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/2026.6/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
   </body>
 </html>

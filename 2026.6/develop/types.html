@@ -302,10 +302,7 @@
 <li class="toctree-l2"><a class="reference internal" href="insert.html">Supporting <code class="docutils literal notranslate"><span class="pre">INSERT</span></code> and <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="supporting-merge.html">Supporting <code class="docutils literal notranslate"><span class="pre">MERGE</span></code></a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Types</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#native-container-type">Native container type</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#json-connector-values">JSON connector values</a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#native-container-type">Native container type</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#native-encoding">Native encoding</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#type-descriptor">Type descriptor</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#type-template">Type template</a></li>
@@ -319,7 +316,6 @@
 <li class="toctree-l2"><a class="reference internal" href="certificate-authenticator.html">Certificate authenticator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="header-authenticator.html">Header authenticator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="group-provider.html">Group provider</a></li>
-<li class="toctree-l2"><a class="reference internal" href="secrets-provider.html">Secrets provider</a></li>
 <li class="toctree-l2"><a class="reference internal" href="event-listener.html">Event listener</a></li>
 <li class="toctree-l2"><a class="reference internal" href="client-protocol.html">Trino client REST API</a></li>
 </ul>
@@ -341,10 +337,7 @@
     
     <ul>
 <li><a class="reference internal" href="#">Types</a><ul>
-<li><a class="reference internal" href="#native-container-type">Native container type</a><ul>
-<li><a class="reference internal" href="#json-connector-values">JSON connector values</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#native-container-type">Native container type</a></li>
 <li><a class="reference internal" href="#native-encoding">Native encoding</a></li>
 <li><a class="reference internal" href="#type-descriptor">Type descriptor</a></li>
 <li><a class="reference internal" href="#type-template">Type template</a></li>
@@ -378,20 +371,6 @@ JavaDocs for <code class="docutils literal notranslate"><span class="pre">Type</
 “native container type”. This is the Java type used to hold values during execution
 and to store them in a <code class="docutils literal notranslate"><span class="pre">Block</span></code>. For example, this is the type used in
 the Java code that implements functions that produce or consume this <code class="docutils literal notranslate"><span class="pre">Type</span></code>.</p>
-<section id="json-connector-values">
-<h3 id="json-connector-values">JSON connector values<a class="headerlink" href="#json-connector-values" title="Link to this heading">#</a></h3>
-<p>The native Java type of SQL <code class="docutils literal notranslate"><span class="pre">JSON</span></code> is <code class="docutils literal notranslate"><span class="pre">io.trino.json.Json</span></code>, provided by the
-<code class="docutils literal notranslate"><span class="pre">io.trino:trino-json</span></code> library. It is no longer <code class="docutils literal notranslate"><span class="pre">Slice</span></code>. Connectors using
-<code class="docutils literal notranslate"><span class="pre">RecordCursor</span></code> must return JSON values from <code class="docutils literal notranslate"><span class="pre">getObject</span></code>, and native block writes
-such as <code class="docutils literal notranslate"><span class="pre">TypeUtils.writeNativeValue</span></code> must receive a <code class="docutils literal notranslate"><span class="pre">Json</span></code> value. Returning text
-from <code class="docutils literal notranslate"><span class="pre">getSlice</span></code> alone does not satisfy the native cursor contract.</p>
-<p>Use <code class="docutils literal notranslate"><span class="pre">JsonItems.fromText</span></code> to parse UTF-8 JSON text. <code class="docutils literal notranslate"><span class="pre">Json.unchecked</span></code> wraps text that
-the connector has already validated and defers structural parsing. The type’s
-<code class="docutils literal notranslate"><span class="pre">writeSlice</span></code> method also accepts JSON text; <code class="docutils literal notranslate"><span class="pre">getSlice</span></code> returns JSON text. These
-text APIs do not expose the private typed encoding. Text cannot retain SQL
-datetime tags or all native numeric metadata, so keep <code class="docutils literal notranslate"><span class="pre">Json</span></code> values intact when
-passing them between native execution components.</p>
-</section>
 </section>
 <section id="native-encoding">
 <h2 id="native-encoding">Native encoding<a class="headerlink" href="#native-encoding" title="Link to this heading">#</a></h2>
@@ -428,15 +407,6 @@ expresses every argument and return position as a template over them.</p>
 </section>
 <section id="type-id">
 <h2 id="type-id">Type id<a class="headerlink" href="#type-id" title="Link to this heading">#</a></h2>
-<p>Use <code class="docutils literal notranslate"><span class="pre">TypeSyntax.toSql</span></code> or <code class="docutils literal notranslate"><span class="pre">Type.getDisplayName()</span></code> for SQL spelling.
-<code class="docutils literal notranslate"><span class="pre">TypeDescriptor.toString()</span></code> and <code class="docutils literal notranslate"><span class="pre">TypeTemplate.render()</span></code> use an internal
-structural representation, which can differ from SQL syntax. <code class="docutils literal notranslate"><span class="pre">Type.getTypeId()</span></code>
-continues to use SQL spelling.</p>
-<p>The internal base names of zoned datetime and interval types are
-<code class="docutils literal notranslate"><span class="pre">$timestamp_tz</span></code>, <code class="docutils literal notranslate"><span class="pre">$time_tz</span></code>, <code class="docutils literal notranslate"><span class="pre">$interval_day_time</span></code>, and <code class="docutils literal notranslate"><span class="pre">$interval_year_month</span></code>.
-They must not be exposed as SQL type names. The corresponding <code class="docutils literal notranslate"><span class="pre">StandardTypes</span></code>
-and zoned datetime <code class="docutils literal notranslate"><span class="pre">NAME</span></code> constants changed values. Java inlines these constants,
-so plugins compiled against their previous values must be rebuilt.</p>
 <p>A <code class="docutils literal notranslate"><span class="pre">TypeId</span></code> is the opaque identifier under which a type is persisted, for example in
 the catalog properties of a materialized view. It wraps the rendered form of the
 type’s descriptor but guarantees nothing about its structure: where a <code class="docutils literal notranslate"><span class="pre">TypeDescriptor</span></code>
@@ -640,8 +610,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/2026.6/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
   </body>
 </html>

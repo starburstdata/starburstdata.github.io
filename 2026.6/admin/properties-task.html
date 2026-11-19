@@ -315,6 +315,7 @@
 <li><a class="reference internal" href="#task-concurrency"><code class="docutils literal notranslate"><span class="pre">task.concurrency</span></code></a></li>
 <li><a class="reference internal" href="#task-http-response-threads"><code class="docutils literal notranslate"><span class="pre">task.http-response-threads</span></code></a></li>
 <li><a class="reference internal" href="#task-http-timeout-threads"><code class="docutils literal notranslate"><span class="pre">task.http-timeout-threads</span></code></a></li>
+<li><a class="reference internal" href="#task-idle-leaf-split-admission-enabled"><code class="docutils literal notranslate"><span class="pre">task.idle-leaf-split-admission.enabled</span></code></a></li>
 <li><a class="reference internal" href="#task-info-update-interval"><code class="docutils literal notranslate"><span class="pre">task.info-update-interval</span></code></a></li>
 <li><a class="reference internal" href="#task-max-drivers-per-task"><code class="docutils literal notranslate"><span class="pre">task.max-drivers-per-task</span></code></a></li>
 <li><a class="reference internal" href="#task-max-partial-aggregation-memory"><code class="docutils literal notranslate"><span class="pre">task.max-partial-aggregation-memory</span></code></a></li>
@@ -397,6 +398,18 @@ via the <code class="docutils literal notranslate"><span class="pre">trino.serve
 JMX object. If <code class="docutils literal notranslate"><span class="pre">ActiveCount</span></code> is always the same as <code class="docutils literal notranslate"><span class="pre">PoolSize</span></code>, increase the
 number of threads.</p>
 </section>
+<section id="task-idle-leaf-split-admission-enabled">
+<h2 id="task-idle-leaf-split-admission-enabled"><code class="docutils literal notranslate"><span class="pre">task.idle-leaf-split-admission.enabled</span></code><a class="headerlink" href="#task-idle-leaf-split-admission-enabled" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-boolean"><span class="std std-ref">boolean</span></a></p></li>
+<li><p><strong>Default value:</strong> <code class="docutils literal notranslate"><span class="pre">true</span></code></p></li>
+</ul>
+<p>Start leaf splits above <code class="docutils literal notranslate"><span class="pre">task.min-drivers</span></code> while worker threads are idle because
+running leaf splits wait on reading data. The memory used by running leaf splits
+limits how many extra splits start. Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> to start leaf splits only up
+to <code class="docutils literal notranslate"><span class="pre">task.min-drivers</span></code> and <code class="docutils literal notranslate"><span class="pre">task.min-drivers-per-task</span></code>. This can lower peak
+memory usage, but worker threads can then sit idle while splits wait on data.</p>
+</section>
 <section id="task-info-update-interval">
 <h2 id="task-info-update-interval"><code class="docutils literal notranslate"><span class="pre">task.info-update-interval</span></code><a class="headerlink" href="#task-info-update-interval" title="Link to this heading">#</a></h2>
 <ul class="simple">
@@ -446,11 +459,14 @@ too high may cause a drop in performance due to a context switching.</p>
 <li><p><strong>Type:</strong> <a class="reference internal" href="properties.html#prop-type-integer"><span class="std std-ref">integer</span></a></p></li>
 <li><p><strong>Default value:</strong> (<code class="docutils literal notranslate"><span class="pre">task.max-worker-threads</span></code> * 2)</p></li>
 </ul>
-<p>The target number of running leaf splits on a worker. This is a minimum value because
-each leaf task is guaranteed at least <code class="docutils literal notranslate"><span class="pre">3</span></code> running splits. Non-leaf tasks are also
-guaranteed to run in order to prevent deadlocks. A lower value may improve responsiveness
-for new tasks, but can result in underutilized resources. A higher value can increase
-resource utilization, but uses additional memory.</p>
+<p>The minimum number of running leaf splits on a worker. Each leaf task is
+guaranteed at least <code class="docutils literal notranslate"><span class="pre">3</span></code> running splits, even above this value. Non-leaf tasks
+are also guaranteed to run in order to prevent deadlocks. While worker threads
+are idle because running leaf splits wait on reading data, the worker starts
+more leaf splits above this value as memory allows. See
+<code class="docutils literal notranslate"><span class="pre">task.idle-leaf-split-admission.enabled</span></code>. A lower value may improve
+responsiveness for new tasks. A higher value keeps more leaf splits running
+while worker threads are busy, but uses additional memory.</p>
 </section>
 <section id="task-min-drivers-per-task">
 <h2 id="task-min-drivers-per-task"><code class="docutils literal notranslate"><span class="pre">task.min-drivers-per-task</span></code><a class="headerlink" href="#task-min-drivers-per-task" title="Link to this heading">#</a></h2>
@@ -743,8 +759,8 @@ feedback();
     </div>
   </div>
 </div>
-<script src="https://docs.starburst.io/2026.6/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
-<script src="https://docs.starburst.io/2026.6/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
   </body>
 </html>
