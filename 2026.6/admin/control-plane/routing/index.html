@@ -77,7 +77,7 @@
     <link rel="icon" href="../../../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Create routing rules" href="routing-rules.html" />
+    <link rel="next" title="Icehouse LakeOps" href="../lakeops/index.html" />
     <link rel="prev" title="Catalog files" href="../catalogs/catalog-files.html" />
 
   
@@ -223,20 +223,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../install/index.html">Control Plane installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../clusters/index.html">Clusters and cluster groups</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../catalogs/index.html">Catalogs on control plane</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Routing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="routing-rules.html">Create routing rules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tagging-rules.html">Create tagging rules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tagging-rule-examples.html">Tagging rule examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="verify-troubleshoot.html">Verify and troubleshoot workload isolation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#how-routing-works">How routing works</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#auto-tag-based-routing">Auto tag-based routing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#routing-rule-matching">Routing rule matching</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#the-default-routing-rule">The default routing rule</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#set-the-routing-method">Set the routing method</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Routing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../lakeops/index.html">Icehouse LakeOps</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../access-control/index.html">Starburst Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../high-availability/index.html">Control Plane high availability</a></li>
@@ -321,16 +308,7 @@
     <strong>Contents</strong>
     
     <ul>
-<li><a class="reference internal" href="#">Routing</a><ul>
-<li><a class="reference internal" href="#how-routing-works">How routing works</a><ul>
-<li><a class="reference internal" href="#auto-tag-based-routing">Auto tag-based routing</a></li>
-<li><a class="reference internal" href="#routing-rule-matching">Routing rule matching</a></li>
-<li><a class="reference internal" href="#the-default-routing-rule">The default routing rule</a></li>
-</ul>
-</li>
-<li><a class="reference internal" href="#set-the-routing-method">Set the routing method</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#">Routing</a></li>
 </ul>
 
   </div>
@@ -343,133 +321,11 @@
           <article class="md-content__inner md-typeset" role="main">
             
   <section id="routing">
-<span id="control-plane-routing-overview"></span><h1 id="admin-control-plane-routing-index--page-root">Routing<a class="headerlink" href="#admin-control-plane-routing-index--page-root" title="Link to this heading">#</a></h1>
-<p>Starburst control plane routes each query to a cluster group. Use routing to keep
-competing workloads from interfering with each other, and to send a workload to
-clusters that are sized and configured for it. After control plane selects a
-cluster group, load balancing picks a cluster within the group. For the two use
-cases that routing serves, see <em>Workload isolation</em> and <em>Load balancing</em>.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="routing-rules.html">Create routing rules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tagging-rules.html">Create tagging rules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tagging-rule-examples.html">Tagging rule examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="verify-troubleshoot.html">Verify and troubleshoot workload isolation</a></li>
-</ul>
-</div>
-<section id="how-routing-works">
-<h2 id="how-routing-works">How routing works<a class="headerlink" href="#how-routing-works" title="Link to this heading">#</a></h2>
-<p>When a query arrives, control plane handles it in the following way with auto
-tag-based routing:</p>
-<ol class="arabic simple">
-<li><p>Control plane builds a set of tags for the query. The tags come from the
-request, from the user who submitted it, and from your tagging rules.</p></li>
-<li><p>Control plane evaluates your routing rules in priority order against the
-tags. The first rule that matches selects the cluster group.</p></li>
-<li><p>If no routing rule that you created matches, the query matches the
-<strong>Default routing</strong> rule, which sends it to the default cluster group. If you
-deleted the <strong>Default routing</strong> rule, control plane rejects the query. See
-<a class="reference internal" href="#control-plane-routing-default-rule"><span class="std std-ref">The default routing rule</span></a>.</p></li>
-<li><p>Control plane puts the statement in the statement queue. When a cluster in
-the group has capacity, load balancing picks the cluster that runs the query.
-See <em>Smart load balancing</em> and <em>How load balancing works</em>.</p></li>
-</ol>
-<p>Control plane routes its own background queries, such as the scheduled refresh
-of a materialized view, with the same routing rules. A scheduled refresh has the
-source <code class="docutils literal notranslate"><span class="pre">scheduled-mv-refresh</span></code> and the client tags <code class="docutils literal notranslate"><span class="pre">catalog=&lt;name&gt;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">schema=&lt;name&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">materialized_view=&lt;name&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">update_type=REFRESH</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code>. A routing rule can match the source with
-<code class="docutils literal notranslate"><span class="pre">system.request.source</span></code>, and a client tag with <code class="docutils literal notranslate"><span class="pre">system.request.clientTag</span></code>. To
-send every refresh to one cluster group without evaluating the routing rules,
-set <code class="docutils literal notranslate"><span class="pre">background-work.materialized-view-refresh.routing-group.explicit-override</span></code>
-to the group. If a refresh matches no rule, control plane tries it again later,
-because you can fix the rules. Background work needs the smart load balancing
-statement queue.</p>
-<section id="auto-tag-based-routing">
-<span id="control-plane-routing-auto-tags"></span><h3 id="auto-tag-based-routing">Auto tag-based routing<a class="headerlink" href="#auto-tag-based-routing" title="Link to this heading">#</a></h3>
-<p>Auto tag-based routing derives higher-level routing tags by pattern matching.
-It lets you route by user identity without requiring clients to set any
-headers.</p>
-<p>When you use auto tag-based routing, control plane routes each query in two
-stages. First, control plane builds a set of tags for the query by combining
-system tags and custom tags.</p>
-<ul class="simple">
-<li><p><strong>System tags.</strong> Control plane extracts these automatically:</p>
-<ul>
-<li><p>From the HTTP request: <code class="docutils literal notranslate"><span class="pre">system.request.source</span></code> (from <code class="docutils literal notranslate"><span class="pre">X-Trino-Source</span></code>) and
-<code class="docutils literal notranslate"><span class="pre">system.request.clientTag</span></code> (from <code class="docutils literal notranslate"><span class="pre">X-Trino-Client-Tags</span></code>).</p></li>
-<li><p>From the identity of the user: the user name (<code class="docutils literal notranslate"><span class="pre">system.identity.user</span></code>), the
-groups of the user (<code class="docutils literal notranslate"><span class="pre">system.identity.group</span></code>), and the roles of the user
-(<code class="docutils literal notranslate"><span class="pre">system.identity.role</span></code>).</p></li>
-</ul>
-</li>
-<li><p><strong>Custom tags.</strong> Control plane generates these by evaluating your tagging
-rules against the system tags. Tag names that start with <code class="docutils literal notranslate"><span class="pre">system.</span></code> are
-reserved for system tags, and control plane rejects a tagging rule that uses
-one.</p></li>
-</ul>
-<p>After control plane computes all the tags, it evaluates your routing rules in
-priority order against the full set of tags. The first matching rule determines
-the cluster group.</p>
+<h1 id="admin-control-plane-routing-index--page-root">Routing<a class="headerlink" href="#admin-control-plane-routing-index--page-root" title="Link to this heading">#</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The upgrade to 2026.6.0 renames the system tags <code class="docutils literal notranslate"><span class="pre">source</span></code>, <code class="docutils literal notranslate"><span class="pre">clientTag</span></code>, <code class="docutils literal notranslate"><span class="pre">user</span></code>,
-<code class="docutils literal notranslate"><span class="pre">group</span></code>, and <code class="docutils literal notranslate"><span class="pre">role</span></code> to <code class="docutils literal notranslate"><span class="pre">system.request.source</span></code>, <code class="docutils literal notranslate"><span class="pre">system.request.clientTag</span></code>,
-<code class="docutils literal notranslate"><span class="pre">system.identity.user</span></code>, <code class="docutils literal notranslate"><span class="pre">system.identity.group</span></code>, and <code class="docutils literal notranslate"><span class="pre">system.identity.role</span></code>. The
-upgrade rewrites your routing rules and tagging rules to the new names. If a
-tagging rule produces a tag key that starts with <code class="docutils literal notranslate"><span class="pre">system.</span></code>, the upgrade stops
-with an error that lists the rules by ID and name. Change those rules, and run
-the upgrade again. Also update the scripts that create rules through the API, so
-that they use the new names.</p>
+<p>The previous name of the Starburst Control Plane was Starburst Portal.</p>
 </div>
-</section>
-<section id="routing-rule-matching">
-<span id="control-plane-routing-rule-order"></span><h3 id="routing-rule-matching">Routing rule matching<a class="headerlink" href="#routing-rule-matching" title="Link to this heading">#</a></h3>
-<p>Control plane evaluates routing rules in priority order, and the first matching
-rule wins. To reorder the rules, go to the sidebar, and under <strong>Admin</strong>, click
-<strong>Routing rules</strong>. Click <i class="material-symbols-rounded" style="color:black">more_vert</i> options &gt; <strong>Re-order rules</strong>, and then drag
-and drop the rules in the grid. You cannot set a priority number for a rule.</p>
-</section>
-<section id="the-default-routing-rule">
-<span id="control-plane-routing-default-rule"></span><h3 id="the-default-routing-rule">The default routing rule<a class="headerlink" href="#the-default-routing-rule" title="Link to this heading">#</a></h3>
-<p>Control plane keeps a rule named <strong>Default routing</strong> at the end of your routing
-rules. It matches every query, and it sends a query that no other rule matches
-to the default cluster group. The default cluster group is whichever group is
-the default when control plane routes the query.</p>
-<p>You can reorder or delete this rule. If you delete it, and a query matches no
-other rule, control plane rejects the query with HTTP status 503. The message is
-<code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">routing</span> <span class="pre">rule</span> <span class="pre">matched</span> <span class="pre">this</span> <span class="pre">query,</span> <span class="pre">so</span> <span class="pre">it</span> <span class="pre">could</span> <span class="pre">not</span> <span class="pre">be</span> <span class="pre">assigned</span> <span class="pre">to</span> <span class="pre">a</span> <span class="pre">cluster</span> <span class="pre">for</span> <span class="pre">execution.</span> <span class="pre">Please</span> <span class="pre">contact</span> <span class="pre">your</span> <span class="pre">administrator.</span></code> This applies to queries that
-clients submit, to queries in the statement queue, and to background queries. In
-<strong>Query insights</strong>, the <strong>Routing rule</strong> column shows <strong>Default routing</strong> for a
-query that went to the default cluster group.</p>
-</section>
-</section>
-<section id="set-the-routing-method">
-<span id="control-plane-routing-method"></span><h2 id="set-the-routing-method">Set the routing method<a class="headerlink" href="#set-the-routing-method" title="Link to this heading">#</a></h2>
-<p>Use the <code class="docutils literal notranslate"><span class="pre">gateway.routing.type</span></code> property to set how control plane routes queries
-to cluster groups. The default is <code class="docutils literal notranslate"><span class="pre">AUTO_TAGS</span></code>. To manage individual clusters,
-use the Clusters pane.</p>
-<table>
-<colgroup>
-<col style="width: 30%"/>
-<col style="width: 55%"/>
-<col style="width: 15%"/>
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Property</p></th>
-<th class="head"><p>Description</p></th>
-<th class="head"><p>Default</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gateway.routing.type</span></code></p></td>
-<td><p>Routing mode for query distribution. <code class="docutils literal notranslate"><span class="pre">AUTO_TAGS</span></code> routes queries based on
-tagging rules that derive custom tags from HTTP headers and the identity of
-the authenticated user (user name, groups, and roles).</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">AUTO_TAGS</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</section>
 </section>
 
 
@@ -603,12 +459,12 @@ feedback();
             </a>
           
           
-            <a href="routing-rules.html" title="Create routing rules"
+            <a href="../lakeops/index.html" title="Icehouse LakeOps"
                class="md-flex md-footer-nav__link md-footer-nav__link--next"
                rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title"><span
                 class="md-flex__ellipsis"> <span
-                class="md-footer-nav__direction"> "Next" </span> Create routing rules </span>
+                class="md-footer-nav__direction"> "Next" </span> Icehouse LakeOps </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink"><i
                 class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
