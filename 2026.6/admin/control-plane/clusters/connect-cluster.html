@@ -232,6 +232,10 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#check-the-connection">Check the connection</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#example-configuration">Example configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#the-cluster-does-not-start-and-the-error-mentions-that-it-cannot-load-keys">The cluster does not start, and the error mentions that it cannot load keys</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="manage-cluster-groups.html">Manage cluster groups</a></li>
@@ -337,6 +341,10 @@
 </li>
 <li><a class="reference internal" href="#check-the-connection">Check the connection</a></li>
 <li><a class="reference internal" href="#example-configuration">Example configuration</a></li>
+<li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li><a class="reference internal" href="#the-cluster-does-not-start-and-the-error-mentions-that-it-cannot-load-keys">The cluster does not start, and the error mentions that it cannot load keys</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -379,9 +387,12 @@ address of control plane. Set both properties as literal values. They cannot
 use secret references.</p></li>
 <li><p>Set the shared secret of the cluster, <code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code>.
 You use the same value when you register the cluster.</p></li>
-<li><p>Configure the cluster to trust the certificate of control plane, because
-managed clusters connect to control plane over HTTPS. See
-<a class="reference internal" href="../security/certificates.html"><span class="doc std std-doc">Trust internal certificates</span></a>.</p></li>
+<li><p>Configure the coordinator and the workers to trust the certificate of control
+plane, because managed clusters connect to control plane over HTTPS to load
+its signing keys. If control plane uses a self-signed or private CA
+certificate, add it to a truststore of the cluster. The cluster does not
+start if it does not trust the certificate. See
+<a class="reference internal" href="../security/authentication.html#control-plane-auth-cluster-trust"><span class="std std-ref">Trust the certificate of control plane on the clusters</span></a>.</p></li>
 <li><p>To let the cluster use the users and groups that control plane provisions,
 create the file <code class="docutils literal notranslate"><span class="pre">etc/group-provider.properties</span></code> on the coordinator, with
 <code class="docutils literal notranslate"><span class="pre">group-provider.name=portal</span></code>. Managed mode makes this group provider
@@ -487,6 +498,20 @@ SCIM:</p>
 </div>
 <p>Control plane marks a cluster that does not run in managed mode as
 <code class="docutils literal notranslate"><span class="pre">UNSUPPORTED</span></code>. See <a class="reference internal" href="cluster-status.html"><span class="doc std std-doc">Monitor cluster status</span></a>.</p>
+</section>
+<section id="troubleshooting">
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
+<section id="the-cluster-does-not-start-and-the-error-mentions-that-it-cannot-load-keys">
+<h3 id="the-cluster-does-not-start-and-the-error-mentions-that-it-cannot-load-keys">The cluster does not start, and the error mentions that it cannot load keys<a class="headerlink" href="#the-cluster-does-not-start-and-the-error-mentions-that-it-cannot-load-keys" title="Link to this heading">#</a></h3>
+<p>The cluster loads the signing keys of control plane when it starts. If it
+cannot load them, it does not start. A common cause is that the cluster does not
+trust the TLS certificate of control plane, for example when control plane uses
+a self-signed certificate or a certificate that a private CA signed. Add the
+certificate to the truststore of the cluster. See
+<a class="reference internal" href="../security/authentication.html#control-plane-auth-cluster-trust"><span class="std std-ref">Trust the certificate of control plane on the clusters</span></a>.</p>
+<p>If the certificate is trusted, check that the cluster can reach the address in
+<code class="docutils literal notranslate"><span class="pre">deployment.manager.uri</span></code>.</p>
+</section>
 </section>
 </section>
 

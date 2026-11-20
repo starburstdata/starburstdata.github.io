@@ -247,6 +247,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#insecure-authentication">Insecure authentication</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#configure-cluster-authentication">Configure cluster authentication</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#turn-on-cluster-authentication">Turn on cluster authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trust-the-certificate-of-control-plane-on-the-clusters">Trust the certificate of control plane on the clusters</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#when-you-need-cluster-authentication">When you need cluster authentication</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#cluster-authentication-properties">Cluster authentication properties</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#other-secrets-of-control-plane">Other secrets of control plane</a></li>
@@ -359,6 +360,7 @@
 <li><a class="reference internal" href="#insecure-authentication">Insecure authentication</a></li>
 <li><a class="reference internal" href="#configure-cluster-authentication">Configure cluster authentication</a><ul>
 <li><a class="reference internal" href="#turn-on-cluster-authentication">Turn on cluster authentication</a></li>
+<li><a class="reference internal" href="#trust-the-certificate-of-control-plane-on-the-clusters">Trust the certificate of control plane on the clusters</a></li>
 <li><a class="reference internal" href="#when-you-need-cluster-authentication">When you need cluster authentication</a></li>
 <li><a class="reference internal" href="#cluster-authentication-properties">Cluster authentication properties</a></li>
 <li><a class="reference internal" href="#other-secrets-of-control-plane">Other secrets of control plane</a></li>
@@ -724,6 +726,34 @@ If a cluster reaches control plane at a different address than the issuer, set
 <a class="reference internal" href="../clusters/connect-cluster.html"><span class="doc std std-doc">Connect a cluster to control plane</span></a>.</p>
 <p>Store the secret in a secret manager, or in an environment variable. See
 <a class="reference internal" href="../install/secrets-provider.html"><span class="doc std std-doc">Configure a secrets provider</span></a>.</p>
+</section>
+<section id="trust-the-certificate-of-control-plane-on-the-clusters">
+<span id="control-plane-auth-cluster-trust"></span><h3 id="trust-the-certificate-of-control-plane-on-the-clusters">Trust the certificate of control plane on the clusters<a class="headerlink" href="#trust-the-certificate-of-control-plane-on-the-clusters" title="Link to this heading">#</a></h3>
+<p>Each cluster loads the signing keys of control plane from control plane, over
+HTTPS, when it starts. The cluster must trust the TLS certificate of control
+plane. A certificate that a public certificate authority (CA) signed is usually
+trusted already. If control plane uses a self-signed certificate or a
+certificate that a private CA signed, add the certificate to the truststore of
+the cluster. The cluster does not start if it does not trust the certificate.</p>
+<p>Use one of the following methods on the coordinator and on every worker:</p>
+<ul>
+<li><p>Add the certificate to the truststore of the Java virtual machine (JVM) that
+runs SEP.</p></li>
+<li><p>Reference a truststore that holds the certificate in the <code class="docutils literal notranslate"><span class="pre">config.properties</span></code>
+file of the cluster:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">managed-jwks.http-client.trust-store-path</span><span class="o">=</span><span class="s">/path/to/truststore.jks</span>
+<span class="na">managed-jwks.http-client.trust-store-password</span><span class="o">=</span><span class="s">&lt;TRUSTSTORE_PASSWORD&gt;</span>
+<span class="na">internal-communication.https.truststore.path</span><span class="o">=</span><span class="s">/path/to/truststore.jks</span>
+<span class="na">internal-communication.https.truststore.key</span><span class="o">=</span><span class="s">&lt;TRUSTSTORE_PASSWORD&gt;</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">managed-jwks.http-client.*</span></code> properties apply to the request that loads
+the signing keys. The <code class="docutils literal notranslate"><span class="pre">internal-communication.https.*</span></code> properties apply to all
+internal HTTPS traffic of the cluster, not only the requests to control plane.</p>
+</li>
+</ul>
+<p>To make control plane trust the certificates of the clusters, see
+<a class="reference internal" href="certificates.html"><span class="doc std std-doc">Trust internal certificates</span></a>.</p>
 </section>
 <section id="when-you-need-cluster-authentication">
 <h3 id="when-you-need-cluster-authentication">When you need cluster authentication<a class="headerlink" href="#when-you-need-cluster-authentication" title="Link to this heading">#</a></h3>
