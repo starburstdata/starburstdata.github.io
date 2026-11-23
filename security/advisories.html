@@ -361,10 +361,10 @@ us</a> for further information about any reports.</p>
 cover details for all Starburst products, including
 <a href="../starburst-enterprise/index.html">Starburst Enterprise platform (SEP)</a> and
 <a href="../starburst-galaxy/index.html">Starburst Galaxy</a> and included components.</p>
-      <h2 id="cve-2026-111497-brotli-decoder-remote-code-execution">
+      <h2 id="cve-2026-114938-openjdk-base64-decoder-remote-code-execution-java4shell">
         
         
-          CVE-2026-111497 Brotli decoder remote code execution <a href="#cve-2026-111497-brotli-decoder-remote-code-execution" class="titleAnchor">#</a>
+          CVE-2026-114938 OpenJDK Base64 decoder remote code execution (“Java4Shell”) <a href="#cve-2026-114938-openjdk-base64-decoder-remote-code-execution-java4shell" class="titleAnchor">#</a>
         
         
       </h2>
@@ -373,6 +373,105 @@ cover details for all Starburst products, including
         
         
           Summary <a href="#summary" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p><strong>Starburst Enterprise platform (SEP):</strong> All supported SEP LTS releases — 477-e, 479-e,
+480-e and 482-e — bundle an affected Java runtime. Deployments running only on
+ARM processors, such as AWS Graviton, aren’t affected. You can protect your
+deployment today without upgrading: add <code class="language-plaintext highlighter-rouge">-XX:-UseBASE64Intrinsics</code> to the JVM
+configuration as described in this advisory, and restart the services. A
+permanent fix with a patched Java runtime is being prepared.</p>
+      <h3 id="details">
+        
+        
+          Details <a href="#details" class="titleAnchor">#</a>
+        
+        
+      </h3>
+    
+
+<p><a href="https://www.cve.org/CVERecord?id=CVE-2026-114938">CVE-2026-114938</a>
+(“Java4Shell”) is a vulnerability in the HotSpot JVM of OpenJDK 17.0.6 and
+later, disclosed on November 17, 2026. It has a CVSS v3.1 score of 8.1 (High).
+On x86-64 CPUs with AVX-512 VBMI support, the optimized machine code that
+decodes Base64 data mishandles malformed input and writes past the end of the
+output buffer. The result can be a crash, memory disclosure, or remote code
+execution. All distributions built from OpenJDK are affected, including
+Eclipse Temurin. Affected CPUs include Intel Xeon Ice Lake and later, and AMD
+Zen 4 and later. OpenJDK fixed the issue in versions 17.0.21.1, 21.0.13.1,
+25.0.5.1, and 27.0.1.1. For more information, see the <a href="https://openjdk.org/groups/vulnerability/advisories/2026-11-17">OpenJDK
+advisory</a> and
+the <a href="https://calif.io/java4shell">Calif write-up</a>.</p>
+
+<p><strong>Starburst impact:</strong> No customer-impacting incident or evidence of
+exploitation has been observed. SEP decodes Base64 data from client requests,
+including during authentication, so a cluster running on an affected CPU must
+be treated as exposed.</p>
+
+<p><strong>Starburst Enterprise platform (SEP):</strong> SEP bundles an Eclipse Temurin 25 Java runtime
+that is affected by this vulnerability. You can fully protect your deployment
+today without upgrading:</p>
+
+<ol>
+  <li>
+    <p>Check whether a node is exposed. On Linux, run the following command. The
+node is exposed only if the output includes all four flags:</p>
+
+    <div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">grep</span> <span class="nt">-m1</span> <span class="s1">'^flags'</span> /proc/cpuinfo | <span class="nb">tr</span> <span class="s1">' '</span> <span class="s1">'\n'</span> | <span class="nb">grep</span> <span class="nt">-E</span> <span class="s1">'^(avx512f|avx512bw|avx512vbmi|bmi2)$'</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Add the following line to the existing <code class="language-plaintext highlighter-rouge">jvm.config</code> file of every
+coordinator and worker. For Kubernetes deployments, that means
+<code class="language-plaintext highlighter-rouge">coordinator.etcFiles.jvm.config</code> and <code class="language-plaintext highlighter-rouge">worker.etcFiles.jvm.config</code>. These
+values replace the chart’s default JVM configuration entirely, so if you
+don’t already override them, copy the full default <code class="language-plaintext highlighter-rouge">jvm.config</code> from the
+chart’s <code class="language-plaintext highlighter-rouge">values.yaml</code> and add the line to it. For other deployments, add it
+to <code class="language-plaintext highlighter-rouge">etc/jvm.config</code>. The same applies to the <code class="language-plaintext highlighter-rouge">jvm.config</code> of the portal,
+cache service, and any icehouse deployments:</p>
+
+    <div class="language-text highlighter-rouge"><div class="highlight"><pre class="highlight"><code>-XX:-UseBASE64Intrinsics
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Restart the services. The change only takes effect after a restart.</p>
+  </li>
+</ol>
+
+<p>The flag disables the vulnerable optimized Base64 code, and the JVM uses its
+standard implementation instead. The setting is safe on all platforms, has
+negligible impact on performance, and can be removed once you’ve upgraded to a
+patched release. Starburst verified the mitigation on the affected
+hardware (Intel Sapphire Rapids) using the published trigger for the exact
+Temurin 25.0.5+8 runtime bundled with SEP: the corruption occurs with the
+default configuration and stops with the flag applied.</p>
+
+<p>General advisories for this CVE suggest <code class="language-plaintext highlighter-rouge">-XX:UseAVX=2</code> as an alternative. For
+SEP, use <code class="language-plaintext highlighter-rouge">-XX:-UseBASE64Intrinsics</code> instead: it’s targeted, has negligible
+performance impact, and is safe on all architectures. <code class="language-plaintext highlighter-rouge">-XX:UseAVX=2</code> also
+neutralizes the issue on x86-64, but don’t use it in a configuration shared
+with ARM64 nodes, because the JVM fails to start on ARM64 with that flag.</p>
+
+<p>Patched SEP releases with a fixed Java runtime are being prepared for all
+supported LTS versions, and will be announced as soon as they’re available.</p>
+
+<p>For questions, contact <a href="https://docs.starburst.io/support.html">Starburst
+Support</a> or your account team.</p>
+      <h2 id="cve-2026-111497-brotli-decoder-remote-code-execution">
+        
+        
+          CVE-2026-111497 Brotli decoder remote code execution <a href="#cve-2026-111497-brotli-decoder-remote-code-execution" class="titleAnchor">#</a>
+        
+        
+      </h2>
+    
+      <h3 id="summary-1">
+        
+        
+          Summary <a href="#summary-1" class="titleAnchor">#</a>
         
         
       </h3>
@@ -388,10 +487,10 @@ HTTP endpoint, and the query engine isn’t affected. The fix is available in
 versions 482-e.6, 480-e.13, 479-e.20, and 477-e.24. Upgrade as part of your
 normal patching, and upgrade sooner if any coordinator is reachable from
 untrusted networks.</p>
-      <h3 id="details">
+      <h3 id="details-1">
         
         
-          Details <a href="#details" class="titleAnchor">#</a>
+          Details <a href="#details-1" class="titleAnchor">#</a>
         
         
       </h3>
@@ -434,10 +533,10 @@ Support</a> or your Account Executive.</p>
         
       </h2>
     
-      <h3 id="summary-1">
+      <h3 id="summary-2">
         
         
-          Summary <a href="#summary-1" class="titleAnchor">#</a>
+          Summary <a href="#summary-2" class="titleAnchor">#</a>
         
         
       </h3>
@@ -445,10 +544,10 @@ Support</a> or your Account Executive.</p>
 
 <p>Starburst isn’t affected. No Starburst product or service ships
 or runs PHP, so there is no customer exposure and no action is required.</p>
-      <h3 id="details-1">
+      <h3 id="details-2">
         
         
-          Details <a href="#details-1" class="titleAnchor">#</a>
+          Details <a href="#details-2" class="titleAnchor">#</a>
         
         
       </h3>
@@ -886,7 +985,7 @@ feedback();
       </div>
       <div class="col-lg-3 toc-styles d-none d-lg-block">
         <div class="spacer-60 toc-sticky">
-          <ul><li><a href="#security-advisories">Security advisories</a><ul><li><a href="#cve-2026-111497-brotli-decoder-remote-code-execution">CVE-2026-111497 Brotli decoder remote code execution</a><ul><li><a href="#summary">Summary</a></li><li><a href="#details">Details</a></li></ul></li><li><a href="#cve-2026-109618-and-cve-2026-109619-php-remote-code-execution-php2shell">CVE-2026-109618 and CVE-2026-109619 PHP remote code execution (“PHP2Shell”)</a><ul><li><a href="#summary-1">Summary</a></li><li><a href="#details-1">Details</a></li></ul></li><li><a href="#cve-2026-31431-linux-kernel-local-privilege-escalation">CVE-2026-31431 Linux kernel local privilege escalation</a></li><li><a href="#cve-2026-34214-sensitive-configuration-information-disclosure">CVE-2026-34214 Sensitive configuration information disclosure</a></li><li><a href="#cve-2023-38545-and-cve-2023-38546-libcurl">CVE-2023-38545 and CVE-2023-38546 libcurl</a></li><li><a href="#column-level-access-control-bypass">Column-level access control bypass</a></li><li><a href="#http-client-risk">HTTP client risk</a></li><li><a href="#cve-2022-40152-woodstox">CVE-2022-40152 Woodstox</a></li><li><a href="#cve-2022-1471-snakeyaml">CVE-2022-1471 SnakeYAML</a></li><li><a href="#cve-2022-3786-and-cve-2022-3602-openssl">CVE-2022-3786 and CVE-2022-3602 OpenSSL</a></li><li><a href="#cve-2022-22947">CVE-2022-22947</a></li><li><a href="#spring4shell">Spring4Shell</a></li><li><a href="#cve-2021-42392">CVE-2021-42392</a></li><li><a href="#cve-2021-44228">CVE-2021-44228</a></li><li><a href="#cve-2021-45046">CVE-2021-45046</a></li><li><a href="#cve-2021-45105">CVE-2021-45105</a></li><li><a href="#cve-2020-36518">CVE-2020-36518</a></li></ul></li></ul>
+          <ul><li><a href="#security-advisories">Security advisories</a><ul><li><a href="#cve-2026-114938-openjdk-base64-decoder-remote-code-execution-java4shell">CVE-2026-114938 OpenJDK Base64 decoder remote code execution (“Java4Shell”)</a><ul><li><a href="#summary">Summary</a></li><li><a href="#details">Details</a></li></ul></li><li><a href="#cve-2026-111497-brotli-decoder-remote-code-execution">CVE-2026-111497 Brotli decoder remote code execution</a><ul><li><a href="#summary-1">Summary</a></li><li><a href="#details-1">Details</a></li></ul></li><li><a href="#cve-2026-109618-and-cve-2026-109619-php-remote-code-execution-php2shell">CVE-2026-109618 and CVE-2026-109619 PHP remote code execution (“PHP2Shell”)</a><ul><li><a href="#summary-2">Summary</a></li><li><a href="#details-2">Details</a></li></ul></li><li><a href="#cve-2026-31431-linux-kernel-local-privilege-escalation">CVE-2026-31431 Linux kernel local privilege escalation</a></li><li><a href="#cve-2026-34214-sensitive-configuration-information-disclosure">CVE-2026-34214 Sensitive configuration information disclosure</a></li><li><a href="#cve-2023-38545-and-cve-2023-38546-libcurl">CVE-2023-38545 and CVE-2023-38546 libcurl</a></li><li><a href="#column-level-access-control-bypass">Column-level access control bypass</a></li><li><a href="#http-client-risk">HTTP client risk</a></li><li><a href="#cve-2022-40152-woodstox">CVE-2022-40152 Woodstox</a></li><li><a href="#cve-2022-1471-snakeyaml">CVE-2022-1471 SnakeYAML</a></li><li><a href="#cve-2022-3786-and-cve-2022-3602-openssl">CVE-2022-3786 and CVE-2022-3602 OpenSSL</a></li><li><a href="#cve-2022-22947">CVE-2022-22947</a></li><li><a href="#spring4shell">Spring4Shell</a></li><li><a href="#cve-2021-42392">CVE-2021-42392</a></li><li><a href="#cve-2021-44228">CVE-2021-44228</a></li><li><a href="#cve-2021-45046">CVE-2021-45046</a></li><li><a href="#cve-2021-45105">CVE-2021-45105</a></li><li><a href="#cve-2020-36518">CVE-2020-36518</a></li></ul></li></ul>
 
           <button type="button" class="btn btn-primary waves-effect waves-light print-button" onclick="window.print()">Print this page</button>
         </div>
