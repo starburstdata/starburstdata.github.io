@@ -288,6 +288,12 @@
 <li class="toctree-l7"><a class="reference internal" href="#configure-ldap-user-provisioning-properties">Configure LDAP user provisioning properties</a></li>
 </ul>
 </li>
+<li class="toctree-l6"><a class="reference internal" href="#use-multiple-ldap-servers">Use multiple LDAP servers</a><ul>
+<li class="toctree-l7"><a class="reference internal" href="#how-multiple-servers-work">How multiple servers work</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#map-group-names-separately">Map group names separately</a></li>
+<li class="toctree-l7"><a class="reference internal" href="#move-accounts-to-another-server">Move accounts to another server</a></li>
+</ul>
+</li>
 <li class="toctree-l6"><a class="reference internal" href="#examples">Examples</a><ul>
 <li class="toctree-l7"><a class="reference internal" href="#secure-ldap-connection-ldaps">Secure LDAP connection (LDAPS)</a></li>
 <li class="toctree-l7"><a class="reference internal" href="#insecure-ldap-connection">Insecure LDAP connection</a></li>
@@ -367,6 +373,12 @@
 <li><a class="reference internal" href="#configure-an-internal-group-provider">Configure an internal group provider</a></li>
 <li><a class="reference internal" href="#enable-ldap-user-provisioning">Enable LDAP user provisioning</a></li>
 <li><a class="reference internal" href="#configure-ldap-user-provisioning-properties">Configure LDAP user provisioning properties</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#use-multiple-ldap-servers">Use multiple LDAP servers</a><ul>
+<li><a class="reference internal" href="#how-multiple-servers-work">How multiple servers work</a></li>
+<li><a class="reference internal" href="#map-group-names-separately">Map group names separately</a></li>
+<li><a class="reference internal" href="#move-accounts-to-another-server">Move accounts to another server</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#examples">Examples</a><ul>
@@ -511,26 +523,60 @@ OpenLDAP</p></td>
 <td><p>For example, <code class="docutils literal notranslate"><span class="pre">member</span></code> for Active Directory or OpenLDAP</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.sync-interval</span></code></p></td>
-<td><p>The frequency of synchronization. Defaults to <code class="docutils literal notranslate"><span class="pre">2h</span></code></p></td>
+<td><p>The frequency of synchronization. Defaults to <code class="docutils literal notranslate"><span class="pre">1h</span></code></p></td>
 <td><p>No</p></td>
-<td></td>
+<td><p>Applies to all LDAP servers. See
+<a class="reference internal" href="#ldap-provisioning-multiple-servers"><span class="std std-ref">Use multiple LDAP servers</span></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.identifier-mapping.pattern</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.deletion-threshold-percent</span></code></p></td>
+<td><p>The maximum percentage of users, and of groups, that a synchronization can
+delete. Defaults to <code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Applies to all LDAP servers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.allow-mass-deletion</span></code></p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to disable the deletion threshold. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Applies to all LDAP servers.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.dry-run</span></code></p></td>
+<td><p>Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to log the changes that a synchronization would make, without
+applying them. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>No</p></td>
+<td><p>Applies to all LDAP servers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.identifier-mapping.pattern</span></code></p></td>
 <td><p>The regular expression that transforms usernames and group names read from
 the LDAP attribute value.</p></td>
 <td><p>No</p></td>
 <td><p>For example, <code class="docutils literal notranslate"><span class="pre">(.*)</span></code>. If <code class="docutils literal notranslate"><span class="pre">identifier-mapping.file</span></code> is set,
 don’t set this property.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.identifier-mapping.file</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.identifier-mapping.file</span></code></p></td>
 <td><p>The path to a JSON file of identifier-mapping rules that transform usernames
 and group names read from the LDAP attribute value.</p></td>
 <td><p>No</p></td>
 <td><p>For example, <code class="docutils literal notranslate"><span class="pre">etc/ldap-identifier-mapping.json</span></code>. If
 <code class="docutils literal notranslate"><span class="pre">identifier-mapping.pattern</span></code> is set, don’t set this property.</p></td>
 </tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group.identifier-mapping.pattern</span></code></p></td>
+<td><p>The regular expression that transforms group names read from the LDAP
+attribute value. It overrides <code class="docutils literal notranslate"><span class="pre">identifier-mapping.pattern</span></code> for groups.</p></td>
+<td><p>No</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">group.identifier-mapping.file</span></code> is set, don’t set this property.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.group.identifier-mapping.file</span></code></p></td>
+<td><p>The path to a JSON file of identifier-mapping rules that transform group
+names read from the LDAP attribute value. It overrides
+<code class="docutils literal notranslate"><span class="pre">identifier-mapping.file</span></code> for groups.</p></td>
+<td><p>No</p></td>
+<td><p>If <code class="docutils literal notranslate"><span class="pre">group.identifier-mapping.pattern</span></code> is set, don’t set this property.</p></td>
+</tr>
 </tbody>
 </table>
+<p>The properties in this table configure one LDAP server, called <code class="docutils literal notranslate"><span class="pre">default</span></code>. To
+synchronize from more than one server, see
+<a class="reference internal" href="#ldap-provisioning-multiple-servers"><span class="std std-ref">Use multiple LDAP servers</span></a>.</p>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
 <p>By default, synchronization keeps the original case of usernames and group
@@ -545,6 +591,86 @@ and set
 </pre></div>
 </div>
 </div>
+</section>
+</section>
+<section id="use-multiple-ldap-servers">
+<span id="ldap-provisioning-multiple-servers"></span><h2 id="use-multiple-ldap-servers">Use multiple LDAP servers<a class="headerlink" href="#use-multiple-ldap-servers" title="Link to this heading">#</a></h2>
+<p>You can synchronize users and groups from more than one LDAP server, for example
+when your users are in separate directories. Each server works independently.
+SEP records which server each user and group came from.</p>
+<p>To add a server, give it a name that contains only letters, numbers,
+underscores, and hyphens. Then set the properties of that server with the prefix
+<code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.&lt;name&gt;.</span></code> instead of <code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.</span></code>. This
+includes the LDAP client connection properties, the search properties, and the
+identifier mapping properties. The following example configures two servers,
+<code class="docutils literal notranslate"><span class="pre">corp</span></code> and <code class="docutils literal notranslate"><span class="pre">partners</span></code>:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">starburst.users.provisioning.type</span><span class="o">=</span><span class="s">LDAP</span>
+<span class="na">ldap-user-provisioning.corp.ldap.url</span><span class="o">=</span><span class="s">ldaps://ldap-corp:636</span>
+<span class="na">ldap-user-provisioning.corp.ldap.bind-user</span><span class="o">=</span><span class="s">cn=service-account,dc=corp,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.corp.ldap.bind-password</span><span class="o">=</span><span class="s">&lt;BIND_PASSWORD&gt;</span>
+<span class="na">ldap-user-provisioning.corp.user-search-base</span><span class="o">=</span><span class="s">ou=people,dc=corp,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.corp.user-search-filter</span><span class="o">=</span><span class="s">(objectClass=inetOrgPerson)</span>
+<span class="na">ldap-user-provisioning.corp.user-name-attribute</span><span class="o">=</span><span class="s">uid</span>
+<span class="na">ldap-user-provisioning.corp.group-search-base</span><span class="o">=</span><span class="s">ou=groups,dc=corp,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.corp.group-search-filter</span><span class="o">=</span><span class="s">(objectClass=groupOfNames)</span>
+<span class="na">ldap-user-provisioning.corp.group-name-attribute</span><span class="o">=</span><span class="s">cn</span>
+<span class="na">ldap-user-provisioning.corp.group-membership-attribute</span><span class="o">=</span><span class="s">member</span>
+
+<span class="na">ldap-user-provisioning.partners.ldap.url</span><span class="o">=</span><span class="s">ldaps://ldap-partners:636</span>
+<span class="na">ldap-user-provisioning.partners.ldap.bind-user</span><span class="o">=</span><span class="s">cn=service-account,dc=partners,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.partners.ldap.bind-password</span><span class="o">=</span><span class="s">&lt;BIND_PASSWORD&gt;</span>
+<span class="na">ldap-user-provisioning.partners.user-search-base</span><span class="o">=</span><span class="s">ou=people,dc=partners,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.partners.user-search-filter</span><span class="o">=</span><span class="s">(objectClass=user)</span>
+<span class="na">ldap-user-provisioning.partners.user-name-attribute</span><span class="o">=</span><span class="s">sAMAccountName</span>
+<span class="na">ldap-user-provisioning.partners.group-search-base</span><span class="o">=</span><span class="s">ou=groups,dc=partners,dc=example,dc=com</span>
+<span class="na">ldap-user-provisioning.partners.group-search-filter</span><span class="o">=</span><span class="s">(objectClass=group)</span>
+<span class="na">ldap-user-provisioning.partners.group-name-attribute</span><span class="o">=</span><span class="s">sAMAccountName</span>
+<span class="na">ldap-user-provisioning.partners.group-membership-attribute</span><span class="o">=</span><span class="s">member</span>
+</pre></div>
+</div>
+<p>The properties without a name configure a server called <code class="docutils literal notranslate"><span class="pre">default</span></code>. You can use
+the default server together with named servers. Do not define the <code class="docutils literal notranslate"><span class="pre">default</span></code>
+server in both forms, with <code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.ldap.url</span></code> and with
+<code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.default.ldap.url</span></code>. SEP fails to start if you do.</p>
+<p>The synchronization settings apply to all servers. These settings are
+<code class="docutils literal notranslate"><span class="pre">sync-interval</span></code>, <code class="docutils literal notranslate"><span class="pre">deletion-threshold-percent</span></code>, <code class="docutils literal notranslate"><span class="pre">allow-mass-deletion</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">dry-run</span></code>. Set them once, without a server name.</p>
+<section id="how-multiple-servers-work">
+<h3 id="how-multiple-servers-work">How multiple servers work<a class="headerlink" href="#how-multiple-servers-work" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Each server synchronizes on its own. If a synchronization fails or stops on
+one server, the other servers continue.</p></li>
+<li><p>SEP removes only the users and groups that came from the server that no
+longer lists them.</p></li>
+<li><p>SEP detects conflicts. One server cannot change a user or group that came
+from another server.</p></li>
+</ul>
+</section>
+<section id="map-group-names-separately">
+<h3 id="map-group-names-separately">Map group names separately<a class="headerlink" href="#map-group-names-separately" title="Link to this heading">#</a></h3>
+<p>By default, the identifier mapping of a server applies to both usernames and
+group names. To map group names differently, set
+<code class="docutils literal notranslate"><span class="pre">group.identifier-mapping.pattern</span></code> or <code class="docutils literal notranslate"><span class="pre">group.identifier-mapping.file</span></code> for the
+server. For a named server, the full property name is, for example,
+<code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.corp.group.identifier-mapping.pattern</span></code>. These
+properties override the general identifier mapping for groups.</p>
+</section>
+<section id="move-accounts-to-another-server">
+<h3 id="move-accounts-to-another-server">Move accounts to another server<a class="headerlink" href="#move-accounts-to-another-server" title="Link to this heading">#</a></h3>
+<p>If you replace or rename a server, use the
+<code class="docutils literal notranslate"><span class="pre">ldap-user-provisioning.adopt-sources</span></code> property. The new server then takes over
+the users and groups of the old server, and it keeps their accounts.</p>
+<p>Set the property to a comma-separated list of <code class="docutils literal notranslate"><span class="pre">&lt;from&gt;:&lt;to&gt;</span></code> pairs. For example,
+the following value moves the accounts of the <code class="docutils literal notranslate"><span class="pre">default</span></code> server to the <code class="docutils literal notranslate"><span class="pre">corp</span></code>
+server:</p>
+<div class="highlight-properties notranslate"><div class="highlight"><pre><span></span><span class="na">ldap-user-provisioning.adopt-sources</span><span class="o">=</span><span class="s">default:corp</span>
+</pre></div>
+</div>
+<p>SEP removes adopted accounts that the new server does not list. The deletion
+threshold limits how many accounts it can remove.</p>
+<p>Do not chain adoption. Map each old server directly to its final server. For
+example, do not set <code class="docutils literal notranslate"><span class="pre">a:b,b:c</span></code>. SEP rejects this configuration, and a pair
+that maps a server to itself.</p>
 </section>
 </section>
 <section id="examples">
