@@ -261,6 +261,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#e-19-changes-16-oct-2026">479-e.19 changes (16 Oct 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-20-changes-28-oct-2026">479-e.20 changes (28 Oct 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-21-changes-4-nov-2026">479-e.21 changes (4 Nov 2026)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#e-22-changes-19-nov-2026">479-e.22 changes (19 Nov 2026)</a></li>
 </ul>
 </li>
 </ul>
@@ -408,6 +409,7 @@
 <li><a class="reference internal" href="#e-19-changes-16-oct-2026">479-e.19 changes (16 Oct 2026)</a></li>
 <li><a class="reference internal" href="#e-20-changes-28-oct-2026">479-e.20 changes (28 Oct 2026)</a></li>
 <li><a class="reference internal" href="#e-21-changes-4-nov-2026">479-e.21 changes (4 Nov 2026)</a></li>
+<li><a class="reference internal" href="#e-22-changes-19-nov-2026">479-e.22 changes (19 Nov 2026)</a></li>
 </ul>
 </li>
 </ul>
@@ -1006,6 +1008,57 @@ a field nested in a <code class="docutils literal notranslate"><span class="pre"
 <li><p>CVE-2026-114820</p></li>
 </ul>
 </li>
+</ul>
+</section>
+<section id="e-22-changes-19-nov-2026">
+<span id="release-479-e-22"></span><h2 id="e-22-changes-19-nov-2026">479-e.22 changes (19 Nov 2026)<a class="headerlink" href="#e-22-changes-19-nov-2026" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Fixed a vulnerability where the cache service API did not require
+authentication by default, which could allow unauthorized changes to
+materialized views. The fix is opt-in, and the default authentication type
+is still <code class="docutils literal notranslate"><span class="pre">NONE</span></code>. To enable it, upgrade every cluster that uses the cache
+service and set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> in each catalog that sets
+<code class="docutils literal notranslate"><span class="pre">cache-service.uri</span></code>. Then, on the cache service, set
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> to <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> and set
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to the same value. Catalogs then sign their
+requests to the cache service. You can combine <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> with <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> as
+<code class="docutils literal notranslate"><span class="pre">INTERNAL,PASSWORD</span></code>, but you cannot combine <code class="docutils literal notranslate"><span class="pre">NONE</span></code> with other types.</p></li>
+<li><p>Added the <code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code> and <code class="docutils literal notranslate"><span class="pre">sharedSecret.secretKey</span></code> values to
+the <code class="docutils literal notranslate"><span class="pre">starburst-cache-service</span></code> Helm chart. When you set
+<code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code>, the chart adds <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code>. The chart’s default <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> does not enable
+<code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> authentication, so override it to opt in.</p></li>
+<li><p>Updated the cache service so that health checks on the <code class="docutils literal notranslate"><span class="pre">/v1/status</span></code> endpoint
+do not require credentials when password authentication is enabled. The
+endpoint returns no data.</p></li>
+<li><p>Updated the HMS to Starburst Data Catalog migration tool to skip Hive
+Metastore transactional tables during import. The tool prompts for
+confirmation before it skips the tables. To skip them without a prompt, or
+when the tool is not attached to a terminal, use the <code class="docutils literal notranslate"><span class="pre">--skip-transactional</span></code>
+flag.</p></li>
+<li><p>Fixed an issue where role-based policies were not applied when using the
+Apache Ranger access control plugin with Ranger Admin 2.9 and basic
+authentication.</p></li>
+<li><p>Fixed an issue in the Elasticsearch connector where queries with predicates
+on <code class="docutils literal notranslate"><span class="pre">keyword</span></code> fields that use <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> or a <code class="docutils literal notranslate"><span class="pre">normalizer</span></code>, including
+<code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-fields of <code class="docutils literal notranslate"><span class="pre">text</span></code> fields, returned incorrect results. SEP
+processes these predicates instead of pushing them down to Elasticsearch,
+which can slow down these queries. Elasticsearch gives dynamically mapped
+string fields a <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-field with <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> set to <code class="docutils literal notranslate"><span class="pre">256</span></code> by
+default, so predicates on most string columns of a dynamically mapped index
+are no longer pushed down.</p></li>
+<li><p>Fixed an issue in the OpenSearch connector where queries with predicates or
+aggregations on <code class="docutils literal notranslate"><span class="pre">keyword</span></code> fields that use <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> or a <code class="docutils literal notranslate"><span class="pre">normalizer</span></code>,
+including <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-fields of <code class="docutils literal notranslate"><span class="pre">text</span></code> fields, returned incorrect
+results. SEP processes these predicates and aggregations instead of
+pushing them down to OpenSearch, which can slow down these queries.
+OpenSearch gives dynamically mapped string fields a <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-field
+with <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> set to <code class="docutils literal notranslate"><span class="pre">256</span></code> by default, so predicates on most string
+columns of a dynamically mapped index are no longer pushed down.</p></li>
+<li><p>Fixed an issue in the Snowflake connector where the <code class="docutils literal notranslate"><span class="pre">snowflake.proxy.*</span></code>
+configuration properties were not applied to JDBC connections. Catalogs with
+<code class="docutils literal notranslate"><span class="pre">snowflake.proxy.enabled</span></code> set to <code class="docutils literal notranslate"><span class="pre">true</span></code> connect to Snowflake through the
+configured proxy after you upgrade.</p></li>
 </ul>
 </section>
 </section>

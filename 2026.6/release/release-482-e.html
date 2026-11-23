@@ -245,6 +245,7 @@
 <li class="toctree-l5"><a class="reference internal" href="#e-5-changes-16-oct-2026">482-e.5 changes (16 Oct 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-6-changes-28-oct-2026">482-e.6 changes (28 Oct 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-7-changes-4-nov-2026">482-e.7 changes (4 Nov 2026)</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#e-8-changes-19-nov-2026">482-e.8 changes (19 Nov 2026)</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="release-481-e.html">Release 481-e STS (15 Jun 2026)</a></li>
@@ -382,6 +383,7 @@
 <li><a class="reference internal" href="#e-5-changes-16-oct-2026">482-e.5 changes (16 Oct 2026)</a></li>
 <li><a class="reference internal" href="#e-6-changes-28-oct-2026">482-e.6 changes (28 Oct 2026)</a></li>
 <li><a class="reference internal" href="#e-7-changes-4-nov-2026">482-e.7 changes (4 Nov 2026)</a></li>
+<li><a class="reference internal" href="#e-8-changes-19-nov-2026">482-e.8 changes (19 Nov 2026)</a></li>
 </ul>
 </li>
 </ul>
@@ -910,10 +912,6 @@ tables in <a class="reference internal" href="../connector/starburst-iceberg-uni
 <li><p>Fixed an issue in the Iceberg connector where deleted rows could reappear in
 query results on tables with equality delete files when the query filtered
 on a column that is not an equality key.</p></li>
-<li><p>Fixed an issue in the Iceberg connector where <code class="docutils literal notranslate"><span class="pre">expire_snapshots</span></code> deleted
-deletion vector files that were still referenced by a table snapshot. Queries
-on the affected format version 3 tables failed with an
-<code class="docutils literal notranslate"><span class="pre">ICEBERG_CANNOT_OPEN_SPLIT</span></code> error.</p></li>
 </ul>
 </section>
 <section id="e-6-changes-28-oct-2026">
@@ -958,6 +956,69 @@ integers.</p></li>
 <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">FUNCTION</span></code>, and <code class="docutils literal notranslate"><span class="pre">DROP</span> <span class="pre">FUNCTION</span></code> statements reported success
 but had no effect when <code class="docutils literal notranslate"><span class="pre">hive.hdfs.authorization.enabled</span></code> or
 <code class="docutils literal notranslate"><span class="pre">hive.metastore.thrift.impersonation.enabled</span></code> was set to <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></li>
+</ul>
+</section>
+<section id="e-8-changes-19-nov-2026">
+<span id="release-482-e-8"></span><h2 id="e-8-changes-19-nov-2026">482-e.8 changes (19 Nov 2026)<a class="headerlink" href="#e-8-changes-19-nov-2026" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Fixed a vulnerability where the cache service API did not require
+authentication by default, which could allow unauthorized changes to
+materialized views. The fix is opt-in, and the default authentication type
+is still <code class="docutils literal notranslate"><span class="pre">NONE</span></code>. To enable it, upgrade every cluster that uses the cache
+service and set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> in each catalog that sets
+<code class="docutils literal notranslate"><span class="pre">cache-service.uri</span></code>. Then, on the cache service, set
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> to <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> and set
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to the same value. Catalogs then sign their
+requests to the cache service. You can combine <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> with <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> as
+<code class="docutils literal notranslate"><span class="pre">INTERNAL,PASSWORD</span></code>, but you cannot combine <code class="docutils literal notranslate"><span class="pre">NONE</span></code> with other types.</p></li>
+<li><p>Added the <code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code> and <code class="docutils literal notranslate"><span class="pre">sharedSecret.secretKey</span></code> values to
+the <code class="docutils literal notranslate"><span class="pre">starburst-cache-service</span></code> Helm chart. When you set
+<code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code>, the chart adds <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to
+<code class="docutils literal notranslate"><span class="pre">config.properties</span></code>. The chart’s default <code class="docutils literal notranslate"><span class="pre">config.properties</span></code> does not enable
+<code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code> authentication, so override it to opt in.</p></li>
+<li><p>Updated the cache service so that health checks on the <code class="docutils literal notranslate"><span class="pre">/v1/status</span></code> endpoint
+do not require credentials when password authentication is enabled. The
+endpoint returns no data.</p></li>
+<li><p>Improved query planning performance for large queries when CTE reuse is
+enabled.</p></li>
+<li><p>Fixed an issue where queries with CTE reuse enabled failed with a
+<code class="docutils literal notranslate"><span class="pre">circular</span> <span class="pre">dependency</span> <span class="pre">between</span> <span class="pre">stages</span></code> error.</p></li>
+<li><p>Fixed an issue where role-based policies were not applied when using the
+Apache Ranger access control plugin with Ranger Admin 2.9 and basic
+authentication.</p></li>
+<li><p>Fixed an issue where the <strong>Run and download</strong> option in the query editor was
+unavailable when you selected a single SQL statement.</p></li>
+<li><p>Fixed an issue where AI-generated data product descriptions, dataset
+descriptions, summaries, and suggested prompts showed corrupted characters
+when the generated text contained non-ASCII characters, such as accented
+letters.</p></li>
+<li><p>Fixed an issue in the Elasticsearch connector where queries with predicates
+on <code class="docutils literal notranslate"><span class="pre">keyword</span></code> fields that use <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> or a <code class="docutils literal notranslate"><span class="pre">normalizer</span></code>, including
+<code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-fields of <code class="docutils literal notranslate"><span class="pre">text</span></code> fields, returned incorrect results. SEP
+processes these predicates instead of pushing them down to Elasticsearch,
+which can slow down these queries. Elasticsearch gives dynamically mapped
+string fields a <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-field with <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> set to <code class="docutils literal notranslate"><span class="pre">256</span></code> by
+default, so predicates on most string columns of a dynamically mapped index
+are no longer pushed down.</p></li>
+<li><p>Fixed an issue in the Hive connector where reading Parquet files written by
+Apache Spark failed with an <code class="docutils literal notranslate"><span class="pre">Unknown</span> <span class="pre">time-zone</span> <span class="pre">ID</span></code> error when the file
+metadata specified a short time zone ID, such as <code class="docutils literal notranslate"><span class="pre">EST</span></code>.</p></li>
+<li><p>Fixed an issue in the Iceberg connector where <code class="docutils literal notranslate"><span class="pre">expire_snapshots</span></code> deleted
+deletion vector files that were still referenced by a table snapshot. Queries
+on the affected format version 3 tables failed with an
+<code class="docutils literal notranslate"><span class="pre">ICEBERG_CANNOT_OPEN_SPLIT</span></code> error.</p></li>
+<li><p>Fixed an issue in the OpenSearch connector where queries with predicates or
+aggregations on <code class="docutils literal notranslate"><span class="pre">keyword</span></code> fields that use <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> or a <code class="docutils literal notranslate"><span class="pre">normalizer</span></code>,
+including <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-fields of <code class="docutils literal notranslate"><span class="pre">text</span></code> fields, returned incorrect
+results. SEP processes these predicates and aggregations instead of
+pushing them down to OpenSearch, which can slow down these queries.
+OpenSearch gives dynamically mapped string fields a <code class="docutils literal notranslate"><span class="pre">keyword</span></code> multi-field
+with <code class="docutils literal notranslate"><span class="pre">ignore_above</span></code> set to <code class="docutils literal notranslate"><span class="pre">256</span></code> by default, so predicates on most string
+columns of a dynamically mapped index are no longer pushed down.</p></li>
+<li><p>Fixed an issue in the Snowflake connector where the <code class="docutils literal notranslate"><span class="pre">snowflake.proxy.*</span></code>
+configuration properties were not applied to JDBC connections. Catalogs with
+<code class="docutils literal notranslate"><span class="pre">snowflake.proxy.enabled</span></code> set to <code class="docutils literal notranslate"><span class="pre">true</span></code> connect to Snowflake through the
+configured proxy after you upgrade.</p></li>
 </ul>
 </section>
 </section>
