@@ -59,7 +59,7 @@
 </script>
   
   
-    <title>Control Plane API &#8212; Starburst Enterprise</title>
+    <title>Control plane API &#8212; Starburst Enterprise</title>
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=bbebba6e" />
     <link rel="stylesheet" type="text/css" href="../../../_static/material.css?v=79c92029" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -128,7 +128,7 @@
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
           Documentation: Starburst Enterprise 2026.6.0 STS</a>
-          <span class="md-header-nav__topic"> Control Plane API </span>
+          <span class="md-header-nav__topic"> Control plane API </span>
         </div>
       </div>
       <div class="md-flex__cell md-flex__cell--shrink">
@@ -228,7 +228,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../access-control/index.html">Starburst Access Control</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../high-availability/index.html">High availability</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../security/index.html">Security</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Control Plane API</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control plane API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#authentication">Authentication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-authentication">Basic authentication</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bearer-token-authentication">Bearer token authentication</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#authorization">Authorization</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">For all users</span></p>
 <ul>
@@ -309,7 +317,15 @@
     <strong>Contents</strong>
     
     <ul>
-<li><a class="reference internal" href="#">Control Plane API</a></li>
+<li><a class="reference internal" href="#">Control plane API</a><ul>
+<li><a class="reference internal" href="#authentication">Authentication</a><ul>
+<li><a class="reference internal" href="#basic-authentication">Basic authentication</a></li>
+<li><a class="reference internal" href="#bearer-token-authentication">Bearer token authentication</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#authorization">Authorization</a></li>
+</ul>
+</li>
 </ul>
 
   </div>
@@ -322,13 +338,51 @@
           <article class="md-content__inner md-typeset" role="main">
             
   <section id="control-plane-api">
-<h1 id="admin-control-plane-reference-index--page-root">Control Plane API<a class="headerlink" href="#admin-control-plane-reference-index--page-root" title="Link to this heading">#</a></h1>
-<p>Starburst Control Plane exposes a REST API that lets you programmatically manage
+<h1 id="admin-control-plane-reference-index--page-root">Control plane API<a class="headerlink" href="#admin-control-plane-reference-index--page-root" title="Link to this heading">#</a></h1>
+<p>Starburst control plane exposes a REST API that lets you programmatically manage
 data sources, tagging rules, routing rules, and
 <a class="reference internal" href="../access-control/index.html"><span class="doc std std-doc">Starburst access control</span></a> entities,
 such as roles, privileges, and policies.</p>
-<p>The <a class="external reference" href="../../../api/control-plane/index.html">Control Plane API reference</a>
+<p>The <a class="external reference" href="../../../api/control-plane/index.html">control plane API reference</a>
 lists all available endpoints, request parameters, and response schemas.</p>
+<section id="authentication">
+<h2 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Link to this heading">#</a></h2>
+<p>The control plane API supports password, LDAP, and OAuth2 authentication. It
+doesn’t support Kerberos or certificate authentication. API clients pass
+credentials in the <code class="docutils literal notranslate"><span class="pre">Authorization</span></code> header.</p>
+<section id="basic-authentication">
+<h3 id="basic-authentication">Basic authentication<a class="headerlink" href="#basic-authentication" title="Link to this heading">#</a></h3>
+<p>For password or LDAP authentication, use basic authentication with your
+username and password:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-u<span class="w"> </span>&lt;username&gt;<span class="w"> </span>https://control-plane.example.com/public/api/v1/role
+</pre></div>
+</div>
+</section>
+<section id="bearer-token-authentication">
+<h3 id="bearer-token-authentication">Bearer token authentication<a class="headerlink" href="#bearer-token-authentication" title="Link to this heading">#</a></h3>
+<p>For OAuth2 authentication, use a bearer token. The token is an access token
+from your identity provider, or the value of the OAuth2 authentication cookie
+of the control plane UI:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-H<span class="w"> </span><span class="s1">'Authorization: Bearer &lt;token&gt;'</span><span class="w"> </span>https://control-plane.example.com/public/api/v1/role
+</pre></div>
+</div>
+</section>
+</section>
+<section id="authorization">
+<h2 id="authorization">Authorization<a class="headerlink" href="#authorization" title="Link to this heading">#</a></h2>
+<p>How control plane authorizes API requests depends on whether
+<a class="reference internal" href="../access-control/index.html"><span class="doc std std-doc">Starburst access control</span></a> is turned on.</p>
+<p>With Starburst access control, each endpoint requires a specific privilege. Any
+role that holds the privilege can call the endpoint. The role doesn’t need to
+be <code class="docutils literal notranslate"><span class="pre">sysadmin</span></code>. To choose the role for a request, send the <code class="docutils literal notranslate"><span class="pre">X-Trino-Role</span></code> header,
+such as <code class="docutils literal notranslate"><span class="pre">X-Trino-Role:</span> <span class="pre">system=ROLE{analyst}</span></code>. Without the header, control
+plane uses the user’s <a class="reference internal" href="../access-control/roles.html"><span class="doc std std-doc">default role</span></a>,
+not all of the user’s roles.</p>
+<p>Without Starburst access control, there are no roles or privileges. Only the users
+and groups that are listed in <code class="docutils literal notranslate"><span class="pre">starburst.access-control.authorized-users</span></code> and
+<code class="docutils literal notranslate"><span class="pre">starburst.access-control.authorized-groups</span></code> can use the API. See
+<a class="reference internal" href="../security/admin-access.html"><span class="doc std std-doc">Configure administrator access</span></a>.</p>
+</section>
 </section>
 
 
