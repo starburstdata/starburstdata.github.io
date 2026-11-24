@@ -441,29 +441,37 @@ you request a failover for a cluster that does not use discovery.</p></li>
 <p>Update any scripts or integrations that compare these values before you
 upgrade.</p>
 </li>
-<li><p>The <code class="docutils literal notranslate"><span class="pre">id</span></code> of routing rules and tagging rules in the Starburst control plane public
-API changes format. Routing rule IDs change from a UUID to <code class="docutils literal notranslate"><span class="pre">rr-</span></code> followed by
-16 digits, for example <code class="docutils literal notranslate"><span class="pre">rr-0000000000000000</span></code>. Tagging rule IDs change from a
-UUID to <code class="docutils literal notranslate"><span class="pre">tr-</span></code> followed by 10 digits, for example <code class="docutils literal notranslate"><span class="pre">tr-0000000000000000</span></code>. Update
-any scripts or integrations that expect a UUID.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">id</span></code> of routing rules and tagging rules in the Starburst control
+plane public API changes format. Routing rule IDs change from a UUID to <code class="docutils literal notranslate"><span class="pre">rr-</span></code>
+followed by 16 digits, for example <code class="docutils literal notranslate"><span class="pre">rr-0000000000000000</span></code>. Tagging rule IDs
+change from a UUID to <code class="docutils literal notranslate"><span class="pre">tr-</span></code> followed by 10 digits, for example
+<code class="docutils literal notranslate"><span class="pre">tr-0000000000000000</span></code>. Update any scripts or integrations that expect a UUID.</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> configuration property of <a class="reference internal" href="../../object-storage/file-system-s3.html"><span class="doc std std-doc">native S3 file system
-support</span></a> now requires
-<code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code>. Catalogs that set <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> without that
-authentication type fail to load with the error <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span> <span class="pre">must</span> <span class="pre">be</span> <span class="pre">set</span> <span class="pre">when,</span> <span class="pre">and</span> <span class="pre">only</span> <span class="pre">when,</span> <span class="pre">s3.auth-type=IAM_ROLE</span></code>. You must add <code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code> to</p></li>
-<li><p>Removed the <code class="docutils literal notranslate"><span class="pre">great-lakes.iceberg-rest-catalog-used</span></code> configuration property
-from the <a class="reference internal" href="../../connector/starburst-great-lakes.html"><span class="doc std std-doc">Great Lakes connector</span></a>. The
-connector automatically determines the metastore type. Great Lakes catalogs
-that set this property or its legacy name,
-<code class="docutils literal notranslate"><span class="pre">object-store.iceberg-rest-catalog-used</span></code>, fail to load. If you use static
-catalog management, SEP fails to start. You must remove the property from
-these catalogs before upgrading.</p></li>
-<li><p><a class="reference internal" href="../../data-engineering/materialized-views.html#materialized-view-substitution"><span class="std std-ref">Automatic materialized view substitution</span></a>
-now validates materialized views that are enabled for substitution.
-<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span></code> and <code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">MATERIALIZED</span> <span class="pre">VIEW</span> <span class="pre">...</span> <span class="pre">SET</span> <span class="pre">PROPERTIES</span> <span class="pre">substitution_enabled</span> <span class="pre">=</span> <span class="pre">true</span></code> fail if the definition of the materialized view
-can’t be used for substitution. Previously, SEP accepted the property and
-never used the materialized view for substitution. To restore the previous
-behavior, set the <code class="docutils literal notranslate"><span class="pre">materialized-view-substitution.candidate-validation.enabled</span></code>
-configuration property to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></li>
+support</span></a> now requires <code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code>.
+Catalogs that set <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> without that authentication type fail to load
+with the error <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span> <span class="pre">must</span> <span class="pre">be</span> <span class="pre">set</span> <span class="pre">when,</span> <span class="pre">and</span> <span class="pre">only</span> <span class="pre">when,</span> <span class="pre">s3.auth-type=IAM_ROLE</span></code>. You must add <code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code> to</p></li>
+<li><p>Removed the
+<code class="docutils literal notranslate"><span class="pre">great-lakes.iceberg-rest-catalog-used</span></code> configuration property from the <a class="reference internal" href="../../connector/starburst-great-lakes.html"><span class="doc std std-doc">Great
+Lakes connector</span></a>. The connector automatically
+determines the metastore type. Great Lakes catalogs that set this property or
+its legacy name, <code class="docutils literal notranslate"><span class="pre">object-store.iceberg-rest-catalog-used</span></code>, fail to load. If
+you use static catalog management, SEP fails to start. You must remove the
+property from these catalogs before upgrading.</p></li>
+<li><p>Thrift metastore connections
+that use TLS now verify that the metastore’s certificate was issued for the
+host in <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code>. Before, SEP checked only that the certificate
+chained to a CA in the configured trust store. The change applies to Hive,
+Iceberg, Delta Lake, and Hudi catalogs that use a Thrift metastore with
+<code class="docutils literal notranslate"><span class="pre">hive.metastore.thrift.client.ssl.enabled=true</span></code>. If the host in
+<code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> is not listed in the certificate’s Subject Alternative
+Name (SAN), such as an IP address, a DNS alias, or a load balancer name,
+connections to the metastore now fail with a CertificateException.</p>
+<p>Before you upgrade, either reissue the metastore certificate with a SAN entry
+for that host, or change <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> to a name the certificate
+already covers. If you connect through a SOCKS proxy, the certificate must now
+be valid for the metastore host, not the proxy host. No configuration property
+turns the check off.</p>
+</li>
 </ul>
 </section>
 <section id="e-sts-16-oct-2026">
