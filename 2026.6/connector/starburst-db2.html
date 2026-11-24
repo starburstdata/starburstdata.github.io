@@ -298,6 +298,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#managed-statistics">Managed statistics</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#cost-based-join-pushdown">Cost-based join pushdown</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#predicate-pushdown-support">Predicate pushdown support</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#dynamic-filtering">Dynamic filtering</a><ul>
@@ -428,6 +429,7 @@
 <li><a class="reference internal" href="#managed-statistics">Managed statistics</a></li>
 <li><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li><a class="reference internal" href="#cost-based-join-pushdown">Cost-based join pushdown</a></li>
+<li><a class="reference internal" href="#predicate-pushdown-support">Predicate pushdown support</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#dynamic-filtering">Dynamic filtering</a><ul>
@@ -520,7 +522,16 @@ connector:</p>
 environments, increasing this value can improve performance. Defaults to
 <code class="docutils literal notranslate"><span class="pre">100000</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">db2.impersonation.enabled</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">db2.additional-binary-collations</span></code></p></td>
+<td><p>Comma-separated list of collation names, as reported in
+<code class="docutils literal notranslate"><span class="pre">SYSCAT.COLUMNS.COLLATIONNAME</span></code>, that compare strings byte by byte, in
+addition to the built-in <code class="docutils literal notranslate"><span class="pre">IDENTITY</span></code>, <code class="docutils literal notranslate"><span class="pre">IDENTITY_16BIT</span></code> and <code class="docutils literal notranslate"><span class="pre">BINARY</span></code>. Names
+are matched regardless of case. Equality predicates and joins on character
+columns are pushed down exactly only for columns that use one of these
+collations. Listing a collation that does not compare byte by byte
+produces incorrect results. Defaults to an empty list.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">db2.impersonation.enabled</span></code></p></td>
 <td><p>Enables user impersonation. Defaults to <code class="docutils literal notranslate"><span class="pre">false</span></code>.</p></td>
 </tr>
 </tbody>
@@ -996,6 +1007,10 @@ functions:</p>
 <li><p><a class="reference internal" href="../functions/aggregate.html#var_pop" title="var_pop"><code class="xref py py-func docutils literal notranslate"><span class="pre">var_pop()</span></code></a></p></li>
 <li><p><a class="reference internal" href="../functions/aggregate.html#variance" title="variance"><code class="xref py py-func docutils literal notranslate"><span class="pre">variance()</span></code></a> and <a class="reference internal" href="../functions/aggregate.html#var_samp" title="var_samp"><code class="xref py py-func docutils literal notranslate"><span class="pre">var_samp()</span></code></a></p></li>
 </ul>
+<p><a class="reference internal" href="../optimizer/pushdown.html#projection-pushdown"><span class="std std-ref">Projection pushdown</span></a> for the following functions:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">trim()</span></code>, <code class="docutils literal notranslate"><span class="pre">ltrim()</span></code> and <code class="docutils literal notranslate"><span class="pre">rtrim()</span></code></p></li>
+</ul>
 <section id="cost-based-join-pushdown">
 <h4 id="cost-based-join-pushdown">Cost-based join pushdown<a class="headerlink" href="#cost-based-join-pushdown" title="Link to this heading">#</a></h4>
 <p>The connector supports cost-based <a class="reference internal" href="../optimizer/pushdown.html#join-pushdown"><span class="std std-ref">Join pushdown</span></a> to make intelligent
@@ -1037,6 +1052,33 @@ testing and troubleshooting purposes.</p></td>
 </tr>
 </tbody>
 </table>
+</section>
+<section id="predicate-pushdown-support">
+<span id="db2-predicate-pushdown"></span><h4 id="predicate-pushdown-support">Predicate pushdown support<a class="headerlink" href="#predicate-pushdown-support" title="Link to this heading">#</a></h4>
+<p>Db2 compares character strings blank-padded (<code class="docutils literal notranslate"><span class="pre">'a'</span></code> equals <code class="docutils literal notranslate"><span class="pre">'a</span> <span class="pre">'</span></code>) and in the
+order of the database collation, which can differ from SEP. The connector
+pushes down operations on <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns only where the result
+is guaranteed to match SEP:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">IN</span></code> and <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code> on <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns, and joins on <code class="docutils literal notranslate"><span class="pre">=</span></code> between
+<code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> columns, are pushed down for columns that use a binary collation:
+<code class="docutils literal notranslate"><span class="pre">IDENTITY</span></code>, <code class="docutils literal notranslate"><span class="pre">IDENTITY_16BIT</span></code>, <code class="docutils literal notranslate"><span class="pre">BINARY</span></code>, or a collation listed in
+<code class="docutils literal notranslate"><span class="pre">db2.additional-binary-collations</span></code>. The connector adds a length condition
+that makes Db2’s blank-padded comparison exact. For columns with any other
+collation the predicate is pushed down and evaluated again in SEP, and
+the join is not pushed down.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">=</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> between two <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> columns, including as join conditions, are
+pushed down for columns that use a binary collation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">trim()</span></code>, <code class="docutils literal notranslate"><span class="pre">ltrim()</span></code> and <code class="docutils literal notranslate"><span class="pre">rtrim()</span></code> are pushed down as projections for columns
+in the UTF-8 code page, which allows joins on trimmed keys to be pushed
+down.</p></li>
+<li><p>Not pushed down: <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> and <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code> on character columns,
+<code class="docutils literal notranslate"><span class="pre">LIKE</span></code>, and <code class="docutils literal notranslate"><span class="pre">ORDER</span> <span class="pre">BY</span></code>, Top-N, <code class="docutils literal notranslate"><span class="pre">GROUP</span> <span class="pre">BY</span></code>, <code class="docutils literal notranslate"><span class="pre">min()</span></code>, <code class="docutils literal notranslate"><span class="pre">max()</span></code> and
+<code class="docutils literal notranslate"><span class="pre">count(DISTINCT)</span></code> on character columns. A binary collation does not
+guarantee SEP’s ordering of values; for example, <code class="docutils literal notranslate"><span class="pre">IDENTITY_16BIT</span></code>
+orders supplementary characters (U+10000 and above) before U+E000 to
+U+FFFF.</p></li>
+</ul>
 </section>
 </section>
 <section id="dynamic-filtering">
