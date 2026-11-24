@@ -399,6 +399,47 @@ SEP 483-e is the last release to use the old scheme.</p>
 <section id="breaking-changes">
 <h2 id="breaking-changes">Breaking changes<a class="headerlink" href="#breaking-changes" title="Link to this heading">#</a></h2>
 <ul>
+<li><p>As of SEP 2026.6.1, the <a class="reference internal" href="../admin/cache-service.html#cache-service-authentication"><span class="std std-ref">cache service</span></a>
+requires authentication by default. The <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code>
+configuration property on the cache service now defaults to <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">NONE</span></code>. A cache service that does not set the property fails to
+start until you set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code>, or until you explicitly
+set <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=NONE</span></code>. Every catalog that sets
+<code class="docutils literal notranslate"><span class="pre">cache-service.uri</span></code> must set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to the same value.
+Otherwise, queries that use table redirections or materialized views stored
+in the cache service fail with <code class="docutils literal notranslate"><span class="pre">Cache</span> <span class="pre">service</span> <span class="pre">at</span> <span class="pre">...</span> <span class="pre">rejected</span> <span class="pre">the</span> <span class="pre">request</span></code>.
+Use a value dedicated to the cache service, not the clusters’
+<code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code>. A cache service that already sets
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> to <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> or <code class="docutils literal notranslate"><span class="pre">NONE</span></code> behaves as before.
+Serve the cache service over HTTPS when it is reachable beyond one cluster’s
+network. The change also affects the following:</p>
+<ul class="simple">
+<li><p>In the <code class="docutils literal notranslate"><span class="pre">starburst-cache-service</span></code> Helm chart, set
+<code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code> to a Kubernetes secret that contains the
+shared secret. The secret key defaults to <code class="docutils literal notranslate"><span class="pre">shared-secret</span></code>, and you can
+change it with <code class="docutils literal notranslate"><span class="pre">sharedSecret.secretKey</span></code>. Without the secret, the pod fails
+to start.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/metrics</span></code> endpoint requires authentication. For metrics scrapers, use
+<code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> authentication over HTTPS with
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=INTERNAL,PASSWORD</span></code>. The <code class="docutils literal notranslate"><span class="pre">/v1/status</span></code>
+endpoint stays public for health checks.</p></li>
+</ul>
+<p>Clusters must send signed requests before the cache service requires them.
+A SEP version earlier than 2026.6.1 does not know
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code>, so a catalog that sets it fails to start on
+that version. Unless your clusters already use <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> over HTTPS, upgrade
+in this order:</p>
+<ol class="arabic simple">
+<li><p>Upgrade the cache service with <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=NONE</span></code>,
+or keep its existing <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> setting.</p></li>
+<li><p>Upgrade every cluster that shares the cache service, and set
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> in their catalogs. A cache service set to
+<code class="docutils literal notranslate"><span class="pre">NONE</span></code> or <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> ignores the signed requests.</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=INTERNAL</span></code> on the cache service
+with the same secret. Keep <code class="docutils literal notranslate"><span class="pre">INTERNAL,PASSWORD</span></code> while the cache CLI, a
+metrics scraper, or any catalog still authenticates with a password.</p></li>
+</ol>
+</li>
 <li><p>The <a class="reference internal" href="../connector/kudu.html"><span class="doc std std-doc">Starburst Kudu connector</span></a> is no longer included with
 SEP, and upgrading removes it from existing clusters. The connector is
 available as a separate plugin that you install on every node. Until you
