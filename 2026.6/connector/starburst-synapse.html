@@ -325,6 +325,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li class="toctree-l5"><a class="reference internal" href="#cost-based-join-pushdown">Cost-based join pushdown</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#predicate-pushdown-support">Predicate pushdown support</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#range-predicate-pushdown-on-string-columns">Range predicate pushdown on string columns</a></li>
 </ul>
 </li>
 <li class="toctree-l4"><a class="reference internal" href="#starburst-cached-views">Starburst Cached Views</a></li>
@@ -429,6 +430,7 @@
 <li><a class="reference internal" href="#pushdown">Pushdown</a><ul>
 <li><a class="reference internal" href="#cost-based-join-pushdown">Cost-based join pushdown</a></li>
 <li><a class="reference internal" href="#predicate-pushdown-support">Predicate pushdown support</a></li>
+<li><a class="reference internal" href="#range-predicate-pushdown-on-string-columns">Range predicate pushdown on string columns</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#starburst-cached-views">Starburst Cached Views</a></li>
@@ -1033,11 +1035,76 @@ Synapse returns. SEP then reapplies the predicate to the returned rows.</p>
 <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> columns with any collation:</p>
 <ul class="simple">
 <li><p>Inequality predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">NOT</span> <span class="pre">IN</span></code>.</p></li>
-<li><p>Range predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">IN</span></code> predicates with more values than the domain compaction threshold.</p></li>
+<li><p>Range predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, and <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code>, unless you enable
+<a class="reference internal" href="#synapse-date-string-range-pushdown"><span class="std std-ref">range predicate pushdown on string
+columns</span></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">IN</span></code> predicates with more values than the domain compaction threshold,
+unless you enable <a class="reference internal" href="#synapse-date-string-range-pushdown"><span class="std std-ref">range predicate pushdown on string
+columns</span></a> and every value consists only of
+digits.</p></li>
 </ul>
 <p>The connector does not push down join operations where the join condition uses
 an <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> column with a case-sensitive or binary collation.</p>
+</section>
+<section id="range-predicate-pushdown-on-string-columns">
+<span id="synapse-date-string-range-pushdown"></span><h4 id="range-predicate-pushdown-on-string-columns">Range predicate pushdown on string columns<a class="headerlink" href="#range-predicate-pushdown-on-string-columns" title="Link to this heading">#</a></h4>
+<p>By default, the connector does not push down range predicates such as <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, and <code class="docutils literal notranslate"><span class="pre">BETWEEN</span></code> on <code class="docutils literal notranslate"><span class="pre">CHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">NCHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, and <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code>
+columns. Synapse collations order strings differently from SEP, so pushing
+these predicates down can return incorrect results.</p>
+<p>Some tables store dates as strings, such as the <code class="docutils literal notranslate"><span class="pre">YYYYMMDD</span></code> format that SAP
+uses, for example <code class="docutils literal notranslate"><span class="pre">'20260101'</span></code>. Range predicate pushdown on these columns is
+not enabled by default. To enable it, set the
+<code class="docutils literal notranslate"><span class="pre">synapse.unsafe-date-string-range-pushdown.enabled</span></code> catalog configuration
+property or the <code class="docutils literal notranslate"><span class="pre">unsafe_date_string_range_pushdown</span></code> catalog session property to
+<code class="docutils literal notranslate"><span class="pre">true</span></code>.</p>
+<p>When the property is enabled, the connector pushes down a range predicate on a
+character column only if every bound of the predicate consists only of the
+digits <code class="docutils literal notranslate"><span class="pre">0</span></code> to <code class="docutils literal notranslate"><span class="pre">9</span></code>. The connector does not push down predicates with any other
+bound. For example:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- pushed down when posting_date is a VARCHAR or NVARCHAR column</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fact_revenue</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">posting_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'20260101'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">posting_date</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="s1">'20260201'</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fact_revenue</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">posting_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="s1">'20260101'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="s1">'20260131'</span><span class="p">;</span>
+
+<span class="c1">-- not pushed down, the bounds contain '-'</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fact_revenue</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">posting_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'2026-01-01'</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>SEP still applies the predicate to the rows that Synapse returns, so the
+results match a query without pushdown as long as the column data meets the
+requirement in the following warning.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The connector cannot verify the values stored in the column. Enable this
+property only for columns whose values contain only digits, letters, and
+spaces. Queries can return incorrect results if a column contains punctuation
+such as <code class="docutils literal notranslate"><span class="pre">-</span></code>, <code class="docutils literal notranslate"><span class="pre">'</span></code>, <code class="docutils literal notranslate"><span class="pre">:</span></code>, <code class="docutils literal notranslate"><span class="pre">;</span></code>, <code class="docutils literal notranslate"><span class="pre">_</span></code>, or <code class="docutils literal notranslate"><span class="pre">@</span></code>, control characters, or full-width
+characters, because Synapse collations order these characters differently
+from SEP.</p>
+</div>
+<p>To check a column before you enable the property, run the following query in
+Synapse. A result of <code class="docutils literal notranslate"><span class="pre">0</span></code> means that the column meets the requirement:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="o">&lt;</span><span class="k">schema</span><span class="o">&gt;</span><span class="p">.</span><span class="o">&lt;</span><span class="k">table</span><span class="o">&gt;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="o">&lt;</span><span class="k">column</span><span class="o">&gt;</span><span class="w"> </span><span class="k">COLLATE</span><span class="w"> </span><span class="n">Latin1_General_BIN2</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%[^0-9A-Za-z ]%'</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>The pushdown has the following limitations:</p>
+<ul class="simple">
+<li><p>Only native <code class="docutils literal notranslate"><span class="pre">CHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">NCHAR</span></code>, <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>, and <code class="docutils literal notranslate"><span class="pre">NVARCHAR</span></code> columns are
+supported. Columns of other types that the connector maps to <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code> are
+not pushed down.</p></li>
+<li><p>Only comparisons with a string literal are pushed down. Predicates that
+convert the column first, such as
+<code class="docutils literal notranslate"><span class="pre">CAST(posting_date</span> <span class="pre">AS</span> <span class="pre">DATE)</span> <span class="pre">&gt;=</span> <span class="pre">DATE</span> <span class="pre">'2026-01-01'</span></code> or
+<code class="docutils literal notranslate"><span class="pre">date_parse(posting_date,</span> <span class="pre">'%Y%m%d')</span></code>, are not pushed down.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> and <code class="docutils literal notranslate"><span class="pre">NCHAR</span></code> columns, compare with a <code class="docutils literal notranslate"><span class="pre">CHAR</span></code> literal, for example
+<code class="docutils literal notranslate"><span class="pre">posting_date</span> <span class="pre">&gt;=</span> <span class="pre">CAST('20260101'</span> <span class="pre">AS</span> <span class="pre">CHAR(8))</span></code>. A comparison with a <code class="docutils literal notranslate"><span class="pre">VARCHAR</span></code>
+literal is not pushed down.</p></li>
+</ul>
 </section>
 </section>
 <section id="starburst-cached-views">
