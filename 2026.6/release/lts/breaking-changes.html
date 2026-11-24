@@ -116,7 +116,7 @@
         <a href="https://www.starburst.io" title="Starburst Enterprise"
           class="md-header-nav__button md-logo">
             <img src="../../_static/img/Starburst_Logo_White+Blue.svg"
-              alt="Starburst Enterprise 2026.6.0 STS logo">
+              alt="Starburst Enterprise 2026.6.1 LTS logo">
         </a>
       </div>
       <span class="header-divider"></span>
@@ -127,7 +127,7 @@
         <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
           <a href="/starburst-enterprise/index.html"
           class="md-header-nav__topic">
-          Documentation: Starburst Enterprise 2026.6.0 STS</a>
+          Documentation: Starburst Enterprise 2026.6.1 LTS</a>
           <span class="md-header-nav__topic"> SEP breaking changes </span>
         </div>
       </div>
@@ -149,7 +149,9 @@
   <div class="md-flex__cell md-flex__cell--shrink dropdown">
     <button class="dropdownbutton">Choose version</button>
     <div class="dropdown-content md-hero">
-          <a title="Latest LTS (482-e)" href="/482-e/">Latest LTS (482-e)</a>
+          <a title="Latest LTS (2026.6.1)" href="/2026.6/">Latest LTS (2026.6.1)</a>
+      
+          <a title="482-e LTS" href="/482-e/">482-e LTS</a>
       
           <a title="480-e LTS" href="/480-e/">480-e LTS</a>
       
@@ -157,7 +159,7 @@
       
           <a title="477-e LTS" href="/477-e/">477-e LTS</a>
       
-          <a title="Latest STS (2026.6.0)" href="/2026.6/">Latest STS (2026.6.0)</a>
+          <a title="Latest STS (483-e)" href="/483-e/">Latest STS (483-e)</a>
       
     </div>
   </div>
@@ -204,7 +206,7 @@
       
     </a>
     <a href="../../index.html"
-       title="Starburst Enterprise">Starburst Enterprise STS</a>
+       title="Starburst Enterprise">Starburst Enterprise LTS</a>
   </label>
   
   
@@ -219,6 +221,7 @@
 <li class="toctree-l2 current"><a class="reference internal" href="../../release.html#starburst-enterprise-releases">Starburst Enterprise releases</a><ul class="current">
 <li class="toctree-l3 current"><a class="reference internal" href="../../release.html#breaking-changes">Breaking changes</a><ul class="current">
 <li class="toctree-l4 current"><a class="current reference internal" href="#">SEP LTS breaking changes</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#lts-24-nov-2026">2026.6.1 LTS (24 Nov 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-lts-11-sep-2026">482-e LTS (11 Sep 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-lts-29-may-2026">480-e LTS (29 May 2026)</a></li>
 <li class="toctree-l5"><a class="reference internal" href="#e-lts-27-feb-2026">479-e LTS (27 Feb 2026)</a></li>
@@ -359,6 +362,7 @@
     
     <ul>
 <li><a class="reference internal" href="#">SEP breaking changes</a><ul>
+<li><a class="reference internal" href="#lts-24-nov-2026">2026.6.1 LTS (24 Nov 2026)</a></li>
 <li><a class="reference internal" href="#e-lts-11-sep-2026">482-e LTS (11 Sep 2026)</a></li>
 <li><a class="reference internal" href="#e-lts-29-may-2026">480-e LTS (29 May 2026)</a></li>
 <li><a class="reference internal" href="#e-lts-27-feb-2026">479-e LTS (27 Feb 2026)</a></li>
@@ -403,6 +407,171 @@
 <p>This page compiles all of the breaking changes introduced in each Starburst Enterprise platform (SEP)
 <a class="reference internal" href="../../versions.html#lts-sts"><span class="std std-ref">LTS release</span></a>. When upgrading between SEP releases, refer
 to this page to address all breaking changes listed between the two.</p>
+<section id="lts-24-nov-2026">
+<h2 id="lts-24-nov-2026">2026.6.1 LTS (24 Nov 2026)<a class="headerlink" href="#lts-24-nov-2026" title="Link to this heading">#</a></h2>
+<ul>
+<li><p>As of SEP 2026.6.1, the <a class="reference internal" href="../../connector/starburst-synapse.html"><span class="doc std std-doc">Synapse connector</span></a>
+no longer provides the <code class="docutils literal notranslate"><span class="pre">system.execute</span></code> procedure or the <code class="docutils literal notranslate"><span class="pre">system.query</span></code> table
+function on catalogs that set <code class="docutils literal notranslate"><span class="pre">synapse.impersonation.enabled=true</span></code>. User
+impersonation in the connector is based on <code class="docutils literal notranslate"><span class="pre">EXECUTE</span> <span class="pre">AS</span> <span class="pre">USER</span></code>, and SQL passed
+through either entry point could undo it with <code class="docutils literal notranslate"><span class="pre">REVERT</span></code> and run with the
+privileges of the catalog’s service login. Queries that call <code class="docutils literal notranslate"><span class="pre">system.execute</span></code>
+or <code class="docutils literal notranslate"><span class="pre">system.query</span></code> on these catalogs now fail. Other procedures, such as
+<code class="docutils literal notranslate"><span class="pre">system.flush_metadata_cache</span></code>, are unaffected, and catalogs that do not
+enable impersonation are unchanged. Before upgrading, check each Synapse
+catalog that enables impersonation for queries, scheduled jobs, and client
+tools that call <code class="docutils literal notranslate"><span class="pre">system.execute</span></code> or <code class="docutils literal notranslate"><span class="pre">system.query</span></code>. Rewrite them as standard
+SQL, which runs as the impersonated user, or move them to a separate Synapse
+catalog without impersonation.</p></li>
+<li><p>As of SEP 2026.6.1, the <a class="reference internal" href="../../admin/cache-service.html#cache-service-authentication"><span class="std std-ref">cache service</span></a>
+requires authentication by default. The <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code>
+configuration property on the cache service now defaults to <code class="docutils literal notranslate"><span class="pre">INTERNAL</span></code>
+instead of <code class="docutils literal notranslate"><span class="pre">NONE</span></code>. A cache service that does not set the property fails to
+start until you set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code>, or until you explicitly
+set <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=NONE</span></code>. Every catalog that sets
+<code class="docutils literal notranslate"><span class="pre">cache-service.uri</span></code> must set <code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> to the same value.
+Otherwise, queries that use table redirections or materialized views stored
+in the cache service fail with <code class="docutils literal notranslate"><span class="pre">Cache</span> <span class="pre">service</span> <span class="pre">at</span> <span class="pre">...</span> <span class="pre">rejected</span> <span class="pre">the</span> <span class="pre">request</span></code>.
+Use a value dedicated to the cache service, not the clusters’
+<code class="docutils literal notranslate"><span class="pre">internal-communication.shared-secret</span></code>. A cache service that already sets
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type</span></code> to <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> or <code class="docutils literal notranslate"><span class="pre">NONE</span></code> behaves as before.
+Serve the cache service over HTTPS when it is reachable beyond one cluster’s
+network. The change also affects the following:</p>
+<ul class="simple">
+<li><p>In the <code class="docutils literal notranslate"><span class="pre">starburst-cache-service</span></code> Helm chart, set
+<code class="docutils literal notranslate"><span class="pre">sharedSecret.existingSecret</span></code> to a Kubernetes secret that contains the
+shared secret. The secret key defaults to <code class="docutils literal notranslate"><span class="pre">shared-secret</span></code>, and you can
+change it with <code class="docutils literal notranslate"><span class="pre">sharedSecret.secretKey</span></code>. Without the secret, the pod fails
+to start.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">/metrics</span></code> endpoint requires authentication. For metrics scrapers, use
+<code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> authentication over HTTPS with
+<code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=INTERNAL,PASSWORD</span></code>. The <code class="docutils literal notranslate"><span class="pre">/v1/status</span></code>
+endpoint stays public for health checks.</p></li>
+</ul>
+<p>Clusters must send signed requests before the cache service requires them.
+A SEP version earlier than 2026.6.1 does not know
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code>, so a catalog that sets it fails to start on
+that version. Unless your clusters already use <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> over HTTPS, upgrade
+in this order:</p>
+<ol class="arabic simple">
+<li><p>Upgrade the cache service with <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=NONE</span></code>,
+or keep its existing <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> setting.</p></li>
+<li><p>Upgrade every cluster that shares the cache service, and set
+<code class="docutils literal notranslate"><span class="pre">cache-service.shared-secret</span></code> in their catalogs. A cache service set to
+<code class="docutils literal notranslate"><span class="pre">NONE</span></code> or <code class="docutils literal notranslate"><span class="pre">PASSWORD</span></code> ignores the signed requests.</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">http-server.authentication.type=INTERNAL</span></code> on the cache service
+with the same secret. Keep <code class="docutils literal notranslate"><span class="pre">INTERNAL,PASSWORD</span></code> while the cache CLI, a
+metrics scraper, or any catalog still authenticates with a password.</p></li>
+</ol>
+</li>
+<li><p>The <a class="reference internal" href="../../connector/kudu.html"><span class="doc std std-doc">Starburst Kudu connector</span></a> is no longer included with
+SEP, and upgrading removes it from existing clusters. The connector is
+available as a separate plugin that you install on every node. Until you
+install the plugin, catalogs that use the Kudu connector fail to load. If you
+use static catalog management, SEP fails to start. To keep using Kudu
+catalogs, follow the steps in <a class="reference internal" href="../../connector/kudu.html#kudu-upgrade"><span class="std std-ref">Upgrade from SEP 483-e to SEP 2026.6.0</span></a>.</p></li>
+<li><p>Removed the <code class="docutils literal notranslate"><span class="pre">glue_v2</span></code> value for the <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type</span></code> configuration
+property in the <a class="reference internal" href="../../connector/iceberg.html"><span class="doc std std-doc">Iceberg connector</span></a>. Use <code class="docutils literal notranslate"><span class="pre">glue</span></code> instead.
+Since 480-e, <code class="docutils literal notranslate"><span class="pre">glue</span></code> and <code class="docutils literal notranslate"><span class="pre">glue_v2</span></code> both use the AWS Glue v2 SDK. Iceberg
+catalogs that set <code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=glue_v2</span></code>, including catalogs created
+with <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">CATALOG</span></code>, fail to load. You must update these catalogs to use
+<code class="docutils literal notranslate"><span class="pre">iceberg.catalog.type=glue</span></code> before upgrading.</p></li>
+<li><p>The <a class="reference internal" href="../../connector/iceberg.html"><span class="doc std std-doc">Iceberg</span></a> and <a class="reference internal" href="../../connector/delta-lake.html"><span class="doc std std-doc">Delta Lake</span></a>
+connectors now check more locations against location privileges in
+<a class="reference internal" href="../../admin/control-plane/access-control/privileges.html"><span class="doc std std-doc">Starburst access control</span></a>,
+<a class="reference internal" href="../../security/biac-privileges.html#biac-entity-location"><span class="std std-ref">built-in access control</span></a>, and
+<a class="reference internal" href="../../security/ranger-overview.html#ranger-location"><span class="std std-ref">Apache Ranger</span></a>. Users now need these privileges for:</p>
+<ul class="simple">
+<li><p>The Iceberg <code class="docutils literal notranslate"><span class="pre">data_location</span></code> table property in <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span></code>,
+<code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">TABLE</span> <span class="pre">AS</span></code>, <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">OR</span> <span class="pre">REPLACE</span> <span class="pre">TABLE</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">ALTER</span> <span class="pre">TABLE</span> <span class="pre">SET</span> <span class="pre">PROPERTIES</span></code>.</p></li>
+<li><p>The table location in <code class="docutils literal notranslate"><span class="pre">register_table</span></code>, and the Iceberg
+<code class="docutils literal notranslate"><span class="pre">metadata_location</span></code> argument.</p></li>
+</ul>
+<p>Grant these privileges before upgrading.</p>
+</li>
+<li><p>With Starburst access control or built-in access control, <code class="docutils literal notranslate"><span class="pre">register_table</span></code> and
+<code class="docutils literal notranslate"><span class="pre">unregister_table</span></code> now update table ownership, custom metadata, and managed
+statistics in catalogs that use system-level access control. A re-registered
+table no longer keeps the old table’s grants. This doesn’t apply to Apache
+Ranger.</p></li>
+<li><p>Removed the <code class="docutils literal notranslate"><span class="pre">ldap.ssl.truststore.password</span></code> configuration property of the
+<a class="reference internal" href="../../security/ldap-group-provider.html#ldap-group-provider-configuration"><span class="std std-ref">LDAP group provider</span></a>. The property never
+took effect, and SEP ignored any value that you set. The coordinator now
+fails to start if the <code class="docutils literal notranslate"><span class="pre">group-provider.properties</span></code> file contains it. Remove the
+property before you upgrade. To set the truststore password, use
+<code class="docutils literal notranslate"><span class="pre">ldap.ssl.truststore.password-path</span></code>, which points to a file that contains the
+password.</p></li>
+<li><p>The Starburst control plane public API now requires a <code class="docutils literal notranslate"><span class="pre">syncToken</span></code> in update
+(<code class="docutils literal notranslate"><span class="pre">PUT</span></code>) requests for routing rules and tagging rules. Responses for these
+resources now include <code class="docutils literal notranslate"><span class="pre">syncToken</span></code>. Send the token back unchanged in the
+request body, together with the ID of the resource, which is <code class="docutils literal notranslate"><span class="pre">routingRuleId</span></code>
+or <code class="docutils literal notranslate"><span class="pre">taggingRuleId</span></code> and must match the ID in the path. The request body is
+flat, as in <code class="docutils literal notranslate"><span class="pre">{syncToken,</span> <span class="pre">&lt;resourceId&gt;,</span> <span class="pre">name,</span> <span class="pre">...,</span> <span class="pre">condition,</span> <span class="pre">action}</span></code>. A
+request with a stale token fails with the status <code class="docutils literal notranslate"><span class="pre">409</span> <span class="pre">Conflict</span></code>. Update any
+scripts or integrations that send update requests.</p></li>
+<li><p>The Starburst Metastore API now requires a <code class="docutils literal notranslate"><span class="pre">syncToken</span></code> in update (<code class="docutils literal notranslate"><span class="pre">PUT</span></code>) requests
+for data sources. Responses for data sources now include <code class="docutils literal notranslate"><span class="pre">syncToken</span></code>. Send the
+token back unchanged in the request body, which is now nested, as in
+<code class="docutils literal notranslate"><span class="pre">{syncToken,</span> <span class="pre">dataSourceId,</span> <span class="pre">dataSource:</span> <span class="pre">{type,</span> <span class="pre">...}}</span></code>. A request with a stale
+token fails with the status <code class="docutils literal notranslate"><span class="pre">409</span> <span class="pre">Conflict</span></code>. Update any scripts or integrations
+that send update requests.</p></li>
+<li><p>The Starburst control plane public cluster API now returns status and failover
+codes in PascalCase instead of UPPER_SNAKE_CASE, consistent with the rest of
+the public API. The OpenAPI specification now lists all possible values. The
+values change as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">failoverReadiness.code</span></code> returned by
+<code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/public/api/v1/cluster/{clusterId}/status</span></code>: <code class="docutils literal notranslate"><span class="pre">READY</span></code> is now <code class="docutils literal notranslate"><span class="pre">Ready</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">NOT_READY</span></code> is now <code class="docutils literal notranslate"><span class="pre">NotReady</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">healthStatus</span></code> of the active and standby coordinators returned by
+<code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/public/api/v1/cluster/{clusterId}/status</span></code>: <code class="docutils literal notranslate"><span class="pre">HEALTHY</span></code> is now
+<code class="docutils literal notranslate"><span class="pre">Healthy</span></code>, <code class="docutils literal notranslate"><span class="pre">NOT_HEALTHY</span></code> is now <code class="docutils literal notranslate"><span class="pre">NotHealthy</span></code>, and <code class="docutils literal notranslate"><span class="pre">UNKNOWN</span></code> is now
+<code class="docutils literal notranslate"><span class="pre">Unknown</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">code</span></code> of the <code class="docutils literal notranslate"><span class="pre">409</span> <span class="pre">Conflict</span></code> response returned by
+<code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/public/api/v1/cluster/{clusterId}:failover</span></code>:
+<code class="docutils literal notranslate"><span class="pre">NO_ACTIVE_COORDINATOR</span></code> is now <code class="docutils literal notranslate"><span class="pre">NoActiveCoordinator</span></code>,
+<code class="docutils literal notranslate"><span class="pre">NO_HEALTHY_STANDBY</span></code> is now <code class="docutils literal notranslate"><span class="pre">NoHealthyStandby</span></code>, <code class="docutils literal notranslate"><span class="pre">FAILOVER_IN_PROGRESS</span></code> is
+now <code class="docutils literal notranslate"><span class="pre">FailoverInProgress</span></code>, and <code class="docutils literal notranslate"><span class="pre">CONFLICT</span></code> is now <code class="docutils literal notranslate"><span class="pre">Conflict</span></code>. The field can
+also have the new value <code class="docutils literal notranslate"><span class="pre">DiscoveryDisabled</span></code>, which the API returns when
+you request a failover for a cluster that does not use discovery.</p></li>
+</ul>
+<p>Update any scripts or integrations that compare these values before you
+upgrade.</p>
+</li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">id</span></code> of routing rules and tagging rules in the Starburst control
+plane public API changes format. Routing rule IDs change from a UUID to <code class="docutils literal notranslate"><span class="pre">rr-</span></code>
+followed by 16 digits, for example <code class="docutils literal notranslate"><span class="pre">rr-0000000000000000</span></code>. Tagging rule IDs
+change from a UUID to <code class="docutils literal notranslate"><span class="pre">tr-</span></code> followed by 10 digits, for example
+<code class="docutils literal notranslate"><span class="pre">tr-0000000000000000</span></code>. Update any scripts or integrations that expect a UUID.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> configuration property of <a class="reference internal" href="../../object-storage/file-system-s3.html"><span class="doc std std-doc">native S3 file system
+support</span></a> now requires <code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code>.
+Catalogs that set <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span></code> without that authentication type fail to load
+with the error <code class="docutils literal notranslate"><span class="pre">s3.iam-role</span> <span class="pre">must</span> <span class="pre">be</span> <span class="pre">set</span> <span class="pre">when,</span> <span class="pre">and</span> <span class="pre">only</span> <span class="pre">when,</span> <span class="pre">s3.auth-type=IAM_ROLE</span></code>. You must add <code class="docutils literal notranslate"><span class="pre">s3.auth-type=IAM_ROLE</span></code> to</p></li>
+<li><p>Removed the
+<code class="docutils literal notranslate"><span class="pre">great-lakes.iceberg-rest-catalog-used</span></code> configuration property from the <a class="reference internal" href="../../connector/starburst-great-lakes.html"><span class="doc std std-doc">Great
+Lakes connector</span></a>. The connector automatically
+determines the metastore type. Great Lakes catalogs that set this property or
+its legacy name, <code class="docutils literal notranslate"><span class="pre">object-store.iceberg-rest-catalog-used</span></code>, fail to load. If
+you use static catalog management, SEP fails to start. You must remove the
+property from these catalogs before upgrading.</p></li>
+<li><p>Thrift metastore connections
+that use TLS now verify that the metastore’s certificate was issued for the
+host in <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code>. Before, SEP checked only that the certificate
+chained to a CA in the configured trust store. The change applies to Hive,
+Iceberg, Delta Lake, and Hudi catalogs that use a Thrift metastore with
+<code class="docutils literal notranslate"><span class="pre">hive.metastore.thrift.client.ssl.enabled=true</span></code>. If the host in
+<code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> is not listed in the certificate’s Subject Alternative
+Name (SAN), such as an IP address, a DNS alias, or a load balancer name,
+connections to the metastore now fail with a CertificateException.</p>
+<p>Before you upgrade, either reissue the metastore certificate with a SAN entry
+for that host, or change <code class="docutils literal notranslate"><span class="pre">hive.metastore.uri</span></code> to a name the certificate
+already covers. If you connect through a SOCKS proxy, the certificate must now
+be valid for the metastore host, not the proxy host. No configuration property
+turns the check off.</p>
+</li>
+</ul>
+</section>
 <section id="e-lts-11-sep-2026">
 <h2 id="e-lts-11-sep-2026">482-e LTS (11 Sep 2026)<a class="headerlink" href="#e-lts-11-sep-2026" title="Link to this heading">#</a></h2>
 <ul class="simple">
@@ -1819,7 +1988,7 @@ feedback();
 
         <a href="https://www.starburst.io/" target="_blank">
           <img src="../../_static/img/Starburst_Logo_White+Blue.svg" height="34"
-            alt="Starburst Enterprise 2026.6.0 STS logo">
+            alt="Starburst Enterprise 2026.6.1 LTS logo">
         </a>
         <li class="footer-item" style="padding-right:10px;">
           <a href="/disclaimers.html#copyright">Copyright © 2017-<span id="copyright-year"></span><br> Starburst Data</a>
@@ -1832,7 +2001,7 @@ feedback();
   </div>
 </div>
 <script src="https://docs.starburst.io/latest/_static/algolia.js"></script>
-<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (2026.6.0)': '/2026.6/'}"></script>
-<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (482-e)': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (2026.6.0)': '/2026.6/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchbox.js" data-versions="{'Latest LTS (2026.6.1)': '/2026.6/', '482-e LTS': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
+<script src="https://docs.starburst.io/latest/_static/searchresults.js" data-versions="{'Latest LTS (2026.6.1)': '/2026.6/', '482-e LTS': '/482-e/', '480-e LTS': '/480-e/', '479-e LTS': '/479-e/', '477-e LTS': '/477-e/', 'Latest STS (483-e)': '/483-e/'}"></script>
   </body>
 </html>
