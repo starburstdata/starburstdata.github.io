@@ -249,12 +249,19 @@
 <li class="toctree-l4"><a class="reference internal" href="#data-product-protection">Data product protection</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#prompt-limiting">Prompt limiting</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#topic-filtering">Topic filtering</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#content-scanning">Content scanning</a><ul>
+<li class="toctree-l5"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#configure-content-scanning">Configure content scanning</a></li>
+<li class="toctree-l5"><a class="reference internal" href="#content-scanning-messages">Content scanning messages</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-configuration-changes-affect-chat-sessions">How configuration changes affect chat sessions</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#diagnose-which-guardrail-is-responsible">Diagnose which guardrail is responsible</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#content-scanning-errors">Content scanning errors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#turn-off-a-guardrail">Turn off a guardrail</a></li>
 </ul>
 </li>
@@ -348,12 +355,19 @@
 <li><a class="reference internal" href="#data-product-protection">Data product protection</a></li>
 <li><a class="reference internal" href="#prompt-limiting">Prompt limiting</a></li>
 <li><a class="reference internal" href="#topic-filtering">Topic filtering</a></li>
+<li><a class="reference internal" href="#content-scanning">Content scanning</a><ul>
+<li><a class="reference internal" href="#requirements">Requirements</a></li>
+<li><a class="reference internal" href="#configure-content-scanning">Configure content scanning</a></li>
+<li><a class="reference internal" href="#content-scanning-messages">Content scanning messages</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a class="reference internal" href="#how-configuration-changes-affect-chat-sessions">How configuration changes affect chat sessions</a></li>
 <li><a class="reference internal" href="#limitations">Limitations</a></li>
 <li><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
 <li><a class="reference internal" href="#diagnose-which-guardrail-is-responsible">Diagnose which guardrail is responsible</a></li>
+<li><a class="reference internal" href="#content-scanning-errors">Content scanning errors</a></li>
 <li><a class="reference internal" href="#turn-off-a-guardrail">Turn off a guardrail</a></li>
 </ul>
 </li>
@@ -374,14 +388,17 @@
   <section id="starburst-ai-guardrails">
 <h1 id="starburst-ai-guardrails--page-root">Starburst AI Guardrails<a class="headerlink" href="#starburst-ai-guardrails--page-root" title="Link to this heading">#</a></h1>
 <p>Guardrails are policies that govern how <a class="reference internal" href="aida-ai.html"><span class="doc std std-doc">AIDA</span></a> behaves: what it
-refuses, how it handles oversized inputs, and which topics it engages with. They
-apply to all AI models and agents on the cluster.</p>
+refuses, how it handles oversized inputs, which topics it engages with, and
+which content it accepts and returns. They apply to all AI models and agents on
+the cluster.</p>
 <p>An administrator configures guardrails once, at the cluster level, and SEP
 applies them on every request. Prompt limiting validates the size of each
 message before it reaches the model. Agent protection, data product protection,
-and topic filtering adjust the model’s instructions for each turn. Guardrails
-are on by default. You can turn off any protection that is too strict for your
-environment.</p>
+and topic filtering adjust the model’s instructions for each turn. Content
+scanning checks questions, responses, and external MCP tool results with an
+Amazon Bedrock guardrail that runs outside the model. Agent protection, data
+product protection, and prompt limiting are on by default. You can turn off any
+protection that is too strict for your environment.</p>
 <p>Guardrails govern how AIDA behaves. They do not replace your existing security
 controls such as Database permissions, row-level security, column masking, and
 data product access which govern the data AIDA can reach.</p>
@@ -396,7 +413,9 @@ applies to all AI models and agents on the cluster.</p></li>
 <li><p>In the <strong>Default</strong> row, click the <i class="material-symbols-rounded">more_vert</i> options menu, then select
 <strong>Edit</strong>.</p></li>
 <li><p>In the <strong>Edit default guardrails</strong> dialog, select or clear the checkboxes for
-the protections you want, then click <strong>Save</strong>.</p></li>
+the protections you want, then click <strong>Save</strong>. If you turn on content
+scanning or change its settings, click <strong>Test connection</strong> before you save.
+For more information, see <a class="reference internal" href="#guardrails-content-scanning-configure"><span class="std std-ref">Configure content scanning</span></a>.</p></li>
 </ol>
 <p>The following table lists the configurable guardrails and their default state:</p>
 <table>
@@ -429,6 +448,12 @@ the model.</p></td>
 </tr>
 <tr class="row-odd"><td><p>Topic filtering</p></td>
 <td><p>Refuses any request that touches a listed topic.</p></td>
+<td><p>Off</p></td>
+</tr>
+<tr class="row-even"><td><p>Content scanning</p></td>
+<td><p>Checks questions, responses, and external MCP tool results with an Amazon
+Bedrock guardrail. Blocks or masks content that violates the guardrail’s
+policies.</p></td>
 <td><p>Off</p></td>
 </tr>
 </tbody>
@@ -504,6 +529,166 @@ agent, such as a financial-services deployment that should not offer investment
 advice.</p>
 <p>Topic filtering is off by default. No topic filter is applied.</p>
 </section>
+<section id="content-scanning">
+<span id="guardrails-content-scanning"></span><h3 id="content-scanning">Content scanning<a class="headerlink" href="#content-scanning" title="Link to this heading">#</a></h3>
+<p>Content scanning sends AIDA’s input and output to an <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html">Amazon Bedrock
+guardrail</a>
+that you create and manage in your own AWS account. Other guardrails adjust the
+model’s instructions and depend on the model to follow them. Content scanning
+runs outside the model, so a request that persuades the model to ignore its
+instructions does not bypass it.</p>
+<p>You define the policies in Amazon Bedrock, so you can apply the same policies
+to AIDA that your organization uses for other AI applications, including:</p>
+<ul class="simple">
+<li><p>Content filters for harmful content and prompt attacks.</p></li>
+<li><p>Denied topics.</p></li>
+<li><p>Word filters.</p></li>
+<li><p>Sensitive information filters that block or mask personally identifiable
+information (PII) and custom patterns.</p></li>
+</ul>
+<p>When on, SEP scans the following content:</p>
+<ul class="simple">
+<li><p><strong>Questions</strong>: SEP scans each question that a user submits in the AIDA
+chat before the model receives it.</p></li>
+<li><p><strong>Responses</strong>: SEP holds each complete model response and scans it before
+the user sees it.</p></li>
+<li><p><strong>External MCP tool results</strong>: SEP scans the results that <a class="reference internal" href="aida-ai.html#studio-external-mcp-servers"><span class="std std-ref">external MCP
+servers</span></a> return, including error messages,
+before the model receives them.</p></li>
+</ul>
+<p>Each scan has one of the following outcomes:</p>
+<ul class="simple">
+<li><p><strong>Allowed</strong>: The content passes unchanged.</p></li>
+<li><p><strong>Masked</strong>: The guardrail masks sensitive details, such as a credit card
+number. Only the masked text reaches the model, the user, and the chat
+history. When the guardrail masks part of a question, the question in the
+chat updates to show the masked text. When the guardrail masks an external
+MCP tool result, the model receives the masked result as plain text, which
+might no longer be valid JSON.</p></li>
+<li><p><strong>Blocked</strong>: SEP replaces the content with a fixed message. A blocked
+question never reaches the model.</p></li>
+<li><p><strong>Error</strong>: The scan times out, Amazon Bedrock returns an error or an
+unexpected response, or SEP cannot use the trusted connection. SEP
+refuses the content and shows a fixed error message.</p></li>
+</ul>
+<p>When the guardrail blocks a response, the turn completes with the refusal
+message. When content scanning cannot check a response, the turn ends as failed.
+Callers of <a class="reference internal" href="mcp-server.html#mcp-data-product-agent"><span class="std std-ref">Starburst AI via MCP</span></a> receive a failed turn
+instead of an answer.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Content scanning fails closed. If Amazon Bedrock is unavailable or the trusted
+connection’s credentials stop working, AIDA declines questions and withholds
+responses until you resolve the problem or turn off content scanning.</p>
+</div>
+<p>While content scanning is on, AIDA does not stream responses as the model
+writes them. The chat shows an activity indicator, such as <code class="docutils literal notranslate"><span class="pre">Checking</span> <span class="pre">response</span> <span class="pre">with</span> <span class="pre">guardrails...</span></code>, and then shows the complete response.</p>
+<p>Content scanning does not cover every AIDA entry point or tool. For details,
+see <a class="reference internal" href="#guardrails-limitations"><span class="std std-ref">Limitations</span></a>.</p>
+<section id="requirements">
+<span id="guardrails-content-scanning-requirements"></span><h4 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Link to this heading">#</a></h4>
+<p>To use content scanning, you need:</p>
+<ul class="simple">
+<li><p>An Amazon Bedrock guardrail, and its guardrail ID and version. For more
+information, read <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-components.html">Create your
+guardrail</a>
+in the AWS documentation.</p></li>
+<li><p>A guardrail without an Automated Reasoning checks policy. SEP does not
+support Automated Reasoning checks, and every scan that such a policy
+intervenes on fails closed.</p></li>
+<li><p>An <a class="reference internal" href="trusted-connections.html#trusted-connections-configuration-bedrock"><span class="std std-ref">Amazon Bedrock trusted
+connection</span></a> in the same AWS region
+as the guardrail. You can select a connection that your Amazon Bedrock AI
+models already use, or create a separate one.</p></li>
+<li><p>AWS credentials for the trusted connection that have the
+<code class="docutils literal notranslate"><span class="pre">bedrock:ApplyGuardrail</span></code> permission for the guardrail. For an example policy,
+read <a class="reference external" href="https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails-permissions.html">Set up permissions to use Amazon Bedrock
+Guardrails</a>
+in the AWS documentation. If the connection authenticates with an AWS IAM
+role, the base credentials must be able to assume that role.</p></li>
+</ul>
+<p>Contextual grounding checks have no effect. SEP does not send Amazon
+Bedrock a reference source or a query, so Amazon Bedrock skips the check.</p>
+<p>Content scanning sends question, response, and tool result text to Amazon
+Bedrock in the trusted connection’s region. Choose a region that meets your
+data residency requirements. Amazon Bedrock bills guardrail usage to your AWS
+account, and a single AIDA turn can run several scans. For example, each
+external MCP tool result can take up to four scans.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Test connection</strong> on the trusted connection checks the
+<code class="docutils literal notranslate"><span class="pre">bedrock:ListFoundationModels</span></code> permission, not <code class="docutils literal notranslate"><span class="pre">bedrock:ApplyGuardrail</span></code>. A
+connection can pass its own test and still fail the content scanning test.</p>
+</div>
+</section>
+<section id="configure-content-scanning">
+<span id="guardrails-content-scanning-configure"></span><h4 id="configure-content-scanning">Configure content scanning<a class="headerlink" href="#configure-content-scanning" title="Link to this heading">#</a></h4>
+<ol class="arabic simple">
+<li><p>Open the <strong>Edit default guardrails</strong> dialog as described in
+<a class="reference internal" href="#guardrails-configuration"><span class="std std-ref">Configuration</span></a>.</p></li>
+<li><p>Select <strong>Content scanning</strong>.</p></li>
+<li><p>Enter the following details:</p>
+<ul class="simple">
+<li><p><strong>Trusted connection to Amazon Bedrock</strong>: Select the trusted connection to
+use. The list shows only Amazon Bedrock trusted connections.</p></li>
+<li><p><strong>Guardrail ID</strong>: Enter the ID of your Amazon Bedrock guardrail.</p></li>
+<li><p><strong>Guardrail version</strong>: Enter <code class="docutils literal notranslate"><span class="pre">DRAFT</span></code> or a version number of up to 8
+digits, such as <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><strong>Request timeout (seconds)</strong>: Enter the maximum time SEP waits for
+each scan, including the time to create the Amazon Bedrock client and
+resolve the trusted connection’s secret references. The value ranges from
+1 to 60 seconds. The default is 5 seconds. Each external MCP tool result
+can take up to four scans, so a slow guardrail can add up to four times
+this value to an external MCP tool call.</p></li>
+<li><p><strong>Scan remote MCP tool results</strong>: Select to scan results that external MCP
+servers return. This option is selected by default.</p></li>
+</ul>
+</li>
+<li><p>Click <strong>Test connection</strong>. SEP sends a fixed test string to the
+guardrail and shows <code class="docutils literal notranslate"><span class="pre">Successfully</span> <span class="pre">connected</span></code> when the test passes.</p></li>
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+<p>When you turn on content scanning, or change the trusted connection, guardrail
+ID, guardrail version, or request timeout, the dialog shows <strong>Test connection</strong>
+in place of <strong>Save</strong> until the current settings pass the test. This check
+prevents a mistyped guardrail ID from blocking every chat. If the saved Amazon
+Bedrock settings are unchanged, the dialog shows both buttons, and you can save
+other changes without a new test.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Use a numbered guardrail version in production. The <code class="docutils literal notranslate"><span class="pre">DRAFT</span></code> version is the
+guardrail’s working draft, which changes each time you edit the guardrail in
+Amazon Bedrock.</p>
+</div>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>When you clear <strong>Scan remote MCP tool results</strong>, external MCP tool results
+reach the model without an independent check. Keep this option selected unless
+you trust every external MCP server attached to AIDA.</p>
+</div>
+<p>While content scanning is on, you cannot delete its trusted connection or
+change the connection’s type. When you turn off content scanning, SEP keeps
+the guardrail ID, version, timeout, and MCP setting, but clears the trusted
+connection selection so that you can delete the connection. Select the trusted
+connection again when you turn content scanning back on.</p>
+</section>
+<section id="content-scanning-messages">
+<span id="guardrails-content-scanning-messages"></span><h4 id="content-scanning-messages">Content scanning messages<a class="headerlink" href="#content-scanning-messages" title="Link to this heading">#</a></h4>
+<p>SEP shows its own fixed messages instead of the blocked messaging
+configured in your Amazon Bedrock guardrail, and never shows Amazon Bedrock
+error details to users. Each message states whether content scanning declined
+the question or withheld the response or tool result, and why:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">did</span> <span class="pre">not</span> <span class="pre">meet</span> <span class="pre">the</span> <span class="pre">configured</span> <span class="pre">content</span> <span class="pre">policy</span></code>: The guardrail blocked the
+content. Review the policies in your Amazon Bedrock guardrail.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">could</span> <span class="pre">not</span> <span class="pre">be</span> <span class="pre">completed</span></code>: The scan failed, so SEP
+blocked the content. See <a class="reference internal" href="#guardrails-content-scanning-errors"><span class="std std-ref">Content scanning errors</span></a>.</p></li>
+</ul>
+<p>A declined question remains in the chat session as the placeholder <code class="docutils literal notranslate"><span class="pre">This</span> <span class="pre">question</span> <span class="pre">was</span> <span class="pre">withheld</span> <span class="pre">by</span> <span class="pre">content</span> <span class="pre">scanning.</span></code>, followed by the message. SEP
+never stores the submitted text, and later turns leave it out of the model’s
+context.</p>
+</section>
+</section>
 </section>
 <section id="how-configuration-changes-affect-chat-sessions">
 <span id="guardrails-active-chats"></span><h2 id="how-configuration-changes-affect-chat-sessions">How configuration changes affect chat sessions<a class="headerlink" href="#how-configuration-changes-affect-chat-sessions" title="Link to this heading">#</a></h2>
@@ -514,8 +699,11 @@ user and the new settings.</p></li>
 <li><p>The updated settings apply to new chat sessions immediately.</p></li>
 <li><p>The updated settings also apply to existing chat sessions.</p></li>
 </ul>
-<p>Changes to <strong>Prompt limiting</strong> take effect immediately. SEP enforces the new
-limit on the next message in any session.</p>
+<p>Changes to <strong>Prompt limiting</strong> and <strong>Content scanning</strong> take effect
+immediately. SEP applies the new settings on the next message in any
+session. Turning on content scanning does not scan earlier messages. Content
+that the model received before you turned on content scanning stays in the
+conversation history.</p>
 <p><strong>Agent protection</strong>, <strong>Data product protection</strong>, and <strong>Topic filtering</strong> work
 by adjusting the model’s instructions on each turn. Because earlier replies
 remain in the conversation history, the model tends to stay consistent with what
@@ -537,23 +725,50 @@ AIDA refuses a class of request, it tends to keep refusing similar follow-ups.</
 session continues in every case.</p>
 </section>
 <section id="limitations">
-<h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
+<span id="guardrails-limitations"></span><h2 id="limitations">Limitations<a class="headerlink" href="#limitations" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><strong>Configuration is global</strong>: One configuration applies to the entire cluster.
 There are currently no per-data-product, per-user, or per-model overrides.</p></li>
-<li><p><strong>Refusals are not logged</strong>: SEP logs configuration changes to the
-coordinator log, including the acting user and the new settings. Individual
-block events appear in the chat session, but are not yet aggregated into a
-dashboard.</p></li>
-<li><p><strong>External MCP tools are not actively scanned</strong>: When an external MCP tool
-returns a response, AIDA is instructed to treat that content as untrusted data
-rather than as commands. The response is not independently evaluated by an
-external LLM or security provider.</p></li>
+<li><p><strong>Refusals are not aggregated</strong>: Individual block events appear in the chat
+session, but are not aggregated into a dashboard. When content scanning masks
+or blocks content, or cannot complete a scan, SEP writes a <code class="docutils literal notranslate"><span class="pre">Content</span> <span class="pre">scan</span></code>
+line to the coordinator log with the chat session ID, the outcome, and the
+Amazon Bedrock policy categories. The line does not include the scanned
+content. The outcome is <code class="docutils literal notranslate"><span class="pre">ANONYMIZED</span></code> for masked content, <code class="docutils literal notranslate"><span class="pre">BLOCKED</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">ERROR</span></code>. SEP logs failed scans at the <code class="docutils literal notranslate"><span class="pre">WARN</span></code> level and other outcomes at
+the <code class="docutils literal notranslate"><span class="pre">INFO</span></code> level.</p></li>
+<li><p><strong>Declined questions are not in the agent interaction audit log</strong>: When
+content scanning declines a question, SEP does not write a row to the
+<a class="reference internal" href="aida-ai.html#aida-agent-audit-log"><span class="std std-ref">agent interaction audit log</span></a>. The <code class="docutils literal notranslate"><span class="pre">Content</span> <span class="pre">scan</span></code> line
+in the coordinator log records the decline. When content scanning cannot
+check a response, the audit log records the turn with an <code class="docutils literal notranslate"><span class="pre">ERRORED</span></code> status.</p></li>
+<li><p><strong>External MCP tool results are scanned only with content scanning</strong>: When
+content scanning is off, or <strong>Scan remote MCP tool results</strong> is cleared, AIDA
+is instructed to treat external MCP tool content as untrusted data rather
+than as commands. No external provider evaluates the content.</p></li>
+<li><p><strong>Question scanning covers only the AIDA chat</strong>: SEP scans questions that
+users submit in the AIDA chat in the Starburst Enterprise web UI. SEP does not scan
+questions sent through the AIDA REST API, <a class="reference internal" href="mcp-server.html#mcp-data-product-agent"><span class="std std-ref">Starburst AI via
+MCP</span></a>, or dashboard <strong>Ask</strong>, or free-text answers to
+AIDA’s clarifying questions. SEP still scans the model responses and
+external MCP tool results for these entry points.</p></li>
+<li><p><strong>Content scanning does not cover tool calls or built-in tools</strong>: SEP
+does not scan the arguments that the model generates for tool calls, the tool
+definitions that external MCP servers provide, or the results of AIDA’s
+built-in tools, such as SQL queries, skills, charts, and dashboards. For
+example, a query result table that AIDA shows in the chat is not scanned, but
+a model response that repeats the query data is. Use row-level security and
+column masking to protect sensitive data in query results.</p></li>
+<li><p><strong>Content scanning has size limits</strong>: SEP sends each question, response,
+or tool result to Amazon Bedrock as a single block. Content that exceeds the
+guardrail’s text unit limits fails closed. A guardrail with a denied topics
+policy has the lowest limit, about 200,000 characters. Large external MCP
+tool results are the most likely to exceed it.</p></li>
 </ul>
 </section>
 <section id="troubleshooting">
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading">#</a></h2>
-<p>You can turn off each of the four configurable controls individually. The three
+<p>You can turn off each of the five configurable controls individually. The three
 always-on protections remain enforced.</p>
 <section id="diagnose-which-guardrail-is-responsible">
 <h3 id="diagnose-which-guardrail-is-responsible">Diagnose which guardrail is responsible<a class="headerlink" href="#diagnose-which-guardrail-is-responsible" title="Link to this heading">#</a></h3>
@@ -567,11 +782,31 @@ caused by earlier turns in the previous session, not a guardrail.</p></li>
 <li><p>Refused on a specific table: check <strong>Data product protection</strong>.</p></li>
 <li><p>Responded with a statement that it cannot help with that topic: check
 <strong>Topic filtering</strong>.</p></li>
+<li><p>Responded that content scanning declined the request or withheld the
+response or tool result: check <strong>Content scanning</strong> and the policies in
+your Amazon Bedrock guardrail.</p></li>
 </ul>
 </li>
 <li><p>Turn the guardrail off, retest in a new chat session, then turn it back on.
 This confirms the cause without leaving the cluster with relaxed protections.</p></li>
 </ol>
+</section>
+<section id="content-scanning-errors">
+<span id="guardrails-content-scanning-errors"></span><h3 id="content-scanning-errors">Content scanning errors<a class="headerlink" href="#content-scanning-errors" title="Link to this heading">#</a></h3>
+<p>If <strong>Test connection</strong> in the <strong>Edit default guardrails</strong> dialog shows the
+following error, check the guardrail ID, the guardrail version, the trusted
+connection’s region, and the <code class="docutils literal notranslate"><span class="pre">bedrock:ApplyGuardrail</span></code> permission:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Could not connect to the configured Amazon Bedrock guardrail. Check the
+guardrail ID, version, and trusted connection, and that its credentials allow
+bedrock:ApplyGuardrail.
+</pre></div>
+</div>
+<p>SEP writes the cause of a failed test to the coordinator log in a
+<code class="docutils literal notranslate"><span class="pre">Bedrock</span> <span class="pre">guardrail</span> <span class="pre">connection</span> <span class="pre">test</span> <span class="pre">failed</span></code> line. When a scan fails during a
+chat, SEP writes a <code class="docutils literal notranslate"><span class="pre">Content</span> <span class="pre">scan</span></code> line with <code class="docutils literal notranslate"><span class="pre">outcome=ERROR</span></code>. Both lines
+include a <code class="docutils literal notranslate"><span class="pre">reasonCode</span></code> value.</p>
+<p>After you rotate the trusted connection’s credentials, SEP uses the
+updated credentials within 15 minutes, without a restart.</p>
 </section>
 <section id="turn-off-a-guardrail">
 <h3 id="turn-off-a-guardrail">Turn off a guardrail<a class="headerlink" href="#turn-off-a-guardrail" title="Link to this heading">#</a></h3>
@@ -587,6 +822,10 @@ user has permission for runs.</p></li>
 limit still applies.</p></li>
 <li><p><strong>Topic filtering</strong>: SEP preserves the topic list when off, so you can
 re-enable it later without retyping.</p></li>
+<li><p><strong>Content scanning</strong>: SEP stops scanning and keeps the guardrail ID,
+version, timeout, and MCP setting. SEP clears the trusted connection
+selection so that you can delete the connection. Select the connection again
+when you turn content scanning back on.</p></li>
 </ul>
 <div class="admonition caution">
 <p class="admonition-title">Caution</p>
@@ -622,9 +861,23 @@ topic, not only exact matches. For example, a <code class="docutils literal notr
 <code class="docutils literal notranslate"><span class="pre">tell</span> <span class="pre">me</span> <span class="pre">a</span> <span class="pre">joke</span></code>. Start with narrow, specific terms, and broaden them only as
 needed.</p>
 <p><strong>Q: Does AIDA log what it blocks?</strong></p>
-<p>A: SEP logs configuration changes to the coordinator log, including the
-acting user and the new settings. Individual block events appear in the chat
-session itself, but are not yet aggregated into a dashboard.</p>
+<p>A: Individual block events appear in the chat session itself, but are not
+aggregated into a dashboard. When content scanning is on, SEP also logs
+each masked, blocked, or failed scan to the coordinator log with its outcome
+and Amazon Bedrock policy categories, without the scanned content. For more
+information, see <a class="reference internal" href="#guardrails-limitations"><span class="std std-ref">Limitations</span></a>.</p>
+<p><strong>Q: Do I need Amazon Bedrock AI models to use content scanning?</strong></p>
+<p>A: No. Content scanning needs only an Amazon Bedrock trusted connection and
+guardrail. It works with any AI model that AIDA uses.</p>
+<p><strong>Q: Why don’t users see the blocked messaging configured in my Amazon Bedrock
+guardrail?</strong></p>
+<p>A: SEP shows its own fixed messages so that refusals read consistently and
+no provider details reach users. To tell blocked content from a failed scan,
+see <a class="reference internal" href="#guardrails-content-scanning-messages"><span class="std std-ref">Content scanning messages</span></a>.</p>
+<p><strong>Q: Why are responses slower when content scanning is on?</strong></p>
+<p>A: SEP holds each complete response and scans it before showing it, so the
+response appears all at once instead of streaming. Each external MCP tool
+result can also take up to four scans.</p>
 </section>
 </section>
 
